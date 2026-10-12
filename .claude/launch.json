@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "motdang-pages",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": ["-c", "exec npx --yes wrangler dev --port 8790 --ip 127.0.0.1 --local"],
+      "port": 8790
+    }
+  ]
+}

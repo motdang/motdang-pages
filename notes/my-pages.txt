@@ -1,0 +1,19 @@
+MAKE YOUR OWN PAGE — motdang.net/~
+
+Make one: https://motdang.net/~/make
+Every page: https://motdang.net/~/
+Held and reported pages: https://motdang.net/~/admin (any user name; password: ~/.claude/bin/token get MOTDANG_PAGES_ADMIN)
+
+A page lives at motdang.net/~name. Six kinds (shop, food, service, me, event, group), seven looks (Poster, Loom, Stitch, Night market, 1997, Clean, Lanna gold), a colour, and a visit counter. Builder in Thai, English, Burmese and Chinese; page labels in 12 languages.
+
+LINE: add-friend button, LINE QR (green on dark blue), send on LINE, order on LINE from the menu (shop LINE Official Accounts), LINE MAN link.
+Grab: ride here and GrabFood, in Grab's 8 countries only.
+Map: pin from where I am, a pasted Google/Apple/OSM link, or a photo's GPS; the map picture on the page; full-screen live map; how far from me; Google and Apple directions.
+Also: open now from the hours, event countdown and calendar file, save contact, printable A4 sign with QR codes, share card for LINE and Facebook.
+
+The edit link is the sign-in. The builder offers to send it to your own LINE.
+Check bot: rules and Llama Guard on the words, a vision model on each photo. Nudity, sex and gore are refused. Three reports hold a page.
+Running cost: Workers AI pennies per page; world map tiles about US$2 a month on R2 (tiles/world.pmtiles).
+
+Code: /Users/annikapeacock/Developer/claude code projects/motdang-pages
+Forks: QUEUE.txt C179–C185.

@@ -1,0 +1,46 @@
+# motdang.net/~ — people's own pages on Mot Dang.
+# This Worker answers motdang.net/~* by route; mot-dang-site (motdang.net/*)
+# keeps every other path, and the more specific route wins.
+name = "motdang-pages"
+main = "src/worker.mjs"
+compatibility_date = "2026-07-01"
+workers_dev = false
+
+# Builder, renderer, icons, map style and label glyphs. Served through the
+# Worker (run_worker_first) at /~/s/…, so a route under /~ is all it needs.
+[assets]
+directory = "./public"
+binding = "ASSETS"
+run_worker_first = true
+html_handling = "none"
+not_found_handling = "none"
+
+# Pages, photos, reports, quotas. Migrations:
+#   npx wrangler d1 migrations apply motdang-pages --remote
+[[d1_databases]]
+binding = "DB"
+database_name = "motdang-pages"
+database_id = "aa48eb0d-bfa8-449e-9041-a2de9906a452"
+migrations_dir = "migrations"
+
+# Photos that passed the check (and held ones, served only once released).
+[[r2_buckets]]
+binding = "MEDIA"
+bucket_name = "motdang-pages"
+
+# Llama Guard on page text, Mistral Small on photos.
+[ai]
+binding = "AI"
+remote = true
+
+# Drafts older than 30 days go; pages and photos a model failed to answer get another look.
+[triggers]
+crons = ["*/30 * * * *"]
+
+[[routes]]
+pattern = "motdang.net/~*"
+zone_name = "motdang.net"
+
+# Secrets (npx wrangler secret put NAME), never in this file:
+#   ADMIN_KEY       password for /~/admin (any user name)
+#   SESSION_SECRET  salt for the per-connection daily counts

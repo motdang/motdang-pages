@@ -1,0 +1,12 @@
+{
+  "name": "motdang-pages",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "motdang.net/~ — make your own page on Mot Dang",
+  "scripts": {
+    "dev": "wrangler dev --port 8790 --local",
+    "test": "node --test test/*.test.mjs",
+    "check": "for f in src/*.mjs public/s/*.mjs public/s/*.js; do node --check \"$f\" || exit 1; done"
+  }
+}

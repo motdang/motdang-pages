@@ -1,0 +1,10 @@
+motdang-pages — licences, in layers
+
+Code (src/, public/s/*.js, *.mjs, *.css, *.html, tools/, test/): MIT, see LICENSE.
+public/s/qr.mjs and public/s/exif.mjs come from NaNoBotCo/homematch, same licence.
+public/s/icons.svg: a subset of Mot Dang's own icon set (docs/icons.svg in mot-dang).
+public/s/style.json: built by tools/make_style.py from Mot Dang's basemap style.
+public/s/glyphs/NotoSans/: Noto Sans glyph ranges as built by protomaps/basemaps-assets;
+  Noto Sans is under the SIL Open Font License 1.1.
+Map data on the live map: © OpenStreetMap contributors (ODbL), tiles built by Protomaps.
+What people write and upload on their own pages is theirs.

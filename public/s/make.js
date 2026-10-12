@@ -1,0 +1,701 @@
+// make.js — the builder. Three questions (what for, what name, which look),
+// then one form with the page itself beside it. Every change saves on its
+// own; "Put it online" is the only button that matters.
+
+import { render, normalize, LOOKS, LOOK_IDS, KINDS, ACCENTS, CURRENCY, currencyFor, qrSvg, lineShare, esc } from './render.mjs'
+import { PAGE_LANGS } from './words.mjs'
+import { ui, UI_LANGS } from './make-words.mjs'
+import { exifBlock, readExif } from './exif.mjs'
+
+const $ = (s, el = document) => el.querySelector(s)
+const app = $('#app')
+const store = {
+  get(k, d) { try { const v = localStorage.getItem('mdp:' + k); return v === null ? d : JSON.parse(v) } catch { return d } },
+  set(k, v) { try { localStorage.setItem('mdp:' + k, JSON.stringify(v)) } catch {} },
+}
+const icon = (id) => `<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><use href="/~/s/icons.svg#i-${id}"/></svg>`
+const KIND_ICON = { shop: 'shop', food: 'food', service: 'gear', me: 'me', event: 'party', group: 'people' }
+const TZ = (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone } catch { return 'Asia/Bangkok' } })()
+
+const S = {
+  lang: store.get('lang', (() => { const l = (navigator.language || 'th').slice(0, 2); return UI_LANGS[l] ? l : 'th' })()),
+  step: 'kind', kind: 'shop', name: '', addr: '', addrTouched: false, look: 'poster', token: '', status: 'draft', views: 0,
+  pageLang: '', d: null, open: new Set(), local: new Map(), photoGps: null, picker: null, busy: 0,
+}
+const T = (k) => esc(ui(S.lang, k))
+
+// ---- starting data per kind ---------------------------------------------------------
+
+const DEFAULT_OPEN = {
+  shop: ['words', 'photos', 'contact', 'map', 'hours', 'items'],
+  food: ['words', 'photos', 'items', 'order', 'map', 'hours', 'contact'],
+  service: ['words', 'photos', 'items', 'contact', 'map'],
+  me: ['words', 'photos', 'links', 'contact'],
+  event: ['event', 'words', 'photos', 'map', 'contact'],
+  group: ['words', 'photos', 'links', 'contact'],
+}
+const LOOK_FOR = { shop: 'poster', food: 'night', service: 'clean', me: 'y1997', event: 'stitch', group: 'loom' }
+
+function guessCc() {
+  const zone = { 'Asia/Bangkok': 'TH', 'Asia/Yangon': 'MM', 'Asia/Rangoon': 'MM', 'Asia/Vientiane': 'LA', 'Asia/Phnom_Penh': 'KH',
+    'Asia/Ho_Chi_Minh': 'VN', 'Asia/Saigon': 'VN', 'Asia/Kuala_Lumpur': 'MY', 'Asia/Singapore': 'SG', 'Asia/Jakarta': 'ID',
+    'Asia/Manila': 'PH', 'Asia/Shanghai': 'CN', 'Asia/Tokyo': 'JP', 'Asia/Seoul': 'KR', 'Asia/Taipei': 'TW', 'Asia/Hong_Kong': 'HK' }[TZ]
+  if (zone) return zone
+  const m = /-([A-Z]{2})$/.exec(navigator.language || '')
+  return m ? m[1] : ''
+}
+
+function starter(kind) {
+  const week = (open) => Array.from({ length: 7 }, (_, i) => (open(i) ? [['09:00', '18:00']] : null))
+  const d = {
+    name: S.name, tagline: '', about: '', photos: [], items: [], links: [], contact: {}, order: {},
+    place: { lat: null, lng: null, addr: '', cc: guessCc(), snap: '', zoom: 16 },
+    hours: { on: kind === 'shop' || kind === 'food', always: false, tz: TZ, week: week((i) => kind === 'food' || i < 6), note: '' },
+    counter: kind === 'me', accent: '',
+  }
+  if (kind === 'food') d.hours.week = d.hours.week.map(() => [['10:00', '20:00']])
+  if (kind === 'event') {
+    const t = new Date(Date.now() + 7 * 864e5)
+    const p = (n) => String(n).padStart(2, '0')
+    d.event = { start: `${t.getFullYear()}-${p(t.getMonth() + 1)}-${p(t.getDate())}T18:00`, end: '', tz: TZ }
+  }
+  return d
+}
+
+// ---- address suggestions ----------------------------------------------------------------
+
+const TH_INIT = { ก: 'k', ข: 'kh', ฃ: 'kh', ค: 'kh', ฅ: 'kh', ฆ: 'kh', ง: 'ng', จ: 'ch', ฉ: 'ch', ช: 'ch', ซ: 's', ฌ: 'ch', ญ: 'y',
+  ฎ: 'd', ฏ: 't', ฐ: 'th', ฑ: 'th', ฒ: 'th', ณ: 'n', ด: 'd', ต: 't', ถ: 'th', ท: 'th', ธ: 'th', น: 'n', บ: 'b', ป: 'p', ผ: 'ph',
+  ฝ: 'f', พ: 'ph', ฟ: 'f', ภ: 'ph', ม: 'm', ย: 'y', ร: 'r', ล: 'l', ว: 'w', ศ: 's', ษ: 's', ส: 's', ห: 'h', ฬ: 'l', อ: '', ฮ: 'h' }
+const TH_FIN = { ก: 'k', ข: 'k', ค: 'k', ฆ: 'k', ง: 'ng', จ: 't', ช: 't', ซ: 't', ฌ: 't', ญ: 'n', ฎ: 't', ฏ: 't', ฐ: 't', ฑ: 't',
+  ฒ: 't', ณ: 'n', ด: 't', ต: 't', ถ: 't', ท: 't', ธ: 't', น: 'n', บ: 'p', ป: 'p', พ: 'p', ฟ: 'p', ภ: 'p', ม: 'm', ย: 'i', ร: 'n',
+  ล: 'n', ว: 'o', ศ: 't', ษ: 't', ส: 't', ฬ: 'n' }
+const TH_LEAD = { เ: 'e', แ: 'ae', โ: 'o', ใ: 'ai', ไ: 'ai' }
+const TH_VOW = { 'ะ': 'a', 'ั': 'a', 'า': 'a', 'ำ': 'am', 'ิ': 'i', 'ี': 'i', 'ึ': 'ue', 'ื': 'ue', 'ุ': 'u', 'ู': 'u', 'ฤ': 'rue' }
+const SKIP = /[่้๊๋็ๆฯ]/
+const CLUSTER = /[รลว]/
+
+/** A rough Latin spelling of a Thai name, good enough to suggest an address. */
+export function romanizeThai(s) {
+  const c = [...s]
+  let out = '', lead = '', state = 'init'
+  const isCons = (x) => x in TH_INIT
+  const nextReal = (i) => { let j = i + 1; while (j < c.length && SKIP.test(c[j])) j++; return c[j] }
+  for (let i = 0; i < c.length; i++) {
+    const x = c[i]
+    if (SKIP.test(x)) continue
+    if (c[i + 1] === '์') { i++; continue }
+    if (x in TH_LEAD) { lead = TH_LEAD[x]; state = 'init'; continue }
+    if (x in TH_VOW) { out += TH_VOW[x]; state = 'coda'; continue }
+    if (!isCons(x)) { out += /[a-z0-9]/i.test(x) ? x.toLowerCase() : ' '; state = 'init'; continue }
+    const n = nextReal(i)
+    const nextVowel = n && (n in TH_VOW)
+    if (state === 'init') {
+      out += TH_INIT[x]
+      if (n && isCons(n) && CLUSTER.test(n) && !lead && 'กขคตปพผ'.includes(x) && c[i + 2] && (c[i + 2] in TH_VOW || c[i + 2] in TH_LEAD)) { out += TH_INIT[n]; i++ }
+      if (lead) { out += lead; lead = ''; state = 'coda' } else state = 'nuc'
+      continue
+    }
+    if (state === 'nuc') {
+      if (x === 'อ' || x === 'ว' && !nextVowel) { out += x === 'อ' ? 'o' : 'ua'; state = 'coda'; continue }
+      if (nextVowel) { out += 'a' + TH_INIT[x]; state = 'nuc'; continue }
+      out += 'o' + (TH_FIN[x] || ''); state = 'init'; continue
+    }
+    // coda
+    if (nextVowel) { out += TH_INIT[x]; state = 'nuc'; continue }
+    out += TH_FIN[x] || ''; state = 'init'
+  }
+  return out
+}
+
+export function slugify(name, kind) {
+  let s = String(name || '').trim()
+  if (/[฀-๿]/.test(s)) s = romanizeThai(s)
+  s = s.normalize('NFKD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').replace(/-{2,}/g, '-').slice(0, 30).replace(/-+$/, '')
+  if (s.length < 3) s = (kind || 'page') + '-' + Math.floor(1000 + Math.random() * 9000)
+  return s
+}
+
+// ---- server ----------------------------------------------------------------------------
+
+async function call(method, path, body, isForm) {
+  const h = {}
+  if (S.token) h['x-edit'] = S.token
+  if (body && !isForm) h['content-type'] = 'application/json'
+  const r = await fetch('/~/api/' + path, { method, headers: h, body: isForm ? body : body ? JSON.stringify(body) : undefined })
+  let j = {}
+  try { j = await r.json() } catch {}
+  if (!r.ok) throw Object.assign(new Error(j.error || 'http-' + r.status), { status: r.status, why: j.why })
+  return j
+}
+
+function remember() {
+  const list = store.get('pages', []).filter((p) => p.token !== S.token)
+  list.unshift({ name: S.name, token: S.token, title: S.d?.name || S.name })
+  store.set('pages', list.slice(0, 20))
+}
+
+// ---- drawing ---------------------------------------------------------------------------
+
+function langs() {
+  $('#langs').innerHTML = Object.entries(UI_LANGS).map(([k, v]) => `<button data-lang="${k}"${k === S.lang ? ' class="on"' : ''}>${esc(v)}</button>`).join('')
+  document.documentElement.lang = S.lang
+}
+$('#langs').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-lang]')
+  if (!b) return
+  S.lang = b.dataset.lang
+  store.set('lang', S.lang)
+  draw()
+})
+
+function draw() {
+  langs()
+  if (S.step === 'kind') return drawKind()
+  if (S.step === 'name') return drawName()
+  if (S.step === 'look') return drawLook()
+  return drawEdit()
+}
+
+function drawKind() {
+  const mine = store.get('pages', [])
+  app.innerHTML = (mine.length ? `<section class="mine"><h2>${T('mine')}</h2>${mine.map((p) => `<a href="/~/make#t=${esc(p.token)}">${esc(p.title)}<span>motdang.net/~${esc(p.name)}</span></a>`).join('')}</section>` : '') +
+    `<h1 class="q">${T('q1')}</h1><div class="kinds">${KINDS.map((k) => `<button class="kind" data-kind="${k}">${icon(KIND_ICON[k])}<b>${T('k_' + k)}</b><small>${T('h_' + k)}</small></button>`).join('')}</div>`
+  app.querySelectorAll('.kind').forEach((b) => (b.onclick = () => { S.kind = b.dataset.kind; S.look = LOOK_FOR[S.kind]; S.step = 'name'; draw() }))
+  app.querySelectorAll('.mine a').forEach((a) => (a.onclick = (e) => { e.preventDefault(); history.replaceState(null, '', a.getAttribute('href')); boot() }))
+}
+
+let availTimer = 0, availOk = false
+function drawName() {
+  app.innerHTML = `<button class="back" id="back">← ${T('back')}</button><h1 class="q">${T('q2')}</h1>
+  <label class="field big"><span>${T('name')}</span><input id="nm" maxlength="60" autocomplete="off" value="${esc(S.name)}"></label>
+  <label class="field"><span>${T('addr')}</span><div class="addr"><span>motdang.net/~</span><input id="ad" maxlength="30" autocomplete="off" autocapitalize="off" spellcheck="false" inputmode="url" value="${esc(S.addr)}"></div>
+  <small>${T('addrHint')}</small><span class="avail" id="av"></span></label>
+  <div class="row"><button class="go" id="next" disabled>${T('next')} →</button></div>`
+  const nm = $('#nm'), ad = $('#ad')
+  nm.focus()
+  nm.oninput = () => { S.name = nm.value; if (!S.addrTouched) { ad.value = S.addr = slugify(nm.value, S.kind) }; check() }
+  ad.oninput = () => { S.addrTouched = true; ad.value = ad.value.toLowerCase().replace(/[^a-z0-9-]/g, ''); S.addr = ad.value; check() }
+  $('#back').onclick = () => { S.step = 'kind'; draw() }
+  $('#next').onclick = () => { if (availOk && S.name.trim()) { S.step = 'look'; draw() } }
+  nm.onkeydown = ad.onkeydown = (e) => { if (e.key === 'Enter') $('#next').click() }
+  if (S.addr) check()
+}
+function check() {
+  const av = $('#av'), next = $('#next')
+  availOk = false
+  next.disabled = true
+  clearTimeout(availTimer)
+  if (!S.addr) { av.textContent = ''; return }
+  av.className = 'avail'; av.textContent = ui(S.lang, 'a_wait')
+  availTimer = setTimeout(async () => {
+    try {
+      const r = await call('GET', 'name?n=' + encodeURIComponent(S.addr))
+      availOk = r.ok
+      av.className = 'avail ' + (r.ok ? 'ok' : 'no')
+      av.innerHTML = r.ok ? `${icon('check')}${T('a_ok')}` : esc(ui(S.lang, 'a_' + (r.why || 'taken')))
+      next.disabled = !(r.ok && S.name.trim())
+    } catch { av.textContent = ui(S.lang, 'e_net') }
+  }, 350)
+}
+
+function lookCard(id, on) {
+  const L = LOOKS[id]
+  const vars = L.vars.replace(/\s+/g, ' ') + `;--accent:${L.accent}`
+  return `<button class="look${on ? ' on' : ''}" data-look="${id}" style="${esc(vars)}">${L.art}<b>${esc(S.name || L.label)}</b><small>${esc(L.label)}</small><span class="acc"></span></button>`
+}
+
+function drawLook() {
+  app.innerHTML = `<button class="back" id="back">← ${T('back')}</button><h1 class="q">${T('q3')}</h1>
+  <div class="looks">${LOOK_IDS.map((id) => lookCard(id, id === S.look)).join('')}</div>`
+  $('#back').onclick = () => { S.step = 'name'; draw() }
+  app.querySelectorAll('.look').forEach((b) => (b.onclick = () => create(b.dataset.look, b)))
+}
+
+async function create(look, btn) {
+  S.look = look
+  btn.classList.add('on')
+  S.d = starter(S.kind)
+  S.d.name = S.name.trim()
+  S.pageLang = PAGE_LANGS[S.lang] ? S.lang : 'en'
+  try {
+    const r = await call('POST', 'sites', { name: S.addr, kind: S.kind, look, lang: S.pageLang, d: S.d })
+    S.token = r.token; S.name = r.name; S.status = r.status
+    history.replaceState(null, '', '/~/make#t=' + S.token)
+    remember()
+    S.open = new Set(DEFAULT_OPEN[S.kind])
+    S.step = 'edit'
+    draw()
+  } catch (e) {
+    toast(ui(S.lang, e.message === 'quota' ? 'e_quota' : e.message === 'name' ? 'e_name' : 'e_net'))
+    if (e.message === 'name') { S.step = 'name'; draw() }
+  }
+}
+
+// ---- the editor ------------------------------------------------------------------------
+
+const SECTIONS = [
+  ['event', 'cal', 's_event'], ['words', 'note', 's_words'], ['photos', 'camera', 's_photos'], ['items', 'tag', 's_items'],
+  ['order', 'basket', 's_order'], ['contact', 'phone', 's_contact'], ['map', 'pin', 's_map'], ['hours', 'clock', 's_hours'],
+  ['links', 'link', 's_links'], ['look', 'sparkle', 's_look'],
+]
+
+function hasData(id) {
+  const d = S.d
+  return { event: !!d.event, words: true, photos: d.photos.length > 0, items: d.items.length > 0, order: !!(d.order.grabfood || d.order.lineman),
+    contact: Object.values(d.contact).some(Boolean), map: d.place.lat !== null || !!d.place.addr, hours: d.hours.on, links: d.links.length > 0, look: true }[id]
+}
+
+function drawEdit() {
+  for (const [id] of SECTIONS) if (hasData(id)) S.open.add(id)
+  S.open.add('look')
+  const shown = SECTIONS.filter(([id]) => S.open.has(id))
+  const more = SECTIONS.filter(([id]) => !S.open.has(id))
+  app.innerHTML = `<div class="ed"><div class="form" id="form">
+    ${shown.map(([id, ic, t], n) => `<details class="sec" data-sec="${id}"${n < 3 || id === 'map' ? ' open' : ''}><summary>${icon(ic)}${T(t)}</summary><div class="in">${SEC[id]()}</div></details>`).join('')}
+    ${more.length ? `<div class="adds">${more.map(([id, ic, t]) => `<button data-add="${id}">${icon('plus')}${T(t)}</button>`).join('')}</div>` : ''}
+    <div class="danger"><button id="del">${T('del')}</button></div></div>
+    <div class="pv" id="pv"><div class="url">${icon('globe')}motdang.net/~${esc(S.name)}</div><iframe id="frame" title="${T('preview')}"></iframe></div></div>
+    <div class="dock"><span class="state" id="state">${stateText()}</span>
+      <button class="go ghost pvbtn" id="pvbtn">${icon('globe')}${T('preview')}</button>
+      <button class="go red" id="pub">${S.status === 'live' ? T('share') : T('publish')}</button></div>`
+  bindEdit()
+  preview()
+  if (S.open.has('map') && $('[data-sec=map]')?.open) mountMap()
+}
+
+const val = (v) => esc(v ?? '')
+const field = (k, label, v, type = 'text', extra = '') => `<label class="field"><span>${label}</span><input type="${type}" data-k="${k}" value="${val(v)}" ${extra}></label>`
+
+const SEC = {
+  words() {
+    return field('name', T('name'), S.d.name, 'text', 'maxlength="60"') + field('tagline', T('tagline'), S.d.tagline, 'text', 'maxlength="140"') +
+      `<label class="field"><span>${T('about')}</span><textarea data-k="about" maxlength="2400">${val(S.d.about)}</textarea></label>`
+  },
+  photos() {
+    return `<div class="photos">${S.d.photos.map((id) => `<div class="ph${id === S.d.cover ? ' cover' : ''}" data-ph="${id}"><img src="${esc(imgUrl(id, true))}" alt="">${id === S.d.cover ? `<span class="flag">${T('cover')}</span>` : ''}
+      <div class="tools">${id !== S.d.cover ? `<button data-cover="${id}">${T('makeCover')}</button>` : ''}<button data-rm="${id}">${T('remove')}</button></div></div>`).join('')}
+      ${Array.from({ length: S.busy }, () => '<div class="ph"><div class="busy">…</div></div>').join('')}</div>
+      ${S.d.photos.length < 12 ? `<label class="pick">${icon('camera')}${T('addPhotos')}<input type="file" accept="image/*" multiple id="files"></label>` : ''}`
+  },
+  items() {
+    const cur = S.d.currency || currencyFor(S.d.place.cc, S.pageLang)
+    return `<div class="items">${S.d.items.map((it, i) => `<div class="it"><input data-k="items.${i}.n" placeholder="${T('item')}" value="${val(it.n)}" maxlength="80">
+      <input data-k="items.${i}.p" placeholder="${T('price')}" value="${val(it.p)}" maxlength="24" inputmode="decimal"><button class="x" data-rmitem="${i}" aria-label="${T('remove')}">×</button>
+      <input data-k="items.${i}.note" placeholder="${T('details')}" value="${val(it.note)}" maxlength="160"></div>`).join('')}</div>
+      <div class="row"><button class="go ghost" id="additem">${icon('plus')}${T('addItem')}</button>
+      <label style="flex:1;min-width:150px"><select data-k="currency">${Object.entries(CURRENCY).map(([k, v]) => `<option value="${k}"${k === cur ? ' selected' : ''}>${k} ${esc(v.trim())}</option>`).join('')}</select></label></div>`
+  },
+  order() {
+    return field('order.grabfood', T('grabfood'), S.d.order.grabfood, 'url', 'placeholder="https://r.grab.com/…"') +
+      field('order.lineman', T('lineman'), S.d.order.lineman, 'url', 'placeholder="https://lin.ee/…"')
+  },
+  contact() {
+    const c = S.d.contact
+    return field('contact.phone', T('phone'), c.phone, 'tel', 'autocomplete="tel"') + field('contact.line', T('line'), c.line, 'text', 'autocapitalize="off" placeholder="@myshop"') +
+      `<details${c.whatsapp || c.facebook || c.instagram || c.tiktok || c.youtube || c.email || c.web ? ' open' : ''}><summary style="cursor:pointer;font-weight:700;margin:0 0 12px">${T('addMore')} · Facebook · Instagram · TikTok · WhatsApp…</summary>` +
+      field('contact.facebook', T('facebook'), c.facebook, 'text', 'autocapitalize="off"') + field('contact.instagram', T('instagram'), c.instagram, 'text', 'autocapitalize="off" placeholder="@"') +
+      field('contact.tiktok', T('tiktok'), c.tiktok, 'text', 'autocapitalize="off" placeholder="@"') + field('contact.whatsapp', T('whatsapp'), c.whatsapp, 'tel') +
+      field('contact.youtube', T('youtube'), c.youtube, 'text', 'autocapitalize="off"') + field('contact.email', T('email'), c.email, 'email') +
+      field('contact.web', T('web'), c.web, 'url', 'placeholder="https://"') + '</details>'
+  },
+  map() {
+    const p = S.d.place
+    const has = p.lat !== null
+    return `<div class="row"><button class="go ink" id="here">${icon('here')}${T('here')}</button>
+      ${S.photoGps ? `<button class="go ghost" id="photopin">${icon('camera')}${T('photoPin')}</button>` : ''}</div>
+      <div class="row" style="margin-top:10px"><input id="paste" type="url" placeholder="${T('paste')}" style="flex:1;min-width:200px"><button class="go ghost" id="pastego">${T('pasteGo')}</button></div>
+      <p class="pinstate${has ? ' ok' : ''}" id="pinstate">${has ? `${icon('pin')}${T('pinSet')} · ${p.lat.toFixed(5)}, ${p.lng.toFixed(5)}` : T('noPin')}</p>
+      <div class="mapwrap" id="mapwrap"><div class="hint">${T('dragHint')}</div><div id="mapel" style="position:absolute;inset:0"></div></div>
+      <p id="nomap" style="display:none;color:var(--mute)">${T('noMap')}</p>
+      <label class="field"><span>${T('address')}</span><textarea data-k="place.addr" maxlength="240" style="min-height:80px">${val(p.addr)}</textarea></label>
+      <label class="field"><span>${T('country')}</span><select data-k="place.cc">${countries(p.cc)}</select></label>
+      ${has ? `<button class="back" id="clearpin">× ${T('clearPin')}</button>` : ''}`
+  },
+  hours() {
+    const h = S.d.hours
+    const day = (i) => { try { return new Intl.DateTimeFormat(S.lang, { weekday: 'long', timeZone: 'UTC' }).format(new Date(Date.UTC(2024, 0, 1 + i))) } catch { return String(i) } }
+    return `<label class="check"><input type="checkbox" class="sw" data-k="hours.on" ${h.on ? 'checked' : ''}>${T('s_hours')}</label>
+      <div ${h.on ? '' : 'hidden'}><label class="check"><input type="checkbox" class="sw" data-k="hours.always" ${h.always ? 'checked' : ''}>${T('open24')}</label>
+      <div class="hours" ${h.always ? 'hidden' : ''}>${h.week.map((r, i) => `<div class="hr${r ? '' : ' off'}"><span>${esc(day(i))}</span>
+        <input type="checkbox" class="sw" data-day="${i}" ${r ? 'checked' : ''} aria-label="${esc(day(i))}">
+        <input type="time" data-from="${i}" value="${r ? r[0][0] : '09:00'}" ${r ? '' : 'disabled'}><input type="time" data-to="${i}" value="${r ? r[0][1] : '18:00'}" ${r ? '' : 'disabled'}></div>`).join('')}
+        <button class="go ghost" id="sameall" style="margin-top:6px">${T('sameAll')}</button></div>
+      ${field('hours.note', T('note'), h.note, 'text', 'maxlength="160"')}</div>`
+  },
+  links() {
+    return `<div class="links">${S.d.links.map((l, i) => `<div class="lk"><div><input data-k="links.${i}.t" placeholder="${T('linkText')}" value="${val(l.t)}" maxlength="50" style="margin-bottom:6px">
+      <input data-k="links.${i}.u" type="url" placeholder="https://" value="${val(l.u)}"></div><button class="x" data-rmlink="${i}" aria-label="${T('remove')}">×</button></div>`).join('')}</div>
+      <button class="go ghost" id="addlink">${icon('plus')}${T('addLink')}</button>`
+  },
+  event() {
+    const e = S.d.event || { start: '', end: '' }
+    return field('event.start', T('starts'), e.start, 'datetime-local') + field('event.end', T('ends'), e.end, 'datetime-local')
+  },
+  look() {
+    const acc = S.d.accent || LOOKS[S.look].accent
+    return `<div class="lookrow">${LOOK_IDS.map((id) => lookCard(id, id === S.look)).join('')}</div>
+      <div><b>${T('colour')}</b><div class="swatches">${[LOOKS[S.look].accent, ...ACCENTS.filter((a) => a !== LOOKS[S.look].accent)].map((a) => `<button data-acc="${a}" style="background:${a}"${a === acc ? ' class="on"' : ''} aria-label="${a}"></button>`).join('')}</div></div>
+      <label class="check"><input type="checkbox" class="sw" data-k="counter" ${S.d.counter ? 'checked' : ''}>${T('counter')}</label>
+      <label class="field"><span>${T('pageLang')}</span><select id="plang">${Object.entries(PAGE_LANGS).map(([k, v]) => `<option value="${k}"${k === S.pageLang ? ' selected' : ''}>${esc(v)}</option>`).join('')}</select></label>`
+  },
+}
+
+const CC = 'TH MM LA KH VN MY SG ID PH CN JP KR TW HK IN BD NP LK US CA MX GB IE FR DE ES PT IT NL BE CH AT SE NO DK FI PL CZ GR TR IL AE SA EG ZA NG KE AU NZ BR AR CL CO PE BT MN KZ UZ PK RU UA RO HU BG HR RS SI SK LT LV EE IS LU MT CY MA TN GH ET TZ UG FJ PG TL BN MO'.split(' ')
+function countries(cur) {
+  let dn
+  try { dn = new Intl.DisplayNames([S.lang], { type: 'region' }) } catch {}
+  const list = CC.map((c) => [c, dn ? dn.of(c) : c]).sort((a, b) => a[1].localeCompare(b[1], S.lang))
+  return `<option value="">—</option>` + list.map(([c, n]) => `<option value="${c}"${c === cur ? ' selected' : ''}>${esc(n)}</option>`).join('')
+}
+
+function stateText() {
+  if (S.saving) return ui(S.lang, 'saving')
+  return { draft: ui(S.lang, 'draft'), live: ui(S.lang, 'live'), held: ui(S.lang, 'held') }[S.status] || ''
+}
+
+function setPath(o, path, v) {
+  const ks = path.split('.')
+  let x = o
+  for (let i = 0; i < ks.length - 1; i++) { const k = ks[i]; if (x[k] == null) x[k] = /^\d+$/.test(ks[i + 1]) ? [] : {}; x = x[k] }
+  x[ks.at(-1)] = v
+}
+
+function bindEdit() {
+  const form = $('#form')
+  form.addEventListener('input', (e) => {
+    const k = e.target.dataset.k
+    if (!k) return
+    let v = e.target.type === 'checkbox' ? e.target.checked : e.target.value
+    if (k === 'event.start' || k === 'event.end') { S.d.event = S.d.event || { start: '', end: '', tz: TZ }; S.d.event.tz = TZ }
+    setPath(S.d, k, v)
+    if (k === 'hours.on' || k === 'hours.always' || k === 'place.cc') redrawSec(k.split('.')[0] === 'place' ? 'items' : 'hours')
+    changed()
+  })
+  form.addEventListener('change', (e) => {
+    const t = e.target
+    if (t.id === 'files') addFiles([...t.files])
+    if (t.id === 'plang') { S.pageLang = t.value; changed() }
+    if (t.dataset.day !== undefined) { const i = +t.dataset.day; S.d.hours.week[i] = t.checked ? [[$(`[data-from="${i}"]`).value || '09:00', $(`[data-to="${i}"]`).value || '18:00']] : null; redrawSec('hours'); changed() }
+    if (t.dataset.from !== undefined || t.dataset.to !== undefined) {
+      const i = +(t.dataset.from ?? t.dataset.to)
+      if (S.d.hours.week[i]) S.d.hours.week[i] = [[$(`[data-from="${i}"]`).value, $(`[data-to="${i}"]`).value]]
+      changed()
+    }
+  })
+  form.addEventListener('click', (e) => {
+    const b = e.target.closest('button')
+    if (!b) return
+    if (b.dataset.add) { e.preventDefault(); S.open.add(b.dataset.add); if (b.dataset.add === 'event' && !S.d.event) S.d.event = starter('event').event; if (b.dataset.add === 'hours') S.d.hours.on = true; drawEdit(); const sec = $(`[data-sec="${b.dataset.add}"]`); sec.open = true; sec.scrollIntoView({ behavior: 'smooth', block: 'start' }); if (b.dataset.add === 'map') mountMap(); changed(); return }
+    if (b.dataset.cover) { S.d.cover = b.dataset.cover; redrawSec('photos'); changed() }
+    if (b.dataset.rm) { S.d.photos = S.d.photos.filter((x) => x !== b.dataset.rm); if (S.d.cover === b.dataset.rm) S.d.cover = S.d.photos[0] || ''; redrawSec('photos'); changed() }
+    if (b.id === 'additem') { S.d.items.push({ n: '', p: '', note: '' }); redrawSec('items'); $(`[data-k="items.${S.d.items.length - 1}.n"]`).focus() }
+    if (b.dataset.rmitem) { S.d.items.splice(+b.dataset.rmitem, 1); redrawSec('items'); changed() }
+    if (b.id === 'addlink') { S.d.links.push({ t: '', u: '' }); redrawSec('links'); $(`[data-k="links.${S.d.links.length - 1}.t"]`).focus() }
+    if (b.dataset.rmlink) { S.d.links.splice(+b.dataset.rmlink, 1); redrawSec('links'); changed() }
+    if (b.dataset.look) { S.look = b.dataset.look; S.d.accent = ''; redrawSec('look'); changed() }
+    if (b.dataset.acc) { S.d.accent = b.dataset.acc === LOOKS[S.look].accent ? '' : b.dataset.acc; redrawSec('look'); changed() }
+    if (b.id === 'sameall') { const r = S.d.hours.week.find(Boolean) || [['09:00', '18:00']]; S.d.hours.week = S.d.hours.week.map(() => r.map((x) => [...x])); redrawSec('hours'); changed() }
+    if (b.id === 'here') here()
+    if (b.id === 'photopin' && S.photoGps) setPin(S.photoGps.lat, S.photoGps.lng, 18)
+    if (b.id === 'pastego') pasteLink()
+    if (b.id === 'clearpin') { S.d.place.lat = S.d.place.lng = null; S.d.place.snap = ''; redrawSec('map'); changed() }
+  })
+  form.addEventListener('toggle', (e) => { if (e.target.dataset?.sec === 'map' && e.target.open) mountMap() }, true)
+  $('#del').onclick = del
+  $('#pub').onclick = publish
+  $('#pvbtn').onclick = () => { $('#pv').classList.add('show'); document.body.classList.add('pvopen'); preview(true) }
+  $('#pv').addEventListener('click', (e) => { if (e.target.id === 'pv' || e.target.closest('.url')) { $('#pv').classList.remove('show'); document.body.classList.remove('pvopen') } })
+}
+
+function redrawSec(id) {
+  const sec = $(`[data-sec="${id}"] .in`)
+  if (!sec) return
+  sec.innerHTML = SEC[id]()
+  if (id === 'map') { S.picker = null; mountMap() }
+}
+
+// ---- preview + saving ----------------------------------------------------------------------
+
+function imgUrl(id, small) { return S.local.get(id) || `/~/img/${id}${small ? '-s' : ''}.webp` }
+
+let pvTimer = 0
+function preview(now) {
+  clearTimeout(pvTimer)
+  pvTimer = setTimeout(() => {
+    const f = $('#frame')
+    if (!f) return
+    if (window.innerWidth < 980 && !$('#pv').classList.contains('show') && !now) return
+    const html = render({ name: S.name, look: S.look, lang: S.pageLang, kind: S.kind, d: S.d, views: S.views || 1234, status: 'live' }, { preview: true, img: imgUrl, origin: location.origin })
+    const y = f.contentWindow?.scrollY || 0
+    f.srcdoc = html
+    f.onload = () => { try { f.contentWindow.scrollTo(0, y) } catch {} ; f.contentDocument?.querySelectorAll('a[href]').forEach((a) => a.setAttribute('target', '_blank')) }
+  }, now ? 0 : 220)
+}
+
+let saveTimer = 0
+function changed() {
+  preview()
+  clearTimeout(saveTimer)
+  saveTimer = setTimeout(save, 1400)
+  store.set('d:' + S.token, { d: S.d, look: S.look, at: Date.now() })
+}
+
+async function save(extra = {}) {
+  clearTimeout(saveTimer)
+  S.saving = true
+  const st = $('#state'); if (st) st.textContent = stateText()
+  try {
+    const r = await call('PUT', 'site', { d: S.d, look: S.look, lang: S.pageLang, kind: S.kind, ...extra })
+    S.status = r.status
+    remember()
+  } catch (e) {
+    toast(ui(S.lang, e.message === 'quota' ? 'e_quota' : e.message === 'edit-link' ? 'e_link' : 'e_net'))
+  } finally {
+    S.saving = false
+    const st2 = $('#state'); if (st2) st2.textContent = stateText()
+    const pub = $('#pub'); if (pub) pub.textContent = ui(S.lang, S.status === 'live' ? 'share' : 'publish')
+  }
+}
+
+// ---- photos ------------------------------------------------------------------------------
+
+async function shrink(bmp, max, q) {
+  const r = Math.min(1, max / Math.max(bmp.width, bmp.height))
+  const w = Math.round(bmp.width * r), h = Math.round(bmp.height * r)
+  const c = document.createElement('canvas')
+  c.width = w; c.height = h
+  c.getContext('2d').drawImage(bmp, 0, 0, w, h)
+  let b = await new Promise((ok) => c.toBlob(ok, 'image/webp', q))
+  if (!b || b.type !== 'image/webp') b = await new Promise((ok) => c.toBlob(ok, 'image/jpeg', q))
+  return { blob: b, w, h }
+}
+
+async function upload(blob, small, role, w, h) {
+  const f = new FormData()
+  f.append('role', role)
+  f.append('big', blob, 'big')
+  if (small) f.append('small', small, 'small')
+  if (w) { f.append('w', w); f.append('h', h) }
+  return call('POST', 'photo', f, true)
+}
+
+async function addFiles(files) {
+  files = files.slice(0, 12 - S.d.photos.length)
+  S.busy += files.length
+  redrawSec('photos')
+  for (const file of files) {
+    try {
+      const raw = new Uint8Array(await file.slice(0, 256 * 1024).arrayBuffer())
+      const ex = exifBlock(raw)
+      if (ex) { const x = readExif(ex); if (x.lat != null && x.lon != null) S.photoGps = { lat: x.lat, lng: x.lon } }
+      const bmp = await createImageBitmap(file, { imageOrientation: 'from-image' })
+      const big = await shrink(bmp, 1600, 0.82)
+      const small = await shrink(bmp, 480, 0.76)
+      const r = await upload(big.blob, small.blob, 'photo', big.w, big.h)
+      S.local.set(r.id, URL.createObjectURL(small.blob))
+      S.d.photos.push(r.id)
+      if (!S.d.cover) S.d.cover = r.id
+    } catch (e) {
+      toast(ui(S.lang, e.message === 'photo-refused' ? 'e_refused' : e.message === 'quota' ? 'e_quota' : 'e_net'))
+    }
+    S.busy--
+    redrawSec('photos')
+  }
+  if (S.photoGps && S.d.place.lat === null) { S.open.add('map'); drawEdit() }
+  changed()
+}
+
+// ---- map tools ---------------------------------------------------------------------------
+
+async function mountMap() {
+  const el = $('#mapel')
+  if (!el || S.picker) return
+  const p = S.d.place
+  const lat = p.lat ?? (S.d.place.cc === 'TH' || !S.d.place.cc ? 18.7883 : 20), lng = p.lng ?? (S.d.place.cc === 'TH' || !S.d.place.cc ? 98.9853 : 0)
+  try {
+    const m = await import('./map.mjs')
+    S.picker = await m.picker(el, { lat, lng, zoom: p.lat !== null ? p.zoom : (S.d.place.cc === 'TH' || !S.d.place.cc ? 13 : 2), accent: S.d.accent || LOOKS[S.look].accent, onMove: moved })
+    if (!S.picker.covered) { $('#mapwrap').style.display = 'none'; $('#nomap').style.display = '' }
+  } catch { $('#mapwrap').style.display = 'none'; $('#nomap').style.display = '' }
+}
+
+let snapTimer = 0, moving = false
+function moved({ lat, lng, zoom }) {
+  if (moving) return
+  S.d.place.lat = Math.round(lat * 1e6) / 1e6
+  S.d.place.lng = Math.round(lng * 1e6) / 1e6
+  S.d.place.zoom = zoom
+  const ps = $('#pinstate')
+  if (ps) { ps.className = 'pinstate ok'; ps.innerHTML = `${icon('pin')}${T('pinSet')} · ${S.d.place.lat.toFixed(5)}, ${S.d.place.lng.toFixed(5)}` }
+  changed()
+  clearTimeout(snapTimer)
+  snapTimer = setTimeout(snap, 2200)
+}
+
+async function snap() {
+  if (!S.picker?.covered) return
+  try {
+    const blob = await S.picker.snap()
+    if (!blob) return
+    const r = await upload(blob, null, 'map')
+    S.local.set(r.id, URL.createObjectURL(blob))
+    S.d.place.snap = r.id
+    changed()
+  } catch {}
+}
+
+function setPin(lat, lng, z = 17) {
+  S.d.place.lat = Math.round(lat * 1e6) / 1e6
+  S.d.place.lng = Math.round(lng * 1e6) / 1e6
+  S.d.place.zoom = z
+  S.open.add('map')
+  if (S.picker) { S.picker.go(lat, lng, z) } else { redrawSec('map') }
+  moved({ lat, lng, zoom: z })
+}
+
+function here() {
+  if (!navigator.geolocation) return
+  const b = $('#here'); if (b) b.disabled = true
+  navigator.geolocation.getCurrentPosition((p) => { if (b) b.disabled = false; setPin(p.coords.latitude, p.coords.longitude, 18) },
+    () => { if (b) b.disabled = false; toast(ui(S.lang, 'e_coords')) }, { enableHighAccuracy: true, timeout: 20000 })
+}
+
+async function pasteLink() {
+  const u = $('#paste').value.trim()
+  if (!u) return
+  try {
+    const r = await call('GET', 'resolve?u=' + encodeURIComponent(u))
+    if (r.lat == null) throw new Error('no')
+    setPin(r.lat, r.lng, 18)
+    $('#paste').value = ''
+  } catch { toast(ui(S.lang, 'e_coords')) }
+}
+
+// ---- putting it online ---------------------------------------------------------------------
+
+async function makeCard() {
+  const L = LOOKS[S.look]
+  const v = (n) => new RegExp('--' + n + ':(#[0-9a-f]+)', 'i').exec(L.vars)?.[1]
+  const accent = S.d.accent || L.accent
+  const c = document.createElement('canvas')
+  c.width = 1200; c.height = 630
+  const g = c.getContext('2d')
+  g.fillStyle = v('bg') || '#fff7ec'; g.fillRect(0, 0, 1200, 630)
+  let ink = v('ink') || '#111'
+  if (S.d.cover) {
+    try {
+      const im = new Image()
+      im.src = imgUrl(S.d.cover)
+      await im.decode()
+      const r = Math.max(1200 / im.width, 630 / im.height)
+      g.drawImage(im, (1200 - im.width * r) / 2, (630 - im.height * r) / 2, im.width * r, im.height * r)
+      const gr = g.createLinearGradient(0, 160, 0, 630); gr.addColorStop(0, 'rgba(0,0,0,0)'); gr.addColorStop(1, 'rgba(0,0,0,.78)')
+      g.fillStyle = gr; g.fillRect(0, 0, 1200, 630)
+      ink = '#ffffff'
+    } catch {}
+  } else if (['stitch', 'night', 'y1997', 'lanna'].includes(S.look)) ink = '#ffffff'
+  g.fillStyle = accent; g.fillRect(64, 64, 120, 14)
+  g.fillStyle = ink
+  g.font = '800 96px "Avenir Next Condensed","Arial Narrow",Impact,"Prompt","Noto Sans Thai",system-ui,sans-serif'
+  const words = (S.d.name || S.name).split(' ')
+  const lines = []; let cur = ''
+  for (const w of words) { const t = cur ? cur + ' ' + w : w; if (g.measureText(t).width > 1060 && cur) { lines.push(cur); cur = w } else cur = t }
+  lines.push(cur)
+  const name = lines.slice(0, 2)
+  let y = 630 - 150 - (name.length - 1) * 100 - (S.d.tagline ? 56 : 0)
+  for (const l of name) { g.fillText(l, 64, y, 1072); y += 100 }
+  if (S.d.tagline) { g.font = '500 40px system-ui,"Prompt","Noto Sans Thai",sans-serif'; g.fillText(S.d.tagline.slice(0, 70), 64, y - 30, 1072) }
+  g.fillStyle = '#d7261e'; g.beginPath(); g.roundRect(64, 540, 54, 54, 12); g.fill()
+  g.fillStyle = '#fff'; g.beginPath(); g.arc(91, 567, 11, 0, 7); g.fill()
+  g.fillStyle = ink; g.font = '700 32px ui-monospace,Menlo,monospace'; g.fillText('motdang.net/~' + S.name, 134, 578)
+  const blob = await new Promise((ok) => c.toBlob(ok, 'image/jpeg', 0.86))
+  const r = await upload(blob, null, 'card')
+  S.d.card = r.id
+}
+
+async function publish() {
+  const pub = $('#pub')
+  pub.disabled = true
+  try {
+    if (S.status === 'draft' || !S.d.card) await makeCard().catch(() => {})
+    await save({ publish: true })
+    done()
+  } finally { pub.disabled = false }
+}
+
+function done() {
+  const url = `${location.origin}/~${S.name}`
+  const edit = `${location.origin}/~/make#t=${S.token}`
+  const box = document.createElement('div')
+  box.className = 'sheet'
+  box.innerHTML = `<div class="box"><h2>${S.status === 'live' ? T('live') : S.status === 'held' ? T('held') : T('draft')}</h2>
+    <a class="link" href="${esc(url)}" target="_blank">${esc(url.replace(/^https?:\/\//, ''))}</a>
+    ${S.status === 'live' ? qrSvg(url, { dark: '#000', light: '#fff', label: url }) : ''}
+    <div class="grid2"><a class="go ink" href="${esc(url)}" target="_blank">${icon('globe')}${T('open')}</a>
+      <button class="go" id="sh">${icon('share')}${T('share')}</button>
+      <a class="go line" href="${esc(lineShare((S.d.name || S.name) + ' ' + url))}" target="_blank">${icon('chat')}LINE</a>
+      <a class="go ghost" href="${esc(url)}/sign" target="_blank">${icon('print')}${T('sign')}</a></div>
+    <div class="key"><b>${T('editLink')}</b><br>${T('editHint')}<code>${esc(edit)}</code>
+      <div class="grid2"><a class="go line" href="${esc(lineShare(edit))}" target="_blank">${icon('chat')}${T('sendSelf')}</a><button class="go ghost" id="cpedit">${T('copy')}</button></div></div>
+    <p style="text-align:center"><button class="back" id="closesheet">${T('edit')}</button></p></div>`
+  document.body.appendChild(box)
+  box.querySelector('#closesheet').onclick = () => box.remove()
+  box.addEventListener('click', (e) => { if (e.target === box) box.remove() })
+  box.querySelector('#sh').onclick = () => (navigator.share ? navigator.share({ title: S.d.name, url }).catch(() => {}) : copy(url))
+  box.querySelector('#cpedit').onclick = () => copy(edit)
+}
+
+function copy(t) {
+  (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => toast(ui(S.lang, 'copied')), () => prompt('', t))
+}
+
+async function del() {
+  if (!confirm(ui(S.lang, 'delAsk'))) return
+  try {
+    await call('DELETE', 'site')
+    store.set('pages', store.get('pages', []).filter((p) => p.token !== S.token))
+    location.href = '/~/make'
+  } catch { toast(ui(S.lang, 'e_net')) }
+}
+
+let toastTimer = 0
+function toast(msg) {
+  let t = $('.toast')
+  if (!t) { t = document.createElement('div'); t.className = 'toast'; document.body.appendChild(t) }
+  t.textContent = msg
+  clearTimeout(toastTimer)
+  toastTimer = setTimeout(() => t.remove(), 2600)
+}
+
+// ---- start -------------------------------------------------------------------------------
+
+async function boot() {
+  const h = new URLSearchParams(location.hash.slice(1))
+  const t = h.get('t')
+  if (t) {
+    S.token = t
+    try {
+      const r = await call('GET', 'site')
+      Object.assign(S, { name: r.name, kind: r.kind, look: r.look, pageLang: r.lang, status: r.status, views: r.views, d: normalize(r.d), step: 'edit' })
+      S.d.event = S.d.event || undefined
+      S.open = new Set(DEFAULT_OPEN[S.kind])
+      remember()
+    } catch (e) {
+      S.token = ''
+      history.replaceState(null, '', '/~/make')
+      if (e.status === 403) store.set('pages', store.get('pages', []).filter((p) => p.token !== t))
+      S.step = 'kind'
+      draw()
+      toast(ui(S.lang, e.status === 403 ? 'e_link' : 'e_net'))
+      return
+    }
+  } else if (h.get('name')) {
+    S.addr = h.get('name').toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 30)
+    S.addrTouched = true
+  }
+  draw()
+}
+window.addEventListener('hashchange', boot)
+window.addEventListener('resize', () => preview())
+boot()
