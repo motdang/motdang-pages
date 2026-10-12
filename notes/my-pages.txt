@@ -13,7 +13,7 @@ Also: open now from the hours, event countdown and calendar file, save contact, 
 
 The edit link is the sign-in. The builder offers to send it to your own LINE.
 Check bot: rules and Llama Guard on the words, a vision model on each photo. Nudity, sex and gore are refused. Three reports hold a page.
-Running cost: Workers AI pennies per page; world map tiles about US$2 a month on R2 (tiles/world.pmtiles).
+Running cost: Workers AI pennies per page; the world map (tiles/world.pmtiles, 139 GB) about US$2 a month on R2. The live map and map pictures work in any country.
 
 Code: /Users/annikapeacock/Developer/claude code projects/motdang-pages
 Forks: QUEUE.txt C179–C185.
