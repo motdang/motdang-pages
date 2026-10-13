@@ -1,19 +1,26 @@
-MAKE YOUR OWN PAGE — motdang.net/~
+MAKE YOUR OWN PAGE — sites.motdang.net (moved from motdang.net/~ on 2026-10-13)
 
-Make one: https://motdang.net/~/make
-Every page: https://motdang.net/~/
-Held and reported pages: https://motdang.net/~/admin (any user name; password: ~/.claude/bin/token get MOTDANG_PAGES_ADMIN)
+Front page: https://sites.motdang.net/
+Make one: https://sites.motdang.net/make
+Every page: https://sites.motdang.net/all
+Held pages, reported pages, held photos, Gold slips: https://sites.motdang.net/admin (any user name; password: ~/.claude/bin/token get MOTDANG_PAGES_ADMIN)
 
-A page lives at motdang.net/~name. Six kinds (shop, food, service, me, event, group), seven looks (Poster, Loom, Stitch, Night market, 1997, Clean, Lanna gold), a colour, and a visit counter. Builder in Thai, English, Burmese and Chinese; page labels in 12 languages.
+A page lives at sites.motdang.net/name. The old motdang.net/~name links redirect there. Six kinds, nine looks (two of them Gold), builder in Thai, English, Burmese and Chinese, page labels in 12 languages.
 
-LINE: add-friend button, LINE QR (green on dark blue), send on LINE, order on LINE from the menu (shop LINE Official Accounts), LINE MAN link.
-Grab: ride here and GrabFood, in Grab's 8 countries only.
-Map: pin from where I am, a pasted Google/Apple/OSM link, or a photo's GPS; the map picture on the page; full-screen live map; how far from me; Google and Apple directions.
-Also: open now from the hours, event countdown and calendar file, save contact, printable A4 sign with QR codes, share card for LINE and Facebook.
+What a page carries
+- Its place drawn by Mot Dang's auto-doodler from the page's name, kind and hours, lit by the sun where the pin is; the maker picks the scene (noodle shop, café, massage, market …). A tap turns it to morning, evening, night.
+- The drawn map: the doodle-map engine on the world tiles, any country, the pin in the middle; in the north it draws Mot Dang's places around it. A tap opens it to the whole screen.
+- Moving dingbats beside the name (the maker picks up to six) and beside each heading.
+- LINE add, LINE QR, order from the menu on LINE, LINE MAN, GrabFood, Grab ride in Grab's 8 countries, Google and Apple directions, how far, hours with open now, event countdown and calendar file, save contact, printable A4 sign.
+- A message form. Messages wait in the builder's Messages tab; a copy goes by email when the maker confirms an address (25 a page a day, 90 in all, from pages@motdang.net through Resend).
+- Share to LINE, Facebook, WhatsApp, X, Telegram, email; a QR to save; a 1080×1920 picture for a story; a share card.
+- Free pictures: public domain and CC0 from Wikimedia Commons, the Cleveland Museum of Art and Openverse. The credit is read again at the source and printed under the picture and in a Pictures list.
 
-The edit link is the sign-in. The builder offers to send it to your own LINE.
-Check bot: rules and Llama Guard on the words, a vision model on each photo. Nudity, sex and gore are refused. Three reports hold a page.
-Running cost: Workers AI pennies per page; the world map (tiles/world.pmtiles, 139 GB) about US$2 a month on R2. The live map and map pictures work in any country.
+The builder's tabs: Page, Messages, Traffic (people a day, visits, button taps, where people came from, countries, devices, hours; machines counted apart), Gold.
+
+Gold, ฿3,000 a year: Gold leaf and Riso looks, the page open to search engines, 48 photos and a video, the maker's own places on the drawn map, a year of traffic with a CSV, first with a star in /all, no red Made on Mot Dang button. Paid by PromptPay to your phone; the amount ends in a satang tail that names the payment. The slip waits at /admin until SlipOK keys are set (then it is checked on arrival). The price is GOLD_THB in wrangler.toml.
+
+Into Mot Dang: sites.motdang.net/feed.json and /api/find. A page whose pin matches a Mot Dang place fills that record's missing phone, LINE, hours and menu and puts a "Their own page" button on it (mot-dang 8bc56e2499, rides the walk). /find asks sites.motdang.net beside its index once the site Worker is deployed (QUEUE A).
 
 Code: /Users/annikapeacock/Developer/claude code projects/motdang-pages
-Forks: QUEUE.txt C179–C185.
+Forks: QUEUE.txt C179–C181, C183, C185, C190–C192.
