@@ -239,7 +239,7 @@ function goldTease() {
 }
 
 // A place page on motdang.net sends what its record holds in the hash: pin=lat,lng  tel=  ad=  cc=
-// hrs=Sunday..Saturday joined by '.', a day = '0900-1800' (ranges joined by ','), 'x' = closed, 'a' = always.
+// hrs=Monday..Sunday joined by '.', a day = '0900-1800' (ranges joined by ','), 'x' = closed, 'a' = always.
 function prefill(h) {
   const pre = {}
   const m = /^(-?\d{1,2}(?:\.\d+)?),(-?\d{1,3}(?:\.\d+)?)$/.exec(h.get('pin') || '')
