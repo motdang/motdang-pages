@@ -1,8 +1,10 @@
 // make.js — the builder. Three questions (what for, what name, which look),
 // then one form with the page itself beside it. Every change saves on its
-// own; "Put it online" is the only button that matters.
+// own; "Put it online" is the only button that matters. Beside the page:
+// its messages, its traffic, and Gold.
 
-import { render, normalize, LOOKS, LOOK_IDS, KINDS, ACCENTS, CURRENCY, currencyFor, qrSvg, lineShare, esc } from './render.mjs'
+import { render, normalize, LOOKS, LOOK_IDS, GOLD_LOOKS, KINDS, ACCENTS, CURRENCY, SCENES, MAX_PHOTOS, osmHours, currencyFor, qrSvg, lineShare, esc } from './render.mjs'
+import { DINGBATS } from './db/names.mjs'
 import { PAGE_LANGS } from './words.mjs'
 import { ui, UI_LANGS } from './make-words.mjs'
 import { exifBlock, readExif } from './exif.mjs'
@@ -13,7 +15,7 @@ const store = {
   get(k, d) { try { const v = localStorage.getItem('mdp:' + k); return v === null ? d : JSON.parse(v) } catch { return d } },
   set(k, v) { try { localStorage.setItem('mdp:' + k, JSON.stringify(v)) } catch {} },
 }
-const icon = (id) => `<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><use href="/~/s/icons.svg#i-${id}"/></svg>`
+const icon = (id) => `<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><use href="/s/icons.svg#i-${id}"/></svg>`
 const KIND_ICON = { shop: 'shop', food: 'food', service: 'gear', me: 'me', event: 'party', group: 'people' }
 const TZ = (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone } catch { return 'Asia/Bangkok' } })()
 
@@ -21,7 +23,25 @@ const S = {
   lang: store.get('lang', (() => { const l = (navigator.language || 'th').slice(0, 2); return UI_LANGS[l] ? l : 'th' })()),
   step: 'kind', kind: 'shop', name: '', addr: '', addrTouched: false, look: 'poster', token: '', status: 'draft', views: 0,
   pageLang: '', d: null, open: new Set(), local: new Map(), photoGps: null, picker: null, busy: 0,
+  tab: 'edit', tier: 'free', goldUntil: '', notifyEmail: '', notifyOk: false, unread: 0,
 }
+const isGold = () => S.tier === 'gold'
+const ding = (n, look = 'ink', play = 'loop') => `<i data-dingbat="${n}" data-look="${look}" data-play="${play}" aria-hidden="true"></i>`
+// the families the builder's own dingbats need, loaded once
+let dbReady = null
+function dingbats(fams) {
+  const add = (src) => new Promise((ok) => { const s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = ok; document.head.appendChild(s) })
+  dbReady = (dbReady || add('/s/db/core.js')).then(() => Promise.all([...new Set(fams)].map((f) => (dingbats.loaded.has(f) ? null : (dingbats.loaded.add(f), add('/s/db/' + f + '.js'))))))
+  return dbReady
+}
+dingbats.loaded = new Set()
+dingbats(['signals', 'classic', 'kitchen', 'faces', 'lanna'])
+const KIND_DING = { shop: 'cart', food: 'noodles', service: 'gear', me: 'wave', event: 'party', group: 'crown' }
+// the dingbats a maker can put beside the name: a handful from each family
+const DING_PICKS = ['lantern', 'naga', 'lotus', 'krathong', 'elephant', 'tuk-tuk', 'scooter', 'khao-soi', 'mango-rice', 'cha-yen', 'chili', 'frangipani', 'gecko', 'soi-dog',
+  'coffee', 'noodles', 'bubble-tea', 'cake', 'dumplings', 'cocktail', 'beer', 'ice-cream', 'heart', 'star', 'sparkle', 'sun', 'flower', 'crown', 'note', 'scissors',
+  'smile', 'wai', 'party', 'cool', 'heart-eyes', 'rock-on', 'butterfly', 'cat', 'leaf', 'rainbow', 'moon', 'koi', 'owl', 'bee', 'rocket', 'balloon', 'gift', 'camera',
+  'string-lights', 'bunting', 'lai-kham'].filter((n) => DINGBATS[n])
 const T = (k) => esc(ui(S.lang, k))
 
 // ---- starting data per kind ---------------------------------------------------------
@@ -122,7 +142,7 @@ async function call(method, path, body, isForm) {
   const h = {}
   if (S.token) h['x-edit'] = S.token
   if (body && !isForm) h['content-type'] = 'application/json'
-  const r = await fetch('/~/api/' + path, { method, headers: h, body: isForm ? body : body ? JSON.stringify(body) : undefined })
+  const r = await fetch('/api/' + path, { method, headers: h, body: isForm ? body : body ? JSON.stringify(body) : undefined })
   let j = {}
   try { j = await r.json() } catch {}
   if (!r.ok) throw Object.assign(new Error(j.error || 'http-' + r.status), { status: r.status, why: j.why })
@@ -159,8 +179,9 @@ function draw() {
 
 function drawKind() {
   const mine = store.get('pages', [])
-  app.innerHTML = (mine.length ? `<section class="mine"><h2>${T('mine')}</h2>${mine.map((p) => `<a href="/~/make#t=${esc(p.token)}">${esc(p.title)}<span>motdang.net/~${esc(p.name)}</span></a>`).join('')}</section>` : '') +
-    `<h1 class="q">${T('q1')}</h1><div class="kinds">${KINDS.map((k) => `<button class="kind" data-kind="${k}">${icon(KIND_ICON[k])}<b>${T('k_' + k)}</b><small>${T('h_' + k)}</small></button>`).join('')}</div>`
+  app.innerHTML = `<section class="hero"><h1 class="q">${T('q1')}</h1><p class="sub">${T('heroMake')}</p></section>` +
+    `<div class="kinds">${KINDS.map((k) => `<button class="kind" data-kind="${k}"><span class="kd">${ding(KIND_DING[k], 'paper', 'hover')}</span><b>${T('k_' + k)}</b><small>${T('h_' + k)}</small></button>`).join('')}</div>` +
+    (mine.length ? `<section class="mine"><h2>${T('mine')}</h2>${mine.map((p) => `<a href="/make#t=${esc(p.token)}">${esc(p.title)}<span>sites.motdang.net/${esc(p.name)}</span></a>`).join('')}</section>` : '')
   app.querySelectorAll('.kind').forEach((b) => (b.onclick = () => { S.kind = b.dataset.kind; S.look = LOOK_FOR[S.kind]; S.step = 'name'; draw() }))
   app.querySelectorAll('.mine a').forEach((a) => (a.onclick = (e) => { e.preventDefault(); history.replaceState(null, '', a.getAttribute('href')); boot() }))
 }
@@ -169,7 +190,7 @@ let availTimer = 0, availOk = false
 function drawName() {
   app.innerHTML = `<button class="back" id="back">← ${T('back')}</button><h1 class="q">${T('q2')}</h1>
   <label class="field big"><span>${T('name')}</span><input id="nm" maxlength="60" autocomplete="off" value="${esc(S.name)}"></label>
-  <label class="field"><span>${T('addr')}</span><div class="addr"><span>motdang.net/~</span><input id="ad" maxlength="30" autocomplete="off" autocapitalize="off" spellcheck="false" inputmode="url" value="${esc(S.addr)}"></div>
+  <label class="field"><span>${T('addr')}</span><div class="addr"><span>sites.motdang.net/</span><input id="ad" maxlength="30" autocomplete="off" autocapitalize="off" spellcheck="false" inputmode="url" value="${esc(S.addr)}"></div>
   <small>${T('addrHint')}</small><span class="avail" id="av"></span></label>
   <div class="row"><button class="go" id="next" disabled>${T('next')} →</button></div>`
   const nm = $('#nm'), ad = $('#ad')
@@ -202,26 +223,31 @@ function check() {
 function lookCard(id, on) {
   const L = LOOKS[id]
   const vars = L.vars.replace(/\s+/g, ' ') + `;--accent:${L.accent}`
-  return `<button class="look${on ? ' on' : ''}" data-look="${id}" style="${esc(vars)}">${L.art}<b>${esc(S.name || L.label)}</b><small>${esc(L.label)}</small><span class="acc"></span></button>`
+  const locked = L.gold && !isGold()
+  return `<button class="look${on ? ' on' : ''}${L.gold ? ' goldlook' : ''}" data-look="${id}" style="${esc(vars)}">${L.art}<b>${esc(S.d?.name || S.name || L.label)}</b><small>${esc(L.label)}</small><span class="acc"></span>${L.gold ? `<span class="glock">${locked ? T('goldLock') : '★'}</span>` : ''}</button>`
 }
 
 function drawLook() {
   app.innerHTML = `<button class="back" id="back">← ${T('back')}</button><h1 class="q">${T('q3')}</h1>
   <div class="looks">${LOOK_IDS.map((id) => lookCard(id, id === S.look)).join('')}</div>`
   $('#back').onclick = () => { S.step = 'name'; draw() }
-  app.querySelectorAll('.look').forEach((b) => (b.onclick = () => create(b.dataset.look, b)))
+  app.querySelectorAll('.look').forEach((b) => (b.onclick = () => (LOOKS[b.dataset.look].gold ? goldTease() : create(b.dataset.look, b))))
+}
+
+function goldTease() {
+  toast(ui(S.lang, 'goldLock') + ' ★')
 }
 
 async function create(look, btn) {
   S.look = look
   btn.classList.add('on')
-  S.d = starter(S.kind)
-  S.d.name = S.name.trim()
+  S.d = normalize({ ...starter(S.kind), name: S.name.trim() })
+  if (S.kind === 'event') S.d.event = starter('event').event
   S.pageLang = PAGE_LANGS[S.lang] ? S.lang : 'en'
   try {
     const r = await call('POST', 'sites', { name: S.addr, kind: S.kind, look, lang: S.pageLang, d: S.d })
     S.token = r.token; S.name = r.name; S.status = r.status
-    history.replaceState(null, '', '/~/make#t=' + S.token)
+    history.replaceState(null, '', '/make#t=' + S.token)
     remember()
     S.open = new Set(DEFAULT_OPEN[S.kind])
     S.step = 'edit'
@@ -235,34 +261,45 @@ async function create(look, btn) {
 // ---- the editor ------------------------------------------------------------------------
 
 const SECTIONS = [
-  ['event', 'cal', 's_event'], ['words', 'note', 's_words'], ['photos', 'camera', 's_photos'], ['items', 'tag', 's_items'],
+  ['event', 'cal', 's_event'], ['words', 'note', 's_words'], ['drawing', 'sparkle', 's_drawing'], ['photos', 'camera', 's_photos'], ['items', 'tag', 's_items'],
   ['order', 'basket', 's_order'], ['contact', 'phone', 's_contact'], ['map', 'pin', 's_map'], ['hours', 'clock', 's_hours'],
-  ['links', 'link', 's_links'], ['look', 'sparkle', 's_look'],
+  ['links', 'link', 's_links'], ['msg', 'mail', 's_msg'], ['look', 'star', 's_look'], ['video', 'camera', 's_video', 'gold'], ['spots', 'compass', 's_spots', 'gold'],
 ]
 
 function hasData(id) {
   const d = S.d
-  return { event: !!d.event, words: true, photos: d.photos.length > 0, items: d.items.length > 0, order: !!(d.order.grabfood || d.order.lineman),
-    contact: Object.values(d.contact).some(Boolean), map: d.place.lat !== null || !!d.place.addr, hours: d.hours.on, links: d.links.length > 0, look: true }[id]
+  return { event: !!d.event, words: true, drawing: true, photos: d.photos.length > 0, items: d.items.length > 0, order: !!(d.order.grabfood || d.order.lineman),
+    contact: Object.values(d.contact).some(Boolean), map: d.place.lat !== null || !!d.place.addr, hours: d.hours.on, links: d.links.length > 0, msg: true, look: true,
+    video: !!d.video, spots: d.spots.length > 0 }[id]
+}
+
+function tabs() {
+  const t = (id, label, extra = '') => `<button data-tab="${id}"${S.tab === id ? ' class="on"' : ''}>${label}${extra}</button>`
+  return `<nav class="tabs">${t('edit', T('t_edit'))}${t('msgs', T('t_msgs'), S.unread ? `<span class="dot">${S.unread}</span>` : '')}${t('stats', T('t_stats'))}${t('gold', (isGold() ? '★ ' : '') + T('t_gold'))}</nav>`
 }
 
 function drawEdit() {
+  if (S.tab !== 'edit') return drawTab()
   for (const [id] of SECTIONS) if (hasData(id)) S.open.add(id)
-  S.open.add('look')
+  S.open.add('look'); S.open.add('drawing'); S.open.add('msg')
   const shown = SECTIONS.filter(([id]) => S.open.has(id))
   const more = SECTIONS.filter(([id]) => !S.open.has(id))
-  app.innerHTML = `<div class="ed"><div class="form" id="form">
-    ${shown.map(([id, ic, t], n) => `<details class="sec" data-sec="${id}"${n < 3 || id === 'map' ? ' open' : ''}><summary>${icon(ic)}${T(t)}</summary><div class="in">${SEC[id]()}</div></details>`).join('')}
-    ${more.length ? `<div class="adds">${more.map(([id, ic, t]) => `<button data-add="${id}">${icon('plus')}${T(t)}</button>`).join('')}</div>` : ''}
+  app.innerHTML = tabs() + `<div class="ed"><div class="form" id="form">
+    ${shown.map(([id, ic, t, g], n) => `<details class="sec${g ? ' gsec' : ''}" data-sec="${id}"${n < 3 || id === 'map' ? ' open' : ''}><summary>${icon(ic)}${T(t)}${g ? `<span class="gpill">★ ${T('t_gold')}</span>` : ''}</summary><div class="in">${g && !isGold() ? goldLocked() : SEC[id]()}</div></details>`).join('')}
+    ${more.length ? `<div class="adds">${more.map(([id, ic, t, g]) => `<button data-add="${id}"${g ? ' class="g"' : ''}>${icon('plus')}${T(t)}${g ? ' ★' : ''}</button>`).join('')}</div>` : ''}
     <div class="danger"><button id="del">${T('del')}</button></div></div>
-    <div class="pv" id="pv"><div class="url">${icon('globe')}motdang.net/~${esc(S.name)}</div><iframe id="frame" title="${T('preview')}"></iframe></div></div>
+    <div class="pv" id="pv"><div class="url">${icon('globe')}sites.motdang.net/${esc(S.name)}</div><iframe id="frame" title="${T('preview')}"></iframe></div></div>
     <div class="dock"><span class="state" id="state">${stateText()}</span>
       <button class="go ghost pvbtn" id="pvbtn">${icon('globe')}${T('preview')}</button>
       <button class="go red" id="pub">${S.status === 'live' ? T('share') : T('publish')}</button></div>`
+  bindTabs()
   bindEdit()
   preview()
   if (S.open.has('map') && $('[data-sec=map]')?.open) mountMap()
+  if ($('[data-sec=drawing]')?.open) mountDrawing()
 }
+
+const goldLocked = () => `<p class="glocked">${T('goldLock')}. <button class="linkbtn" data-tab="gold">${T('goldOpen')} →</button></p>`
 
 const val = (v) => esc(v ?? '')
 const field = (k, label, v, type = 'text', extra = '') => `<label class="field"><span>${label}</span><input type="${type}" data-k="${k}" value="${val(v)}" ${extra}></label>`
@@ -272,11 +309,21 @@ const SEC = {
     return field('name', T('name'), S.d.name, 'text', 'maxlength="60"') + field('tagline', T('tagline'), S.d.tagline, 'text', 'maxlength="140"') +
       `<label class="field"><span>${T('about')}</span><textarea data-k="about" maxlength="2400">${val(S.d.about)}</textarea></label>`
   },
+  drawing() {
+    const list = SCENES[S.kind] || SCENES.shop
+    const cur = S.d.scene || list[0][0]
+    const th = S.lang === 'th'
+    return `<label class="check"><input type="checkbox" class="sw" data-k="drawing" ${S.d.drawing ? 'checked' : ''}>${T('drawingOn')}</label>
+      <div ${S.d.drawing ? '' : 'hidden'}><div class="drawpv"><canvas id="drawpv"></canvas></div><p class="hint">${T('drawingHint')}</p>
+      <div class="scenes">${list.map(([id, t, e]) => `<button data-scene="${id}"${id === cur ? ' class="on"' : ''}>${esc(th ? t : e)}</button>`).join('')}</div></div>`
+  },
   photos() {
-    return `<div class="photos">${S.d.photos.map((id) => `<div class="ph${id === S.d.cover ? ' cover' : ''}" data-ph="${id}"><img src="${esc(imgUrl(id, true))}" alt="">${id === S.d.cover ? `<span class="flag">${T('cover')}</span>` : ''}
+    const max = isGold() ? MAX_PHOTOS.gold : MAX_PHOTOS.free
+    return `<div class="photos">${S.d.photos.map((id) => `<div class="ph${id === S.d.cover ? ' cover' : ''}" data-ph="${id}"><img src="${esc(imgUrl(id, true))}" alt="">${id === S.d.cover ? `<span class="flag">${T('cover')}</span>` : ''}${S.d.credits?.[id] ? '<span class="pdf">PD</span>' : ''}
       <div class="tools">${id !== S.d.cover ? `<button data-cover="${id}">${T('makeCover')}</button>` : ''}<button data-rm="${id}">${T('remove')}</button></div></div>`).join('')}
       ${Array.from({ length: S.busy }, () => '<div class="ph"><div class="busy">…</div></div>').join('')}</div>
-      ${S.d.photos.length < 12 ? `<label class="pick">${icon('camera')}${T('addPhotos')}<input type="file" accept="image/*" multiple id="files"></label>` : ''}`
+      ${S.d.photos.length < max ? `<div class="row2"><label class="pick">${icon('camera')}${T('addPhotos')}<input type="file" accept="image/*" multiple id="files"></label>
+      <button class="pick pdpick" id="pdopen">${ding('sparkle', 'riso')}${T('pdBtn')}</button></div>` : ''}`
   },
   items() {
     const cur = S.d.currency || currencyFor(S.d.place.cc, S.pageLang)
@@ -332,12 +379,31 @@ const SEC = {
     const e = S.d.event || { start: '', end: '' }
     return field('event.start', T('starts'), e.start, 'datetime-local') + field('event.end', T('ends'), e.end, 'datetime-local')
   },
+  msg() {
+    const state = S.notifyEmail ? (S.notifyOk ? `<p class="pinstate ok">${icon('check')}${esc(ui(S.lang, 'notifyOk').replace('{e}', S.notifyEmail))}</p>` : `<p class="pinstate">${icon('mail')}${T('notifyWait')} · ${esc(S.notifyEmail)}</p>`) : ''
+    return `<label class="check"><input type="checkbox" class="sw" data-k="msg" ${S.d.msg ? 'checked' : ''}>${T('msgOn')}</label>
+      <div ${S.d.msg ? '' : 'hidden'}><label class="field"><span>${T('notifyEmail')}</span><div class="row"><input id="nmail" type="email" autocomplete="email" value="${val(S.notifyEmail)}" style="flex:1;min-width:200px"><button class="go ghost" id="nmailgo">${T('notifyGo')}</button></div></label>
+      ${state}${S.notifyEmail ? `<button class="back" id="nmailoff">× ${T('notifyOff')}</button>` : ''}</div>`
+  },
   look() {
     const acc = S.d.accent || LOOKS[S.look].accent
     return `<div class="lookrow">${LOOK_IDS.map((id) => lookCard(id, id === S.look)).join('')}</div>
       <div><b>${T('colour')}</b><div class="swatches">${[LOOKS[S.look].accent, ...ACCENTS.filter((a) => a !== LOOKS[S.look].accent)].map((a) => `<button data-acc="${a}" style="background:${a}"${a === acc ? ' class="on"' : ''} aria-label="${a}"></button>`).join('')}</div></div>
+      <div><b>${T('s_dings')}</b><p class="hint">${T('dingsHint')}</p><div class="dpick">${DING_PICKS.map((n) => `<button data-ding="${n}"${S.d.dings.includes(n) ? ' class="on"' : ''} aria-label="${n}">${ding(n, 'ink', 'hover')}</button>`).join('')}</div></div>
       <label class="check"><input type="checkbox" class="sw" data-k="counter" ${S.d.counter ? 'checked' : ''}>${T('counter')}</label>
       <label class="field"><span>${T('pageLang')}</span><select id="plang">${Object.entries(PAGE_LANGS).map(([k, v]) => `<option value="${k}"${k === S.pageLang ? ' selected' : ''}>${esc(v)}</option>`).join('')}</select></label>`
+  },
+  video() {
+    const v = S.d.video
+    const shown = v ? (v.kind === 'youtube' ? 'https://youtu.be/' + v.id : 'https://vimeo.com/' + v.id) : ''
+    return field('video', T('videoUrl'), shown, 'url', 'placeholder="https://youtu.be/…"')
+  },
+  spots() {
+    return `<p class="hint">${T('spotsHint')}</p><div class="items">${S.d.spots.map((x, i) => `<div class="it"><input data-k="spots.${i}.n" placeholder="${T('spotName')}" value="${val(x.n)}" maxlength="60">
+      <span class="ll">${x.lat.toFixed(4)}, ${x.lng.toFixed(4)}</span><button class="x" data-rmspot="${i}" aria-label="${T('remove')}">×</button>
+      <input data-k="spots.${i}.note" placeholder="${T('spotNote')}" value="${val(x.note)}" maxlength="160"></div>`).join('')}</div>
+      ${S.d.spots.length < 20 ? `<div class="row"><input id="spotlink" type="url" placeholder="${T('spotPaste')}" style="flex:1;min-width:200px"><button class="go ghost" id="spotadd">${icon('plus')}${T('spotAdd')}</button></div>
+      <p class="hint">${T('spotHere')}: <button class="linkbtn" id="spothere">${icon('pin')}${T('spotAdd')}</button></p>` : ''}`
   },
 }
 
@@ -361,6 +427,10 @@ function setPath(o, path, v) {
   x[ks.at(-1)] = v
 }
 
+function bindTabs() {
+  app.querySelectorAll('[data-tab]').forEach((b) => (b.onclick = (e) => { e.preventDefault(); S.tab = b.dataset.tab; draw(); window.scrollTo(0, 0) }))
+}
+
 function bindEdit() {
   const form = $('#form')
   form.addEventListener('input', (e) => {
@@ -370,6 +440,9 @@ function bindEdit() {
     if (k === 'event.start' || k === 'event.end') { S.d.event = S.d.event || { start: '', end: '', tz: TZ }; S.d.event.tz = TZ }
     setPath(S.d, k, v)
     if (k === 'hours.on' || k === 'hours.always' || k === 'place.cc') redrawSec(k.split('.')[0] === 'place' ? 'items' : 'hours')
+    if (k === 'drawing') { redrawSec('drawing') }
+    if (k === 'msg') redrawSec('msg')
+    if (k === 'name' || k.startsWith('hours')) drawPreviewSoon()
     changed()
   })
   form.addEventListener('change', (e) => {
@@ -386,22 +459,47 @@ function bindEdit() {
   form.addEventListener('click', (e) => {
     const b = e.target.closest('button')
     if (!b) return
-    if (b.dataset.add) { e.preventDefault(); S.open.add(b.dataset.add); if (b.dataset.add === 'event' && !S.d.event) S.d.event = starter('event').event; if (b.dataset.add === 'hours') S.d.hours.on = true; drawEdit(); const sec = $(`[data-sec="${b.dataset.add}"]`); sec.open = true; sec.scrollIntoView({ behavior: 'smooth', block: 'start' }); if (b.dataset.add === 'map') mountMap(); changed(); return }
+    if (b.dataset.tab) { e.preventDefault(); S.tab = b.dataset.tab; draw(); return }
+    if (b.dataset.add) {
+      e.preventDefault(); S.open.add(b.dataset.add)
+      if (b.dataset.add === 'event' && !S.d.event) S.d.event = starter('event').event
+      if (b.dataset.add === 'hours') S.d.hours.on = true
+      drawEdit(); const sec = $(`[data-sec="${b.dataset.add}"]`); sec.open = true; sec.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      if (b.dataset.add === 'map') mountMap()
+      changed(); return
+    }
     if (b.dataset.cover) { S.d.cover = b.dataset.cover; redrawSec('photos'); changed() }
     if (b.dataset.rm) { S.d.photos = S.d.photos.filter((x) => x !== b.dataset.rm); if (S.d.cover === b.dataset.rm) S.d.cover = S.d.photos[0] || ''; redrawSec('photos'); changed() }
     if (b.id === 'additem') { S.d.items.push({ n: '', p: '', note: '' }); redrawSec('items'); $(`[data-k="items.${S.d.items.length - 1}.n"]`).focus() }
     if (b.dataset.rmitem) { S.d.items.splice(+b.dataset.rmitem, 1); redrawSec('items'); changed() }
     if (b.id === 'addlink') { S.d.links.push({ t: '', u: '' }); redrawSec('links'); $(`[data-k="links.${S.d.links.length - 1}.t"]`).focus() }
     if (b.dataset.rmlink) { S.d.links.splice(+b.dataset.rmlink, 1); redrawSec('links'); changed() }
-    if (b.dataset.look) { S.look = b.dataset.look; S.d.accent = ''; redrawSec('look'); changed() }
+    if (b.dataset.look) { if (LOOKS[b.dataset.look].gold && !isGold()) { S.tab = 'gold'; draw(); return } S.look = b.dataset.look; S.d.accent = ''; redrawSec('look'); changed() }
     if (b.dataset.acc) { S.d.accent = b.dataset.acc === LOOKS[S.look].accent ? '' : b.dataset.acc; redrawSec('look'); changed() }
+    if (b.dataset.ding) {
+      const n = b.dataset.ding
+      S.d.dings = S.d.dings.includes(n) ? S.d.dings.filter((x) => x !== n) : [...S.d.dings, n].slice(-6)
+      app.querySelectorAll('[data-ding]').forEach((x) => x.classList.toggle('on', S.d.dings.includes(x.dataset.ding)))
+      changed()
+    }
+    if (b.dataset.scene) { S.d.scene = b.dataset.scene; app.querySelectorAll('[data-scene]').forEach((x) => x.classList.toggle('on', x === b)); drawPreviewSoon(); changed() }
     if (b.id === 'sameall') { const r = S.d.hours.week.find(Boolean) || [['09:00', '18:00']]; S.d.hours.week = S.d.hours.week.map(() => r.map((x) => [...x])); redrawSec('hours'); changed() }
     if (b.id === 'here') here()
     if (b.id === 'photopin' && S.photoGps) setPin(S.photoGps.lat, S.photoGps.lng, 18)
     if (b.id === 'pastego') pasteLink()
     if (b.id === 'clearpin') { S.d.place.lat = S.d.place.lng = null; S.d.place.snap = ''; redrawSec('map'); changed() }
+    if (b.id === 'pdopen') pdSheet()
+    if (b.id === 'nmailgo') notifyOn()
+    if (b.id === 'nmailoff') notifyOff()
+    if (b.id === 'spotadd') spotFromLink()
+    if (b.id === 'spothere') spotHere()
+    if (b.dataset.rmspot) { S.d.spots.splice(+b.dataset.rmspot, 1); redrawSec('spots'); changed() }
   })
-  form.addEventListener('toggle', (e) => { if (e.target.dataset?.sec === 'map' && e.target.open) mountMap() }, true)
+  form.addEventListener('toggle', (e) => {
+    if (e.target.dataset?.sec === 'map' && e.target.open) mountMap()
+    if (e.target.dataset?.sec === 'drawing' && e.target.open) mountDrawing()
+  }, true)
+  form.addEventListener('change', (e) => { if (e.target.dataset.k === 'video') { S.d.video = e.target.value; changed() } })
   $('#del').onclick = del
   $('#pub').onclick = publish
   $('#pvbtn').onclick = () => { $('#pv').classList.add('show'); document.body.classList.add('pvopen'); preview(true) }
@@ -411,13 +509,44 @@ function bindEdit() {
 function redrawSec(id) {
   const sec = $(`[data-sec="${id}"] .in`)
   if (!sec) return
-  sec.innerHTML = SEC[id]()
+  const g = SECTIONS.find((x) => x[0] === id)?.[3]
+  sec.innerHTML = g && !isGold() ? goldLocked() : SEC[id]()
   if (id === 'map') { S.picker = null; mountMap() }
+  if (id === 'drawing') { drawCv = null; mountDrawing() }
 }
+
+// ---- the drawing preview in the editor ----------------------------------------------------
+
+let drawCv = null, drawLoad = null, drawRaf = 0
+function mountDrawing() {
+  const cv = $('#drawpv')
+  if (!cv || !S.d.drawing) return
+  drawCv = cv
+  const add = (src) => new Promise((ok, no) => { const s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = no; document.head.appendChild(s) })
+  drawLoad = drawLoad || add('/front/skyline.js').then(() => add('/front/doodler.js')).then(() => addEventListener('mddoodler', () => paintDrawing(performance.now())))
+  drawLoad.then(() => {
+    cancelAnimationFrame(drawRaf)
+    const loop = (t) => { if (!drawCv || !drawCv.isConnected) return; paintDrawing(t); drawRaf = requestAnimationFrame(loop) }
+    drawRaf = requestAnimationFrame(loop)
+  }).catch(() => {})
+}
+let lastDraw = 0
+function paintDrawing(t) {
+  const D = window.MDDOODLER, cv = drawCv
+  if (!D || !cv || t - lastDraw < 40) return
+  lastDraw = t
+  const dpr = Math.min(2, devicePixelRatio || 1), W = cv.clientWidth, H = cv.clientHeight
+  if (cv.width !== Math.round(W * dpr)) { cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr) }
+  const c = cv.getContext('2d'); c.setTransform(dpr, 0, 0, dpr, 0, 0); c.clearRect(0, 0, W, H)
+  const set = S.d.scene || (SCENES[S.kind] || SCENES.shop)[0][0]
+  const p = S.d.place
+  try { D.portrait(c, W, H, t, { set, place: { id: S.name, name: S.d.name || S.name, nameTh: S.d.name, nameEn: S.d.name, cat: S.kind, sub: [set], hours: osmHours(S.d.hours) || undefined, lat: p.lat ?? undefined, lng: p.lng ?? undefined } }) } catch {}
+}
+function drawPreviewSoon() { lastDraw = 0 }
 
 // ---- preview + saving ----------------------------------------------------------------------
 
-function imgUrl(id, small) { return S.local.get(id) || `/~/img/${id}${small ? '-s' : ''}.webp` }
+function imgUrl(id, small) { return S.local.get(id) || `/img/${id}${small ? '-s' : ''}.webp` }
 
 let pvTimer = 0
 function preview(now) {
@@ -426,11 +555,11 @@ function preview(now) {
     const f = $('#frame')
     if (!f) return
     if (window.innerWidth < 980 && !$('#pv').classList.contains('show') && !now) return
-    const html = render({ name: S.name, look: S.look, lang: S.pageLang, kind: S.kind, d: S.d, views: S.views || 1234, status: 'live' }, { preview: true, img: imgUrl, origin: location.origin })
+    const html = render({ name: S.name, look: S.look, lang: S.pageLang, kind: S.kind, d: S.d, views: S.views || 1234, status: 'live', tier: S.tier }, { preview: true, img: imgUrl, origin: location.origin })
     const y = f.contentWindow?.scrollY || 0
     f.srcdoc = html
     f.onload = () => { try { f.contentWindow.scrollTo(0, y) } catch {} ; f.contentDocument?.querySelectorAll('a[href]').forEach((a) => a.setAttribute('target', '_blank')) }
-  }, now ? 0 : 220)
+  }, now ? 0 : 260)
 }
 
 let saveTimer = 0
@@ -448,6 +577,7 @@ async function save(extra = {}) {
   try {
     const r = await call('PUT', 'site', { d: S.d, look: S.look, lang: S.pageLang, kind: S.kind, ...extra })
     S.status = r.status
+    if (r.d) { S.d.credits = r.d.credits; S.d.video = r.d.video }
     remember()
   } catch (e) {
     toast(ui(S.lang, e.message === 'quota' ? 'e_quota' : e.message === 'edit-link' ? 'e_link' : 'e_net'))
@@ -471,17 +601,19 @@ async function shrink(bmp, max, q) {
   return { blob: b, w, h }
 }
 
-async function upload(blob, small, role, w, h) {
+async function upload(blob, small, role, w, h, pd) {
   const f = new FormData()
   f.append('role', role)
   f.append('big', blob, 'big')
   if (small) f.append('small', small, 'small')
   if (w) { f.append('w', w); f.append('h', h) }
+  if (pd) f.append('pd', pd)
   return call('POST', 'photo', f, true)
 }
 
 async function addFiles(files) {
-  files = files.slice(0, 12 - S.d.photos.length)
+  const max = isGold() ? MAX_PHOTOS.gold : MAX_PHOTOS.free
+  files = files.slice(0, max - S.d.photos.length)
   S.busy += files.length
   redrawSec('photos')
   for (const file of files) {
@@ -490,12 +622,7 @@ async function addFiles(files) {
       const ex = exifBlock(raw)
       if (ex) { const x = readExif(ex); if (x.lat != null && x.lon != null) S.photoGps = { lat: x.lat, lng: x.lon } }
       const bmp = await createImageBitmap(file, { imageOrientation: 'from-image' })
-      const big = await shrink(bmp, 1600, 0.82)
-      const small = await shrink(bmp, 480, 0.76)
-      const r = await upload(big.blob, small.blob, 'photo', big.w, big.h)
-      S.local.set(r.id, URL.createObjectURL(small.blob))
-      S.d.photos.push(r.id)
-      if (!S.d.cover) S.d.cover = r.id
+      await addBitmap(bmp)
     } catch (e) {
       toast(ui(S.lang, e.message === 'photo-refused' ? 'e_refused' : e.message === 'quota' ? 'e_quota' : 'e_net'))
     }
@@ -504,6 +631,101 @@ async function addFiles(files) {
   }
   if (S.photoGps && S.d.place.lat === null) { S.open.add('map'); drawEdit() }
   changed()
+}
+
+async function addBitmap(bmp, pd) {
+  const big = await shrink(bmp, 1600, 0.82)
+  const small = await shrink(bmp, 480, 0.76)
+  const r = await upload(big.blob, small.blob, 'photo', big.w, big.h, pd)
+  S.local.set(r.id, URL.createObjectURL(small.blob))
+  S.d.photos.push(r.id)
+  if (r.credit) S.d.credits = { ...(S.d.credits || {}), [r.id]: r.credit }
+  if (!S.d.cover) S.d.cover = r.id
+  return r
+}
+
+// ---- the free picture library -------------------------------------------------------------
+
+function pdSheet() {
+  const box = document.createElement('div')
+  box.className = 'sheet pdsheet'
+  box.innerHTML = `<div class="box"><h2>${ding('sparkle', 'riso')} ${T('pdTitle')}</h2><p class="hint">${T('pdHint')}</p>
+    <form class="row" id="pdf"><input id="pdq" type="search" placeholder="${T('pdSearch')}" style="flex:1;min-width:180px" autocomplete="off"><button class="go">${icon('compass')}</button></form>
+    <div class="pdgrid" id="pdg"></div><p style="text-align:center"><button class="back" id="pdclose">${T('back')}</button></p></div>`
+  document.body.appendChild(box)
+  const q = box.querySelector('#pdq'), grid = box.querySelector('#pdg')
+  q.value = S.d.name && /[a-z]/i.test(S.d.name) ? '' : ''
+  q.focus()
+  box.querySelector('#pdclose').onclick = () => box.remove()
+  box.addEventListener('click', (e) => { if (e.target === box) box.remove() })
+  box.querySelector('#pdf').onsubmit = async (e) => {
+    e.preventDefault()
+    const term = q.value.trim()
+    if (!term) return
+    grid.innerHTML = '<p class="hint">…</p>'
+    try {
+      const r = await call('GET', 'pd?q=' + encodeURIComponent(term))
+      if (!r.results.length) { grid.innerHTML = `<p class="hint">${T('pdNone')}</p>`; return }
+      grid.innerHTML = r.results.map((x, i) => `<button class="pdi" data-i="${i}"><img src="${esc(x.thumb)}" data-alt="${esc(x.big)}" alt="${esc(x.title)}" loading="lazy" referrerpolicy="no-referrer"><span>${esc(x.title)}<small>${esc(x.by)} · ${esc(x.license)}</small></span></button>`).join('')
+      grid.querySelectorAll('.pdi').forEach((b) => (b.onclick = () => pdTake(r.results[+b.dataset.i], b, box)))
+      grid.querySelectorAll('.pdi img').forEach((im) => (im.onerror = () => { if (im.dataset.alt && im.src !== im.dataset.alt) im.src = im.dataset.alt; else im.closest('.pdi').remove() }))
+    } catch (err) { grid.innerHTML = `<p class="hint">${T(err.message === 'quota' ? 'e_quota' : 'e_net')}</p>` }
+  }
+}
+
+async function pdTake(x, b, box) {
+  if (S.d.photos.length >= (isGold() ? MAX_PHOTOS.gold : MAX_PHOTOS.free)) return
+  b.disabled = true
+  b.classList.add('busy')
+  b.querySelector('span').innerHTML = T('pdBusy')
+  try {
+    const r = await fetch('/api/pd/raw?id=' + encodeURIComponent(x.id), { headers: { 'x-edit': S.token } })
+    if (!r.ok) throw new Error('net')
+    const bmp = await createImageBitmap(await r.blob())
+    await addBitmap(bmp, x.id)
+    box.remove()
+    redrawSec('photos')
+    changed()
+  } catch (e) {
+    b.disabled = false; b.classList.remove('busy')
+    toast(ui(S.lang, e.message === 'photo-refused' ? 'e_refused' : 'e_net'))
+  }
+}
+
+// ---- message copies by email -----------------------------------------------------------------
+
+async function notifyOn() {
+  const v = $('#nmail').value.trim()
+  if (!v) return
+  try {
+    const r = await call('PUT', 'notify', { email: v })
+    S.notifyEmail = v.toLowerCase(); S.notifyOk = false
+    redrawSec('msg')
+    if (!r.sent) toast(ui(S.lang, 'notifyNo'))
+  } catch (e) { toast(ui(S.lang, e.message === 'quota' ? 'e_quota' : 'e_net')) }
+}
+async function notifyOff() {
+  try { await call('DELETE', 'notify'); S.notifyEmail = ''; S.notifyOk = false; redrawSec('msg') } catch { toast(ui(S.lang, 'e_net')) }
+}
+
+// ---- places around here (Gold) -----------------------------------------------------------
+
+async function spotFromLink() {
+  const u = $('#spotlink').value.trim()
+  if (!u) return
+  try {
+    const r = await call('GET', 'resolve?u=' + encodeURIComponent(u))
+    if (r.lat == null) throw new Error('no')
+    S.d.spots.push({ n: '', note: '', lat: r.lat, lng: r.lng })
+    redrawSec('spots'); $(`[data-k="spots.${S.d.spots.length - 1}.n"]`)?.focus(); changed()
+  } catch { toast(ui(S.lang, 'e_coords')) }
+}
+function spotHere() {
+  const p = S.picker?.map?.getCenter?.()
+  const lat = p ? p.lat : S.d.place.lat, lng = p ? p.lng : S.d.place.lng
+  if (lat == null) { toast(ui(S.lang, 'noPin')); return }
+  S.d.spots.push({ n: '', note: '', lat: Math.round(lat * 1e6) / 1e6, lng: Math.round(lng * 1e6) / 1e6 })
+  redrawSec('spots'); $(`[data-k="spots.${S.d.spots.length - 1}.n"]`)?.focus(); changed()
 }
 
 // ---- map tools ---------------------------------------------------------------------------
@@ -529,20 +751,6 @@ function moved({ lat, lng, zoom }) {
   const ps = $('#pinstate')
   if (ps) { ps.className = 'pinstate ok'; ps.innerHTML = `${icon('pin')}${T('pinSet')} · ${S.d.place.lat.toFixed(5)}, ${S.d.place.lng.toFixed(5)}` }
   changed()
-  clearTimeout(snapTimer)
-  snapTimer = setTimeout(snap, 2200)
-}
-
-async function snap() {
-  if (!S.picker?.covered) return
-  try {
-    const blob = await S.picker.snap()
-    if (!blob) return
-    const r = await upload(blob, null, 'map')
-    S.local.set(r.id, URL.createObjectURL(blob))
-    S.d.place.snap = r.id
-    changed()
-  } catch {}
 }
 
 function setPin(lat, lng, z = 17) {
@@ -572,6 +780,134 @@ async function pasteLink() {
   } catch { toast(ui(S.lang, 'e_coords')) }
 }
 
+// ---- the other tabs: messages, traffic, Gold ------------------------------------------------
+
+function drawTab() {
+  app.innerHTML = tabs() + `<div class="tabbody" id="tb"><p class="loading">…</p></div>`
+  bindTabs()
+  if (S.tab === 'msgs') return drawMsgs()
+  if (S.tab === 'stats') return drawStats()
+  return drawGold()
+}
+
+const when = (iso) => { try { return new Intl.DateTimeFormat(S.lang, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(iso)) } catch { return iso.slice(0, 16).replace('T', ' ') } }
+
+function replyHref(reach) {
+  const r = String(reach || '').trim()
+  if (/^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(r)) return { href: 'mailto:' + r, label: ui(S.lang, 'email') }
+  const digits = r.replace(/[^\d+]/g, '')
+  if (digits.replace('+', '').length >= 8 && /^[\d+\s()-]+$/.test(r)) return { href: 'tel:' + digits, label: ui(S.lang, 'phone') }
+  const id = r.replace(/^line\s*(id)?\s*[:：]?\s*/i, '').trim()
+  if (/^@?[a-z0-9._-]{3,40}$/i.test(id)) return { href: 'https://line.me/R/ti/p/' + (id.startsWith('@') ? encodeURIComponent(id) : '~' + encodeURIComponent(id)), label: 'LINE' }
+  return null
+}
+
+async function drawMsgs() {
+  const tb = $('#tb')
+  try {
+    const r = await call('GET', 'msgs')
+    const list = r.msgs
+    S.unread = list.filter((m) => m.status === 'new').length
+    const nav = app.querySelector('.tabs'); if (nav) { nav.outerHTML = tabs(); bindTabs() }
+    if (!list.length) { tb.innerHTML = `<div class="empty">${ding('mailbox', 'paper')}<p>${T('m_none')}</p></div>`; return }
+    tb.innerHTML = `${S.unread ? `<p style="text-align:right"><button class="go ghost" id="mall">${icon('check')}${T('m_all')}</button></p>` : ''}<div class="msgs">${list.map((m) => {
+      const rp = replyHref(m.reach)
+      return `<article class="msg ${m.status}" data-id="${esc(m.id)}"><header><b>${esc(m.name || '—')}</b><span>${esc(when(m.at))}</span></header>
+        ${m.status === 'held' ? `<p class="heldtag">${T('m_held')}</p>` : ''}<p class="body">${esc(m.body)}</p>${m.reach ? `<p class="reach">${esc(m.reach)}</p>` : ''}
+        <footer>${rp ? `<a class="go line small" href="${esc(rp.href)}" target="_blank" rel="noopener">${icon('chat')}${T('m_reply')} · ${esc(rp.label)}</a>` : ''}
+        <button class="go ghost small" data-act="${m.status === 'new' || m.status === 'held' ? 'read' : 'unread'}">${T(m.status === 'new' || m.status === 'held' ? 'm_read' : 'm_unread')}</button>
+        <button class="go ghost small" data-act="gone">${T('m_del')}</button></footer></article>`
+    }).join('')}</div>`
+    tb.onclick = async (e) => {
+      const b = e.target.closest('button'); if (!b) return
+      if (b.id === 'mall') { await call('POST', 'msgs', { act: 'read', all: true }); return drawMsgs() }
+      const id = b.closest('[data-id]')?.dataset.id
+      if (b.dataset.act && id) { await call('POST', 'msgs', { act: b.dataset.act, id }); drawMsgs() }
+    }
+  } catch { tb.innerHTML = `<p class="hint">${T('e_net')}</p>` }
+}
+
+const TAP_WORD = { call: 'call', line: 'line', dir: 'dir', ride: 'ride', food: 'food', lineman: 'lineman', share: 'share', copy: 'copy', map: 'map', far: 'far', vcf: 'saveContact',
+  ics: 'addCal', sign: 'sign', order: 'lineOrder', msg: 'msg', link: 'links', photo: 'photos', video: 'video', email: 'email', web: 'web', qr: 'qr', story: 'story' }
+const TAP_EXTRA = { shareline: 'LINE', sharefb: 'Facebook', sharex: 'X', sharewa: 'WhatsApp', sharetg: 'Telegram', social: 'Facebook · Instagram · TikTok', whatsapp: 'WhatsApp' }
+
+async function drawStats(days) {
+  const tb = $('#tb')
+  let r
+  try { r = await call('GET', 'stats' + (days ? '?days=' + days : '')) } catch { tb.innerHTML = `<p class="hint">${T('e_net')}</p>`; return }
+  const { word } = await import('./words.mjs')
+  const nf = new Intl.NumberFormat(S.lang)
+  const max = Math.max(1, ...r.days.map((d) => d.people))
+  const region = (c) => { try { return new Intl.DisplayNames([S.lang], { type: 'region' }).of(c) } catch { return c } }
+  const tapName = (k) => TAP_EXTRA[k] || (TAP_WORD[k] ? word(S.lang, TAP_WORD[k]) : k)
+  const list = (rows, name) => rows.length ? `<ol class="hbars">${rows.map((x) => `<li><span class="lab">${esc(name(x.k))}</span><span class="bar"><i style="width:${Math.max(3, (x.n / rows[0].n) * 100)}%"></i></span><b>${nf.format(x.n)}</b></li>`).join('')}</ol>` : '<p class="hint">—</p>'
+  const tile = (n, label, sub) => `<div class="tile"><b>${nf.format(n)}</b><span>${label}</span>${sub ? `<small>${sub}</small>` : ''}</div>`
+  const hourMax = Math.max(1, ...r.hour)
+  const empty = !r.total.views && !r.total.machines
+  const step = Math.max(1, Math.ceil(r.days.length / 8))
+  tb.innerHTML = `${empty ? `<div class="empty">${ding('megaphone', 'paper')}<p>${T('st_empty')}</p></div>` : ''}
+    <div class="tiles">${tile(r.today.people, T('st_people'), T('st_today'))}${tile(r.week.people, T('st_people'), T('st_week'))}${tile(r.total.people, T('st_people'), r.days.length > 31 ? T('st_year') : T('st_month'))}
+      ${tile(r.total.views, T('st_views'), r.days.length > 31 ? T('st_year') : T('st_month'))}${tile(r.total.taps, T('st_taps'), r.days.length > 31 ? T('st_year') : T('st_month'))}</div>
+    <section class="panel"><h3>${T('st_day')}</h3><div class="chart" id="chart" role="img" aria-label="${T('st_day')}">${r.days.map((d) => `<span class="col" data-tip="${esc(d.day)} · ${nf.format(d.people)} ${T('st_people')} · ${nf.format(d.views)} ${T('st_views')}"><i style="height:${(d.people / max) * 100}%"></i></span>`).join('')}</div>
+      <div class="axis">${r.days.map((d, i) => `<span>${i % step === 0 ? esc(d.day.slice(5).replace('-', '/')) : ''}</span>`).join('')}</div><div class="tip" id="tip" hidden></div>
+      ${isGold() ? `<p class="row" style="margin-top:12px"><button class="go ghost small" data-days="30">${T('st_month')}</button><button class="go ghost small" data-days="365">${T('st_year')}</button><button class="go ghost small" id="csv">${icon('download')}${T('st_csv')}</button></p>` : ''}</section>
+    <div class="panels"><section class="panel"><h3>${T('st_from')}</h3>${list(r.ref, (k) => (k === '(direct)' ? ui(S.lang, 'st_direct') : k))}</section>
+      <section class="panel"><h3>${T('st_tapsBy')}</h3>${list(r.tap, tapName)}</section>
+      <section class="panel"><h3>${T('st_cc')}</h3>${list(r.cc, region)}</section>
+      <section class="panel"><h3>${T('st_dev')}</h3>${list(r.dev, (k) => ui(S.lang, 'dev_' + k))}
+        <h3 style="margin-top:18px">${T('st_hours')}</h3><div class="hours24">${r.hour.map((n, h) => `<i title="${String(h).padStart(2, '0')}:00 · ${nf.format(n)}" style="opacity:${n ? 0.18 + 0.82 * (n / hourMax) : 0.07}"></i>`).join('')}</div><div class="axis h24"><span>00</span><span>06</span><span>12</span><span>18</span><span>23</span></div></section></div>
+    <p class="hint">${icon('gear')} ${nf.format(r.total.machines)} ${T('st_machines')}. ${T('st_machinesNote')}</p>`
+  const tip = $('#tip'), chart = $('#chart')
+  chart.addEventListener('pointermove', (e) => {
+    const c = e.target.closest('.col'); if (!c) { tip.hidden = true; return }
+    tip.hidden = false; tip.textContent = c.dataset.tip
+    const rc = chart.getBoundingClientRect(), cc = c.getBoundingClientRect()
+    tip.style.left = Math.min(rc.width - 10, Math.max(10, cc.left - rc.left + cc.width / 2)) + 'px'
+  })
+  chart.addEventListener('pointerleave', () => { tip.hidden = true })
+  tb.querySelectorAll('[data-days]').forEach((b) => (b.onclick = () => drawStats(+b.dataset.days)))
+  const csv = $('#csv')
+  if (csv) csv.onclick = async () => {
+    const res = await fetch('/api/stats.csv', { headers: { 'x-edit': S.token } })
+    if (!res.ok) return toast(ui(S.lang, 'e_net'))
+    const a = document.createElement('a'); a.href = URL.createObjectURL(await res.blob()); a.download = S.name + '-traffic.csv'; a.click()
+  }
+  dingbats(['signals', 'classic'])
+}
+
+async function drawGold() {
+  const tb = $('#tb')
+  let r = null
+  const feats = ['g_f1', 'g_f2', 'g_f3', 'g_f4', 'g_f5', 'g_f6']
+  const fdings = ['crown', 'search', 'camera', 'compass', 'calendar', 'star']
+  const head = `<section class="goldhero">${LOOKS.gold.art}<h2>${T('g_lead')}</h2><ul>${feats.map((k, i) => `<li>${ding(fdings[i], 'paper')}<span>${T(k)}</span></li>`).join('')}</ul></section>`
+  if (isGold()) {
+    tb.innerHTML = head + `<p class="goldon">★ ${esc(ui(S.lang, 'g_on').replace('{d}', S.goldUntil || ''))}</p>`
+    dingbats(['signals', 'classic', 'curious'])
+    return
+  }
+  try { r = await call('POST', 'gold') } catch { tb.innerHTML = head + `<p class="hint">${T('e_net')}</p>`; return }
+  if (r.tier === 'gold') { S.tier = 'gold'; S.goldUntil = r.gold_until; return drawGold() }
+  const tail = String(r.amount).split('.')[1] || '00'
+  const nf = new Intl.NumberFormat(S.lang)
+  tb.innerHTML = head + `<section class="goldpay"><p class="price">${esc(ui(S.lang, 'g_price').replace('{p}', nf.format(r.baht)))}</p>
+    ${r.payload ? `<div class="ppqr">${qrSvg(r.payload, { dark: '#0e3d78', light: '#ffffff', label: 'PromptPay' })}<b>฿${esc(nf.format(Number(r.amount)))}</b><span>PromptPay</span></div>
+      <p class="hint">${esc(ui(S.lang, 'g_scan').replace('{s}', tail))}</p>
+      <label class="pick goldslip">${icon('download')}${T('g_slip')}<input type="file" accept="image/*" id="slip"></label><p id="slipstate" class="pinstate"></p>` : `<p class="hint">${T('g_nopp')}</p>`}</section>`
+  dingbats(['signals', 'classic', 'curious'])
+  const slip = $('#slip')
+  if (slip) slip.onchange = async () => {
+    const f = slip.files[0]; if (!f) return
+    const st = $('#slipstate'); st.textContent = '…'
+    const fd = new FormData(); fd.append('slip', f, 'slip.jpg')
+    try {
+      const res = await call('POST', 'gold/slip', fd, true)
+      if (res.tier === 'gold') { S.tier = 'gold'; S.goldUntil = res.gold_until; toast(ui(S.lang, 'g_thanks')); drawGold() }
+      else { st.className = 'pinstate ok'; st.innerHTML = `${icon('check')}${T('g_wait')}` }
+    } catch { st.textContent = ui(S.lang, 'e_net') }
+  }
+}
+
 // ---- putting it online ---------------------------------------------------------------------
 
 async function makeCard() {
@@ -583,6 +919,7 @@ async function makeCard() {
   const g = c.getContext('2d')
   g.fillStyle = v('bg') || '#fff7ec'; g.fillRect(0, 0, 1200, 630)
   let ink = v('ink') || '#111'
+  let pic = false
   if (S.d.cover) {
     try {
       const im = new Image()
@@ -590,11 +927,16 @@ async function makeCard() {
       await im.decode()
       const r = Math.max(1200 / im.width, 630 / im.height)
       g.drawImage(im, (1200 - im.width * r) / 2, (630 - im.height * r) / 2, im.width * r, im.height * r)
-      const gr = g.createLinearGradient(0, 160, 0, 630); gr.addColorStop(0, 'rgba(0,0,0,0)'); gr.addColorStop(1, 'rgba(0,0,0,.78)')
-      g.fillStyle = gr; g.fillRect(0, 0, 1200, 630)
-      ink = '#ffffff'
+      pic = true
     } catch {}
-  } else if (['stitch', 'night', 'y1997', 'lanna'].includes(S.look)) ink = '#ffffff'
+  } else if (S.d.drawing && drawCv && drawCv.width) {
+    try { const r = Math.max(1200 / drawCv.width, 630 / drawCv.height); g.drawImage(drawCv, (1200 - drawCv.width * r) / 2, (630 - drawCv.height * r) / 2, drawCv.width * r, drawCv.height * r); pic = true } catch {}
+  }
+  if (pic) {
+    const gr = g.createLinearGradient(0, 160, 0, 630); gr.addColorStop(0, 'rgba(0,0,0,0)'); gr.addColorStop(1, 'rgba(0,0,0,.78)')
+    g.fillStyle = gr; g.fillRect(0, 0, 1200, 630)
+    ink = '#ffffff'
+  } else if (['stitch', 'night', 'y1997', 'lanna', 'gold'].includes(S.look)) ink = '#ffffff'
   g.fillStyle = accent; g.fillRect(64, 64, 120, 14)
   g.fillStyle = ink
   g.font = '800 96px "Avenir Next Condensed","Arial Narrow",Impact,"Prompt","Noto Sans Thai",system-ui,sans-serif'
@@ -608,7 +950,7 @@ async function makeCard() {
   if (S.d.tagline) { g.font = '500 40px system-ui,"Prompt","Noto Sans Thai",sans-serif'; g.fillText(S.d.tagline.slice(0, 70), 64, y - 30, 1072) }
   g.fillStyle = '#d7261e'; g.beginPath(); g.roundRect(64, 540, 54, 54, 12); g.fill()
   g.fillStyle = '#fff'; g.beginPath(); g.arc(91, 567, 11, 0, 7); g.fill()
-  g.fillStyle = ink; g.font = '700 32px ui-monospace,Menlo,monospace'; g.fillText('motdang.net/~' + S.name, 134, 578)
+  g.fillStyle = ink; g.font = '700 32px ui-monospace,Menlo,monospace'; g.fillText('sites.motdang.net/' + S.name, 134, 578)
   const blob = await new Promise((ok) => c.toBlob(ok, 'image/jpeg', 0.86))
   const r = await upload(blob, null, 'card')
   S.d.card = r.id
@@ -618,18 +960,18 @@ async function publish() {
   const pub = $('#pub')
   pub.disabled = true
   try {
-    if (S.status === 'draft' || !S.d.card) await makeCard().catch(() => {})
+    await makeCard().catch(() => {})
     await save({ publish: true })
     done()
   } finally { pub.disabled = false }
 }
 
 function done() {
-  const url = `${location.origin}/~${S.name}`
-  const edit = `${location.origin}/~/make#t=${S.token}`
+  const url = `${location.origin}/${S.name}`
+  const edit = `${location.origin}/make#t=${S.token}`
   const box = document.createElement('div')
   box.className = 'sheet'
-  box.innerHTML = `<div class="box"><h2>${S.status === 'live' ? T('live') : S.status === 'held' ? T('held') : T('draft')}</h2>
+  box.innerHTML = `<div class="box">${S.status === 'live' ? `<div class="confetti">${['party', 'sparkle', 'heart', 'star', 'lantern'].map((n) => ding(n, 'riso', 'loop')).join('')}</div>` : ''}<h2>${S.status === 'live' ? T('live') : S.status === 'held' ? T('held') : T('draft')}</h2>
     <a class="link" href="${esc(url)}" target="_blank">${esc(url.replace(/^https?:\/\//, ''))}</a>
     ${S.status === 'live' ? qrSvg(url, { dark: '#000', light: '#fff', label: url }) : ''}
     <div class="grid2"><a class="go ink" href="${esc(url)}" target="_blank">${icon('globe')}${T('open')}</a>
@@ -640,6 +982,7 @@ function done() {
       <div class="grid2"><a class="go line" href="${esc(lineShare(edit))}" target="_blank">${icon('chat')}${T('sendSelf')}</a><button class="go ghost" id="cpedit">${T('copy')}</button></div></div>
     <p style="text-align:center"><button class="back" id="closesheet">${T('edit')}</button></p></div>`
   document.body.appendChild(box)
+  if (S.status === 'live') dingbats(['faces', 'classic', 'lanna'])
   box.querySelector('#closesheet').onclick = () => box.remove()
   box.addEventListener('click', (e) => { if (e.target === box) box.remove() })
   box.querySelector('#sh').onclick = () => (navigator.share ? navigator.share({ title: S.d.name, url }).catch(() => {}) : copy(url))
@@ -655,7 +998,7 @@ async function del() {
   try {
     await call('DELETE', 'site')
     store.set('pages', store.get('pages', []).filter((p) => p.token !== S.token))
-    location.href = '/~/make'
+    location.href = '/make'
   } catch { toast(ui(S.lang, 'e_net')) }
 }
 
@@ -677,13 +1020,15 @@ async function boot() {
     S.token = t
     try {
       const r = await call('GET', 'site')
-      Object.assign(S, { name: r.name, kind: r.kind, look: r.look, pageLang: r.lang, status: r.status, views: r.views, d: normalize(r.d), step: 'edit' })
+      Object.assign(S, { name: r.name, kind: r.kind, look: r.look, pageLang: r.lang, status: r.status, views: r.views, d: normalize(r.d), step: 'edit',
+        tier: r.tier, goldUntil: r.gold_until || '', notifyEmail: r.notify_email, notifyOk: r.notify_ok, unread: r.unread })
       S.d.event = S.d.event || undefined
       S.open = new Set(DEFAULT_OPEN[S.kind])
+      if (h.get('tab')) S.tab = h.get('tab')
       remember()
     } catch (e) {
       S.token = ''
-      history.replaceState(null, '', '/~/make')
+      history.replaceState(null, '', '/make')
       if (e.status === 403) store.set('pages', store.get('pages', []).filter((p) => p.token !== t))
       S.step = 'kind'
       draw()
@@ -693,6 +1038,11 @@ async function boot() {
   } else if (h.get('name')) {
     S.addr = h.get('name').toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 30)
     S.addrTouched = true
+    if (h.get('title')) S.name = h.get('title').slice(0, 60)
+    if (KINDS.includes(h.get('kind'))) { S.kind = h.get('kind'); S.look = LOOK_FOR[S.kind]; S.step = 'name' }
+  } else if (h.get('title') || KINDS.includes(h.get('kind'))) {
+    if (h.get('title')) { S.name = h.get('title').slice(0, 60); S.addr = slugify(S.name, h.get('kind') || 'shop') }
+    if (KINDS.includes(h.get('kind'))) { S.kind = h.get('kind'); S.look = LOOK_FOR[S.kind]; S.step = 'name' }
   }
   draw()
 }

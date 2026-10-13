@@ -82,7 +82,7 @@ test('vcard, ics, sign', () => {
 test('accent text keeps 4.5:1 on its card in every look and swatch', async () => {
   const { LOOKS, ACCENTS, contrast } = await import('../public/s/render.mjs')
   for (const [id, L] of Object.entries(LOOKS)) for (const a of [L.accent, ...ACCENTS]) {
-    const html = render({ ...base, look: id, d: { name: 'x', accent: a } })
+    const html = render({ ...base, look: id, d: { name: 'x', accent: a } }, { gold: true })
     const ink = /--acc-ink:(#[0-9a-f]{6})/.exec(html)[1]
     const card = /--card:(#[0-9a-f]{6})/i.exec(L.vars)[1]
     assert.ok(contrast(ink, card) >= 4.5, `${id} ${a}`)

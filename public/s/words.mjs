@@ -166,9 +166,45 @@ const W = {
   },
 }
 
+// sites.motdang.net, 2026-10-13: the drawing, the drawn map, messages, sharing, pictures, Gold.
+const X = {
+  en: {
+    drawn: 'Drawn', drawnTap: 'Tap the drawing: morning, evening, night', drawnAlt: 'A drawing of {n}',
+    msg: 'Send a message', msgName: 'Your name', msgReach: 'Phone, LINE or email, to answer you', msgBody: 'Message',
+    msgSend: 'Send', msgSent: 'Sent. Thank you!', msgFail: 'Not sent. Try again.', msgPreview: 'Readers write to you here.',
+    pictures: 'Pictures', video: 'Video', spots: 'Around here', spotsMap: 'On the map', mapOpen: 'Open the drawn map',
+    shareTitle: 'Share this page', qr: 'QR code', story: 'Picture for a story', more: 'More', saveQr: 'Save the QR',
+    gold: 'Gold', made: 'Made on Mot Dang', makeYours: 'Make yours',
+  },
+  th: {
+    drawn: 'ภาพวาด', drawnTap: 'แตะภาพ: เช้า เย็น กลางคืน', drawnAlt: 'ภาพวาดของ {n}',
+    msg: 'ส่งข้อความ', msgName: 'ชื่อของคุณ', msgReach: 'เบอร์ ไลน์ หรืออีเมล ให้ตอบกลับ', msgBody: 'ข้อความ',
+    msgSend: 'ส่ง', msgSent: 'ส่งแล้ว ขอบคุณ!', msgFail: 'ยังไม่ได้ส่ง ลองอีกครั้ง', msgPreview: 'ลูกค้าเขียนถึงคุณตรงนี้',
+    pictures: 'รูปภาพ', video: 'วิดีโอ', spots: 'แถวนี้', spotsMap: 'ดูบนแผนที่', mapOpen: 'เปิดแผนที่วาดมือ',
+    shareTitle: 'แชร์หน้านี้', qr: 'คิวอาร์โค้ด', story: 'รูปสำหรับสตอรี่', more: 'อื่น ๆ', saveQr: 'บันทึกคิวอาร์',
+    gold: 'ทอง', made: 'ทำบนมดแดง', makeYours: 'ทำของคุณ',
+  },
+  my: {
+    drawn: 'ပုံဆွဲ', drawnTap: 'ပုံကိုနှိပ်ပါ- နံနက်၊ ညနေ၊ ည', drawnAlt: '{n} ၏ပုံဆွဲ',
+    msg: 'စာပို့ရန်', msgName: 'သင့်အမည်', msgReach: 'ပြန်ဖြေရန် ဖုန်း၊ LINE သို့မဟုတ် အီးမေးလ်', msgBody: 'စာ',
+    msgSend: 'ပို့ရန်', msgSent: 'ပို့ပြီးပါပြီ။ ကျေးဇူးတင်ပါသည်!', msgFail: 'မပို့ရသေးပါ။ ထပ်ကြိုးစားပါ။', msgPreview: 'ဖောက်သည်များ ဤနေရာတွင် စာရေးပါမည်။',
+    pictures: 'ပုံများ', video: 'ဗီဒီယို', spots: 'ဤအနီး', spotsMap: 'မြေပုံပေါ်တွင်', mapOpen: 'လက်ရေးမြေပုံဖွင့်ရန်',
+    shareTitle: 'ဤစာမျက်နှာကို မျှဝေရန်', qr: 'QR ကုဒ်', story: 'စတိုရီအတွက် ပုံ', more: 'နောက်ထပ်', saveQr: 'QR သိမ်းရန်',
+    gold: 'ရွှေ', made: 'Mot Dang တွင်ပြုလုပ်သည်', makeYours: 'သင့်ကိုယ်ပိုင်လုပ်ရန်',
+  },
+  zh: {
+    drawn: '手绘', drawnTap: '点一下画：早上、傍晚、夜里', drawnAlt: '{n} 的手绘',
+    msg: '留言', msgName: '你的名字', msgReach: '电话、LINE 或邮箱，方便回复你', msgBody: '留言内容',
+    msgSend: '发送', msgSent: '已发送，谢谢！', msgFail: '没发出去，请再试一次。', msgPreview: '客人在这里给你留言。',
+    pictures: '图片', video: '视频', spots: '附近', spotsMap: '在地图上', mapOpen: '打开手绘地图',
+    shareTitle: '分享这个网页', qr: '二维码', story: '做成快拍图片', more: '更多', saveQr: '保存二维码',
+    gold: '金卡', made: '用 Mot Dang 制作', makeYours: '做你自己的',
+  },
+}
+
 /** The label `k` in `lang`, English when missing; `{t}` and `{d}` filled from `vars`. */
 export function word(lang, k, vars) {
-  let s = (W[lang] && W[lang][k]) || W.en[k] || k
+  let s = (W[lang] && W[lang][k]) || (X[lang] && X[lang][k]) || W.en[k] || X.en[k] || k
   if (vars) for (const [a, b] of Object.entries(vars)) s = s.replace('{' + a + '}', b)
   return s
 }

@@ -1,6 +1,7 @@
-# motdang.net/~ — people's own pages on Mot Dang.
-# This Worker answers motdang.net/~* by route; mot-dang-site (motdang.net/*)
-# keeps every other path, and the more specific route wins.
+# sites.motdang.net — people's own pages on Mot Dang (Nan, 2026-10-13: "sites.motdang.net/name").
+# This Worker owns the sites.motdang.net custom domain. It also keeps the
+# motdang.net/~* route, where the first address (2026-10-12) redirects here;
+# mot-dang-site (motdang.net/*) keeps every other path on motdang.net.
 name = "motdang-pages"
 main = "src/worker.mjs"
 compatibility_date = "2026-07-01"
@@ -38,9 +39,21 @@ remote = true
 crons = ["*/30 * * * *"]
 
 [[routes]]
+pattern = "sites.motdang.net"
+custom_domain = true
+
+[[routes]]
 pattern = "motdang.net/~*"
 zone_name = "motdang.net"
 
+# Gold: the year's price in baht. PROMPTPAY (her phone's PromptPay) is a secret.
+[vars]
+GOLD_THB = "3000"
+MAIL_FROM = "Mot Dang <pages@motdang.net>"
+
 # Secrets (npx wrangler secret put NAME), never in this file:
-#   ADMIN_KEY       password for /~/admin (any user name)
+#   ADMIN_KEY       password for /admin (any user name)
 #   SESSION_SECRET  salt for the per-connection daily counts
+#   RESEND_KEY      copies of readers' messages to makers who confirmed an email
+#   PROMPTPAY       the PromptPay id Gold is paid to
+#   SLIPOK_KEY, SLIPOK_BRANCH   the slip check; Gold slips wait at /admin without them

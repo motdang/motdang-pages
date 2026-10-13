@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>มดแดง · เว็บของคุณเอง · Your own page</title>
+<meta name="description" content="เว็บของร้าน ของกิน งานบริการ หรืองานของคุณ ทำบนมือถือ เสร็จในห้านาที มีภาพวาดร้าน แผนที่วาดมือ ไลน์ แกร็บ และกล่องข้อความ · Your shop, drawn and online in five minutes, from your phone.">
+<meta property="og:title" content="เว็บของคุณเอง · Your own page — Mot Dang">
+<meta property="og:description" content="ร้านคุณ วาดเสร็จ ขึ้นเว็บในห้านาที · Your shop, drawn and online in five minutes. LINE, Grab, a drawn map, messages, and who came.">
+<meta property="og:url" content="https://sites.motdang.net/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Mot Dang">
+<meta property="og:image" content="https://sites.motdang.net/s/card.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sites.motdang.net/s/card.jpg">
+<link rel="canonical" href="https://sites.motdang.net/">
+<meta name="theme-color" content="#d7261e">
+<link rel="icon" href="/s/ant.svg">
+<link rel="stylesheet" href="/s/home.css?v=2">
+<script type="module" src="/s/home.js?v=2"></script>
+</head>
+<body>
+<header class="bar">
+  <a class="brand" href="/"><img src="/s/ant.svg" alt="" width="34" height="34"><span>มดแดง <small>sites</small></span></a>
+  <nav class="langs" id="langs"></nav>
+  <a class="mk" href="/make" data-w="make"></a>
+</header>
+
+<main id="home">
+  <section class="hero">
+    <div class="hcopy">
+      <p class="kicker" data-w="kicker"></p>
+      <h1 data-w="h1"></h1>
+      <p class="lead" data-w="lead"></p>
+      <form class="try" id="try">
+        <label for="tn" data-w="tryLabel"></label>
+        <div class="tryrow"><input id="tn" maxlength="60" autocomplete="off"><button class="cta" type="submit"><span data-w="tryGo"></span> →</button></div>
+        <div class="chips" id="chips"></div>
+      </form>
+    </div>
+    <figure class="stage" id="stage"><canvas id="drawn" role="img"></canvas><figcaption><i data-dingbat="pencil" data-look="mono"></i><span data-w="tapSky"></span></figcaption></figure>
+  </section>
+
+  <section class="why">
+    <div class="wrap">
+      <h2 data-w="whyH"></h2>
+      <div class="whys">
+        <div class="wy"><i data-dingbat="search" data-look="riso"></i><b data-w="why1h"></b><p data-w="why1"></p></div>
+        <div class="wy"><i data-dingbat="telephone" data-look="riso"></i><b data-w="why2h"></b><p data-w="why2"></p></div>
+        <div class="wy"><i data-dingbat="heart" data-look="riso"></i><b data-w="why3h"></b><p data-w="why3"></p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="phones">
+    <div class="wrap"><h2 data-w="exH"></h2><p class="sub" data-w="exSub"></p></div>
+    <div class="rail" id="rail"></div>
+  </section>
+
+  <section class="toys">
+    <div class="wrap">
+      <h2 data-w="toysH"></h2>
+      <div class="grid" id="toys"></div>
+    </div>
+  </section>
+
+  <section class="looks">
+    <div class="wrap"><h2 data-w="looksH"></h2><p class="sub" data-w="looksSub"></p></div>
+    <div class="lrail" id="looks"></div>
+  </section>
+
+  <section class="tiers" id="gold">
+    <div class="wrap">
+      <h2 data-w="tiersH"></h2>
+      <div class="tcards">
+        <article class="tc free"><h3 data-w="freeH"></h3><p class="pr">฿0</p><ul id="freeList"></ul><a class="cta" href="/make" data-w="makeFree"></a></article>
+        <article class="tc gold"><svg viewBox="0 0 120 120" class="leaf" aria-hidden="true"><g fill="#e2ac44" stroke="#120d08" stroke-width="2"><path d="M60 96C44 76 46 46 60 22 74 46 76 76 60 96z"/><path d="M60 96C44 76 46 46 60 22 74 46 76 76 60 96z" transform="rotate(-40 60 96)"/><path d="M60 96C44 76 46 46 60 22 74 46 76 76 60 96z" transform="rotate(40 60 96)"/></g></svg>
+          <h3 data-w="goldH"></h3><p class="pr" id="goldPrice"></p><ul id="goldList"></ul><a class="cta gold" href="/make" data-w="makeGold"></a><p class="fine" data-w="goldFine"></p></article>
+      </div>
+    </div>
+  </section>
+
+  <section class="live" id="live" hidden>
+    <div class="wrap"><h2 id="liveH"></h2><div class="latest" id="latest"></div><p><a class="more" href="/all" data-w="allPages"></a></p></div>
+  </section>
+
+  <section class="how">
+    <div class="wrap">
+      <h2 data-w="howH"></h2>
+      <ol class="steps"><li><b>1</b><span data-w="step1"></span></li><li><b>2</b><span data-w="step2"></span></li><li><b>3</b><span data-w="step3"></span></li></ol>
+      <a class="cta big" href="/make" data-w="make"></a>
+    </div>
+  </section>
+</main>
+
+<footer class="foot"><a href="https://motdang.net/">มดแดง · motdang.net</a> · <a href="/all" data-w="allPages"></a> · <a href="/random" data-w="random"></a></footer>
+</body>
+</html>

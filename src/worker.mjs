@@ -1,21 +1,31 @@
-// worker.mjs — motdang.net/~ : people's own pages on Mot Dang.
+// worker.mjs — sites.motdang.net: people's own pages on Mot Dang.
 //
-//   /~name                the page           /~name/sign   a printable sign
-//   /~name/contact.vcf    save contact       /~name/event.ics  calendar entry
-//   /~/                   every page         /~/make       the builder
-//   /~/random             a page at random   /~/admin      held and reported pages
-//   /~/api/…              the builder's calls  /~/img/…    photos   /~/s/…  static files
+//   /                     why make one, with live examples      /make     the builder
+//   /all                  every page                            /random   a page at random
+//   /name                 the page    /name/sign  a printable sign    /name/contact.vcf    /name/event.ics
+//   /map                  a page's drawn map (motdang.net's doodle-map engine)
+//   /feed.json            every live page as data, for motdang.net (search, place pages, maps)
+//   /api/…                the builder's and the pages' calls    /img/…  photos    /s/…  static files
+//   /admin                held and reported pages, Gold slips
+//   /vendor/ /fonts/ /tiles/ /data/ /front/ /sites/doodle-map/   read from motdang.net, so a page asks one host
 //
+// motdang.net/~… (the first address, 2026-10-12) answers with a redirect here.
 // The edit link is the sign-in: a long random token, stored only as its hash.
 
-import { render, normalize, vcard, ics, sign, KINDS, LOOK_IDS } from '../public/s/render.mjs'
+import { render, normalize, vcard, ics, sign, KINDS, LOOK_IDS, GOLD_LOOKS, MAX_PHOTOS, sceneOf, HOME } from '../public/s/render.mjs'
 import { PAGE_LANGS } from '../public/s/words.mjs'
 import { nameProblem, screen } from './screen.mjs'
 import { clean, look, typeOf, MAX_BIG, MAX_SMALL } from './photo.mjs'
 import { directory, notFound, adminPage } from './pages.mjs'
+import * as stats from './stats.mjs'
+import * as msg from './msg.mjs'
+import * as pd from './pd.mjs'
+import * as gold from './gold.mjs'
+import { mapPage } from './mappage.mjs'
 
-const MAX_PHOTOS = 16
-const QUOTA = { site: 3, photo: 80, save: 300, report: 20 }
+const QUOTA = { site: 3, photo: 120, save: 400, report: 20, msg: 12, pd: 200, notify: 3, slip: 10 }
+const MAIN = 'https://motdang.net'
+const PASS = /^\/(vendor|fonts|tiles|data|front)\/|^\/sites\/doodle-map\//
 
 export default {
   async fetch(request, env, ctx) {
@@ -27,41 +37,65 @@ export default {
   async scheduled(_ev, env, ctx) { ctx.waitUntil(tidy(env)) },
 }
 
+/** The address pages live under: sites.motdang.net, or the local dev server. */
+const homeOf = (url, env) => env.DEV_ORIGIN || (/^(localhost|127\.0\.0\.1)$/.test(url.hostname) ? url.origin : HOME)
+
 async function route(request, env, ctx) {
   const url = new URL(request.url)
   const path = decodeURIComponent(url.pathname)
   const m = request.method
+  const origin = homeOf(url, env)
 
-  if (env.DEV_PROXY && /^\/(vendor|fonts|tiles)\//.test(path)) {
-    const hh = { 'user-agent': 'Mozilla/5.0' }
-    if (request.headers.get('range')) hh.range = request.headers.get('range')
-    return fetch(env.DEV_PROXY + path, { method: m, headers: hh })
+  // the first address: motdang.net/~name, /~/make, /~/ …
+  if (path === '/~' || path.startsWith('/~')) {
+    const rest = path === '/~' || path === '/~/' ? '/all' : path.startsWith('/~/') ? '/' + path.slice(3) : '/' + path.slice(2)
+    return new Response(null, { status: 301, headers: { location: origin + rest.replace(/^\/make\/$/, '/make') + url.search, 'cache-control': 'public, max-age=86400' } })
   }
-  if (path === '/~') return Response.redirect(url.origin + '/~/', 301)
-  if (path.startsWith('/~/s/')) return asset(request, env, '/s/' + path.slice(5))
-  if (path === '/~/make' || path === '/~/make/') return asset(request, env, '/s/make.html', true)
-  if (path.startsWith('/~/img/')) return image(env, path.slice(7))
-  if (path.startsWith('/~/api/')) return api(request, env, ctx, path.slice(7), url)
-  if (path === '/~/' && m === 'GET') return html(await directory(env, url, request), 200, { cache: 'public, max-age=120' })
-  if (path === '/~/random') {
+  if (!env.DEV_ORIGIN && (url.hostname === 'motdang.net' || url.hostname === 'www.motdang.net')) return new Response('', { status: 404 })
+
+  if (PASS.test(path) && (m === 'GET' || m === 'HEAD')) return passThrough(request, env, url)
+  if (path === '/' || path === '/index.html') return asset(request, env, '/s/home.html', 'home')
+  if (path === '/make' || path === '/make/') return asset(request, env, '/s/make.html', 'make')
+  if (path.startsWith('/s/')) return asset(request, env, path)
+  if (path.startsWith('/img/')) return image(env, path.slice(5))
+  if (path.startsWith('/api/')) return api(request, env, ctx, path.slice(5), url, origin)
+  if (path === '/all' || path === '/all/') return html(await directory(env, url, request, origin), 200, { cache: 'public, max-age=120' })
+  if (path === '/random') {
     const r = await env.DB.prepare("SELECT name FROM site WHERE status='live' ORDER BY random() LIMIT 1").first()
-    return Response.redirect(url.origin + (r ? '/~' + r.name : '/~/'), 302)
+    return Response.redirect(origin + (r ? '/' + r.name : '/all'), 302)
   }
-  if (path === '/~/admin' || path.startsWith('/~/admin/')) return admin(request, env, path.slice(8), url)
+  if (path === '/map') {
+    const nonce = rand(16)
+    const body = mapPage(url, nonce, (request.headers.get('accept-language') || '').slice(0, 2))
+    return body ? html(body, 200, { nonce, map: true, cache: 'public, max-age=3600' }) : new Response('', { status: 400 })
+  }
+  if (path === '/feed.json') return feed(env, origin)
+  if (path === '/robots.txt') return new Response(`User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /make\nDisallow: /admin\nSitemap: ${origin}/sitemap.xml\n`, { headers: { 'content-type': 'text/plain' } })
+  if (path === '/sitemap.xml') return sitemap(env, origin)
+  if (path === '/favicon.ico') return asset(request, env, '/s/ant.svg')
+  if (path === '/admin' || path.startsWith('/admin/')) return admin(request, env, path.slice(6), url)
 
-  const pm = /^\/~([a-z0-9-]{3,30})(\/sign|\/contact\.vcf|\/event\.ics)?\/?$/.exec(path)
-  if (pm && m === 'GET') return page(request, env, ctx, pm[1], pm[2] || '', url)
+  const pm = /^\/([a-z0-9-]{3,30})(\/sign|\/contact\.vcf|\/event\.ics)?\/?$/.exec(path)
+  if (pm && m === 'GET') return page(request, env, ctx, pm[1], pm[2] || '', url, origin)
   return html(notFound(null, request), 404)
+}
+
+async function passThrough(request, env, url) {
+  const h = { 'user-agent': 'Mozilla/5.0 (sites.motdang.net)' }
+  for (const k of ['range', 'if-none-match', 'if-modified-since']) if (request.headers.get(k)) h[k] = request.headers.get(k)
+  const r = await fetch((env.DEV_PROXY || MAIN) + url.pathname + url.search, { method: request.method, headers: h, cf: { cacheEverything: true, cacheTtl: 3600 } })
+  const out = new Headers(r.headers)
+  out.delete('set-cookie')
+  out.set('access-control-allow-origin', '*')
+  return new Response(r.body, { status: r.status, headers: out })
 }
 
 // ---- pages ---------------------------------------------------------------------
 
-const BOT = /bot|crawl|spider|slurp|facebookexternalhit|preview|embedly|whatsapp|linkexpand|curl|wget|python|headless/i
-
-async function page(request, env, ctx, name, sub, url) {
+async function page(request, env, ctx, name, sub, url, origin) {
   const s = await env.DB.prepare('SELECT * FROM site WHERE name = ?').bind(name).first()
   if (!s || s.status === 'removed' || s.status === 'draft') return html(notFound(s ? null : name, request, s?.status), s?.status === 'removed' ? 410 : 404)
-  const site = { ...s, d: JSON.parse(s.d) }
+  const site = { ...s, d: JSON.parse(s.d), tier: gold.isGold(s) ? 'gold' : 'free' }
   if (sub === '/contact.vcf') {
     if (s.status !== 'live') return new Response('', { status: 404 })
     return new Response(vcard(site), { headers: { 'content-type': 'text/vcard; charset=utf-8', 'content-disposition': `attachment; filename="${name}.vcf"` } })
@@ -76,33 +110,43 @@ async function page(request, env, ctx, name, sub, url) {
     if (s.status !== 'live') return html(notFound(null, request), 404)
     return html(sign(site, { nonce }), 200, { nonce })
   }
-  if (s.status === 'live' && !BOT.test(request.headers.get('user-agent') || '')) {
-    ctx.waitUntil(env.DB.prepare('UPDATE site SET views = views + 1 WHERE id = ?').bind(s.id).run())
+  if (s.status === 'live') {
+    ctx.waitUntil((async () => {
+      const person = await stats.view(env, request, s, origin, env.SESSION_SECRET || 'dev')
+      if (person) await env.DB.prepare('UPDATE site SET views = views + 1 WHERE id = ?').bind(s.id).run()
+    })().catch((e) => console.error(e)))
     site.views = s.views + 1
   }
-  return html(render(site, { origin: url.origin, nonce }), 200, { nonce })
+  return html(render(site, { origin, nonce }), 200, { nonce })
 }
 
-function html(body, status = 200, { nonce, cache } = {}) {
-  const h = {
-    'content-type': 'text/html; charset=utf-8',
-    'cache-control': cache || 'no-cache',
-    'x-content-type-options': 'nosniff',
-    'referrer-policy': 'strict-origin-when-cross-origin',
-    'content-security-policy': `default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; ` +
-      `script-src 'self'${nonce ? ` 'nonce-${nonce}'` : ''}; connect-src 'self'; worker-src 'self' blob:; child-src blob:; ` +
-      `frame-src 'self'; frame-ancestors 'self'; base-uri 'none'; form-action 'self'`,
-  }
-  return new Response(body, { status, headers: h })
+const CSP_PAGE = (nonce) => `default-src 'self'; img-src 'self' data: blob: https://i.ytimg.com; style-src 'self' 'unsafe-inline'; font-src 'self'; ` +
+  `script-src 'self'${nonce ? ` 'nonce-${nonce}'` : ''}; connect-src 'self'; worker-src 'self' blob:; child-src 'self' blob:; ` +
+  `frame-src 'self' https://www.youtube-nocookie.com https://player.vimeo.com; frame-ancestors 'self'; base-uri 'none'; form-action 'self'`
+const CSP_MAP = (nonce) => `default-src 'self'; img-src 'self' data: blob: https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://motdang.net; font-src 'self' https://fonts.gstatic.com https://motdang.net; ` +
+  `script-src 'self' 'nonce-${nonce}' https://motdang.net; connect-src 'self' https://motdang.net https://mot-dang-claims.nanobotco.workers.dev; worker-src 'self' blob:; frame-ancestors 'self'; base-uri https://motdang.net`
+const CSP_TOOL = `default-src 'self'; img-src 'self' data: blob: https:; style-src 'self' 'unsafe-inline' https://motdang.net; font-src 'self'; script-src 'self' https://motdang.net; ` +
+  `connect-src 'self' https://motdang.net; worker-src 'self' blob:; child-src 'self' blob:; frame-src 'self' https://www.youtube-nocookie.com https://player.vimeo.com; frame-ancestors 'self'; base-uri 'none'; form-action 'self'`
+
+function html(body, status = 200, { nonce, cache, map } = {}) {
+  return new Response(body, {
+    status,
+    headers: {
+      'content-type': 'text/html; charset=utf-8',
+      'cache-control': cache || 'no-cache',
+      'x-content-type-options': 'nosniff',
+      'referrer-policy': 'strict-origin-when-cross-origin',
+      'content-security-policy': map ? CSP_MAP(nonce) : CSP_PAGE(nonce),
+    },
+  })
 }
 
-async function asset(request, env, p, isPage) {
+async function asset(request, env, p, kind) {
   const r = await env.ASSETS.fetch(new Request(new URL(p, request.url), { method: 'GET', headers: request.headers }))
-  if (!isPage || !r.ok) return r
+  if (!kind || !r.ok) return r
   const h = new Headers(r.headers)
   h.set('cache-control', 'no-cache')
-  h.set('content-security-policy', "default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self'; " +
-    "connect-src 'self'; worker-src 'self' blob:; child-src blob:; frame-src 'self'; frame-ancestors 'self'; base-uri 'none'; form-action 'self'")
+  h.set('content-security-policy', CSP_TOOL)
   return new Response(r.body, { status: r.status, headers: h })
 }
 
@@ -111,14 +155,63 @@ async function image(env, rest) {
   if (!id) return new Response('', { status: 404 })
   const obj = (await env.MEDIA.get(`p/${id[1]}${id[2] || ''}`)) || (id[2] ? await env.MEDIA.get(`p/${id[1]}`) : null)
   if (!obj || obj.customMetadata?.v !== 'ok') return new Response('', { status: 404, headers: { 'cache-control': 'no-cache' } })
-  return new Response(obj.body, { headers: { 'content-type': obj.httpMetadata?.contentType || 'image/webp', 'cache-control': 'public, max-age=31536000, immutable', 'x-content-type-options': 'nosniff' } })
+  return new Response(obj.body, { headers: { 'content-type': obj.httpMetadata?.contentType || 'image/webp', 'cache-control': 'public, max-age=31536000, immutable', 'x-content-type-options': 'nosniff', 'access-control-allow-origin': '*' } })
+}
+
+// ---- the feed and the search motdang.net reads ---------------------------------------
+
+/** A live page as data, for motdang.net. */
+function asData(r, origin) {
+  const d = normalize(JSON.parse(r.d))
+  const im = (id, small) => `${origin}/img/${id}${small ? '-s' : ''}.webp`
+  const g = gold.isGold(r)
+  return {
+    name: r.name, url: `${origin}/${r.name}`, kind: r.kind, tier: g ? 'gold' : 'free', title: d.name || r.name, tagline: d.tagline, about: d.about, lang: r.lang,
+    cc: d.place.cc || null, lat: d.place.lat, lng: d.place.lng, addr: d.place.addr, hours: d.hours.on ? { on: true, always: d.hours.always, tz: d.hours.tz, week: d.hours.week } : null,
+    phone: d.contact.phone, line: d.contact.line, web: d.contact.web, facebook: d.contact.facebook, instagram: d.contact.instagram,
+    items: d.items, currency: d.currency, cover: d.cover ? im(d.cover) : '',
+    photos: d.photos.slice(0, g ? MAX_PHOTOS.gold : MAX_PHOTOS.free).map((id) => ({ url: im(id), small: im(id, true), credit: d.credits[id] || null })),
+    event: d.event, scene: d.drawing ? sceneOf(r.kind, d) : '', published: r.published, updated: r.updated,
+  }
+}
+
+async function feed(env, origin) {
+  const rows = (await env.DB.prepare("SELECT * FROM site WHERE status='live' ORDER BY published DESC LIMIT 5000").all()).results
+  return new Response(JSON.stringify({ generated: new Date().toISOString(), pages: rows.map((r) => asData(r, origin)) }), {
+    headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'public, max-age=300', 'access-control-allow-origin': '*' },
+  })
+}
+
+/** Search over live pages: every word must appear; Gold first, then the nearest. */
+async function find(env, url, origin) {
+  const q = String(url.searchParams.get('q') || '').toLowerCase().trim().slice(0, 80)
+  const words = q.split(/\s+/).filter((w) => w.length >= 2).slice(0, 6)
+  if (!words.length) return []
+  const where = words.map(() => "(lower(d) LIKE ? OR name LIKE ?)").join(' AND ')
+  const args = words.flatMap((w) => ['%' + w.replace(/[%_]/g, '') + '%', '%' + w.replace(/[%_]/g, '') + '%'])
+  const rows = (await env.DB.prepare(`SELECT * FROM site WHERE status='live' AND ${where} LIMIT 60`).bind(...args).all()).results
+  const lat = Number(url.searchParams.get('lat')), lng = Number(url.searchParams.get('lng'))
+  const near = Number.isFinite(lat) && Number.isFinite(lng) && url.searchParams.get('lat')
+  return rows.map((r) => {
+    const x = asData(r, origin)
+    let score = (x.tier === 'gold' ? 50 : 0) + (x.title.toLowerCase().includes(q) ? 30 : 0)
+    if (near && x.lat !== null) score += Math.max(0, 20 - Math.hypot(x.lat - lat, x.lng - lng) * 100)
+    return { ...x, score: Math.round(score) }
+  }).sort((a, b) => b.score - a.score).slice(0, 10)
+}
+
+async function sitemap(env, origin) {
+  const rows = (await env.DB.prepare("SELECT name, updated, tier, gold_until FROM site WHERE status='live'").all()).results.filter((r) => gold.isGold(r))
+  const body = `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>${origin}/</loc></url>` +
+    rows.map((r) => `<url><loc>${origin}/${r.name}</loc><lastmod>${r.updated.slice(0, 10)}</lastmod></url>`).join('') + '</urlset>'
+  return new Response(body, { headers: { 'content-type': 'application/xml', 'cache-control': 'public, max-age=3600' } })
 }
 
 // ---- api -----------------------------------------------------------------------
 
-const J = (o, status = 200) => new Response(JSON.stringify(o), { status, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' } })
+const J = (o, status = 200, extra = {}) => new Response(JSON.stringify(o), { status, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store', ...extra } })
 
-async function api(request, env, ctx, p, url) {
+async function api(request, env, ctx, p, url, origin) {
   const m = request.method
   if (m !== 'GET' && !sameOrigin(request, url)) return J({ error: 'origin' }, 403)
 
@@ -132,6 +225,58 @@ async function api(request, env, ctx, p, url) {
 
   if (p === 'resolve' && m === 'GET') return J(await resolveMapLink(url.searchParams.get('u') || ''))
 
+  if (p === 'count' && m === 'GET') {
+    const r = await env.DB.prepare("SELECT COUNT(*) AS n, COUNT(DISTINCT cc) AS cc FROM site WHERE status='live'").first()
+    const g = await env.DB.prepare("SELECT COUNT(*) AS n FROM site WHERE status='live' AND tier='gold'").first()
+    const latest = (await env.DB.prepare("SELECT name, kind, look, d, tier, gold_until FROM site WHERE status='live' ORDER BY published DESC LIMIT 12").all()).results
+      .map((r) => { const d = JSON.parse(r.d); return { name: r.name, kind: r.kind, look: r.look, title: d.name || r.name, tagline: d.tagline || '', cover: d.cover ? `/img/${d.cover}-s.webp` : '', gold: gold.isGold(r) } })
+    return J({ live: r?.n || 0, countries: r?.cc || 0, gold: g?.n || 0, latest, price: Number(env.GOLD_THB) || gold.GOLD_THB }, 200, { 'cache-control': 'public, max-age=120' })
+  }
+
+  if (p === 'find' && m === 'GET') return J({ results: await find(env, url, origin) }, 200, { 'access-control-allow-origin': '*', 'cache-control': 'public, max-age=60' })
+
+  if (p === 'hit' && m === 'POST') {
+    const b = await body(request)
+    const s = await env.DB.prepare("SELECT id FROM site WHERE name = ? AND status = 'live'").bind(String(b.n || '')).first()
+    if (s) ctx.waitUntil(stats.tap(env, request, s.id, String(b.k || '')))
+    return new Response(null, { status: 204 })
+  }
+
+  if (p === 'msg' && m === 'POST') {
+    const b = await body(request)
+    if (b.website || Number(b.ms) < 2500) return J({ ok: true }) // a form filled by a script
+    const who = await sender(request, env)
+    if (!(await take(env, who, 'msg'))) return J({ error: 'quota' }, 429)
+    const s = await env.DB.prepare("SELECT id, name, d, notify_email, notify_ok FROM site WHERE name = ? AND status = 'live'").bind(String(b.n || '')).first()
+    const mm = msg.clean(b)
+    if (!s || !mm) return J({ error: 'empty' }, 400)
+    if (JSON.parse(s.d).msg === false) return J({ error: 'off' }, 400)
+    const verdict = msg.check(mm)
+    const id = rand(14)
+    await env.DB.prepare('INSERT INTO msg (id, site_id, at, name, reach, body, status, why, sender) VALUES (?,?,?,?,?,?,?,?,?)')
+      .bind(id, s.id, new Date().toISOString(), mm.name, mm.reach, mm.body, verdict === 'ok' ? 'new' : 'held', verdict === 'ok' ? null : verdict.slice(5), who.slice(0, 16)).run()
+    ctx.waitUntil(stats.tap(env, request, s.id, 'msg'))
+    if (verdict === 'ok' && s.notify_ok && s.notify_email) {
+      ctx.waitUntil((async () => {
+        if (!(await msg.mayMail(env, s.id))) return
+        const title = JSON.parse(s.d).name || s.name
+        await msg.mail(env, { to: s.notify_email, ...msg.copyOf(mm, s.name, title, origin) })
+      })().catch((e) => console.error(e)))
+    }
+    return J({ ok: true })
+  }
+
+  if (p === 'notify/ok' && m === 'GET') {
+    const k = url.searchParams.get('k') || ''
+    const s = /^[a-z0-9]{24,40}$/.test(k) && await env.DB.prepare('SELECT id, name, d FROM site WHERE notify_key = ?').bind(k).first()
+    if (s) await env.DB.prepare('UPDATE site SET notify_ok = 1 WHERE id = ?').bind(s.id).run()
+    const title = s ? (JSON.parse(s.d).name || s.name) : ''
+    return html(`<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Mot Dang</title>
+<body style="margin:0;display:grid;place-items:center;min-height:100vh;background:#fff7ec;color:#1c1530;font:18px/1.5 system-ui,sans-serif;text-align:center;padding:20px">
+<div><svg viewBox="0 0 24 24" width="80" height="80" style="color:#d7261e"><use href="/s/icons.svg#i-ant-solid"/></svg><h1 style="font-size:28px;margin:10px 0">${s ? 'ยืนยันแล้ว · Confirmed' : 'ลิงก์นี้ใช้ไม่ได้ · This link does not work'}</h1>
+${s ? `<p>ข้อความถึง ${escHtml(title)} จะส่งสำเนาไปที่อีเมลนี้<br>A copy of each message to ${escHtml(title)} comes to this email.</p>` : ''}<p><a href="/make" style="color:#1c1530;font-weight:700">sites.motdang.net/make</a></p></div>`)
+  }
+
   if (p === 'sites' && m === 'POST') {
     const who = await sender(request, env)
     if (!(await take(env, who, 'site'))) return J({ error: 'quota' }, 429)
@@ -140,7 +285,7 @@ async function api(request, env, ctx, p, url) {
     const why = nameProblem(name)
     if (why) return J({ error: 'name', why }, 400)
     const kind = KINDS.includes(b.kind) ? b.kind : 'shop'
-    const lookId = LOOK_IDS.includes(b.look) ? b.look : 'poster'
+    const lookId = LOOK_IDS.includes(b.look) && !GOLD_LOOKS.includes(b.look) ? b.look : 'poster'
     const lang = PAGE_LANGS[b.lang] ? b.lang : 'th'
     const d = normalize(b.d || {})
     const token = rand(32)
@@ -162,8 +307,13 @@ async function api(request, env, ctx, p, url) {
   if (!/^[A-Za-z0-9_-]{32,64}$/.test(token)) return api2(request, env, p, url)
   const s = await env.DB.prepare('SELECT * FROM site WHERE edit_hash = ?').bind(await sha(token)).first()
   if (!s || s.status === 'removed') return J({ error: 'edit-link' }, 403)
+  const isGold = gold.isGold(s)
 
-  if (p === 'site' && m === 'GET') return J({ id: s.id, name: s.name, status: s.status, kind: s.kind, look: s.look, lang: s.lang, d: JSON.parse(s.d), views: s.views })
+  if (p === 'site' && m === 'GET') {
+    const un = await env.DB.prepare("SELECT COUNT(*) AS n FROM msg WHERE site_id = ? AND status = 'new'").bind(s.id).first()
+    return J({ id: s.id, name: s.name, status: s.status, kind: s.kind, look: s.look, lang: s.lang, d: JSON.parse(s.d), views: s.views,
+      tier: isGold ? 'gold' : 'free', gold_until: s.gold_until, notify_email: s.notify_email || '', notify_ok: !!s.notify_ok, unread: un?.n || 0 })
+  }
 
   if (p === 'site' && m === 'PUT') {
     const who = await sender(request, env)
@@ -171,7 +321,7 @@ async function api(request, env, ctx, p, url) {
     const b = await body(request)
     const d = normalize(b.d || JSON.parse(s.d))
     const kind = KINDS.includes(b.kind) ? b.kind : s.kind
-    const lookId = LOOK_IDS.includes(b.look) ? b.look : s.look
+    const lookId = LOOK_IDS.includes(b.look) && (isGold || !GOLD_LOOKS.includes(b.look)) ? b.look : (LOOK_IDS.includes(b.look) ? s.look : s.look)
     const lang = PAGE_LANGS[b.lang] ? b.lang : s.lang
     let name = s.name
     if (b.name && b.name !== s.name) {
@@ -179,21 +329,25 @@ async function api(request, env, ctx, p, url) {
       const why = nameProblem(name)
       if (why) return J({ error: 'name', why }, 400)
     }
-    // photos named in the page must be this page's own
+    if (!isGold) d.photos = d.photos.slice(0, MAX_PHOTOS.free)
+    // photos named in the page must be this page's own; credits come from the library, not the browser
     const ids = [...new Set([d.cover, d.card, d.place.snap, ...d.photos].filter(Boolean))]
+    d.credits = {}
     if (ids.length) {
-      const own = await env.DB.prepare(`SELECT id FROM photo WHERE site_id = ? AND id IN (${ids.map(() => '?').join(',')})`).bind(s.id, ...ids).all()
-      const ok = new Set(own.results.map((r) => r.id))
+      const own = await env.DB.prepare(`SELECT id, credit FROM photo WHERE site_id = ? AND id IN (${ids.map(() => '?').join(',')})`).bind(s.id, ...ids).all()
+      const ok = new Map(own.results.map((r) => [r.id, r.credit]))
       if (!ok.has(d.cover)) d.cover = ''
       if (!ok.has(d.card)) d.card = ''
       if (!ok.has(d.place.snap)) d.place.snap = ''
       d.photos = d.photos.filter((x) => ok.has(x))
+      for (const [id, c] of ok) if (c) { try { d.credits[id] = JSON.parse(c) } catch {} }
     }
+    const nd = normalize(d)
     let status = s.status, held = null
     const publish = b.publish === true || s.status !== 'draft'
     if (publish) {
       const n = await env.DB.prepare("SELECT COUNT(*) AS n FROM site WHERE sender = ? AND status != 'removed' AND id != ?").bind(s.sender, s.id).first()
-      const r = await screen(env.AI, d, { sameSender: n?.n || 0 })
+      const r = await screen(env.AI, nd, { sameSender: n?.n || 0 })
       const modelOnly = r.decision === 'held' && r.reasons.every((x) => x.startsWith('guard:guard-'))
       if (s.status === 'held' && s.held_why?.startsWith('admin')) status = 'held'
       else if (modelOnly && s.status === 'live') status = 'live'
@@ -203,14 +357,14 @@ async function api(request, env, ctx, p, url) {
     const now = new Date().toISOString()
     try {
       await env.DB.prepare('UPDATE site SET name=?, kind=?, look=?, lang=?, d=?, cc=?, lat=?, lng=?, status=?, held_why=?, updated=?, published=COALESCE(published, ?) WHERE id=?')
-        .bind(name, kind, lookId, lang, JSON.stringify(d), d.place.cc || null, d.place.lat, d.place.lng, status,
+        .bind(name, kind, lookId, lang, JSON.stringify(nd), nd.place.cc || null, nd.place.lat, nd.place.lng, status,
           status === 'held' ? (s.held_why?.startsWith('admin') ? s.held_why : held) : null, now, status === 'live' ? now : null, s.id).run()
     } catch (e) {
       if (/UNIQUE/i.test(String(e))) return J({ error: 'name', why: 'taken' }, 409)
       throw e
     }
     if (status !== s.status) await log(env, s.id, status, held || '')
-    return J({ status, name, d })
+    return J({ status, name, d: nd, look: lookId })
   }
 
   if (p === 'site' && m === 'DELETE') {
@@ -218,7 +372,8 @@ async function api(request, env, ctx, p, url) {
     for (const r of ph.results) await env.MEDIA.delete([`p/${r.id}`, `p/${r.id}-s`])
     await env.DB.batch([
       env.DB.prepare('DELETE FROM photo WHERE site_id = ?').bind(s.id),
-      env.DB.prepare("UPDATE site SET status='removed', name = name || '~' || id, d='{}', updated=? WHERE id = ?").bind(new Date().toISOString(), s.id),
+      env.DB.prepare('DELETE FROM msg WHERE site_id = ?').bind(s.id),
+      env.DB.prepare("UPDATE site SET status='removed', name = name || '~' || id, d='{}', notify_email=NULL, notify_ok=0, updated=? WHERE id = ?").bind(new Date().toISOString(), s.id),
     ])
     await log(env, s.id, 'deleted-by-maker', s.name)
     return J({ ok: true })
@@ -228,23 +383,105 @@ async function api(request, env, ctx, p, url) {
     const who = await sender(request, env)
     if (!(await take(env, who, 'photo'))) return J({ error: 'quota' }, 429)
     const have = await env.DB.prepare('SELECT COUNT(*) AS n FROM photo WHERE site_id = ?').bind(s.id).first()
-    if ((have?.n || 0) >= MAX_PHOTOS + 6) return J({ error: 'too-many' }, 400)
+    if ((have?.n || 0) >= (isGold ? MAX_PHOTOS.gold : MAX_PHOTOS.free) * 2 + 10) return J({ error: 'too-many' }, 400)
     const form = await request.formData()
     const role = ['photo', 'map', 'card'].includes(form.get('role')) ? form.get('role') : 'photo'
     const big = clean(await form.get('big')?.arrayBuffer?.() ?? new ArrayBuffer(0), MAX_BIG)
     const small = form.get('small') ? clean(await form.get('small').arrayBuffer(), MAX_SMALL) : null
     if (big.error) return J({ error: 'photo-' + big.error }, 400)
     if (small?.error) return J({ error: 'photo-' + small.error }, 400)
+    let credit = null
+    if (form.get('pd')) {
+      const pick = await pd.lookup(String(form.get('pd')))
+      if (!pick) return J({ error: 'photo-not-free' }, 400)
+      delete pick.big
+      credit = JSON.stringify(pick)
+    }
     const seen = await look(env.AI, (small || big).bytes, (small || big).kind)
     const id = rand(16)
-    await log(env, s.id, 'photo-' + seen.verdict, `${role} ${seen.why} ${seen.what || ''}`.trim())
+    await log(env, s.id, 'photo-' + seen.verdict, `${role}${credit ? ' pd' : ''} ${seen.why} ${seen.what || ''}`.trim())
     if (seen.verdict === 'refuse') return J({ error: 'photo-refused' }, 422)
     const meta = { v: seen.verdict === 'ok' ? 'ok' : 'hold' }
     await env.MEDIA.put(`p/${id}`, big.bytes, { httpMetadata: { contentType: typeOf(big.kind) }, customMetadata: meta })
     if (small) await env.MEDIA.put(`p/${id}-s`, small.bytes, { httpMetadata: { contentType: typeOf(small.kind) }, customMetadata: meta })
-    await env.DB.prepare('INSERT INTO photo (id, site_id, ext, bytes, w, h, role, verdict, why, created) VALUES (?,?,?,?,?,?,?,?,?,?)')
-      .bind(id, s.id, big.kind, big.bytes.length, Number(form.get('w')) || null, Number(form.get('h')) || null, role, meta.v, seen.why || null, new Date().toISOString()).run()
-    return J({ id, held: meta.v !== 'ok' })
+    await env.DB.prepare('INSERT INTO photo (id, site_id, ext, bytes, w, h, role, verdict, why, created, credit) VALUES (?,?,?,?,?,?,?,?,?,?,?)')
+      .bind(id, s.id, big.kind, big.bytes.length, Number(form.get('w')) || null, Number(form.get('h')) || null, role, meta.v, seen.why || null, new Date().toISOString(), credit).run()
+    return J({ id, held: meta.v !== 'ok', credit: credit ? JSON.parse(credit) : null })
+  }
+
+  if (p === 'pd' && m === 'GET') {
+    const who = await sender(request, env)
+    if (!(await take(env, who, 'pd'))) return J({ error: 'quota' }, 429)
+    return J({ results: await pd.search(url.searchParams.get('q')) })
+  }
+
+  if (p === 'pd/raw' && m === 'GET') {
+    const r = await pd.take(url.searchParams.get('id'))
+    if (r.error) return J({ error: r.error }, 400)
+    return new Response(r.bytes, { headers: { 'content-type': 'application/octet-stream', 'cache-control': 'no-store' } })
+  }
+
+  if (p === 'stats' && m === 'GET') {
+    const days = isGold ? Math.min(365, Math.max(7, Number(url.searchParams.get('days')) || 30)) : 30
+    return J({ ...(await stats.report(env, s.id, days)), gold: isGold, views: s.views })
+  }
+  if (p === 'stats.csv' && m === 'GET') {
+    if (!isGold) return J({ error: 'gold' }, 402)
+    return new Response(await stats.csv(env, s.id, 365), { headers: { 'content-type': 'text/csv; charset=utf-8', 'content-disposition': `attachment; filename="${s.name}-traffic.csv"` } })
+  }
+
+  if (p === 'msgs' && m === 'GET') {
+    const rows = (await env.DB.prepare("SELECT id, at, name, reach, body, status FROM msg WHERE site_id = ? AND status != 'gone' ORDER BY at DESC LIMIT 300").bind(s.id).all()).results
+    return J({ msgs: rows })
+  }
+  if (p === 'msgs' && m === 'POST') {
+    const b = await body(request)
+    const st = { read: 'read', gone: 'gone', unread: 'new', ok: 'read' }[b.act]
+    if (!st) return J({ error: 'act' }, 400)
+    if (b.all) await env.DB.prepare("UPDATE msg SET status = ? WHERE site_id = ? AND status = 'new'").bind(st, s.id).run()
+    else await env.DB.prepare('UPDATE msg SET status = ? WHERE site_id = ? AND id = ?').bind(st, s.id, String(b.id || '')).run()
+    return J({ ok: true })
+  }
+
+  if (p === 'notify' && m === 'PUT') {
+    const who = await sender(request, env)
+    if (!(await take(env, who, 'notify'))) return J({ error: 'quota' }, 429)
+    const b = await body(request)
+    const email = String(b.email || '').trim().toLowerCase().slice(0, 254)
+    if (!/^[^\s@<>"]{1,64}@[^\s@<>"]{1,190}\.[a-z]{2,}$/i.test(email)) return J({ error: 'email' }, 400)
+    const k = rand(32)
+    await env.DB.prepare('UPDATE site SET notify_email = ?, notify_ok = 0, notify_key = ? WHERE id = ?').bind(email, k, s.id).run()
+    const title = JSON.parse(s.d).name || s.name
+    const sent = await msg.mail(env, { to: email, ...msg.confirmOf(`${origin}/api/notify/ok?k=${k}`, title, origin) })
+    return J({ ok: true, sent })
+  }
+  if (p === 'notify' && m === 'DELETE') {
+    await env.DB.prepare('UPDATE site SET notify_email = NULL, notify_ok = 0, notify_key = NULL WHERE id = ?').bind(s.id).run()
+    return J({ ok: true })
+  }
+
+  if (p === 'gold' && m === 'POST') return J({ ...(await gold.start(env, s.id, rand)), tier: isGold ? 'gold' : 'free', gold_until: s.gold_until })
+  if (p === 'gold/slip' && m === 'POST') {
+    const who = await sender(request, env)
+    if (!(await take(env, who, 'slip'))) return J({ error: 'quota' }, 429)
+    const pay = await env.DB.prepare("SELECT * FROM pay WHERE site_id = ? AND status IN ('open','slip') ORDER BY created DESC LIMIT 1").bind(s.id).first()
+    if (!pay) return J({ error: 'no-payment' }, 400)
+    const form = await request.formData()
+    const file = form.get('slip')
+    if (!file || typeof file === 'string' || !file.size || file.size > 8_000_000) return J({ error: 'slip' }, 400)
+    const now = new Date().toISOString()
+    const key = `slip/${pay.id}`
+    await env.MEDIA.put(key, await file.arrayBuffer(), { httpMetadata: { contentType: file.type || 'image/jpeg' }, customMetadata: { v: 'slip' } })
+    const r = await gold.checkSlip(env, file, Number(pay.amount))
+    if (r.ok) {
+      const until = await gold.grant(env, s.id)
+      await env.DB.prepare("UPDATE pay SET status='paid', slip=?, note=?, updated=? WHERE id=?").bind(key, 'slipok ' + r.ref, now, pay.id).run()
+      await log(env, s.id, 'gold', 'slipok ' + r.ref)
+      return J({ ok: true, tier: 'gold', gold_until: until })
+    }
+    await env.DB.prepare("UPDATE pay SET status='slip', slip=?, note=?, updated=? WHERE id=?").bind(key, r.why, now, pay.id).run()
+    await log(env, s.id, 'gold-slip', r.why)
+    return J({ ok: true, waiting: true })
   }
 
   return J({ error: 'not-found' }, 404)
@@ -321,6 +558,11 @@ async function admin(request, env, rest, url) {
   const auth = request.headers.get('authorization') || ''
   const ok = env.ADMIN_KEY && auth.startsWith('Basic ') && (() => { try { return atob(auth.slice(6)).split(':').slice(1).join(':') === env.ADMIN_KEY } catch { return false } })()
   if (!ok) return new Response('', { status: 401, headers: { 'www-authenticate': 'Basic realm="motdang pages"' } })
+  const slip = /^\/slip\/([a-z0-9]{12})$/.exec(rest)
+  if (slip) {
+    const o = await env.MEDIA.get(`slip/${slip[1]}`)
+    return o ? new Response(o.body, { headers: { 'content-type': o.httpMetadata?.contentType || 'image/jpeg', 'cache-control': 'no-store' } }) : new Response('', { status: 404 })
+  }
   if (request.method === 'POST' && rest === '/act' && sameOrigin(request, url)) {
     const f = await request.formData()
     const id = String(f.get('id') || ''), act = String(f.get('act') || '')
@@ -328,8 +570,14 @@ async function admin(request, env, rest, url) {
     if (act === 'hold') await env.DB.prepare("UPDATE site SET status='held', held_why='admin' WHERE id=?").bind(id).run()
     if (act === 'remove') await env.DB.prepare("UPDATE site SET status='removed' WHERE id=?").bind(id).run()
     if (act === 'photo-ok') await releasePhoto(env, id)
+    if (act === 'gold') await gold.grant(env, id)
+    if (act === 'pay-ok') {
+      const p = await env.DB.prepare('SELECT site_id FROM pay WHERE id = ?').bind(id).first()
+      if (p) { await gold.grant(env, p.site_id); await env.DB.prepare("UPDATE pay SET status='paid', note=COALESCE(note,'') || ' · by hand', updated=? WHERE id=?").bind(new Date().toISOString(), id).run() }
+    }
+    if (act === 'pay-no') await env.DB.prepare("UPDATE pay SET status='refused', updated=? WHERE id=?").bind(new Date().toISOString(), id).run()
     await log(env, id, 'admin-' + act, '')
-    return Response.redirect(url.origin + '/~/admin', 303)
+    return Response.redirect(url.origin + '/admin', 303)
   }
   return html(await adminPage(env), 200)
 }
@@ -367,10 +615,16 @@ async function tidy(env) {
     if (seen.verdict === 'ok') await releasePhoto(env, p.id)
     else if (seen.verdict === 'refuse') { await env.MEDIA.delete([`p/${p.id}`, `p/${p.id}-s`]); await env.DB.prepare("UPDATE photo SET verdict='refused', why=? WHERE id=?").bind(seen.why, p.id).run() }
   }
-  await env.DB.prepare('DELETE FROM quota WHERE day < ?').bind(new Date(Date.now() - 3 * 864e5).toISOString().slice(0, 10)).run()
+  const day = (n) => new Date(Date.now() - n * 864e5).toISOString().slice(0, 10)
+  await env.DB.prepare('DELETE FROM quota WHERE day < ?').bind(day(3)).run()
+  await env.DB.prepare('DELETE FROM seen WHERE day < ?').bind(day(2)).run()
+  await env.DB.prepare("DELETE FROM pay WHERE status = 'open' AND created < ?").bind(new Date(Date.now() - 14 * 864e5).toISOString()).run()
 }
 
 // ---- small helpers -----------------------------------------------------------------
+
+const ESC = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }
+const escHtml = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ESC[c])
 
 function sameOrigin(request, url) {
   const o = request.headers.get('origin')

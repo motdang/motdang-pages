@@ -3,8 +3,9 @@
 // tiles come from motdang.net itself; the ground is Mot Dang's own style.
 
 const NORTH = [97.3, 17.0, 100.6, 20.5] // cm-cr.pmtiles covers this box
-const WORLD = '/tiles/world.pmtiles'
-const LOCAL = '/tiles/cm-cr.pmtiles'
+const MAIN = '' // /vendor and /tiles are read from motdang.net through this Worker
+const WORLD = MAIN + '/tiles/world.pmtiles'
+const LOCAL = MAIN + '/tiles/cm-cr.pmtiles'
 
 let ready = null
 function load() {
@@ -16,8 +17,8 @@ function load() {
     document.head.appendChild(el)
   })
   ready = Promise.all([
-    add('link', { rel: 'stylesheet', href: '/vendor/maplibre-gl.css' }),
-    add('script', { src: '/vendor/pmtiles.js' }).then(() => add('script', { src: '/vendor/maplibre-gl.js' })),
+    add('link', { rel: 'stylesheet', href: MAIN + '/vendor/maplibre-gl.css' }),
+    add('script', { src: MAIN + '/vendor/pmtiles.js' }).then(() => add('script', { src: MAIN + '/vendor/maplibre-gl.js' })),
   ]).then(async () => {
     const proto = new window.pmtiles.Protocol()
     window.maplibregl.addProtocol('pmtiles', proto.tile)
@@ -36,11 +37,11 @@ async function hasWorld() {
 const inNorth = (lng, lat) => lng >= NORTH[0] && lng <= NORTH[2] && lat >= NORTH[1] && lat <= NORTH[3]
 
 async function style(lng, lat) {
-  const s = await (await fetch('/~/s/style.json')).json()
+  const s = await (await fetch('/s/style.json')).json()
   const world = await hasWorld()
   const file = world ? WORLD : LOCAL
   s.sources.p.url = 'pmtiles://' + new URL(file, location.href).href
-  s.glyphs = new URL('/~/s/glyphs/', location.href).href + '{fontstack}/{range}.pbf'
+  s.glyphs = new URL('/s/glyphs/', location.href).href + '{fontstack}/{range}.pbf'
   return { style: s, covered: world || inNorth(lng, lat) }
 }
 
