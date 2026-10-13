@@ -132,3 +132,4 @@ h2{font-size:clamp(30px,6vw,52px);line-height:1.08;margin:0 0 12px}
 .foot{padding:26px 16px 40px;text-align:center;color:var(--mute);font-size:15px;border-top:2px dashed var(--line)}
 .rise{opacity:0;transform:translateY(24px);transition:opacity .8s ease,transform .8s cubic-bezier(.2,.8,.2,1)}.rise.in{opacity:1;transform:none}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}.rise{opacity:1;transform:none}.stage{transform:none}}
+html[lang=th] .hero h1,html[lang=my] .hero h1{line-height:1.2}html[lang=th] h2,html[lang=my] h2{line-height:1.25}

@@ -29,6 +29,12 @@ migrations_dir = "migrations"
 binding = "MEDIA"
 bucket_name = "motdang-pages"
 
+# motdang.net's own Worker, for the files a page reads from it (/front/ doodler,
+# /vendor/, /tiles/, /data/): a fetch to the same zone skips its Workers.
+[[services]]
+binding = "SITE"
+service = "mot-dang-site"
+
 # Llama Guard on page text, Mistral Small on photos.
 [ai]
 binding = "AI"

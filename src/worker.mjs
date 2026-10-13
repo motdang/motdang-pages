@@ -81,9 +81,11 @@ async function route(request, env, ctx) {
 }
 
 async function passThrough(request, env, url) {
-  const h = { 'user-agent': 'Mozilla/5.0 (sites.motdang.net)' }
-  for (const k of ['range', 'if-none-match', 'if-modified-since']) if (request.headers.get(k)) h[k] = request.headers.get(k)
-  const r = await fetch((env.DEV_PROXY || MAIN) + url.pathname + url.search, { method: request.method, headers: h, cf: { cacheEverything: true, cacheTtl: 3600 } })
+  const h = new Headers()
+  for (const k of ['user-agent', 'accept', 'accept-language', 'accept-encoding', 'range', 'if-none-match', 'if-modified-since', 'sec-fetch-mode', 'sec-fetch-dest', 'sec-fetch-site'])
+    if (request.headers.get(k)) h.set(k, request.headers.get(k))
+  const to = new Request((env.DEV_PROXY || MAIN) + url.pathname + url.search, { method: request.method, headers: h })
+  const r = env.SITE && !env.DEV_PROXY ? await env.SITE.fetch(to) : await fetch(to, { cf: { cacheEverything: true, cacheTtl: 3600 } })
   const out = new Headers(r.headers)
   out.delete('set-cookie')
   out.set('access-control-allow-origin', '*')
@@ -121,12 +123,12 @@ async function page(request, env, ctx, name, sub, url, origin) {
 }
 
 const CSP_PAGE = (nonce) => `default-src 'self'; img-src 'self' data: blob: https://i.ytimg.com; style-src 'self' 'unsafe-inline'; font-src 'self'; ` +
-  `script-src 'self'${nonce ? ` 'nonce-${nonce}'` : ''}; connect-src 'self'; worker-src 'self' blob:; child-src 'self' blob:; ` +
+  `script-src 'self'${nonce ? ` 'nonce-${nonce}'` : ''} https://static.cloudflareinsights.com; connect-src 'self' https://cloudflareinsights.com; worker-src 'self' blob:; child-src 'self' blob:; ` +
   `frame-src 'self' https://www.youtube-nocookie.com https://player.vimeo.com; frame-ancestors 'self'; base-uri 'none'; form-action 'self'`
 const CSP_MAP = (nonce) => `default-src 'self'; img-src 'self' data: blob: https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://motdang.net; font-src 'self' https://fonts.gstatic.com https://motdang.net; ` +
   `script-src 'self' 'nonce-${nonce}' https://motdang.net; connect-src 'self' https://motdang.net https://mot-dang-claims.nanobotco.workers.dev; worker-src 'self' blob:; frame-ancestors 'self'; base-uri https://motdang.net`
-const CSP_TOOL = `default-src 'self'; img-src 'self' data: blob: https:; style-src 'self' 'unsafe-inline' https://motdang.net; font-src 'self'; script-src 'self' https://motdang.net; ` +
-  `connect-src 'self' https://motdang.net; worker-src 'self' blob:; child-src 'self' blob:; frame-src 'self' https://www.youtube-nocookie.com https://player.vimeo.com; frame-ancestors 'self'; base-uri 'none'; form-action 'self'`
+const CSP_TOOL = `default-src 'self'; img-src 'self' data: blob: https:; style-src 'self' 'unsafe-inline' https://motdang.net; font-src 'self'; script-src 'self' https://motdang.net https://static.cloudflareinsights.com; ` +
+  `connect-src 'self' https://motdang.net https://cloudflareinsights.com; worker-src 'self' blob:; child-src 'self' blob:; frame-src 'self' https://www.youtube-nocookie.com https://player.vimeo.com; frame-ancestors 'self'; base-uri 'none'; form-action 'self'`
 
 function html(body, status = 200, { nonce, cache, map } = {}) {
   return new Response(body, {
