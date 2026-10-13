@@ -238,10 +238,43 @@ function goldTease() {
   toast(ui(S.lang, 'goldLock') + ' ★')
 }
 
+// A place page on motdang.net sends what its record holds in the hash: pin=lat,lng  tel=  ad=  cc=
+// hrs=Sunday..Saturday joined by '.', a day = '0900-1800' (ranges joined by ','), 'x' = closed, 'a' = always.
+function prefill(h) {
+  const pre = {}
+  const m = /^(-?\d{1,2}(?:\.\d+)?),(-?\d{1,3}(?:\.\d+)?)$/.exec(h.get('pin') || '')
+  if (m && Math.abs(+m[1]) <= 85 && Math.abs(+m[2]) <= 180) pre.pin = [+m[1], +m[2]]
+  const tel = (h.get('tel') || '').replace(/[^\d+ ()-]/g, '').slice(0, 30)
+  if (tel) pre.tel = tel
+  const ad = (h.get('ad') || '').slice(0, 200)
+  if (ad) pre.ad = ad
+  if (/^[A-Z]{2}$/.test(h.get('cc') || '')) pre.cc = h.get('cc')
+  const hv = h.get('hrs') || ''
+  if (hv === 'a') pre.hours = 'a'
+  else {
+    const days = hv.split('.')
+    if (days.length === 7) {
+      const week = days.map((x) => (x === 'x' ? null : x.split(',').map((r) => /^(\d{2})(\d{2})-(\d{2})(\d{2})$/.exec(r)).filter(Boolean).map((q) => [`${q[1]}:${q[2]}`, `${q[3]}:${q[4]}`])))
+      if (week.some((x) => x && x.length)) pre.hours = week.map((x) => (x && x.length ? x : null))
+    }
+  }
+  return Object.keys(pre).length ? pre : null
+}
+function applyPrefill(d) {
+  const p = S.pre
+  if (!p) return d
+  if (p.pin) d.place = { ...d.place, lat: p.pin[0], lng: p.pin[1], addr: p.ad || d.place.addr, cc: p.cc || d.place.cc }
+  else if (p.ad) d.place = { ...d.place, addr: p.ad }
+  if (p.tel) d.contact = { ...d.contact, phone: p.tel }
+  if (p.hours === 'a') d.hours = { ...d.hours, on: true, always: true }
+  else if (p.hours) d.hours = { ...d.hours, on: true, always: false, week: p.hours }
+  return d
+}
+
 async function create(look, btn) {
   S.look = look
   btn.classList.add('on')
-  S.d = normalize({ ...starter(S.kind), name: S.name.trim() })
+  S.d = normalize(applyPrefill({ ...starter(S.kind), name: S.name.trim() }))
   if (S.kind === 'event') S.d.event = starter('event').event
   S.pageLang = PAGE_LANGS[S.lang] ? S.lang : 'en'
   try {
@@ -1035,6 +1068,10 @@ async function boot() {
       toast(ui(S.lang, e.status === 403 ? 'e_link' : 'e_net'))
       return
     }
+  } else if (h.get('pin') || h.get('tel') || h.get('hrs')) {
+    S.pre = prefill(h)
+    if (h.get('title')) { S.name = h.get('title').slice(0, 60); S.addr = slugify(S.name, h.get('kind') || 'shop') }
+    if (KINDS.includes(h.get('kind'))) { S.kind = h.get('kind'); S.look = LOOK_FOR[S.kind]; S.step = 'name' }
   } else if (h.get('name')) {
     S.addr = h.get('name').toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 30)
     S.addrTouched = true
