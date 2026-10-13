@@ -178,8 +178,9 @@ function asData(r, origin) {
 }
 
 async function feed(env, origin) {
-  const rows = (await env.DB.prepare("SELECT * FROM site WHERE status='live' ORDER BY published DESC LIMIT 5000").all()).results
-  return new Response(JSON.stringify({ generated: new Date().toISOString(), pages: rows.map((r) => asData(r, origin)) }), {
+  // reports: how many readers have reported the page. Mot Dang admits a pin with no record only at 0 (importers/own_pages.py).
+  const rows = (await env.DB.prepare("SELECT *, (SELECT COUNT(*) FROM report WHERE report.site_id = site.id) AS reports FROM site WHERE status='live' ORDER BY published DESC LIMIT 5000").all()).results
+  return new Response(JSON.stringify({ generated: new Date().toISOString(), pages: rows.map((r) => ({ ...asData(r, origin), reports: Number(r.reports) || 0 })) }), {
     headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'public, max-age=300', 'access-control-allow-origin': '*' },
   })
 }
