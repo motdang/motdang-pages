@@ -109,3 +109,15 @@ test('calendar, offers, bookings, rooms and listings: Gold parts only on Gold', 
   for (const k of ['class="camp"', 'id="book"', 'id="rooms"', 'id="lists"', 'href="/khaosoi-mae-sai/l/list01"']) assert.ok(gold.includes(k), k)
   assert.equal((gold.match(/<li[^>]*><time class="dt"/g) || []).length, 1) // a weekly item shows once
 })
+
+test('Gold year: Agoda and Booking.com buttons, rooms without direct booking; hotel month: direct booking', () => {
+  const d = { name: 'x', rooms: [{ id: 'room01', n: 'Room', p: '900' }], ota: { agoda: 'https://www.agoda.com/x/hotel/chiang-mai-th.html', booking: 'https://www.booking.com/hotel/th/x.html', evil: 1 } }
+  const year = render({ ...base, tier: 'gold', d })
+  assert.match(year, /class="btn ota ota-agoda"[^>]*href="https:\/\/www\.agoda\.com\//)
+  assert.match(year, /class="btn ota ota-booking"/)
+  assert.ok(year.includes('id="rooms"') && !year.includes('data-pick='))
+  const hotel = render({ ...base, tier: 'gold', hotel: true, d })
+  assert.match(hotel, /data-pick="room01"/)
+  assert.ok(!render({ ...base, d }).includes('class="btn ota ota-agoda"')) // free pages: no buttons
+  assert.equal(normalize({ ota: { agoda: 'https://evil.example/agoda.com' } }).ota.agoda, '')
+})

@@ -60,6 +60,9 @@ export function normalizeExtras(d, o) {
     ical: (Array.isArray(x?.ical) ? x.ical : []).map((u) => icalUrl(u)).filter(Boolean).slice(0, 4),
   })).filter((x) => x.n).slice(0, MAX.rooms))
 
+  const ot = d.ota || {}
+  o.ota = { agoda: otaUrl(ot.agoda, ['agoda.com', 'agoda.onelink.me']), booking: otaUrl(ot.booking, ['booking.com']) }
+
   const st = d.stay || {}
   o.stay = {
     in: HHMM.test(st.in || '') ? st.in : '14:00', out: HHMM.test(st.out || '') ? st.out : '12:00',
@@ -81,6 +84,14 @@ export function normalizeExtras(d, o) {
     }
   }).filter((x) => x.t).slice(0, MAX.lists))
   return o
+}
+
+/** A hotel's own Agoda or Booking.com page, else ''. */
+function otaUrl(u, hosts) {
+  const v = payLink(u)
+  if (!v) return ''
+  const h = new URL(v).hostname.toLowerCase()
+  return hosts.some((x) => h === x || h.endsWith('.' + x)) ? v : ''
 }
 
 /** A hotel's own payment page (Stripe, PayPal, Omise, a bank's link): any https address, else ''. */

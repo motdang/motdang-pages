@@ -3,6 +3,7 @@
 
 export const Z = {
   en: {
+    s_ota: 'Agoda · Booking.com', o_otaHint: 'Your listing pages there, as buttons on your page.', h_needHotel: 'Guests book rooms here directly with the hotel price, ฿{p} a month. On the Gold year your rooms show with your Agoda and Booking.com buttons.', g_hotelGo: 'Take direct bookings: ฿{p} a month', g_planGold: 'Gold ฿{p} a year · Agoda and Booking.com buttons', g_planHotel: 'Hotel ฿{p} a month · direct bookings',
     g_priceMonth: '฿{p} a month', g_hotelWhy: 'The hotel price: your page takes room bookings. Each payment adds a month.',
     h_setup: 'Your rooms take bookings', h_in: 'Check-in from', h_out: 'Check-out by', h_instant: 'Confirm a free stay at once (no need to accept)', h_pay: 'Guests pay', h_payHotel: 'At the hotel', h_payLink: 'Your payment link', h_link: 'Your payment page (Stripe, PayPal, your bank…)', h_dep: 'Paid when booking', h_depNone: 'Nothing', h_dep1: 'First night', h_depFull: 'All of it', h_policy: 'Cancellation and house rules', h_policyEx: 'Free cancellation up to 3 days before arrival.', r_units: 'Rooms of this type', r_p2: 'Fri & Sat night', r_min: 'Fewest nights', r_seasons: 'Season prices (from, to, a night)', r_addSeason: 'Add a season', bk_paid: 'Paid', bk_unpaid: 'Not paid', bk_markPaid: 'Mark paid', bk_markUnpaid: 'Mark not paid', bk_hold: 'Closed', bk_gone: 'Cancelled', bk_total: 'Booked', bk_close: 'Close nights (walk-in, repairs, a booking from elsewhere)', bk_closeWho: 'Name or note', bk_closeGo: 'Close these nights', roomInB: 'First night', roomOutB: 'Morning out',
     k_stay: 'Hotel or guesthouse', h_stay: 'Rooms · dates · calendars', k_homes: 'Homes to sell or rent', h_homes: 'Listings · photos · map',
@@ -26,9 +27,10 @@ export const Z = {
     bk_accept: 'Accept', bk_decline: 'Decline', bk_del: 'Delete', bk_people: 'people', bk_cal: 'Room calendars', bk_read: 'read', bk_failed: 'did not answer',
     g_trial: 'Gold for your first 30 days, until {d}. Keep it:', g_domain: 'Your own address', g_domainHint: 'yourshop.com shows this page. Buy the name anywhere, then add the records below.',
     g_domainGo: 'Connect', g_domainOff: 'Own addresses open soon.', g_domainWait: 'Waiting for the records', g_domainOn: 'Live at', g_domainDrop: 'Remove',
-    g_f7: 'Bookings, rooms with calendars, listings', g_f8: 'Timed offers with a countdown', g_f9: 'Your page in 12 languages',
+    g_f7: 'Bookings, listings, Agoda and Booking.com buttons; hotels take direct room bookings at ฿555 a month', g_f8: 'Timed offers with a countdown', g_f9: 'Your page in 12 languages',
   },
   th: {
+    s_ota: 'Agoda · Booking.com', o_otaHint: 'หน้าที่พักของคุณบนเว็บเหล่านั้น เป็นปุ่มบนหน้าเว็บของคุณ', h_needHotel: 'แขกจองห้องตรงที่นี่ได้กับราคาโรงแรม ฿{p} ต่อเดือน ทองรายปีแสดงห้องพักพร้อมปุ่ม Agoda และ Booking.com', g_hotelGo: 'รับจองตรง: ฿{p} ต่อเดือน', g_planGold: 'ทอง ฿{p} ต่อปี · ปุ่ม Agoda และ Booking.com', g_planHotel: 'โรงแรม ฿{p} ต่อเดือน · รับจองตรง',
     g_priceMonth: '฿{p} ต่อเดือน', g_hotelWhy: 'ราคาโรงแรม: หน้าเว็บนี้รับจองห้องพัก จ่ายหนึ่งครั้งได้หนึ่งเดือน',
     h_setup: 'ห้องพักรับจองได้', h_in: 'เช็คอินตั้งแต่', h_out: 'เช็คเอาท์ก่อน', h_instant: 'ยืนยันทันทีเมื่อห้องว่าง (ไม่ต้องกดรับ)', h_pay: 'แขกจ่าย', h_payHotel: 'ที่โรงแรม', h_payLink: 'ลิงก์จ่ายเงินของคุณ', h_link: 'หน้าจ่ายเงินของคุณ (Stripe, PayPal, ธนาคาร…)', h_dep: 'จ่ายตอนจอง', h_depNone: 'ไม่ต้องจ่าย', h_dep1: 'คืนแรก', h_depFull: 'ทั้งหมด', h_policy: 'การยกเลิกและกฎของที่พัก', h_policyEx: 'ยกเลิกฟรีก่อนวันเข้าพัก 3 วัน', r_units: 'จำนวนห้องแบบนี้', r_p2: 'คืนศุกร์และเสาร์', r_min: 'พักน้อยสุด (คืน)', r_seasons: 'ราคาตามฤดู (ตั้งแต่ ถึง ต่อคืน)', r_addSeason: 'เพิ่มฤดู', bk_paid: 'จ่ายแล้ว', bk_unpaid: 'ยังไม่จ่าย', bk_markPaid: 'จ่ายแล้ว', bk_markUnpaid: 'ยังไม่จ่าย', bk_hold: 'ปิดห้อง', bk_gone: 'ยกเลิกแล้ว', bk_total: 'ยอดจอง', bk_close: 'ปิดห้อง (walk-in ซ่อม จองจากที่อื่น)', bk_closeWho: 'ชื่อหรือหมายเหตุ', bk_closeGo: 'ปิดคืนเหล่านี้', roomInB: 'คืนแรก', roomOutB: 'วันออก',
     k_stay: 'โรงแรม เกสต์เฮาส์', h_stay: 'ห้องพัก · วันว่าง · ปฏิทิน', k_homes: 'บ้าน ที่ดิน ขายหรือเช่า', h_homes: 'ประกาศ · รูป · แผนที่',
@@ -52,7 +54,7 @@ export const Z = {
     bk_accept: 'รับ', bk_decline: 'ปฏิเสธ', bk_del: 'ลบ', bk_people: 'คน', bk_cal: 'ปฏิทินห้องพัก', bk_read: 'อ่านแล้ว', bk_failed: 'ไม่ตอบ',
     g_trial: 'ทองฟรี 30 วันแรก ถึง {d} ต่ออายุทอง:', g_domain: 'ชื่อเว็บของคุณเอง', g_domainHint: 'yourshop.com จะเปิดหน้านี้ ซื้อชื่อที่ไหนก็ได้ แล้วใส่ค่าด้านล่าง',
     g_domainGo: 'เชื่อม', g_domainOff: 'ชื่อเว็บของคุณเองเปิดเร็ว ๆ นี้', g_domainWait: 'รอค่า DNS', g_domainOn: 'ออนไลน์ที่', g_domainDrop: 'เอาออก',
-    g_f7: 'รับจอง ห้องพักพร้อมปฏิทิน ประกาศขายเช่า', g_f8: 'โปรโมชั่นตั้งเวลา นับถอยหลัง', g_f9: 'หน้าเว็บ 12 ภาษา',
+    g_f7: 'รับจอง ประกาศขายเช่า ปุ่ม Agoda และ Booking.com โรงแรมรับจองห้องตรงเดือนละ ฿555', g_f8: 'โปรโมชั่นตั้งเวลา นับถอยหลัง', g_f9: 'หน้าเว็บ 12 ภาษา',
   },
   my: {
     k_stay: 'ဟိုတယ်၊ တည်းခိုခန်း', h_stay: 'အခန်း · ရက် · ပြက္ခဒိန်', k_homes: 'အိမ် ရောင်း/ငှား', h_homes: 'ကြော်ငြာ · ဓာတ်ပုံ · မြေပုံ',
@@ -65,6 +67,7 @@ export const Z = {
     t_book: 'ကြိုတင်မှာယူမှု', bk_accept: 'လက်ခံ', bk_decline: 'ငြင်း', bk_del: 'ဖျက်', db_find: 'ရှာရန်', db_all: 'အားလုံး',
   },
   zh: {
+    s_ota: 'Agoda · Booking.com', o_otaHint: '你在这些网站上的房源页面，做成网页上的按钮。', h_needHotel: '酒店价格每月 ฿{p}，客人可以在这里直接订房。金卡年费版显示客房和 Agoda、Booking.com 按钮。', g_hotelGo: '直接接受预订：每月 ฿{p}', g_planGold: '金卡 每年 ฿{p} · Agoda 和 Booking.com 按钮', g_planHotel: '酒店 每月 ฿{p} · 直接预订',
     g_priceMonth: '每月 ฿{p}', g_hotelWhy: '酒店价格：这个网页接受客房预订，每付一次加一个月。',
     h_setup: '客房可以接受预订', h_in: '入住时间', h_out: '退房时间', h_instant: '有空房就直接确认（不用接受）', h_pay: '客人付款', h_payHotel: '到店付', h_payLink: '你的付款链接', h_link: '你的付款页面（Stripe、PayPal、银行…）', h_dep: '预订时付', h_depNone: '不用付', h_dep1: '第一晚', h_depFull: '全部', h_policy: '取消和入住规定', h_policyEx: '入住前 3 天可免费取消。', r_units: '这种房间有几间', r_p2: '周五、周六晚', r_min: '最少几晚', r_seasons: '季节价格（从、到、每晚）', r_addSeason: '添加季节', bk_paid: '已付', bk_unpaid: '未付', bk_markPaid: '标为已付', bk_markUnpaid: '标为未付', bk_hold: '已关房', bk_gone: '已取消', bk_total: '预订金额', bk_close: '关房（散客、维修、别处的预订）', bk_closeWho: '名字或备注', bk_closeGo: '关闭这些晚上', roomInB: '第一晚', roomOutB: '离开那天',
     k_stay: '酒店、民宿', h_stay: '客房 · 日期 · 日历', k_homes: '房屋出售或出租', h_homes: '房源 · 照片 · 地图',
@@ -86,6 +89,6 @@ export const Z = {
     bk_accept: '接受', bk_decline: '拒绝', bk_del: '删除', bk_people: '人', bk_cal: '客房日历', bk_read: '已读取', bk_failed: '没有回应',
     g_trial: '前 30 天免费享用金卡，到 {d}。续费：', g_domain: '你自己的网址', g_domainHint: 'yourshop.com 打开这个网页。在任何地方买域名，然后添加下面的记录。',
     g_domainGo: '连接', g_domainOff: '自有网址即将开放。', g_domainWait: '等待 DNS 记录', g_domainOn: '已上线：', g_domainDrop: '移除',
-    g_f7: '预约、带日历的客房、房源', g_f8: '带倒计时的限时优惠', g_f9: '网页有 12 种语言',
+    g_f7: '预约、房源、Agoda 和 Booking.com 按钮；酒店每月 ฿555 直接接受客房预订', g_f8: '带倒计时的限时优惠', g_f9: '网页有 12 种语言',
   },
 }

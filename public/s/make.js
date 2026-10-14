@@ -26,6 +26,7 @@ const S = {
   pageLang: '', d: null, open: new Set(), local: new Map(), photoGps: null, picker: null, busy: 0,
   tab: 'edit', tier: 'gold', goldUntil: '', notifyEmail: '', notifyOk: false, unread: 0, // a page starts with 30 days of Gold
   trial: false, asks: 0, domain: '', domainState: '', domains: false, price: 3000, dbFam: '', dbQ: '',
+  plan: 'gold', hotel: true, plans: null, payPlan: '',
 }
 const isGold = () => S.tier === 'gold'
 const ding = (n, look = 'ink', play = 'loop') => `<i data-dingbat="${n}" data-look="${look}" data-play="${play}" aria-hidden="true"></i>`
@@ -55,7 +56,7 @@ const DEFAULT_OPEN = {
   food: ['words', 'photos', 'items', 'order', 'map', 'hours', 'contact'],
   service: ['words', 'photos', 'svc', 'items', 'contact', 'map'],
   me: ['words', 'photos', 'links', 'contact'],
-  stay: ['words', 'photos', 'rooms', 'map', 'contact', 'svc'],
+  stay: ['words', 'photos', 'rooms', 'ota', 'map', 'contact'],
   homes: ['words', 'lists', 'photos', 'contact', 'map'],
   event: ['event', 'words', 'cal', 'photos', 'map', 'contact'],
   group: ['words', 'cal', 'photos', 'links', 'contact'],
@@ -290,7 +291,7 @@ async function create(look, btn) {
   S.pageLang = PAGE_LANGS[S.lang] ? S.lang : 'en'
   try {
     const r = await call('POST', 'sites', { name: S.addr, kind: S.kind, look, lang: S.pageLang, d: S.d })
-    S.token = r.token; S.name = r.name; S.status = r.status; S.tier = r.tier || 'gold'; S.goldUntil = r.gold_until || ''; S.trial = !!r.trial
+    S.token = r.token; S.name = r.name; S.status = r.status; S.tier = r.tier || 'gold'; S.goldUntil = r.gold_until || ''; S.trial = !!r.trial; S.hotel = !!r.trial
     history.replaceState(null, '', '/make#t=' + S.token)
     remember()
     S.open = new Set(DEFAULT_OPEN[S.kind])
@@ -306,7 +307,7 @@ async function create(look, btn) {
 
 const SECTIONS = [
   ['event', 'cal', 's_event'], ['words', 'note', 's_words'], ['drawing', 'sparkle', 's_drawing'], ['photos', 'camera', 's_photos'],
-  ['rooms', 'moon', 's_rooms', 'gold'], ['lists', 'tag', 's_lists', 'gold'], ['svc', 'clock', 's_svc', 'gold'], ['items', 'tag', 's_items'],
+  ['rooms', 'moon', 's_rooms', 'gold'], ['ota', 'globe', 's_ota', 'gold'], ['lists', 'tag', 's_lists', 'gold'], ['svc', 'clock', 's_svc', 'gold'], ['items', 'tag', 's_items'],
   ['cal', 'cal', 's_cal'], ['camps', 'party', 's_camps', 'gold'],
   ['order', 'basket', 's_order'], ['contact', 'phone', 's_contact'], ['map', 'pin', 's_map'], ['spots', 'compass', 's_spots'], ['hours', 'clock', 's_hours'],
   ['links', 'link', 's_links'], ['msg', 'mail', 's_msg'], ['look', 'star', 's_look'], ['video', 'camera', 's_video', 'gold'],
@@ -316,7 +317,7 @@ function hasData(id) {
   const d = S.d
   return { event: !!d.event, words: true, drawing: true, photos: d.photos.length > 0, items: d.items.length > 0, order: !!(d.order.grabfood || d.order.lineman),
     contact: Object.values(d.contact).some(Boolean), map: d.place.lat !== null || !!d.place.addr, hours: d.hours.on, links: d.links.length > 0, msg: true, look: true,
-    video: !!d.video, spots: d.spots.length > 0, cal: d.cal.length > 0, camps: d.camps.length > 0, svc: d.svc.length > 0, rooms: d.rooms.length > 0, lists: d.lists.length > 0 }[id]
+    video: !!d.video, spots: d.spots.length > 0, cal: d.cal.length > 0, ota: !!(d.ota.agoda || d.ota.booking), camps: d.camps.length > 0, svc: d.svc.length > 0, rooms: d.rooms.length > 0, lists: d.lists.length > 0 }[id]
 }
 
 function tabs() {
@@ -511,9 +512,14 @@ Object.assign(SEC, {
       <div class="grid2f"><label class="mini"><span>${T('b_depAmt')}</span><input data-k="book.deposit" value="${val(b.deposit)}" inputmode="decimal" maxlength="12"></label>
       <label class="mini"><span>${T('b_pp')}</span><input data-k="book.pp" value="${val(b.pp)}" inputmode="numeric" maxlength="20"></label></div></details>`
   },
+  ota() {
+    return `<p class="hint">${T('o_otaHint')}</p>` + field('ota.agoda', 'Agoda', S.d.ota.agoda, 'url', 'placeholder="https://www.agoda.com/…"') +
+      field('ota.booking', 'Booking.com', S.d.ota.booking, 'url', 'placeholder="https://www.booking.com/hotel/th/…"')
+  },
   rooms() {
     const st = S.d.stay
-    return `<div class="rowc" style="margin-bottom:12px"><b>${T('h_setup')}</b>
+    return (S.hotel ? '' : `<p class="glocked">${esc(ui(S.lang, 'h_needHotel').replace('{p}', new Intl.NumberFormat(S.lang).format(S.plans?.hotel?.baht || 555)))} <button class="linkbtn" data-tab="gold">${T('goldOpen')} →</button></p>`) +
+      `<div class="rowc" style="margin-bottom:12px"><b>${T('h_setup')}</b>
       <div class="grid2f" style="margin-top:8px"><label class="mini"><span>${T('h_in')}</span><input type="time" data-k="stay.in" value="${val(st.in)}"></label><label class="mini"><span>${T('h_out')}</span><input type="time" data-k="stay.out" value="${val(st.out)}"></label></div>
       <label class="check"><input type="checkbox" class="sw" data-k="stay.instant" ${st.instant ? 'checked' : ''}>${T('h_instant')}</label>
       <div class="field"><span>${T('h_pay')}</span>${seg('stay.pay', st.pay, [['hotel', T('h_payHotel')], ['pp', 'PromptPay'], ['link', T('h_payLink')]])}</div>
@@ -741,7 +747,7 @@ function preview(now) {
     const f = $('#frame')
     if (!f) return
     if (window.innerWidth < 980 && !$('#pv').classList.contains('show') && !now) return
-    const html = render({ name: S.name, look: S.look, lang: S.pageLang, kind: S.kind, d: S.d, views: S.views || 1234, status: 'live', tier: S.tier }, { preview: true, img: imgUrl, origin: location.origin })
+    const html = render({ name: S.name, look: S.look, lang: S.pageLang, kind: S.kind, d: S.d, views: S.views || 1234, status: 'live', tier: S.tier }, { preview: true, img: imgUrl, origin: location.origin, hotel: S.hotel })
     const y = f.contentWindow?.scrollY || 0
     f.srcdoc = html
     f.onload = () => { try { f.contentWindow.scrollTo(0, y) } catch {} ; f.contentDocument?.querySelectorAll('a[href]').forEach((a) => a.setAttribute('target', '_blank')) }
@@ -1121,22 +1127,29 @@ async function drawGold() {
   const feats = ['g_f7', 'g_f8', 'g_f9', 'g_f1', 'g_f2', 'g_f3', 'g_f4', 'g_f5', 'g_f6']
   const fdings = ['key', 'megaphone', 'chat', 'crown', 'search', 'camera', 'compass', 'calendar', 'star']
   const head = `<section class="goldhero">${LOOKS.gold.art}<h2>${T('g_lead')}</h2><ul>${feats.map((k, i) => `<li>${ding(fdings[i], 'paper')}<span>${T(k)}</span></li>`).join('')}</ul></section>`
-  if (isGold() && !S.trial) {
-    tb.innerHTML = head + `<p class="goldon">★ ${esc(ui(S.lang, 'g_on').replace('{d}', S.goldUntil || ''))}</p>` + domainBox()
+  const rooms = S.d.rooms.length > 0
+  const want = S.payPlan || (rooms && (S.trial || S.plan === 'hotel') ? 'hotel' : 'gold')
+  const needHotel = rooms && S.plan !== 'hotel'
+  if (isGold() && !S.trial && !(needHotel && S.payPlan === 'hotel')) {
+    tb.innerHTML = head + `<p class="goldon">★ ${esc(ui(S.lang, 'g_on').replace('{d}', S.goldUntil || ''))}</p>` +
+      (needHotel ? `<p style="text-align:center"><button class="go" id="tohotel">${esc(ui(S.lang, 'g_hotelGo').replace('{p}', new Intl.NumberFormat(S.lang).format(S.plans?.hotel?.baht || 555)))}</button></p>` : '') + domainBox()
     dingbats(['signals', 'classic', 'curious'])
     bindDomain()
+    const th = $('#tohotel'); if (th) th.onclick = () => { S.payPlan = 'hotel'; drawGold() }
     return
   }
-  try { r = await call('POST', 'gold') } catch { tb.innerHTML = head + `<p class="hint">${T('e_net')}</p>`; return }
+  const pick = rooms && S.plans ? `<div class="field" style="text-align:center">${seg('payplan', want, [['gold', esc(ui(S.lang, 'g_planGold').replace('{p}', new Intl.NumberFormat(S.lang).format(S.plans.gold.baht)))], ['hotel', esc(ui(S.lang, 'g_planHotel').replace('{p}', new Intl.NumberFormat(S.lang).format(S.plans.hotel.baht)))]])}</div>` : ''
+  try { r = await call('POST', 'gold', { plan: want }) } catch { tb.innerHTML = head + `<p class="hint">${T('e_net')}</p>`; return }
   if (r.tier === 'gold' && !S.trial) { S.tier = 'gold'; S.goldUntil = r.gold_until; return drawGold() }
   const tail = String(r.amount).split('.')[1] || '00'
   const nf = new Intl.NumberFormat(S.lang)
-  tb.innerHTML = head + (S.trial ? `<p class="goldon">★ ${esc(ui(S.lang, 'g_trial').replace('{d}', S.goldUntil || ''))}</p>` : '') + `<section class="goldpay"><p class="price">${esc(ui(S.lang, r.months === 1 ? 'g_priceMonth' : 'g_price').replace('{p}', nf.format(r.baht)))}</p>${r.hotel ? `<p class="hint">${T('g_hotelWhy')}</p>` : ''}
+  tb.innerHTML = head + (S.trial ? `<p class="goldon">★ ${esc(ui(S.lang, 'g_trial').replace('{d}', S.goldUntil || ''))}</p>` : '') + pick + `<section class="goldpay"><p class="price">${esc(ui(S.lang, r.months === 1 ? 'g_priceMonth' : 'g_price').replace('{p}', nf.format(r.baht)))}</p>${r.hotel ? `<p class="hint">${T('g_hotelWhy')}</p>` : ''}
     ${r.payload ? `<div class="ppqr">${qrSvg(r.payload, { dark: '#0e3d78', light: '#ffffff', label: 'PromptPay' })}<b>฿${esc(nf.format(Number(r.amount)))}</b><span>PromptPay</span></div>
       <p class="hint">${esc(ui(S.lang, 'g_scan').replace('{s}', tail))}</p>
       <label class="pick goldslip">${icon('download')}${T('g_slip')}<input type="file" accept="image/*" id="slip"></label><p id="slipstate" class="pinstate"></p>` : `<p class="hint">${T('g_nopp')}</p>`}</section>` + (isGold() ? domainBox() : '')
   dingbats(['signals', 'classic', 'curious'])
   bindDomain()
+  tb.querySelectorAll('[data-seg="payplan"]').forEach((b) => (b.onclick = () => { S.payPlan = b.dataset.v; drawGold() }))
   const slip = $('#slip')
   if (slip) slip.onchange = async () => {
     const f = slip.files[0]; if (!f) return
@@ -1144,7 +1157,7 @@ async function drawGold() {
     const fd = new FormData(); fd.append('slip', f, 'slip.jpg')
     try {
       const res = await call('POST', 'gold/slip', fd, true)
-      if (res.tier === 'gold') { S.tier = 'gold'; S.goldUntil = res.gold_until; S.trial = false; toast(ui(S.lang, 'g_thanks')); drawGold() }
+      if (res.tier === 'gold') { S.tier = 'gold'; S.goldUntil = res.gold_until; S.trial = false; S.plan = want; S.hotel = want === 'hotel'; S.payPlan = ''; toast(ui(S.lang, 'g_thanks')); drawGold() }
       else { st.className = 'pinstate ok'; st.innerHTML = `${icon('check')}${T('g_wait')}` }
     } catch { st.textContent = ui(S.lang, 'e_net') }
   }
@@ -1281,7 +1294,8 @@ async function boot() {
       const r = await call('GET', 'site')
       Object.assign(S, { name: r.name, kind: r.kind, look: r.look, pageLang: r.lang, status: r.status, views: r.views, d: normalize(r.d), step: 'edit',
         tier: r.tier, goldUntil: r.gold_until || '', notifyEmail: r.notify_email, notifyOk: r.notify_ok, unread: r.unread,
-        trial: !!r.trial, asks: r.asks || 0, domain: r.domain || '', domainState: r.domain_state || '', domains: !!r.domains, price: r.price || 3000 })
+        trial: !!r.trial, asks: r.asks || 0, domain: r.domain || '', domainState: r.domain_state || '', domains: !!r.domains, price: r.price || 3000,
+        plan: r.plan || 'gold', hotel: !!r.hotel, plans: r.plans || null })
       S.d.event = S.d.event || undefined
       S.open = new Set(DEFAULT_OPEN[S.kind])
       if (h.get('tab')) S.tab = h.get('tab')

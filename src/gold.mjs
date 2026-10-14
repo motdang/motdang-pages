@@ -8,12 +8,18 @@ import { promptPayPayload } from './promptpay.mjs'
 export const GOLD_THB = 3000
 export const HOTEL_THB = 555 // a month, for a page that takes room bookings (Nan 2026-10-14: "555/month")
 
-/** A page with rooms pays the hotel month; any other page the Gold year. */
-export function planOf(env, d) {
-  return d && Array.isArray(d.rooms) && d.rooms.length
-    ? { baht: Number(env.HOTEL_THB) || HOTEL_THB, months: 1, hotel: true }
-    : { baht: Number(env.GOLD_THB) || GOLD_THB, months: 12, hotel: false }
+/** The two ways to pay: the Gold year (links to Agoda and Booking.com) and the hotel month (direct bookings). */
+export const PLANS = (env) => ({
+  gold: { plan: 'gold', baht: Number(env.GOLD_THB) || GOLD_THB, months: 12, hotel: false },
+  hotel: { plan: 'hotel', baht: Number(env.HOTEL_THB) || HOTEL_THB, months: 1, hotel: true },
+})
+/** The plan asked for, else the hotel month for a page with rooms and the Gold year for the rest. */
+export function planOf(env, d, want) {
+  const P = PLANS(env)
+  return P[want] || (d && Array.isArray(d.rooms) && d.rooms.length ? P.hotel : P.gold)
 }
+/** Direct room bookings: the hotel month, or the first 30 Gold days. */
+export const isHotel = (s) => isGold(s) && (!!s.trial || s.plan === 'hotel')
 
 export const slipOn = (env) => !!(env.SLIPOK_KEY && env.SLIPOK_BRANCH)
 
@@ -57,7 +63,7 @@ export async function grant(env, siteId, months = 12) {
   const from = s?.gold_until && s.gold_until > new Date().toISOString() ? new Date(s.gold_until) : new Date()
   from.setUTCMonth(from.getUTCMonth() + months)
   const until = from.toISOString().slice(0, 10)
-  await env.DB.prepare("UPDATE site SET tier='gold', gold_until=?, trial=0 WHERE id=?").bind(until, siteId).run()
+  await env.DB.prepare("UPDATE site SET tier='gold', gold_until=?, trial=0, plan=? WHERE id=?").bind(until, months === 1 ? 'hotel' : 'gold', siteId).run()
   return until
 }
 

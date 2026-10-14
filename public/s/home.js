@@ -127,10 +127,10 @@ howH: 'အဆင့်သုံးဆင့်', step1: 'ဘာအတွက်�
   },
 }
 const GOLD = {
-  th: ['รับจอง ห้องพักพร้อมปฏิทิน Airbnb Booking Agoda ประกาศขายเช่า', 'โปรโมชั่นตั้งเวลา นับถอยหลัง', 'หน้าเว็บ 12 ภาษา', 'แบบลายคำทองและริโซ่', 'หน้าเว็บขึ้นบน Google และเสิร์ชเอนจินอื่น', 'รูป 120 รูปและวิดีโอ', 'แถวนี้: ที่ของคุณเองบนแผนที่วาดมือ', 'สถิติหนึ่งปี และไฟล์ CSV', 'ขึ้นก่อนในรายชื่อเว็บ มีดาวทอง', 'ทุกอย่างในแบบฟรี'],
-  en: ['Bookings, rooms that read Airbnb, Booking.com and Agoda calendars, listings to sell or rent', 'Timed offers with a countdown', 'Your page in 12 languages', 'Gold leaf and Riso looks', 'Your page on Google and other search engines', '120 photos and a video', 'Around here: your own places on your drawn map', 'A year of traffic, and a CSV', 'First in the list of pages, with a gold star', 'Everything in Free'],
-  my: ['ကြိုတင်မှာယူမှု၊ အခန်းများ၊ အိမ်ကြော်ငြာ', 'နောက်ပြန်ရေတွက်သည့် ပရိုမိုးရှင်း', 'ဘာသာစကား ၁၂ မျိုး', 'ရွှေနှင့် Riso ပုံစံများ', 'Google တွင် ပေါ်သည်', 'ဓာတ်ပုံ ၁၂၀ ပုံနှင့် ဗီဒီယို', 'ဤအနီး- သင့်နေရာများ မြေပုံပေါ်တွင်', 'တစ်နှစ်စာ စာရင်းနှင့် CSV', 'စာရင်းတွင် ရှေ့ဆုံး', 'အခမဲ့ရှိသမျှ'],
-  zh: ['预约、读取 Airbnb / Booking.com / Agoda 日历的客房、买卖租赁房源', '带倒计时的限时优惠', '网页有 12 种语言', '金箔和 Riso 两种样式', '网页能出现在 Google 等搜索引擎', '120 张照片和一个视频', '附近：你的地方标在手绘地图上', '一年的访问数据和 CSV', '在网页列表里排前面，带金星', '免费版的一切'],
+  th: ['รับจอง ประกาศขายเช่า ปุ่มไปหน้า Agoda และ Booking.com ของคุณ', 'โปรโมชั่นตั้งเวลา นับถอยหลัง', 'หน้าเว็บ 12 ภาษา', 'แบบลายคำทองและริโซ่', 'หน้าเว็บขึ้นบน Google และเสิร์ชเอนจินอื่น', 'รูป 120 รูปและวิดีโอ', 'แถวนี้: ที่ของคุณเองบนแผนที่วาดมือ', 'สถิติหนึ่งปี และไฟล์ CSV', 'ขึ้นก่อนในรายชื่อเว็บ มีดาวทอง', 'ทุกอย่างในแบบฟรี'],
+  en: ['Bookings, listings to sell or rent, buttons to your Agoda and Booking.com pages', 'Timed offers with a countdown', 'Your page in 12 languages', 'Gold leaf and Riso looks', 'Your page on Google and other search engines', '120 photos and a video', 'Around here: your own places on your drawn map', 'A year of traffic, and a CSV', 'First in the list of pages, with a gold star', 'Everything in Free'],
+  my: ['ကြိုတင်မှာယူမှု၊ အိမ်ကြော်ငြာ၊ Agoda နှင့် Booking.com ခလုတ်များ', 'နောက်ပြန်ရေတွက်သည့် ပရိုမိုးရှင်း', 'ဘာသာစကား ၁၂ မျိုး', 'ရွှေနှင့် Riso ပုံစံများ', 'Google တွင် ပေါ်သည်', 'ဓာတ်ပုံ ၁၂၀ ပုံနှင့် ဗီဒီယို', 'ဤအနီး- သင့်နေရာများ မြေပုံပေါ်တွင်', 'တစ်နှစ်စာ စာရင်းနှင့် CSV', 'စာရင်းတွင် ရှေ့ဆုံး', 'အခမဲ့ရှိသမျှ'],
+  zh: ['预约、买卖租赁房源、通往你 Agoda 和 Booking.com 页面的按钮', '带倒计时的限时优惠', '网页有 12 种语言', '金箔和 Riso 两种样式', '网页能出现在 Google 等搜索引擎', '120 张照片和一个视频', '附近：你的地方标在手绘地图上', '一年的访问数据和 CSV', '在网页列表里排前面，带金星', '免费版的一切'],
 }
 const GOLD_DING = ['key', 'megaphone', 'chat', 'crown', 'search', 'camera', 'compass', 'calendar', 'star', 'check']
 const FREE_DING = ['link', 'pencil', 'telephone', 'envelope', 'calendar', 'camera', 'share', 'sparkle']

@@ -462,7 +462,7 @@ img{max-width:100%;display:block}a{color:inherit}.i{width:22px;height:22px;flex:
 .reach{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:22px auto 0}
 .btn{display:flex;align-items:center;justify-content:center;gap:9px;min-height:56px;padding:10px 16px;border-radius:var(--r);border:0;font:700 17px/1.2 var(--body);text-decoration:none;cursor:pointer;background:var(--accent);color:var(--on-accent);transition:transform .15s}
 .btn:active{transform:scale(.97)}
-.btn.line{background:#06c755;color:#000}.btn.grab{background:#00b14f;color:#000}.btn.dark{background:var(--ink);color:var(--card)}
+.btn.line{background:#06c755;color:#000}.btn.ota-agoda{background:#fff;color:#1a1a1a;box-shadow:inset 0 0 0 2px #1a1a1a}.btn.ota-booking{background:#003580;color:#fff}.btn.grab{background:#00b14f;color:#000}.btn.dark{background:var(--ink);color:var(--card)}
 .btn.ghost{background:transparent;color:inherit;box-shadow:inset 0 0 0 2px currentColor}.btn small{font-weight:400;opacity:.85}
 .card{margin:26px 0;padding:24px 22px;border-radius:var(--r);background:var(--card);color:var(--ink)}
 .card h2{display:flex;align-items:center;gap:.4em;margin:0 0 14px;font:700 14px/1.2 var(--body);letter-spacing:.14em;text-transform:uppercase}
@@ -498,7 +498,7 @@ img{max-width:100%;display:block}a{color:inherit}.i{width:22px;height:22px;flex:
 .video{position:relative;display:block;width:100%;aspect-ratio:16/9;border:0;padding:0;border-radius:calc(var(--r)/1.5);overflow:hidden;background:#000;cursor:pointer}
 .video img{width:100%;height:100%;object-fit:cover;opacity:.85}.video .play{position:absolute;left:50%;top:50%;width:76px;height:76px;margin:-38px 0 0 -38px;border-radius:50%;background:var(--accent);color:var(--on-accent);display:grid;place-items:center}
 .video iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
-.msgf{display:grid;gap:10px}.msgf input,.msgf textarea{width:100%;min-height:52px;padding:12px 14px;border-radius:calc(var(--r)/1.5 + 4px);border:2px solid var(--line);background:var(--bg);color:var(--ink);font:inherit;outline:0}
+.msgf{display:grid;gap:10px}.msgf input,.msgf textarea{width:100%;min-height:52px;padding:12px 14px;border-radius:calc(var(--r)/1.5 + 4px);border:2px solid var(--line);background:var(--soft);color:var(--ink);font:inherit;outline:0}
 .msgf textarea{min-height:120px;resize:vertical}.msgf input:focus,.msgf textarea:focus{border-color:var(--accent)}.msgf .hp{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
 .msgf .ok{display:flex;align-items:center;gap:10px;font-weight:700;font-size:20px;color:var(--acc-ink)}
 .foot{text-align:center;padding:30px 16px 120px;font-size:15px;color:var(--mute)}
@@ -506,7 +506,7 @@ img{max-width:100%;display:block}a{color:inherit}.i{width:22px;height:22px;flex:
 .share h2{display:flex;align-items:center;justify-content:center;gap:.4em;margin:0 0 14px;font:700 14px/1.2 var(--body);letter-spacing:.14em;text-transform:uppercase}.share h2 [data-dingbat]{font-size:1.6em}
 .share .big{width:100%;min-height:58px;font-size:19px;margin:0 0 12px}
 .share .row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
-.share .row a,.share .row button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:74px;padding:8px 4px;border-radius:calc(var(--r)/1.5 + 4px);border:0;background:var(--bg);color:var(--ink);font:600 13px/1.15 var(--body);text-decoration:none;cursor:pointer}
+.share .row a,.share .row button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:74px;padding:8px 4px;border-radius:calc(var(--r)/1.5 + 4px);border:0;background:var(--soft);color:var(--ink);font:600 13px/1.15 var(--body);text-decoration:none;cursor:pointer}
 .share .row svg.b{width:28px;height:28px}
 .credits{max-width:560px;margin:0 auto 18px;font-size:12px;line-height:1.5;text-align:left}.credits summary{cursor:pointer;font-weight:700}.credits a{color:inherit}
 .foot nav{display:flex;flex-wrap:wrap;gap:6px 18px;justify-content:center;margin:14px 0}
@@ -545,28 +545,28 @@ dialog.qrd{background:#fff;color:#000;padding:26px;text-align:center;width:min(9
 .calz .dt{display:flex;flex-direction:column;align-items:center;justify-content:center;height:62px;border-radius:12px;background:var(--accent);color:var(--on-accent);line-height:1}.calz .dt b{font:800 26px/1 var(--display)}.calz .dt span{margin-top:3px;font:800 11px/1.2 var(--body);letter-spacing:.08em;text-transform:uppercase}
 .calz small{display:block;color:var(--mute);font-size:15px}.calz em{color:#0b8043;font-style:normal;font-weight:800}.calz p{margin:4px 0 0;font-size:16px}.calz li.now .dt{animation:pulse 1.6s ease-in-out infinite}
 .calz .add{display:grid;place-items:center;width:44px;height:44px;border-radius:50%;box-shadow:inset 0 0 0 2px var(--line);color:var(--acc-ink)}
-.svc{list-style:none;margin:0;padding:0;display:grid;gap:8px}.svcb{width:100%;display:flex;gap:12px;align-items:center;text-align:left;padding:14px 16px;border-radius:calc(var(--r) + 4px);border:2px solid var(--line);background:var(--bg);color:var(--ink);font:inherit;cursor:pointer;transition:border-color .2s,transform .15s}.svcb:active{transform:scale(.98)}
+.svc{list-style:none;margin:0;padding:0;display:grid;gap:8px}.svcb{width:100%;display:flex;gap:12px;align-items:center;text-align:left;padding:14px 16px;border-radius:calc(var(--r) + 4px);border:2px solid var(--line);background:var(--soft);color:var(--ink);font:inherit;cursor:pointer;transition:border-color .2s,transform .15s}.svcb:active{transform:scale(.98)}
 .svcb .n{flex:1;font-weight:700}.svcb small{display:block;font-weight:400;color:var(--mute);font-size:15px}.svcb .p{font-weight:800;color:var(--acc-ink);white-space:nowrap}.svcb.on{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent)}
 .bookui{margin-top:16px}.days{display:flex;gap:8px;overflow-x:auto;padding:4px 2px 10px;scroll-snap-type:x mandatory;scrollbar-width:none}.days::-webkit-scrollbar{display:none}
-.days button{flex:none;scroll-snap-align:start;width:64px;padding:8px 0;border-radius:12px;border:2px solid var(--line);background:var(--bg);color:var(--ink);font:600 12px/1.2 var(--body);text-transform:uppercase;cursor:pointer}.days button b{display:block;font:800 22px/1.15 var(--display)}.days button.on{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+.days button{flex:none;scroll-snap-align:start;width:64px;padding:8px 0;border-radius:12px;border:2px solid var(--line);background:var(--soft);color:var(--ink);font:600 12px/1.2 var(--body);text-transform:uppercase;cursor:pointer}.days button b{display:block;font:800 22px/1.15 var(--display)}.days button.on{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
 .times{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:8px;margin:6px 0 14px;min-height:46px}.times button{min-height:48px;border-radius:10px;border:2px solid var(--line);background:var(--card);color:var(--ink);font:700 16px var(--body);cursor:pointer}.times button small{display:block;font-weight:400;font-size:11px;color:var(--mute)}.times button.on{background:var(--ink);color:var(--card);border-color:var(--ink)}.times button.on small{color:inherit;opacity:.8}.times p{grid-column:1/-1;color:var(--mute);margin:0}
 .pp{text-align:center}.pp .qr{width:min(240px,70vw);height:auto;margin:10px auto;border-radius:12px}.pp b{display:block;font-size:20px}
-.rooms{display:grid;gap:18px}.room{border-radius:calc(var(--r) + 4px);overflow:hidden;background:var(--bg);box-shadow:inset 0 0 0 1px var(--line)}
+.rooms{display:grid;gap:18px}.room{border-radius:calc(var(--r) + 4px);overflow:hidden;background:var(--soft);box-shadow:inset 0 0 0 1px var(--line)}
 .room .strip{display:flex;gap:2px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none}.room .strip::-webkit-scrollbar{display:none}.room .strip button{flex:0 0 86%;aspect-ratio:4/3;padding:0;border:0;scroll-snap-align:start;background:var(--line);cursor:zoom-in}.room .strip button:only-child{flex-basis:100%}.room .strip img{width:100%;height:100%;object-fit:cover}
 .rin{padding:16px 18px}.rin h3{margin:0 0 4px;font:700 23px/1.2 var(--display)}.rin .facts{display:flex;gap:6px;align-items:center;margin:0 0 8px;color:var(--mute)}.rin .night{font:800 21px/1.2 var(--body);color:var(--acc-ink)}
 .mcal{margin:14px 0}.mcal .mh{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-weight:800}.mcal .mh button{width:42px;height:42px;border-radius:50%;border:2px solid var(--line);background:var(--card);color:var(--ink);font:700 18px system-ui;cursor:pointer}
 .mcal .g{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}.mcal .g span{padding:4px 0;text-align:center;font:700 11px var(--body);color:var(--mute)}.mcal .g button{aspect-ratio:1;border:0;border-radius:8px;background:var(--card);color:var(--ink);font:600 15px var(--body);cursor:pointer}
 .mcal .g button{display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.05}.mcal .g button small{font-size:9px;font-weight:700;opacity:.75;margin-top:2px}.mcal .g button.few small{color:#c2410c;opacity:1}
 .mcal .g button:disabled{opacity:.32;cursor:default}#rooms>.facts{display:flex;gap:6px;align-items:center;color:var(--mute);margin:-4px 0 12px}.rin .night small{font-size:15px;color:var(--mute);font-weight:600}.mcal .g button.tk{text-decoration:line-through}.mcal .g button.in{background:var(--line)}.mcal .g button.end{background:var(--accent);color:var(--on-accent)}.rsum{margin:8px 0 12px;font-weight:700}
-.lfilter{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 14px}.lfilter button{padding:8px 15px;border-radius:99px;border:2px solid var(--line);background:var(--bg);color:var(--ink);font:700 15px var(--body);cursor:pointer}.lfilter button.on{background:var(--ink);color:var(--card);border-color:var(--ink)}
+.lfilter{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 14px}.lfilter button{padding:8px 15px;border-radius:99px;border:2px solid var(--line);background:var(--soft);color:var(--ink);font:700 15px var(--body);cursor:pointer}.lfilter button.on{background:var(--ink);color:var(--card);border-color:var(--ink)}
 .lgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:16px}.lcard{display:flex;flex-direction:column;gap:3px;color:var(--ink);text-decoration:none}
 .lcard figure{position:relative;margin:0 0 6px;aspect-ratio:4/3;border-radius:calc(var(--r) + 2px);overflow:hidden;background:var(--line)}.lcard img{width:100%;height:100%;object-fit:cover;transition:transform .5s}.lcard:hover img{transform:scale(1.05)}.lcard .noimg{display:grid;place-items:center;height:100%;font-size:72px;background:repeating-linear-gradient(45deg,var(--line) 0 12px,var(--bg) 12px 24px)}
 .lcard .deal,.lhead .deal{position:absolute;left:8px;top:8px;padding:3px 10px;border-radius:99px;background:var(--accent);color:var(--on-accent);font:800 12px/1.4 var(--body);letter-spacing:.06em;text-transform:uppercase}.lhead .deal{position:static}
 .lcard .st{position:absolute;right:8px;top:8px;padding:3px 10px;border-radius:99px;background:#111;color:#fff;font:800 12px/1.4 var(--body);text-transform:uppercase}.lcard.gone figure{filter:grayscale(.75)}.lcard .pr{font:800 19px/1.2 var(--body);color:var(--acc-ink)}.lcard small{color:var(--mute);font-size:14px}
 .lhead{display:flex;gap:8px;margin:0 0 6px}.lhead .st{padding:3px 10px;border-radius:99px;background:#0b8043;color:#fff;font:800 12px/1.4 var(--body);text-transform:uppercase}.lhead .st-sold,.lhead .st-rented{background:#111}.lhead .st-reserved{background:#b45309}
-.lprice{margin:6px 0 12px;font:800 clamp(28px,7vw,40px)/1.1 var(--display);color:var(--acc-ink)}.lfacts dl{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin:0}.lfacts dl div{padding:10px 12px;border-radius:12px;background:var(--bg)}.lfacts dt{font-size:13px;color:var(--mute)}.lfacts dd{margin:0;font-size:20px;font-weight:800}
+.lprice{margin:6px 0 12px;font:800 clamp(28px,7vw,40px)/1.1 var(--display);color:var(--acc-ink)}.lfacts dl{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin:0}.lfacts dl div{padding:10px 12px;border-radius:12px;background:var(--soft)}.lfacts dt{font-size:13px;color:var(--mute)}.lfacts dd{margin:0;font-size:20px;font-weight:800}
 .foot .langs{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:0 0 10px}.foot .langs a{padding:5px 11px;border-radius:99px;box-shadow:inset 0 0 0 1.5px currentColor;text-decoration:none;font-size:14px}.foot .langs a[aria-current]{background:var(--ink);color:var(--bg);box-shadow:none}.foot .mt{font-size:12px;opacity:.8}
-.readin{position:fixed;left:50%;bottom:16px;z-index:40;display:flex;align-items:center;gap:8px;padding:10px 12px 10px 18px;border-radius:99px;background:var(--ink);color:var(--bg);font:700 15px/1.2 var(--body);text-decoration:none;box-shadow:0 8px 24px rgba(0,0,0,.3);transform:translateX(-50%);animation:up .5s cubic-bezier(.2,.8,.2,1);white-space:nowrap}
+.readin{position:fixed;left:50%;bottom:16px;z-index:40;display:flex;align-items:center;gap:8px;padding:10px 12px 10px 18px;border-radius:99px;background:var(--ink);color:var(--card);font:700 15px/1.2 var(--body);text-decoration:none;box-shadow:0 8px 24px rgba(0,0,0,.3);transform:translateX(-50%);animation:up .5s cubic-bezier(.2,.8,.2,1);white-space:nowrap}
 @keyframes up{from{opacity:0;transform:translate(-50%,40px)}}
 @media (max-width:560px){.campin{flex-wrap:wrap;padding:18px 22px}.campin>[data-dingbat]{font-size:34px}.campt{flex:1 1 calc(100% - 52px)}.code{width:100%;flex-direction:row;justify-content:center;gap:12px}}.readin button{padding:0 4px;border:0;background:none;color:inherit;font:700 20px/1 system-ui;cursor:pointer}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}.rise{opacity:1;transform:none}}
@@ -634,6 +634,7 @@ export function render(site, opt = {}) {
   const d = normalize(site.d)
   const lang = PAGE_LANGS[site.lang] ? site.lang : 'en'
   const gold = opt.gold ?? site.tier === 'gold'
+  const hotel = gold && (opt.hotel ?? !!site.hotel) // direct room bookings: the hotel month or the first 30 days
   const lookId = LOOKS[site.look] && (gold || !LOOKS[site.look].gold || opt.preview) ? site.look : 'poster'
   const look = LOOKS[lookId]
   const accent = d.accent || look.accent
@@ -678,7 +679,7 @@ export function render(site, opt = {}) {
     gold && site.status === 'live' && !opt.preview ? `<script type="application/ld+json">${ldJson(site, d, name, pageUrl, card, L, sym).replace(/</g, '\\u003c')}</script>` : '',
     `<meta name="theme-color" content="${/--bg:(#[0-9a-f]+)/i.exec(look.vars)?.[1] || '#ffffff'}">`,
     `<link rel="icon" href="/s/ant.svg">`,
-    `<style>${faces(look.fonts)}:root{${look.vars};--accent:${accent};--on-accent:${onColor(accent)};--acc-ink:${accInk(look, accent)}}${BASE_CSS}${look.css}</style></head><body>`)
+    `<style>${faces(look.fonts)}:root{${look.vars};--accent:${accent};--on-accent:${onColor(accent)};--acc-ink:${accInk(look, accent)};--soft:color-mix(in srgb,var(--ink) 6%,var(--card))}${BASE_CSS}${look.css}</style></head><body>`)
 
   if (site.status === 'held' && !opt.preview) {
     out.push(`<main class="wrap"><section class="card checking"><h1 style="font:700 28px var(--display)">${esc(name)}</h1><p>${W('checking')}</p></section></main>`,
@@ -713,6 +714,8 @@ export function render(site, opt = {}) {
   if (grabOk) reach.push(`<a class="btn grab" data-t="ride" href="${esc(grabRide(pl.lat, pl.lng, name, pl.cc || 'TH'))}" rel="nofollow noopener">${icon('ride')}${W('ride')}</a>`)
   if (d.order.grabfood) reach.push(`<a class="btn grab" data-t="food" href="${esc(d.order.grabfood)}" rel="nofollow noopener">${icon('food')}${W('food')}</a>`)
   if (d.order.lineman) reach.push(`<a class="btn line" data-t="lineman" href="${esc(d.order.lineman)}" rel="nofollow noopener">${icon('food')}${W('lineman')}</a>`)
+  if (gold && d.ota.agoda) reach.push(otaBtn('agoda', d.ota.agoda, W))
+  if (gold && d.ota.booking) reach.push(otaBtn('booking', d.ota.booking, W))
   if (c.whatsapp && !c.phone) reach.push(`<a class="btn" data-t="whatsapp" href="${esc(waHref(c.whatsapp))}" rel="nofollow noopener">${icon('chat')}WhatsApp</a>`)
   if (d.msg && !reach.length) reach.push(`<a class="btn" data-t="msg" href="#message">${icon('mail')}${W('msg')}</a>`)
   if (reach.length) out.push(`<nav class="reach">${reach.join('')}</nav>`)
@@ -789,9 +792,11 @@ export function render(site, opt = {}) {
         `<div class="rin"><h3>${esc(r.n)}</h3><p class="facts">${icon('people')}${W('roomGuests', { n: r.guests })}${r.beds ? ' · ' + esc(r.beds) : ''}</p>`,
         r.note ? `<p>${esc(r.note)}</p>` : '', r.p ? `<p class="night">${W('roomNight', { p: esc(money(r.p, sym)) })}${r.p2 ? ` <small>· ${W('roomWeekend', { p: esc(money(r.p2, sym)) })}</small>` : ''}</p>` : '',
         r.min > 1 ? `<p class="facts">${W('roomMin', { n: r.min })}</p>` : '',
-        `<button class="btn" data-t="rooms" data-pick="${esc(r.id)}">${icon('cal')}${W('roomSend')}</button><div class="roomui" hidden></div></div></article>`)
+        hotel ? `<button class="btn" data-t="rooms" data-pick="${esc(r.id)}">${icon('cal')}${W('roomSend')}</button><div class="roomui" hidden></div>` : '', '</div></article>')
     }
-    out.push('</div></section>')
+    out.push('</div>')
+    if (!hotel && (d.ota.agoda || d.ota.booking)) out.push(`<div class="tools-row">${d.ota.agoda ? otaBtn('agoda', d.ota.agoda, W) : ''}${d.ota.booking ? otaBtn('booking', d.ota.booking, W) : ''}</div>`)
+    out.push('</section>')
   }
 
   if (gold && d.lists.length) {
@@ -910,7 +915,7 @@ export function render(site, opt = {}) {
     north: hasPin && pl.lat > 17 && pl.lat < 20.6 && pl.lng > 97.3 && pl.lng < 101.8,
     fams: [...new Set(out.join('').match(/data-dingbat="([a-z0-9-]+)"/g)?.map((m) => DINGBATS[m.slice(14, -1)]).filter(Boolean) || [])],
     tz, sym, langs, hl: opt.hl || '', home, listing: L ? L.id : '', lnames: Object.fromEntries(langs.map((l) => [l, PAGE_LANGS[l]])),
-    book: gold && (d.svc.length || d.rooms.length) ? { ahead: d.book.ahead, svc: Object.fromEntries(d.svc.map((v) => [v.id, { cap: v.cap, mins: v.mins, p: v.p }])), rooms: Object.fromEntries(d.rooms.map((r) => [r.id, { g: r.guests, p: r.p, p2: r.p2, rates: r.rates, min: r.min, units: r.units }])), stay: { in: d.stay.in, out: d.stay.out } } : null,
+    book: gold && (d.svc.length || (hotel && d.rooms.length)) ? { ahead: d.book.ahead, svc: Object.fromEntries(d.svc.map((v) => [v.id, { cap: v.cap, mins: v.mins, p: v.p }])), rooms: Object.fromEntries(d.rooms.map((r) => [r.id, { g: r.guests, p: r.p, p2: r.p2, rates: r.rates, min: r.min, units: r.units }])), stay: { in: d.stay.in, out: d.stay.out } } : null,
     w: Object.fromEntries(['happening', 'ended', 'farFrom', 'reportAsk', 'send', 'thanks', 'close', 'copied', 'orderHi', 'msgSent', 'msgFail', 'saveQr', 'story', 'drawnTap',
       'bookPick', 'bookNone', 'bookName', 'bookReach', 'bookEmail', 'bookPeople', 'bookNote', 'bookSend', 'bookAsked', 'bookDone', 'bookFail', 'bookDeposit', 'bookScan', 'bookLeft',
       'roomIn', 'roomOut', 'roomNights', 'roomNight1', 'roomSend', 'roomTotal', 'roomPickIn', 'roomPickOut', 'roomTaken', 'roomMin', 'roomLeft', 'bookRef', 'payNow', 'payHotel', 'payLink', 'yourBooking', 'readIn', 'msgName', 'msgReach', 'msgBody', 'msgSend'].map((k) => [k, word(lang, k)])),
@@ -919,6 +924,15 @@ export function render(site, opt = {}) {
   out.push(`<script type="application/json" id="pd">${JSON.stringify(pd).replace(/</g, '\\u003c')}</script>`)
   out.push(`<script${opt.nonce ? ` nonce="${opt.nonce}"` : ''} src="/s/page.js" defer></script></body></html>`)
   return out.join('')
+}
+
+// Agoda's five dots and Booking.com's blue: buttons to the page's own listing there
+const OTA_MARK = {
+  agoda: '<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="4" cy="12" r="2.6" fill="#e3242b"/><circle cx="9" cy="12" r="2.6" fill="#f68b1f"/><circle cx="14" cy="12" r="2.6" fill="#ffc72c"/><circle cx="19" cy="9" r="2.6" fill="#76b843"/><circle cx="19" cy="15.5" r="2.6" fill="#2f84d8"/></svg>',
+  booking: '<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="1" y="1" width="22" height="22" rx="5" fill="#fff"/><path d="M7 5.5h4.6c2.4 0 3.8 1.2 3.8 3 0 1.2-.7 2.1-1.8 2.5 1.5.3 2.4 1.4 2.4 2.9 0 2.1-1.6 3.6-4.2 3.6H7zm2.6 2.2v3h1.8c1 0 1.6-.6 1.6-1.5s-.6-1.5-1.6-1.5zm0 5v3.3h2.1c1.1 0 1.8-.6 1.8-1.7 0-1-.7-1.6-1.8-1.6z" fill="#003580"/><circle cx="18" cy="17" r="1.6" fill="#009fe3"/></svg>',
+}
+function otaBtn(k, u, W) {
+  return `<a class="btn ota ota-${k}" data-t="${k}" href="${esc(u)}" rel="nofollow noopener">${OTA_MARK[k]}${W(k === 'agoda' ? 'otaAgoda' : 'otaBooking')}</a>`
 }
 
 /** One listing as a card in the grid: first photo, status, deal, price, facts. */

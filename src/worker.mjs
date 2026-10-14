@@ -126,7 +126,7 @@ async function passThrough(request, env, url) {
 async function page(request, env, ctx, name, sub, url, origin, base) {
   const s = await env.DB.prepare('SELECT * FROM site WHERE name = ?').bind(name).first()
   if (!s || s.status === 'removed' || s.status === 'draft') return html(notFound(s ? null : name, request, s?.status), s?.status === 'removed' ? 410 : 404)
-  const site = { ...s, d: JSON.parse(s.d), tier: gold.isGold(s) ? 'gold' : 'free' }
+  const site = { ...s, d: JSON.parse(s.d), tier: gold.isGold(s) ? 'gold' : 'free', hotel: gold.isHotel(s) }
   if (sub === '/contact.vcf') {
     if (s.status !== 'live') return new Response('', { status: 404 })
     return new Response(vcard(site), { headers: { 'content-type': 'text/vcard; charset=utf-8', 'content-disposition': `attachment; filename="${name}.vcf"` } })
@@ -236,7 +236,7 @@ function asData(r, origin) {
     items: d.items, currency: d.currency, cover: d.cover ? im(d.cover) : '',
     photos: d.photos.slice(0, g ? MAX_PHOTOS.gold : MAX_PHOTOS.free).map((id) => ({ url: im(id), small: im(id, true), credit: d.credits[id] || null })),
     event: d.event, scene: d.drawing ? sceneOf(r.kind, d) : '', published: r.published, updated: r.updated,
-    rooms: g ? d.rooms.map((x) => ({ n: x.n, p: x.p, guests: x.guests, units: x.units })) : [], book: g && d.rooms.length ? `${origin}/${r.name}#rooms` : '',
+    rooms: g ? d.rooms.map((x) => ({ n: x.n, p: x.p, guests: x.guests, units: x.units })) : [], book: g && d.rooms.length && gold.isHotel(r) ? `${origin}/${r.name}#rooms` : '', ota: g ? d.ota : null,
   }
 }
 
@@ -315,7 +315,7 @@ async function api(request, env, ctx, p, url, origin) {
     const d = normalize(JSON.parse(s.d))
     if (p === 'slots') return J({ times: await book.freeTimes(env, s, d, String(url.searchParams.get('svc') || ''), String(url.searchParams.get('day') || '')) })
     const room = String(url.searchParams.get('room') || '')
-    if (!d.rooms.some((x) => x.id === room)) return J({ error: 'not-found' }, 404)
+    if (!gold.isHotel(s) || !d.rooms.some((x) => x.id === room)) return J({ error: 'not-found' }, 404)
     const units = d.rooms.find((x) => x.id === room).units
     const counts = await book.nightCounts(env, s, d, room)
     return J({ taken: [...counts].filter(([, c]) => c >= units).map(([k]) => k).sort(), left: Object.fromEntries([...counts].filter(([, c]) => c < units).map(([k, c]) => [k, units - c])), units })
@@ -328,6 +328,7 @@ async function api(request, env, ctx, p, url, origin) {
     const s = await env.DB.prepare("SELECT * FROM site WHERE name = ? AND status = 'live'").bind(String(b.n || '')).first()
     if (!s || !gold.isGold(s)) return J({ error: 'not-found' }, 404)
     const d = normalize(JSON.parse(s.d))
+    if (b.kind === 'room' && !gold.isHotel(s)) return J({ error: 'not-found' }, 404) // direct room bookings: the hotel month
     const r = await book.ask(env, s, d, b, who)
     if (r.error) return J(r, r.error === 'taken' ? 409 : 400)
     ctx.waitUntil(stats.tap(env, request, s.id, b.kind === 'room' ? 'rooms' : 'book'))
@@ -433,7 +434,8 @@ ${s ? `<p>ข้อความถึง ${escHtml(title)} จะส่งสำ
     return J({ id: s.id, name: s.name, status: s.status, kind: s.kind, look: s.look, lang: s.lang, d: JSON.parse(s.d), views: s.views,
       tier: isGold ? 'gold' : 'free', gold_until: s.gold_until, trial: !!s.trial, notify_email: s.notify_email || '', notify_ok: !!s.notify_ok, unread: un?.n || 0,
       asks: (await env.DB.prepare("SELECT COUNT(*) AS n FROM booking WHERE site_id = ? AND status = 'new'").bind(s.id).first())?.n || 0,
-      domain: s.domain || '', domain_state: s.domain_state || '', domains: dom.on(env), price: Number(env.GOLD_THB) || gold.GOLD_THB, plan: gold.planOf(env, JSON.parse(s.d)) })
+      domain: s.domain || '', domain_state: s.domain_state || '', domains: dom.on(env), price: Number(env.GOLD_THB) || gold.GOLD_THB,
+      plan: s.plan || 'gold', hotel: gold.isHotel(s), plans: gold.PLANS(env) })
   }
 
   if (p === 'site' && m === 'PUT') {
@@ -638,7 +640,10 @@ ${s ? `<p>ข้อความถึง ${escHtml(title)} จะส่งสำ
     return J({ domain: host, state: h.state, records: dom.records(host) })
   }
 
-  if (p === 'gold' && m === 'POST') return J({ ...(await gold.start(env, s.id, rand, gold.planOf(env, normalize(JSON.parse(s.d))))), tier: isGold ? 'gold' : 'free', gold_until: s.gold_until })
+  if (p === 'gold' && m === 'POST') {
+    const want = String((await body(request)).plan || '')
+    return J({ ...(await gold.start(env, s.id, rand, gold.planOf(env, normalize(JSON.parse(s.d)), want))), tier: isGold ? 'gold' : 'free', gold_until: s.gold_until })
+  }
   if (p === 'gold/slip' && m === 'POST') {
     const who = await sender(request, env)
     if (!(await take(env, who, 'slip'))) return J({ error: 'quota' }, 429)
