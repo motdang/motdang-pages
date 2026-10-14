@@ -4,6 +4,7 @@
 // its messages, its traffic, and Gold.
 
 import { render, normalize, LOOKS, LOOK_IDS, GOLD_LOOKS, KINDS, ACCENTS, CURRENCY, SCENES, MAX_PHOTOS, osmHours, currencyFor, qrSvg, lineShare, esc } from './render.mjs'
+import { MAX, UNIT_LABEL } from './extras.mjs'
 import { DINGBATS } from './db/names.mjs'
 import { PAGE_LANGS } from './words.mjs'
 import { ui, UI_LANGS } from './make-words.mjs'
@@ -16,14 +17,15 @@ const store = {
   set(k, v) { try { localStorage.setItem('mdp:' + k, JSON.stringify(v)) } catch {} },
 }
 const icon = (id) => `<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><use href="/s/icons.svg#i-${id}"/></svg>`
-const KIND_ICON = { shop: 'shop', food: 'food', service: 'gear', me: 'me', event: 'party', group: 'people' }
+const KIND_ICON = { shop: 'shop', food: 'food', service: 'gear', stay: 'moon', homes: 'tag', me: 'me', event: 'party', group: 'people' }
 const TZ = (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone } catch { return 'Asia/Bangkok' } })()
 
 const S = {
   lang: store.get('lang', (() => { const l = (navigator.language || 'th').slice(0, 2); return UI_LANGS[l] ? l : 'th' })()),
   step: 'kind', kind: 'shop', name: '', addr: '', addrTouched: false, look: 'poster', token: '', status: 'draft', views: 0,
   pageLang: '', d: null, open: new Set(), local: new Map(), photoGps: null, picker: null, busy: 0,
-  tab: 'edit', tier: 'free', goldUntil: '', notifyEmail: '', notifyOk: false, unread: 0,
+  tab: 'edit', tier: 'gold', goldUntil: '', notifyEmail: '', notifyOk: false, unread: 0, // a page starts with 30 days of Gold
+  trial: false, asks: 0, domain: '', domainState: '', domains: false, price: 3000, dbFam: '', dbQ: '',
 }
 const isGold = () => S.tier === 'gold'
 const ding = (n, look = 'ink', play = 'loop') => `<i data-dingbat="${n}" data-look="${look}" data-play="${play}" aria-hidden="true"></i>`
@@ -36,7 +38,9 @@ function dingbats(fams) {
 }
 dingbats.loaded = new Set()
 dingbats(['signals', 'classic', 'kitchen', 'faces', 'lanna'])
-const KIND_DING = { shop: 'cart', food: 'noodles', service: 'gear', me: 'wave', event: 'party', group: 'crown' }
+const KIND_DING = { shop: 'cart', food: 'noodles', service: 'gear', stay: 'key', homes: 'home', me: 'wave', event: 'party', group: 'crown' }
+const DB_FAMS = [...new Set(Object.values(DINGBATS))]
+const rid = () => Math.random().toString(36).slice(2, 8).padEnd(6, 'x')
 // the dingbats a maker can put beside the name: a handful from each family
 const DING_PICKS = ['lantern', 'naga', 'lotus', 'krathong', 'elephant', 'tuk-tuk', 'scooter', 'khao-soi', 'mango-rice', 'cha-yen', 'chili', 'frangipani', 'gecko', 'soi-dog',
   'coffee', 'noodles', 'bubble-tea', 'cake', 'dumplings', 'cocktail', 'beer', 'ice-cream', 'heart', 'star', 'sparkle', 'sun', 'flower', 'crown', 'note', 'scissors',
@@ -49,12 +53,14 @@ const T = (k) => esc(ui(S.lang, k))
 const DEFAULT_OPEN = {
   shop: ['words', 'photos', 'contact', 'map', 'hours', 'items'],
   food: ['words', 'photos', 'items', 'order', 'map', 'hours', 'contact'],
-  service: ['words', 'photos', 'items', 'contact', 'map'],
+  service: ['words', 'photos', 'svc', 'items', 'contact', 'map'],
   me: ['words', 'photos', 'links', 'contact'],
-  event: ['event', 'words', 'photos', 'map', 'contact'],
-  group: ['words', 'photos', 'links', 'contact'],
+  stay: ['words', 'photos', 'rooms', 'map', 'contact', 'svc'],
+  homes: ['words', 'lists', 'photos', 'contact', 'map'],
+  event: ['event', 'words', 'cal', 'photos', 'map', 'contact'],
+  group: ['words', 'cal', 'photos', 'links', 'contact'],
 }
-const LOOK_FOR = { shop: 'poster', food: 'night', service: 'clean', me: 'y1997', event: 'stitch', group: 'loom' }
+const LOOK_FOR = { shop: 'poster', food: 'night', service: 'clean', stay: 'loom', homes: 'clean', me: 'y1997', event: 'stitch', group: 'loom' }
 
 function guessCc() {
   const zone = { 'Asia/Bangkok': 'TH', 'Asia/Yangon': 'MM', 'Asia/Rangoon': 'MM', 'Asia/Vientiane': 'LA', 'Asia/Phnom_Penh': 'KH',
@@ -74,6 +80,9 @@ function starter(kind) {
     counter: kind === 'me', accent: '',
   }
   if (kind === 'food') d.hours.week = d.hours.week.map(() => [['10:00', '20:00']])
+  if (kind === 'stay') d.rooms = [{ id: rid(), n: '', guests: 2, beds: '', p: '', note: '', photos: [], ical: [] }]
+  if (kind === 'homes') d.lists = [{ id: rid(), t: '', deal: 'sale', status: 'open', p: '', area: '', unit: 'm2', beds: 0, baths: 0, kind: '', note: '', photos: [] }]
+  if (kind === 'service') d.svc = []
   if (kind === 'event') {
     const t = new Date(Date.now() + 7 * 864e5)
     const p = (n) => String(n).padStart(2, '0')
@@ -231,7 +240,7 @@ function drawLook() {
   app.innerHTML = `<button class="back" id="back">← ${T('back')}</button><h1 class="q">${T('q3')}</h1>
   <div class="looks">${LOOK_IDS.map((id) => lookCard(id, id === S.look)).join('')}</div>`
   $('#back').onclick = () => { S.step = 'name'; draw() }
-  app.querySelectorAll('.look').forEach((b) => (b.onclick = () => (LOOKS[b.dataset.look].gold ? goldTease() : create(b.dataset.look, b))))
+  app.querySelectorAll('.look').forEach((b) => (b.onclick = () => create(b.dataset.look, b)))
 }
 
 function goldTease() {
@@ -276,10 +285,12 @@ async function create(look, btn) {
   btn.classList.add('on')
   S.d = normalize(applyPrefill({ ...starter(S.kind), name: S.name.trim() }))
   if (S.kind === 'event') S.d.event = starter('event').event
+  if (S.kind === 'stay') S.d.rooms = [NEW_ROW.rooms()]
+  if (S.kind === 'homes') S.d.lists = [NEW_ROW.lists()]
   S.pageLang = PAGE_LANGS[S.lang] ? S.lang : 'en'
   try {
     const r = await call('POST', 'sites', { name: S.addr, kind: S.kind, look, lang: S.pageLang, d: S.d })
-    S.token = r.token; S.name = r.name; S.status = r.status
+    S.token = r.token; S.name = r.name; S.status = r.status; S.tier = r.tier || 'gold'; S.goldUntil = r.gold_until || ''; S.trial = !!r.trial
     history.replaceState(null, '', '/make#t=' + S.token)
     remember()
     S.open = new Set(DEFAULT_OPEN[S.kind])
@@ -294,21 +305,24 @@ async function create(look, btn) {
 // ---- the editor ------------------------------------------------------------------------
 
 const SECTIONS = [
-  ['event', 'cal', 's_event'], ['words', 'note', 's_words'], ['drawing', 'sparkle', 's_drawing'], ['photos', 'camera', 's_photos'], ['items', 'tag', 's_items'],
-  ['order', 'basket', 's_order'], ['contact', 'phone', 's_contact'], ['map', 'pin', 's_map'], ['hours', 'clock', 's_hours'],
-  ['links', 'link', 's_links'], ['msg', 'mail', 's_msg'], ['look', 'star', 's_look'], ['video', 'camera', 's_video', 'gold'], ['spots', 'compass', 's_spots', 'gold'],
+  ['event', 'cal', 's_event'], ['words', 'note', 's_words'], ['drawing', 'sparkle', 's_drawing'], ['photos', 'camera', 's_photos'],
+  ['rooms', 'moon', 's_rooms', 'gold'], ['lists', 'tag', 's_lists', 'gold'], ['svc', 'clock', 's_svc', 'gold'], ['items', 'tag', 's_items'],
+  ['cal', 'cal', 's_cal'], ['camps', 'party', 's_camps', 'gold'],
+  ['order', 'basket', 's_order'], ['contact', 'phone', 's_contact'], ['map', 'pin', 's_map'], ['spots', 'compass', 's_spots'], ['hours', 'clock', 's_hours'],
+  ['links', 'link', 's_links'], ['msg', 'mail', 's_msg'], ['look', 'star', 's_look'], ['video', 'camera', 's_video', 'gold'],
 ]
 
 function hasData(id) {
   const d = S.d
   return { event: !!d.event, words: true, drawing: true, photos: d.photos.length > 0, items: d.items.length > 0, order: !!(d.order.grabfood || d.order.lineman),
     contact: Object.values(d.contact).some(Boolean), map: d.place.lat !== null || !!d.place.addr, hours: d.hours.on, links: d.links.length > 0, msg: true, look: true,
-    video: !!d.video, spots: d.spots.length > 0 }[id]
+    video: !!d.video, spots: d.spots.length > 0, cal: d.cal.length > 0, camps: d.camps.length > 0, svc: d.svc.length > 0, rooms: d.rooms.length > 0, lists: d.lists.length > 0 }[id]
 }
 
 function tabs() {
   const t = (id, label, extra = '') => `<button data-tab="${id}"${S.tab === id ? ' class="on"' : ''}>${label}${extra}</button>`
-  return `<nav class="tabs">${t('edit', T('t_edit'))}${t('msgs', T('t_msgs'), S.unread ? `<span class="dot">${S.unread}</span>` : '')}${t('stats', T('t_stats'))}${t('gold', (isGold() ? '★ ' : '') + T('t_gold'))}</nav>`
+  const bk = S.d && (S.d.svc.length || S.d.rooms.length) ? t('book', T('t_book'), S.asks ? `<span class="dot">${S.asks}</span>` : '') : ''
+  return `<nav class="tabs">${t('edit', T('t_edit'))}${t('msgs', T('t_msgs'), S.unread ? `<span class="dot">${S.unread}</span>` : '')}${bk}${t('stats', T('t_stats'))}${t('gold', (isGold() ? '★ ' : '') + T('t_gold'))}</nav>`
 }
 
 function drawEdit() {
@@ -390,6 +404,8 @@ const SEC = {
       <p id="nomap" style="display:none;color:var(--mute)">${T('noMap')}</p>
       <label class="field"><span>${T('address')}</span><textarea data-k="place.addr" maxlength="240" style="min-height:80px">${val(p.addr)}</textarea></label>
       <label class="field"><span>${T('country')}</span><select data-k="place.cc">${countries(p.cc)}</select></label>
+      <div class="field"><span>${T('m_style')}</span>${seg('map.style', S.d.map.style, [['doodle', T('m_doodle')], ['terrain', T('m_terrain')], ['streets', T('m_streets')]])}</div>
+      <div class="field"><span>${T('m_near')}</span>${seg('map.near', S.d.map.near, [['near', T('m_close')], ['mid', T('m_mid')], ['far', T('m_far')]])}</div>
       ${has ? `<button class="back" id="clearpin">× ${T('clearPin')}</button>` : ''}`
   },
   hours() {
@@ -422,7 +438,7 @@ const SEC = {
     const acc = S.d.accent || LOOKS[S.look].accent
     return `<div class="lookrow">${LOOK_IDS.map((id) => lookCard(id, id === S.look)).join('')}</div>
       <div><b>${T('colour')}</b><div class="swatches">${[LOOKS[S.look].accent, ...ACCENTS.filter((a) => a !== LOOKS[S.look].accent)].map((a) => `<button data-acc="${a}" style="background:${a}"${a === acc ? ' class="on"' : ''} aria-label="${a}"></button>`).join('')}</div></div>
-      <div><b>${T('s_dings')}</b><p class="hint">${T('dingsHint')}</p><div class="dpick">${DING_PICKS.map((n) => `<button data-ding="${n}"${S.d.dings.includes(n) ? ' class="on"' : ''} aria-label="${n}">${ding(n, 'ink', 'hover')}</button>`).join('')}</div></div>
+      <div><b>${T('s_dings')}</b><p class="hint">${T('dingsHint')}</p>${dingBrowser()}</div>
       <label class="check"><input type="checkbox" class="sw" data-k="counter" ${S.d.counter ? 'checked' : ''}>${T('counter')}</label>
       <label class="field"><span>${T('pageLang')}</span><select id="plang">${Object.entries(PAGE_LANGS).map(([k, v]) => `<option value="${k}"${k === S.pageLang ? ' selected' : ''}>${esc(v)}</option>`).join('')}</select></label>`
   },
@@ -432,12 +448,105 @@ const SEC = {
     return field('video', T('videoUrl'), shown, 'url', 'placeholder="https://youtu.be/…"')
   },
   spots() {
-    return `<p class="hint">${T('spotsHint')}</p><div class="items">${S.d.spots.map((x, i) => `<div class="it"><input data-k="spots.${i}.n" placeholder="${T('spotName')}" value="${val(x.n)}" maxlength="60">
+    return `<p class="hint">${T('spotsHint')}${isGold() ? '' : ' ' + T('sp_free')}</p><div class="items">${S.d.spots.map((x, i) => `<div class="it"><input data-k="spots.${i}.n" placeholder="${T('spotName')}" value="${val(x.n)}" maxlength="60">
       <span class="ll">${x.lat.toFixed(4)}, ${x.lng.toFixed(4)}</span><button class="x" data-rmspot="${i}" aria-label="${T('remove')}">×</button>
       <input data-k="spots.${i}.note" placeholder="${T('spotNote')}" value="${val(x.note)}" maxlength="160"></div>`).join('')}</div>
-      ${S.d.spots.length < 20 ? `<div class="row"><input id="spotlink" type="url" placeholder="${T('spotPaste')}" style="flex:1;min-width:200px"><button class="go ghost" id="spotadd">${icon('plus')}${T('spotAdd')}</button></div>
+      ${S.d.spots.length < (isGold() ? MAX.spotsGold : MAX.spotsFree) ? `<div class="row"><input id="spotlink" type="url" placeholder="${T('spotPaste')}" style="flex:1;min-width:200px"><button class="go ghost" id="spotadd">${icon('plus')}${T('spotAdd')}</button></div>
       <p class="hint">${T('spotHere')}: <button class="linkbtn" id="spothere">${icon('pin')}${T('spotAdd')}</button></p>` : ''}`
   },
+}
+
+// ---- the parts added 2026-10-14 -----------------------------------------------------------
+
+const seg = (k, cur, opts) => `<div class="seg" role="group">${opts.map(([v, label]) => `<button type="button" data-seg="${k}" data-v="${v}"${v === cur ? ' class="on"' : ''}>${label}</button>`).join('')}</div>`
+const sel = (k, cur, opts) => `<select data-k="${k}">${opts.map(([v, label]) => `<option value="${v}"${v === cur ? ' selected' : ''}>${label}</option>`).join('')}</select>`
+const num = (k, v, label, extra = '') => `<label class="mini"><span>${label}</span><input type="number" data-k="${k}" data-num="1" value="${val(v)}" ${extra}></label>`
+const rowX = (list, i) => `<button class="x" data-rmrow="${list}" data-i="${i}" aria-label="${T('remove')}">×</button>`
+function photoPick(path, chosen) {
+  if (!S.d.photos.length) return ''
+  return `<div class="pickph" data-path="${path}">${S.d.photos.map((id) => `<button type="button" data-pp="${id}"${chosen.includes(id) ? ' class="on"' : ''}><img src="${esc(imgUrl(id, true))}" alt=""></button>`).join('')}</div>`
+}
+
+function dingBrowser() {
+  const q = S.dbQ.trim().toLowerCase()
+  const names = Object.keys(DINGBATS).filter((n) => (!S.dbFam || DINGBATS[n] === S.dbFam) && (!q || n.includes(q)))
+  dingbats(S.dbFam ? [S.dbFam] : DB_FAMS)
+  return `<div class="dpicked">${S.d.dings.length ? S.d.dings.map((n) => `<button data-ding="${n}" class="on" aria-label="${n}">${ding(n, 'ink')}<span>×</span></button>`).join('') : `<p class="hint" style="margin:0">${T('db_none')}</p>`}</div>
+    <div class="row" style="margin:8px 0"><input id="dbq" type="search" placeholder="${T('db_find')}" value="${val(S.dbQ)}" style="flex:1;min-width:160px"></div>
+    <div class="chips">${['', ...DB_FAMS].map((f) => `<button type="button" data-dbfam="${f}"${f === S.dbFam ? ' class="on"' : ''}>${f ? esc(f) : T('db_all')}</button>`).join('')}</div>
+    <div class="dpick" id="dpick">${names.map((n) => `<button data-ding="${n}"${S.d.dings.includes(n) ? ' class="on"' : ''} aria-label="${n}" title="${n}">${ding(n, 'ink', 'hover')}</button>`).join('')}</div>`
+}
+
+Object.assign(SEC, {
+  cal() {
+    return `<p class="hint">${T('c_hint')}</p><div class="rows">${S.d.cal.map((x, i) => `<div class="rowc">${rowX('cal', i)}
+      <label class="field"><span>${T('c_title')}</span><input data-k="cal.${i}.t" value="${val(x.t)}" maxlength="80"></label>
+      <div class="grid2f"><label class="field"><span>${T('c_start')}</span><input type="datetime-local" data-k="cal.${i}.start" value="${val(x.start)}"></label>
+      <label class="field"><span>${T('c_end')}</span><input type="time" data-k="cal.${i}.end" value="${val(x.end)}"></label>
+      <label class="field"><span>${T('c_rep')}</span>${sel(`cal.${i}.rep`, x.rep, [['', T('c_once')], ['weekly', T('c_weekly')], ['monthly', T('c_monthly')]])}</label>
+      ${x.rep ? `<label class="field"><span>${T('c_until')}</span><input type="date" data-k="cal.${i}.until" value="${val(x.until)}"></label>` : ''}</div>
+      <label class="field"><span>${T('c_note')}</span><input data-k="cal.${i}.note" value="${val(x.note)}" maxlength="240"></label></div>`).join('')}</div>
+      ${S.d.cal.length < MAX.cal ? `<button class="go ghost" data-addrow="cal">${icon('plus')}${T('c_add')}</button>` : ''}`
+  },
+  camps() {
+    return `<p class="hint">${T('o_hint')}</p><div class="rows">${S.d.camps.map((x, i) => `<div class="rowc camp">${rowX('camps', i)}
+      <label class="field"><span>${T('o_title')}</span><input data-k="camps.${i}.t" value="${val(x.t)}" maxlength="90"></label>
+      <label class="field"><span>${T('o_note')}</span><input data-k="camps.${i}.note" value="${val(x.note)}" maxlength="240"></label>
+      <div class="grid2f"><label class="field"><span>${T('o_start')}</span><input type="datetime-local" data-k="camps.${i}.start" value="${val(x.start)}"></label>
+      <label class="field"><span>${T('o_end')}</span><input type="datetime-local" data-k="camps.${i}.end" value="${val(x.end)}"></label>
+      <label class="field"><span>${T('o_code')}</span><input data-k="camps.${i}.code" value="${val(x.code)}" maxlength="24" autocapitalize="characters"></label></div></div>`).join('')}</div>
+      ${S.d.camps.length < MAX.camps ? `<button class="go ghost" data-addrow="camps">${icon('plus')}${T('o_add')}</button>` : ''}`
+  },
+  svc() {
+    const b = S.d.book
+    return `<p class="hint">${T('b_hint')}</p><div class="rows">${S.d.svc.map((x, i) => `<div class="rowc">${rowX('svc', i)}
+      <label class="field"><span>${T('b_svc')}</span><input data-k="svc.${i}.n" value="${val(x.n)}" maxlength="80"></label>
+      <div class="grid3f">${num(`svc.${i}.mins`, x.mins, T('b_mins'), 'min="10" max="720" step="5"')}<label class="mini"><span>${T('price')}</span><input data-k="svc.${i}.p" value="${val(x.p)}" maxlength="24" inputmode="decimal"></label>${num(`svc.${i}.cap`, x.cap, T('b_cap'), 'min="1" max="50"')}</div>
+      <label class="field"><span>${T('details')}</span><input data-k="svc.${i}.note" value="${val(x.note)}" maxlength="200"></label></div>`).join('')}</div>
+      ${S.d.svc.length < MAX.svc ? `<button class="go ghost" data-addrow="svc">${icon('plus')}${T('b_add')}</button>` : ''}
+      <div class="grid3f" style="margin-top:16px"><label class="mini"><span>${T('b_step')}</span>${sel('book.step', String(b.step), [['15', '15 min'], ['30', '30 min'], ['60', '1 h'], ['120', '2 h']])}</label>
+      ${num('book.lead', b.lead, T('b_lead'), 'min="0" max="168"')}${num('book.ahead', b.ahead, T('b_ahead'), 'min="1" max="180"')}</div>
+      <label class="check"><input type="checkbox" class="sw" data-k="book.auto" ${b.auto ? 'checked' : ''}>${T('b_auto')}</label>
+      <details${b.pp ? ' open' : ''}><summary style="cursor:pointer;font-weight:700;margin:0 0 10px">${T('b_dep')}</summary><p class="hint">${T('b_depHint')}</p>
+      <div class="grid2f"><label class="mini"><span>${T('b_depAmt')}</span><input data-k="book.deposit" value="${val(b.deposit)}" inputmode="decimal" maxlength="12"></label>
+      <label class="mini"><span>${T('b_pp')}</span><input data-k="book.pp" value="${val(b.pp)}" inputmode="numeric" maxlength="20"></label></div></details>`
+  },
+  rooms() {
+    return `<div class="rows">${S.d.rooms.map((x, i) => `<div class="rowc">${rowX('rooms', i)}
+      <label class="field"><span>${T('r_name')}</span><input data-k="rooms.${i}.n" value="${val(x.n)}" maxlength="80"></label>
+      <div class="grid3f">${num(`rooms.${i}.guests`, x.guests, T('r_guests'), 'min="1" max="40"')}<label class="mini"><span>${T('r_beds')}</span><input data-k="rooms.${i}.beds" value="${val(x.beds)}" maxlength="60"></label>
+      <label class="mini"><span>${T('r_price')}</span><input data-k="rooms.${i}.p" value="${val(x.p)}" maxlength="24" inputmode="decimal"></label></div>
+      <label class="field"><span>${T('details')}</span><textarea data-k="rooms.${i}.note" maxlength="400" style="min-height:70px">${val(x.note)}</textarea></label>
+      <div class="field"><span>${T('r_photos')}</span>${photoPick(`rooms.${i}.photos`, x.photos) || `<small>${T('addPhotos')} ↑</small>`}</div>
+      <label class="field"><span>${T('r_ical')}</span><textarea data-ical="${i}" style="min-height:64px" placeholder="https://www.airbnb.com/calendar/ical/….ics">${val(x.ical.join('\n'))}</textarea><small>${T('r_icalHint')}</small></label>
+      ${S.status === 'live' && x.id ? `<p class="hint">${T('r_out')}<br><code class="cp" data-copy="${esc(location.origin + '/' + S.name + '/room/' + x.id + '.ics')}">${esc(location.origin.replace(/^https?:\/\//, '') + '/' + S.name + '/room/' + x.id + '.ics')}</code></p>` : ''}</div>`).join('')}</div>
+      ${S.d.rooms.length < MAX.rooms ? `<button class="go ghost" data-addrow="rooms">${icon('plus')}${T('r_add')}</button>` : ''}`
+  },
+  lists() {
+    const st = ['open', 'reserved', 'sold', 'rented'].map((k) => [k, T('st_' + k)])
+    return `<div class="rows">${S.d.lists.map((x, i) => `<div class="rowc">${rowX('lists', i)}
+      <label class="field"><span>${T('l_title')}</span><input data-k="lists.${i}.t" value="${val(x.t)}" maxlength="100"></label>
+      <div class="grid3f"><label class="mini"><span>${T('l_deal')}</span>${sel(`lists.${i}.deal`, x.deal, [['sale', T('l_sale')], ['rent', T('l_rent')]])}</label>
+      <label class="mini"><span>${T('l_status')}</span>${sel(`lists.${i}.status`, x.status, st)}</label>
+      <label class="mini"><span>${T('l_price')}</span><input data-k="lists.${i}.p" value="${val(x.p)}" maxlength="24" inputmode="decimal"></label></div>
+      <div class="grid3f"><label class="mini"><span>${T('l_area')}</span><span class="pair"><input data-k="lists.${i}.area" value="${val(x.area)}" inputmode="decimal" maxlength="16">${sel(`lists.${i}.unit`, x.unit, Object.entries(UNIT_LABEL))}</span></label>
+      ${num(`lists.${i}.beds`, x.beds, T('l_beds'), 'min="0" max="50"')}${num(`lists.${i}.baths`, x.baths, T('l_baths'), 'min="0" max="50"')}</div>
+      <label class="field"><span>${T('l_kind')}</span><input data-k="lists.${i}.kind" value="${val(x.kind)}" maxlength="40"></label>
+      <label class="field"><span>${T('details')}</span><textarea data-k="lists.${i}.note" maxlength="2000">${val(x.note)}</textarea></label>
+      <div class="field"><span>${T('l_photos')}</span>${photoPick(`lists.${i}.photos`, x.photos) || `<small>${T('addPhotos')} ↑</small>`}</div>
+      <div class="field"><span>${T('l_pin')}</span><div class="row"><input data-lpin="${i}" type="url" placeholder="${T('paste')}" style="flex:1;min-width:180px"><button class="go ghost small" data-lpingo="${i}">${T('l_pinUse')}</button></div>
+      <small>${x.lat != null ? `${icon('pin')} ${x.lat.toFixed(5)}, ${x.lng.toFixed(5)} · <button class="linkbtn" data-lpinx="${i}">× ${T('clearPin')}</button>` : T('l_pinPage')}</small></div>
+      ${S.status === 'live' && x.id ? `<a class="linkbtn" href="/${esc(S.name)}/l/${esc(x.id)}" target="_blank">${icon('globe')}${T('l_open')}</a>` : ''}</div>`).join('')}</div>
+      ${S.d.lists.length < MAX.lists ? `<button class="go ghost" data-addrow="lists">${icon('plus')}${T('l_add')}</button>` : ''}`
+  },
+})
+
+const NEW_ROW = {
+  cal: () => { const t = new Date(Date.now() + 864e5); const p = (n) => String(n).padStart(2, '0'); return { id: rid(), t: '', note: '', start: `${t.getFullYear()}-${p(t.getMonth() + 1)}-${p(t.getDate())}T18:00`, end: '', rep: '', until: '' } },
+  camps: () => { const p = (n) => String(n).padStart(2, '0'); const f = (t) => `${t.getFullYear()}-${p(t.getMonth() + 1)}-${p(t.getDate())}T${p(t.getHours())}:00`; return { id: rid(), t: '', note: '', code: '', start: f(new Date()), end: f(new Date(Date.now() + 7 * 864e5)) } },
+  svc: () => ({ id: rid(), n: '', p: '', note: '', mins: 60, cap: 1 }),
+  rooms: () => ({ id: rid(), n: '', guests: 2, beds: '', p: '', note: '', photos: [], ical: [] }),
+  lists: () => ({ id: rid(), t: '', deal: 'sale', status: 'open', p: '', area: '', unit: 'm2', beds: 0, baths: 0, kind: '', note: '', photos: [], lat: null, lng: null }),
 }
 
 const CC = 'TH MM LA KH VN MY SG ID PH CN JP KR TW HK IN BD NP LK US CA MX GB IE FR DE ES PT IT NL BE CH AT SE NO DK FI PL CZ GR TR IL AE SA EG ZA NG KE AU NZ BR AR CL CO PE BT MN KZ UZ PK RU UA RO HU BG HR RS SI SK LT LV EE IS LU MT CY MA TN GH ET TZ UG FJ PG TL BN MO'.split(' ')
@@ -475,8 +584,18 @@ function bindEdit() {
     if (k === 'hours.on' || k === 'hours.always' || k === 'place.cc') redrawSec(k.split('.')[0] === 'place' ? 'items' : 'hours')
     if (k === 'drawing') { redrawSec('drawing') }
     if (k === 'msg') redrawSec('msg')
+    if (/^cal\.\d+\.rep$/.test(k)) redrawSec('cal')
     if (k === 'name' || k.startsWith('hours')) drawPreviewSoon()
     changed()
+  })
+  form.addEventListener('input', (e) => {
+    const t = e.target
+    if (t.dataset.ical !== undefined) { const r = S.d.rooms[+t.dataset.ical]; if (r) { r.ical = t.value.split(/\s+/).map((x) => x.trim()).filter(Boolean).slice(0, 4); changed() } }
+    if (t.id === 'dbq') {
+      S.dbQ = t.value
+      const box = $('#dpick'), q = S.dbQ.trim().toLowerCase()
+      if (box) box.innerHTML = Object.keys(DINGBATS).filter((n) => (!S.dbFam || DINGBATS[n] === S.dbFam) && (!q || n.includes(q))).map((n) => `<button data-ding="${n}"${S.d.dings.includes(n) ? ' class="on"' : ''} aria-label="${n}" title="${n}">${ding(n, 'ink', 'hover')}</button>`).join('')
+    }
   })
   form.addEventListener('change', (e) => {
     const t = e.target
@@ -512,9 +631,26 @@ function bindEdit() {
     if (b.dataset.ding) {
       const n = b.dataset.ding
       S.d.dings = S.d.dings.includes(n) ? S.d.dings.filter((x) => x !== n) : [...S.d.dings, n].slice(-6)
-      app.querySelectorAll('[data-ding]').forEach((x) => x.classList.toggle('on', S.d.dings.includes(x.dataset.ding)))
+      app.querySelectorAll('#dpick [data-ding]').forEach((x) => x.classList.toggle('on', S.d.dings.includes(x.dataset.ding)))
+      const pk = $('.dpicked'); if (pk) pk.innerHTML = S.d.dings.length ? S.d.dings.map((x) => `<button data-ding="${x}" class="on" aria-label="${x}">${ding(x, 'ink')}<span>×</span></button>`).join('') : `<p class="hint" style="margin:0">${T('db_none')}</p>`
       changed()
     }
+    if (b.dataset.dbfam !== undefined) { S.dbFam = b.dataset.dbfam; redrawSec('look') }
+    if (b.dataset.seg) { setPath(S.d, b.dataset.seg, b.dataset.v); b.parentNode.querySelectorAll('button').forEach((x) => x.classList.toggle('on', x === b)); changed() }
+    if (b.dataset.addrow) {
+      const k = b.dataset.addrow
+      S.d[k].push(NEW_ROW[k]()); redrawSec(k)
+      const rows = $(`[data-sec="${k}"]`)?.querySelectorAll('.rowc'); const last = rows && rows[rows.length - 1]
+      if (last) { last.querySelector('input')?.focus(); last.scrollIntoView({ behavior: 'smooth', block: 'center' }) }
+      changed()
+    }
+    if (b.dataset.rmrow) { S.d[b.dataset.rmrow].splice(+b.dataset.i, 1); redrawSec(b.dataset.rmrow); changed() }
+    if (b.dataset.pp) {
+      const path = b.closest('.pickph').dataset.path, [k, i] = path.split('.'), item = S.d[k][+i]
+      if (item) { item.photos = item.photos.includes(b.dataset.pp) ? item.photos.filter((x) => x !== b.dataset.pp) : [...item.photos, b.dataset.pp].slice(0, MAX.itemPhotos); b.classList.toggle('on', item.photos.includes(b.dataset.pp)); changed() }
+    }
+    if (b.dataset.lpingo) listingPin(+b.dataset.lpingo)
+    if (b.dataset.lpinx) { const x = S.d.lists[+b.dataset.lpinx]; if (x) { x.lat = x.lng = null; redrawSec('lists'); changed() } }
     if (b.dataset.scene) { S.d.scene = b.dataset.scene; app.querySelectorAll('[data-scene]').forEach((x) => x.classList.toggle('on', x === b)); drawPreviewSoon(); changed() }
     if (b.id === 'sameall') { const r = S.d.hours.week.find(Boolean) || [['09:00', '18:00']]; S.d.hours.week = S.d.hours.week.map(() => r.map((x) => [...x])); redrawSec('hours'); changed() }
     if (b.id === 'here') here()
@@ -533,6 +669,7 @@ function bindEdit() {
     if (e.target.dataset?.sec === 'drawing' && e.target.open) mountDrawing()
   }, true)
   form.addEventListener('change', (e) => { if (e.target.dataset.k === 'video') { S.d.video = e.target.value; changed() } })
+  form.addEventListener('click', (e) => { const c = e.target.closest('.cp'); if (c) copy(c.dataset.copy) })
   $('#del').onclick = del
   $('#pub').onclick = publish
   $('#pvbtn').onclick = () => { $('#pv').classList.add('show'); document.body.classList.add('pvopen'); preview(true) }
@@ -802,6 +939,17 @@ function here() {
     () => { if (b) b.disabled = false; toast(ui(S.lang, 'e_coords')) }, { enableHighAccuracy: true, timeout: 20000 })
 }
 
+async function listingPin(i) {
+  const inp = $(`[data-lpin="${i}"]`), u = inp?.value.trim()
+  if (!u) return
+  try {
+    const r = await call('GET', 'resolve?u=' + encodeURIComponent(u))
+    if (r.lat == null) throw new Error('no')
+    Object.assign(S.d.lists[i], { lat: Math.round(r.lat * 1e6) / 1e6, lng: Math.round(r.lng * 1e6) / 1e6 })
+    redrawSec('lists'); changed()
+  } catch { toast(ui(S.lang, 'e_coords')) }
+}
+
 async function pasteLink() {
   const u = $('#paste').value.trim()
   if (!u) return
@@ -820,7 +968,38 @@ function drawTab() {
   bindTabs()
   if (S.tab === 'msgs') return drawMsgs()
   if (S.tab === 'stats') return drawStats()
+  if (S.tab === 'book') return drawBookings()
   return drawGold()
+}
+
+async function drawBookings() {
+  const tb = $('#tb')
+  let r
+  try { r = await call('GET', 'bookings') } catch { tb.innerHTML = `<p class="hint">${T('e_net')}</p>`; return }
+  S.asks = r.rows.filter((x) => x.status === 'new').length
+  const nav = app.querySelector('.tabs'); if (nav) { nav.outerHTML = tabs(); bindTabs() }
+  const card = (x) => {
+    const rp = replyHref(x.reach)
+    return `<article class="msg bk ${x.status}" data-id="${esc(x.id)}"><header><b>${esc(x.what)}</b><span class="bst">${T('bk_' + x.status)}</span></header>
+      <p class="when">${esc(x.when)}</p><p class="body"><b>${esc(x.name || '—')}</b> · ${esc(x.reach || '')}${x.email ? ' · ' + esc(x.email) : ''}${x.people > 1 ? ` · ${x.people} ${T('bk_people')}` : ''}</p>
+      ${x.note ? `<p class="reach">${esc(x.note)}</p>` : ''}
+      <footer>${x.status !== 'ok' ? `<button class="go small" data-bk="ok">${icon('check')}${T('bk_accept')}</button>` : ''}${x.status !== 'no' ? `<button class="go ghost small" data-bk="no">${T('bk_decline')}</button>` : ''}
+      ${rp ? `<a class="go line small" href="${esc(rp.href)}" target="_blank" rel="noopener">${icon('chat')}${T('m_reply')} · ${esc(rp.label)}</a>` : ''}<button class="go ghost small" data-bk="gone">${T('bk_del')}</button></footer></article>`
+  }
+  const groups = ['new', 'ok', 'no'].map((st) => [st, r.rows.filter((x) => x.status === st)]).filter(([, l]) => l.length)
+  const cals = (r.reads || []).length ? `<section class="panel"><h3>${T('bk_cal')}</h3><ul class="plain">${r.reads.map((x) => {
+    const room = S.d.rooms.find((y) => y.id === x.room)
+    let host = x.url; try { host = new URL(x.url).hostname.replace(/^www\./, '') } catch {}
+    return `<li>${esc(room ? room.n : x.room)} · ${esc(host)} · ${x.ok ? `${T('bk_read')} ${esc(when(x.at))} · ${x.nights ?? 0}` : `<b style="color:var(--red)">${T('bk_failed')}</b>`}</li>`
+  }).join('')}</ul></section>` : ''
+  tb.innerHTML = (groups.length ? groups.map(([st, l]) => `<h3 class="bkh">${T('bk_' + st)} · ${l.length}</h3><div class="msgs">${l.map(card).join('')}</div>`).join('') : `<div class="empty">${ding('calendar', 'paper')}<p>${T('bk_none')}</p></div>`) + cals
+  tb.onclick = async (e) => {
+    const b = e.target.closest('[data-bk]'); if (!b) return
+    const id = b.closest('[data-id]')?.dataset.id
+    b.disabled = true
+    try { await call('POST', 'bookings', { id, act: b.dataset.bk }); drawBookings() } catch { b.disabled = false; toast(ui(S.lang, 'e_net')) }
+  }
+  dingbats(['signals'])
 }
 
 const when = (iso) => { try { return new Intl.DateTimeFormat(S.lang, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(iso)) } catch { return iso.slice(0, 16).replace('T', ' ') } }
@@ -911,23 +1090,25 @@ async function drawStats(days) {
 async function drawGold() {
   const tb = $('#tb')
   let r = null
-  const feats = ['g_f1', 'g_f2', 'g_f3', 'g_f4', 'g_f5', 'g_f6']
-  const fdings = ['crown', 'search', 'camera', 'compass', 'calendar', 'star']
+  const feats = ['g_f7', 'g_f8', 'g_f9', 'g_f1', 'g_f2', 'g_f3', 'g_f4', 'g_f5', 'g_f6']
+  const fdings = ['key', 'megaphone', 'chat', 'crown', 'search', 'camera', 'compass', 'calendar', 'star']
   const head = `<section class="goldhero">${LOOKS.gold.art}<h2>${T('g_lead')}</h2><ul>${feats.map((k, i) => `<li>${ding(fdings[i], 'paper')}<span>${T(k)}</span></li>`).join('')}</ul></section>`
-  if (isGold()) {
-    tb.innerHTML = head + `<p class="goldon">★ ${esc(ui(S.lang, 'g_on').replace('{d}', S.goldUntil || ''))}</p>`
+  if (isGold() && !S.trial) {
+    tb.innerHTML = head + `<p class="goldon">★ ${esc(ui(S.lang, 'g_on').replace('{d}', S.goldUntil || ''))}</p>` + domainBox()
     dingbats(['signals', 'classic', 'curious'])
+    bindDomain()
     return
   }
   try { r = await call('POST', 'gold') } catch { tb.innerHTML = head + `<p class="hint">${T('e_net')}</p>`; return }
-  if (r.tier === 'gold') { S.tier = 'gold'; S.goldUntil = r.gold_until; return drawGold() }
+  if (r.tier === 'gold' && !S.trial) { S.tier = 'gold'; S.goldUntil = r.gold_until; return drawGold() }
   const tail = String(r.amount).split('.')[1] || '00'
   const nf = new Intl.NumberFormat(S.lang)
-  tb.innerHTML = head + `<section class="goldpay"><p class="price">${esc(ui(S.lang, 'g_price').replace('{p}', nf.format(r.baht)))}</p>
+  tb.innerHTML = head + (S.trial ? `<p class="goldon">★ ${esc(ui(S.lang, 'g_trial').replace('{d}', S.goldUntil || ''))}</p>` : '') + `<section class="goldpay"><p class="price">${esc(ui(S.lang, 'g_price').replace('{p}', nf.format(r.baht)))}</p>
     ${r.payload ? `<div class="ppqr">${qrSvg(r.payload, { dark: '#0e3d78', light: '#ffffff', label: 'PromptPay' })}<b>฿${esc(nf.format(Number(r.amount)))}</b><span>PromptPay</span></div>
       <p class="hint">${esc(ui(S.lang, 'g_scan').replace('{s}', tail))}</p>
-      <label class="pick goldslip">${icon('download')}${T('g_slip')}<input type="file" accept="image/*" id="slip"></label><p id="slipstate" class="pinstate"></p>` : `<p class="hint">${T('g_nopp')}</p>`}</section>`
+      <label class="pick goldslip">${icon('download')}${T('g_slip')}<input type="file" accept="image/*" id="slip"></label><p id="slipstate" class="pinstate"></p>` : `<p class="hint">${T('g_nopp')}</p>`}</section>` + (isGold() ? domainBox() : '')
   dingbats(['signals', 'classic', 'curious'])
+  bindDomain()
   const slip = $('#slip')
   if (slip) slip.onchange = async () => {
     const f = slip.files[0]; if (!f) return
@@ -935,10 +1116,27 @@ async function drawGold() {
     const fd = new FormData(); fd.append('slip', f, 'slip.jpg')
     try {
       const res = await call('POST', 'gold/slip', fd, true)
-      if (res.tier === 'gold') { S.tier = 'gold'; S.goldUntil = res.gold_until; toast(ui(S.lang, 'g_thanks')); drawGold() }
+      if (res.tier === 'gold') { S.tier = 'gold'; S.goldUntil = res.gold_until; S.trial = false; toast(ui(S.lang, 'g_thanks')); drawGold() }
       else { st.className = 'pinstate ok'; st.innerHTML = `${icon('check')}${T('g_wait')}` }
     } catch { st.textContent = ui(S.lang, 'e_net') }
   }
+}
+
+function domainBox() {
+  if (!S.domains) return `<section class="panel"><h3>${T('g_domain')}</h3><p class="hint">${T('g_domainOff')}</p></section>`
+  return `<section class="panel" id="dombox"><h3>${T('g_domain')}</h3><p class="hint">${T('g_domainHint')}</p>
+    ${S.domain ? `<p class="pinstate${S.domainState === 'active' ? ' ok' : ''}">${S.domainState === 'active' ? `${icon('check')}${T('g_domainOn')} <a href="https://${esc(S.domain)}" target="_blank">${esc(S.domain)}</a>` : `${icon('clock')}${T('g_domainWait')} · ${esc(S.domain)}`}</p><div id="domrec"></div>
+      <button class="back" id="domx">× ${T('g_domainDrop')}</button>`
+    : `<div class="row"><input id="domin" placeholder="yourshop.com" autocapitalize="off" spellcheck="false" style="flex:1;min-width:200px"><button class="go ghost" id="domgo">${T('g_domainGo')}</button></div>`}</section>`
+}
+function bindDomain() {
+  const go = $('#domgo'), x = $('#domx'), rec = $('#domrec')
+  const show = (r) => { if (rec && r.records) rec.innerHTML = `<table class="dns">${r.records.map((x) => `<tr><td>${x.type}</td><td>${esc(x.name)}</td><td><code>${esc(x.value)}</code></td></tr>`).join('')}</table>` }
+  if (go) go.onclick = async () => {
+    try { const r = await call('PUT', 'domain', { domain: $('#domin').value }); S.domain = r.domain; S.domainState = r.state; drawGold() } catch (e) { toast(e.message === 'taken' ? ui(S.lang, 'a_taken') : e.why || ui(S.lang, 'e_net')) }
+  }
+  if (x) x.onclick = async () => { try { await call('DELETE', 'domain'); S.domain = ''; S.domainState = ''; drawGold() } catch { toast(ui(S.lang, 'e_net')) } }
+  if (rec) call('GET', 'domain').then((r) => { S.domainState = r.state || S.domainState; show(r) }).catch(() => {})
 }
 
 // ---- putting it online ---------------------------------------------------------------------
@@ -1054,7 +1252,8 @@ async function boot() {
     try {
       const r = await call('GET', 'site')
       Object.assign(S, { name: r.name, kind: r.kind, look: r.look, pageLang: r.lang, status: r.status, views: r.views, d: normalize(r.d), step: 'edit',
-        tier: r.tier, goldUntil: r.gold_until || '', notifyEmail: r.notify_email, notifyOk: r.notify_ok, unread: r.unread })
+        tier: r.tier, goldUntil: r.gold_until || '', notifyEmail: r.notify_email, notifyOk: r.notify_ok, unread: r.unread,
+        trial: !!r.trial, asks: r.asks || 0, domain: r.domain || '', domainState: r.domain_state || '', domains: !!r.domains, price: r.price || 3000 })
       S.d.event = S.d.event || undefined
       S.open = new Set(DEFAULT_OPEN[S.kind])
       if (h.get('tab')) S.tab = h.get('tab')

@@ -49,7 +49,7 @@ export async function grant(env, siteId, note) {
   const from = s?.gold_until && s.gold_until > new Date().toISOString() ? new Date(s.gold_until) : new Date()
   from.setUTCFullYear(from.getUTCFullYear() + 1)
   const until = from.toISOString().slice(0, 10)
-  await env.DB.prepare("UPDATE site SET tier='gold', gold_until=? WHERE id=?").bind(until, siteId).run()
+  await env.DB.prepare("UPDATE site SET tier='gold', gold_until=?, trial=0 WHERE id=?").bind(until, siteId).run()
   return until
 }
 

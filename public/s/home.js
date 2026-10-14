@@ -33,10 +33,10 @@ const W = {
     t_lang: 'สิบสองภาษา', t_langP: 'ป้ายบนหน้าเว็บเป็นภาษาที่คุณเลือก',
     t_pics: 'รูปฟรี มีเครดิต', t_picsP: 'รูปสาธารณสมบัติจาก Wikimedia Commons, Cleveland Museum of Art และ Openverse ใส่เครดิตให้ทุกรูป',
     looksH: 'เก้าแบบ เลือกที่ใช่', looksSub: 'แตะภาพวาดในแต่ละแบบ ขยับได้ทุกอัน',
-    tiersH: 'ฟรี หรือ ทอง', freeH: 'ฟรี', goldH: 'ทอง', makeFree: 'เริ่มฟรี', makeGold: 'เริ่ม แล้วอัปเป็นทอง', perYear: 'ต่อปี',
+    tiersH: 'ฟรี หรือ ทอง', freeH: 'ฟรี', goldH: 'ทอง', makeFree: 'เริ่มฟรี', makeGold: 'เริ่มเลย ทองฟรี 30 วันแรก', perYear: 'ต่อปี',
     goldFine: 'จ่ายด้วยพร้อมเพย์ในตัวทำเว็บ ส่งสลิป แล้วเปิดทอง',
     f1: 'หน้าเว็บที่ sites.motdang.net/ชื่อคุณ', f2: 'ภาพวาดร้าน แผนที่วาดมือ รูปวาดขยับได้', f3: 'ไลน์ Grab โทร นำทาง สั่งอาหาร', f4: 'กล่องข้อความ และสำเนาทางอีเมล',
-    f5: 'สถิติคนเข้าชม 30 วัน', f6: 'รูป 12 รูป รูปฟรีมีเครดิต', f7: 'แชร์ คิวอาร์ รูปสตอรี่ ป้าย A4',
+    f5: 'สถิติคนเข้าชม 30 วัน', f6: 'รูป 12 รูป รูปฟรีมีเครดิต', f7: 'แชร์ คิวอาร์ รูปสตอรี่ ป้าย A4', f8: 'ปฏิทิน แผนที่สามแบบ ดิงแบตทั้งคลัง',
     liveH: '{n} เว็บออนไลน์แล้ว ใน {c} ประเทศ', allPages: 'ดูเว็บทั้งหมด', random: 'สุ่มเว็บ',
     howH: 'สามขั้น ห้านาที', step1: 'เลือกว่าทำเพื่ออะไร', step2: 'ตั้งชื่อ ได้ที่อยู่เว็บ', step3: 'เลือกแบบ กดขึ้นออนไลน์',
     t_sign: 'ป้ายพิมพ์ได้', t_signP: 'ป้าย A4 มีคิวอาร์หน้าเว็บ คิวอาร์ไลน์ เบอร์ และเวลาเปิด ติดหน้าร้านได้เลย', t_gold: 'ทอง', t_goldP: 'แบบลายคำทอง ขึ้น Google รูปมากขึ้น วิดีโอ และที่โปรดของคุณบนแผนที่',
@@ -64,10 +64,10 @@ const W = {
     t_lang: 'Twelve languages', t_langP: 'The labels on your page, in the language you pick.',
     t_pics: 'Free pictures, credited', t_picsP: 'Public-domain pictures from Wikimedia Commons, the Cleveland Museum of Art and Openverse, each one credited.',
     looksH: 'Nine looks. Pick yours.', looksSub: 'Tap the drawing on each one; they all move.',
-    tiersH: 'Free, or Gold', freeH: 'Free', goldH: 'Gold', makeFree: 'Start free', makeGold: 'Start, then go Gold', perYear: 'a year',
+    tiersH: 'Free, or Gold', freeH: 'Free', goldH: 'Gold', makeFree: 'Start free', makeGold: 'Start: the first 30 days are Gold', perYear: 'a year',
     goldFine: 'Pay with PromptPay inside the page maker, send the slip, and Gold turns on.',
     f1: 'Your page at sites.motdang.net/yourname', f2: 'Your place drawn, a hand-drawn map, moving drawings', f3: 'LINE, Grab, call, directions, food orders', f4: 'Messages, with copies by email',
-    f5: '30 days of traffic', f6: '12 photos, plus free credited pictures', f7: 'Share, QR, story picture, A4 sign',
+    f5: '30 days of traffic', f6: '12 photos, plus free credited pictures', f7: 'Share, QR, story picture, A4 sign', f8: 'A calendar, three map looks, the whole dingbat library',
     liveH: '{n} pages online in {c} countries', allPages: 'See every page', random: 'A page at random',
     howH: 'Three steps, five minutes', step1: 'Pick what it is for', step2: 'Name it and get your address', step3: 'Pick a look and put it online',
     t_sign: 'A sign to print', t_signP: 'An A4 sign with your page’s QR, your LINE QR, phone and hours, for the counter or the door.', t_gold: 'Gold', t_goldP: 'Gold leaf looks, Google, more photos, a video, and your favourite places on your map.',
@@ -113,23 +113,23 @@ howH: 'အဆင့်သုံးဆင့်', step1: 'ဘာအတွက်�
     t_stats: '谁来过', t_statsP: '每天人数、从哪里来、点了什么，程序单独统计。', t_share: '到处分享', t_shareP: 'LINE、Facebook、WhatsApp、二维码、快拍图片、可打印 A4 店招。',
     t_lang: '十二种语言', t_langP: '网页上的标签用你选的语言。', t_pics: '免费图片，带署名', t_picsP: '来自 Wikimedia Commons、克利夫兰艺术博物馆和 Openverse 的公有领域图片，每张都署名。',
     looksH: '九种样式，选你喜欢的', looksSub: '点一下每个样式里的画，都会动。',
-    tiersH: '免费，或金卡', freeH: '免费', goldH: '金卡', makeFree: '免费开始', makeGold: '先开始，再升级金卡', perYear: '每年',
+    tiersH: '免费，或金卡', freeH: '免费', goldH: '金卡', makeFree: '免费开始', makeGold: '开始：前 30 天是金卡', perYear: '每年',
     goldFine: '在网页工具里用 PromptPay 付款，发送凭证，金卡就开通。',
     f1: '你的网页：sites.motdang.net/你的名字', f2: '店的手绘、手绘地图、会动的小画', f3: 'LINE、Grab、电话、导航、点餐', f4: '留言，可抄送到邮箱',
-    f5: '30 天访问数据', f6: '12 张照片，外加带署名的免费图片', f7: '分享、二维码、快拍图片、A4 店招',
+    f5: '30 天访问数据', f6: '12 张照片，外加带署名的免费图片', f7: '分享、二维码、快拍图片、A4 店招', f8: '日历、三种地图样式、全部小图标',
     liveH: '{c} 个国家，{n} 个网页已上线', allPages: '看所有网页', random: '随便看看',
     t_sign: '可打印的店招', t_signP: 'A4 店招，有网页二维码、LINE 二维码、电话和营业时间，贴在门口。', t_gold: '金卡', t_goldP: '金箔样式、上 Google、更多照片、视频，还有你的地图收藏。',
     howH: '三步，五分钟', step1: '选用途', step2: '起名字，拿到网址', step3: '选样式，上线', ex: '例子',
   },
 }
 const GOLD = {
-  th: ['แบบลายคำทองและริโซ่', 'หน้าเว็บขึ้นบน Google และเสิร์ชเอนจินอื่น', 'รูป 48 รูปและวิดีโอ', 'แถวนี้: ที่ของคุณเองบนแผนที่วาดมือ', 'สถิติหนึ่งปี และไฟล์ CSV', 'ขึ้นก่อนในรายชื่อเว็บ มีดาวทอง', 'ทุกอย่างในแบบฟรี'],
-  en: ['Gold leaf and Riso looks', 'Your page on Google and other search engines', '48 photos and a video', 'Around here: your own places on your drawn map', 'A year of traffic, and a CSV', 'First in the list of pages, with a gold star', 'Everything in Free'],
-  my: ['ရွှေနှင့် Riso ပုံစံများ', 'Google တွင် ပေါ်သည်', 'ဓာတ်ပုံ ၄၈ ပုံနှင့် ဗီဒီယို', 'ဤအနီး- သင့်နေရာများ မြေပုံပေါ်တွင်', 'တစ်နှစ်စာ စာရင်းနှင့် CSV', 'စာရင်းတွင် ရှေ့ဆုံး', 'အခမဲ့ရှိသမျှ'],
-  zh: ['金箔和 Riso 两种样式', '网页能出现在 Google 等搜索引擎', '48 张照片和一个视频', '附近：你的地方标在手绘地图上', '一年的访问数据和 CSV', '在网页列表里排前面，带金星', '免费版的一切'],
+  th: ['รับจอง ห้องพักพร้อมปฏิทิน Airbnb Booking Agoda ประกาศขายเช่า', 'โปรโมชั่นตั้งเวลา นับถอยหลัง', 'หน้าเว็บ 12 ภาษา', 'แบบลายคำทองและริโซ่', 'หน้าเว็บขึ้นบน Google และเสิร์ชเอนจินอื่น', 'รูป 120 รูปและวิดีโอ', 'แถวนี้: ที่ของคุณเองบนแผนที่วาดมือ', 'สถิติหนึ่งปี และไฟล์ CSV', 'ขึ้นก่อนในรายชื่อเว็บ มีดาวทอง', 'ทุกอย่างในแบบฟรี'],
+  en: ['Bookings, rooms that read Airbnb, Booking.com and Agoda calendars, listings to sell or rent', 'Timed offers with a countdown', 'Your page in 12 languages', 'Gold leaf and Riso looks', 'Your page on Google and other search engines', '120 photos and a video', 'Around here: your own places on your drawn map', 'A year of traffic, and a CSV', 'First in the list of pages, with a gold star', 'Everything in Free'],
+  my: ['ကြိုတင်မှာယူမှု၊ အခန်းများ၊ အိမ်ကြော်ငြာ', 'နောက်ပြန်ရေတွက်သည့် ပရိုမိုးရှင်း', 'ဘာသာစကား ၁၂ မျိုး', 'ရွှေနှင့် Riso ပုံစံများ', 'Google တွင် ပေါ်သည်', 'ဓာတ်ပုံ ၁၂၀ ပုံနှင့် ဗီဒီယို', 'ဤအနီး- သင့်နေရာများ မြေပုံပေါ်တွင်', 'တစ်နှစ်စာ စာရင်းနှင့် CSV', 'စာရင်းတွင် ရှေ့ဆုံး', 'အခမဲ့ရှိသမျှ'],
+  zh: ['预约、读取 Airbnb / Booking.com / Agoda 日历的客房、买卖租赁房源', '带倒计时的限时优惠', '网页有 12 种语言', '金箔和 Riso 两种样式', '网页能出现在 Google 等搜索引擎', '120 张照片和一个视频', '附近：你的地方标在手绘地图上', '一年的访问数据和 CSV', '在网页列表里排前面，带金星', '免费版的一切'],
 }
-const GOLD_DING = ['crown', 'search', 'camera', 'compass', 'calendar', 'star', 'check']
-const FREE_DING = ['link', 'pencil', 'telephone', 'envelope', 'calendar', 'camera', 'share']
+const GOLD_DING = ['key', 'megaphone', 'chat', 'crown', 'search', 'camera', 'compass', 'calendar', 'star', 'check']
+const FREE_DING = ['link', 'pencil', 'telephone', 'envelope', 'calendar', 'camera', 'share', 'sparkle']
 
 let L = store.get('lang', (navigator.language || 'th').slice(0, 2))
 if (!W[L]) L = 'th'
@@ -243,7 +243,7 @@ function looks() {
 }
 
 function tiers(price) {
-  $('#freeList').innerHTML = ['f1', 'f2', 'f3', 'f4', 'f5', 'f6', 'f7'].map((k, i) => `<li><i data-dingbat="${FREE_DING[i]}" data-look="ink"></i><span>${w(k)}</span></li>`).join('')
+  $('#freeList').innerHTML = ['f1', 'f2', 'f3', 'f4', 'f5', 'f6', 'f7', 'f8'].map((k, i) => `<li><i data-dingbat="${FREE_DING[i]}" data-look="ink"></i><span>${w(k)}</span></li>`).join('')
   $('#goldList').innerHTML = GOLD[L].map((t, i) => `<li><i data-dingbat="${GOLD_DING[i]}" data-look="paper"></i><span>${t}</span></li>`).join('')
   $('#goldPrice').innerHTML = `฿${new Intl.NumberFormat(L).format(price)} <small>${w('perYear')}</small>`
 }

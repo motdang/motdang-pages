@@ -6,13 +6,14 @@
 import { word, PAGE_LANGS } from './words.mjs'
 import { encodeQr } from './qr.mjs'
 import { DINGBATS } from './db/names.mjs'
+import { normalizeExtras, upcoming, campsNow, utcOf, money, MAP_NEAR, MAX, UNIT_LABEL } from './extras.mjs'
 
-export const KINDS = ['shop', 'food', 'service', 'me', 'event', 'group']
+export const KINDS = ['shop', 'food', 'service', 'stay', 'homes', 'me', 'event', 'group']
 export const LOOK_IDS = ['poster', 'loom', 'stitch', 'night', 'y1997', 'clean', 'lanna', 'gold', 'riso']
 export const GOLD_LOOKS = ['gold', 'riso']
 export const HOME = 'https://sites.motdang.net'
 export const MAIN = 'https://motdang.net'
-export const MAX_PHOTOS = { free: 12, gold: 48 }
+export const MAX_PHOTOS = { free: 12, gold: 120 }
 
 // The auto-doodler's scenes a page can draw itself as (motdang.net/front/doodler*.js),
 // by kind, with words for the builder. The first is each kind's own.
@@ -26,6 +27,8 @@ export const SCENES = {
     ['clinic', 'คลินิก', 'Clinic'], ['dentist', 'ทันตกรรม', 'Dentist'], ['optician', 'ร้านแว่น', 'Optician'], ['tattoo', 'ร้านสัก', 'Tattoo'], ['sakyant', 'สักยันต์', 'Sak yant'],
     ['gym', 'ยิม', 'Gym'], ['muaythai', 'มวยไทย', 'Muay Thai'], ['garage', 'อู่ซ่อมรถ', 'Garage'], ['office', 'สำนักงาน', 'Office'], ['agent', 'นายหน้า', 'Estate agent'],
     ['tours', 'ทัวร์', 'Tours'], ['training', 'สอนพิเศษ', 'Classes'], ['hotel', 'โรงแรม', 'Hotel'], ['guesthouse', 'เกสต์เฮาส์', 'Guesthouse'], ['hostel', 'โฮสเทล', 'Hostel']],
+  stay: [['hotel', 'โรงแรม', 'Hotel'], ['guesthouse', 'เกสต์เฮาส์', 'Guesthouse'], ['hostel', 'โฮสเทล', 'Hostel'], ['lanna-house', 'บ้านล้านนา', 'Lanna house'], ['rooftop', 'ดาดฟ้า', 'Rooftop']],
+  homes: [['agent', 'นายหน้า', 'Estate agent'], ['lanna-house', 'บ้านล้านนา', 'House'], ['alley', 'ซอย', 'Soi'], ['office', 'สำนักงาน', 'Office'], ['rooftop', 'ดาดฟ้า', 'Rooftop']],
   me: [['lanna-house', 'บ้านล้านนา', 'Lanna house'], ['alley', 'ซอย', 'Soi'], ['rooftop', 'ดาดฟ้า', 'Rooftop'], ['studio', 'สตูดิโอ', 'Studio'], ['band', 'ดนตรี', 'Music'],
     ['dance', 'เต้น', 'Dance'], ['tuktuk', 'ตุ๊กตุ๊ก', 'Tuk-tuk'], ['robots', 'หุ่นยนต์', 'Robots']],
   event: [['social', 'ปาร์ตี้', 'Party'], ['market', 'ตลาด', 'Market'], ['band', 'ดนตรีสด', 'Live music'], ['feast', 'งานเลี้ยง', 'Feast'], ['yoga', 'โยคะ', 'Yoga'],
@@ -40,7 +43,8 @@ export const sceneOf = (kind, d) => (d.scene && SCENE_IDS.has(d.scene) ? d.scene
 
 // The dingbat beside each section's heading, and the look each page look draws them in.
 const HEAD_DING = { about: 'sparkle', menu: 'noodles', prices: 'coin', hours: 'clock', photos: 'camera', where: 'pin', line: 'chat', links: 'link',
-  contact: 'telephone', msg: 'envelope', when: 'calendar', drawn: 'pencil', video: 'play', spots: 'compass', share: 'share' }
+  contact: 'telephone', msg: 'envelope', when: 'calendar', drawn: 'pencil', video: 'play', spots: 'compass', share: 'share',
+  cal: 'calendar', camp: 'megaphone', book: 'clock', rooms: 'key', lists: 'home' }
 const DING_LOOK = { poster: 'riso', loom: 'paper', stitch: 'paper', night: 'neon', y1997: 'neon', clean: 'ink', lanna: 'paper', gold: 'paper', riso: 'riso' }
 export const ACCENTS = ['#f04a00', '#ff2e88', '#ffb000', '#19a974', '#137a71', '#2563eb', '#7c3aed', '#111827']
 
@@ -148,7 +152,7 @@ export function normalize(d = {}) {
   o.event = LOCAL_DT.test(e.start || '')
     ? { start: e.start, end: LOCAL_DT.test(e.end || '') && e.end > e.start ? e.end : '', tz: validTz(e.tz) }
     : null
-  return o
+  return normalizeExtras(d, o)
 }
 
 /** A YouTube or Vimeo address as { kind, id }, else null. */
@@ -527,6 +531,43 @@ dialog.qrd{background:#fff;color:#000;padding:26px;text-align:center;width:min(9
 .leaf .lotus{transform-origin:60px 96px}.leaf.go .lotus{animation:bloom 1.4s cubic-bezier(.3,1.5,.5,1)}@keyframes bloom{40%{transform:scale(1.12) rotate(-4deg)}}
 .leaf .glints{animation:glint 2.8s ease-in-out infinite}@keyframes glint{50%{opacity:.25}}.leaf.go .glints{animation:spark 1s}
 .riso .pink{transform-origin:60px 60px}.riso.go .pink{animation:spin 1.4s cubic-bezier(.3,1.6,.5,1)}.riso.go .blue{animation:shuttle .7s ease-in-out}
+.top.gilt::before{content:"";position:absolute;inset:0;z-index:4;pointer-events:none;background:linear-gradient(105deg,transparent 38%,rgba(255,226,140,.32) 47%,rgba(255,250,225,.62) 50%,rgba(255,226,140,.32) 53%,transparent 62%) no-repeat;background-size:260% 100%;background-position:130% 0;animation:gilt 2.6s .6s cubic-bezier(.4,0,.2,1) forwards}
+@keyframes gilt{to{background-position:-40% 0}}
+.drawn .pen{position:absolute;left:0;top:0;width:36px;height:36px;z-index:2;pointer-events:none;filter:drop-shadow(0 3px 3px rgba(0,0,0,.45));transition:opacity .5s}
+.camp{position:relative;margin:22px 0;border-radius:calc(var(--r) + 6px);background:var(--accent);color:var(--on-accent);overflow:hidden;box-shadow:0 12px 34px rgba(0,0,0,.2)}
+.camp::before{content:"";position:absolute;inset:0 -60px;background:repeating-linear-gradient(135deg,rgba(255,255,255,.16) 0 14px,transparent 14px 28px);animation:slide 3.5s linear infinite}
+@keyframes slide{to{transform:translateX(39.6px)}}
+.camp::after{content:"";position:absolute;top:50%;left:-12px;right:-12px;height:24px;margin-top:-12px;background:radial-gradient(circle at 12px 12px,var(--bg) 11px,transparent 12px) left/100% 100% no-repeat,radial-gradient(circle at calc(100% - 12px) 12px,var(--bg) 11px,transparent 12px) right/100% 100% no-repeat;pointer-events:none}
+.campin{position:relative;z-index:1;display:flex;gap:14px;align-items:center;padding:20px 26px}.campin>[data-dingbat]{font-size:46px;flex:none}
+.campt{flex:1}.campt b{display:block;font:800 23px/1.15 var(--display);text-transform:var(--case)}.campt p{margin:4px 0 0}.campt .cnt{font-weight:700;font-size:15px;opacity:.92}
+.code{flex:none;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 12px;border:2px dashed currentColor;border-radius:10px;background:rgba(255,255,255,.18);color:inherit;font:800 19px/1.1 ui-monospace,Menlo,monospace;letter-spacing:.06em;cursor:pointer}.code small{font:700 10px/1 var(--body);letter-spacing:.12em;text-transform:uppercase;opacity:.85}
+.calz{list-style:none;margin:0;padding:0}.calz li{display:grid;grid-template-columns:58px 1fr 44px;gap:14px;align-items:center;padding:12px 0;border-bottom:1px dashed var(--line)}.calz li:last-child{border:0}
+.calz .dt{display:flex;flex-direction:column;align-items:center;justify-content:center;height:62px;border-radius:12px;background:var(--accent);color:var(--on-accent);line-height:1}.calz .dt b{font:800 26px/1 var(--display)}.calz .dt span{margin-top:3px;font:800 11px/1.2 var(--body);letter-spacing:.08em;text-transform:uppercase}
+.calz small{display:block;color:var(--mute);font-size:15px}.calz em{color:#0b8043;font-style:normal;font-weight:800}.calz p{margin:4px 0 0;font-size:16px}.calz li.now .dt{animation:pulse 1.6s ease-in-out infinite}
+.calz .add{display:grid;place-items:center;width:44px;height:44px;border-radius:50%;box-shadow:inset 0 0 0 2px var(--line);color:var(--acc-ink)}
+.svc{list-style:none;margin:0;padding:0;display:grid;gap:8px}.svcb{width:100%;display:flex;gap:12px;align-items:center;text-align:left;padding:14px 16px;border-radius:calc(var(--r) + 4px);border:2px solid var(--line);background:var(--bg);color:var(--ink);font:inherit;cursor:pointer;transition:border-color .2s,transform .15s}.svcb:active{transform:scale(.98)}
+.svcb .n{flex:1;font-weight:700}.svcb small{display:block;font-weight:400;color:var(--mute);font-size:15px}.svcb .p{font-weight:800;color:var(--acc-ink);white-space:nowrap}.svcb.on{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent)}
+.bookui{margin-top:16px}.days{display:flex;gap:8px;overflow-x:auto;padding:4px 2px 10px;scroll-snap-type:x mandatory;scrollbar-width:none}.days::-webkit-scrollbar{display:none}
+.days button{flex:none;scroll-snap-align:start;width:64px;padding:8px 0;border-radius:12px;border:2px solid var(--line);background:var(--bg);color:var(--ink);font:600 12px/1.2 var(--body);text-transform:uppercase;cursor:pointer}.days button b{display:block;font:800 22px/1.15 var(--display)}.days button.on{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+.times{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:8px;margin:6px 0 14px;min-height:46px}.times button{min-height:48px;border-radius:10px;border:2px solid var(--line);background:var(--card);color:var(--ink);font:700 16px var(--body);cursor:pointer}.times button small{display:block;font-weight:400;font-size:11px;color:var(--mute)}.times button.on{background:var(--ink);color:var(--card);border-color:var(--ink)}.times button.on small{color:inherit;opacity:.8}.times p{grid-column:1/-1;color:var(--mute);margin:0}
+.pp{text-align:center}.pp .qr{width:min(240px,70vw);height:auto;margin:10px auto;border-radius:12px}.pp b{display:block;font-size:20px}
+.rooms{display:grid;gap:18px}.room{border-radius:calc(var(--r) + 4px);overflow:hidden;background:var(--bg);box-shadow:inset 0 0 0 1px var(--line)}
+.room .strip{display:flex;gap:2px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none}.room .strip::-webkit-scrollbar{display:none}.room .strip button{flex:0 0 86%;aspect-ratio:4/3;padding:0;border:0;scroll-snap-align:start;background:var(--line);cursor:zoom-in}.room .strip button:only-child{flex-basis:100%}.room .strip img{width:100%;height:100%;object-fit:cover}
+.rin{padding:16px 18px}.rin h3{margin:0 0 4px;font:700 23px/1.2 var(--display)}.rin .facts{display:flex;gap:6px;align-items:center;margin:0 0 8px;color:var(--mute)}.rin .night{font:800 21px/1.2 var(--body);color:var(--acc-ink)}
+.mcal{margin:14px 0}.mcal .mh{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-weight:800}.mcal .mh button{width:42px;height:42px;border-radius:50%;border:2px solid var(--line);background:var(--card);color:var(--ink);font:700 18px system-ui;cursor:pointer}
+.mcal .g{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}.mcal .g span{padding:4px 0;text-align:center;font:700 11px var(--body);color:var(--mute)}.mcal .g button{aspect-ratio:1;border:0;border-radius:8px;background:var(--card);color:var(--ink);font:600 15px var(--body);cursor:pointer}
+.mcal .g button:disabled{opacity:.32;cursor:default}.mcal .g button.tk{text-decoration:line-through}.mcal .g button.in{background:var(--line)}.mcal .g button.end{background:var(--accent);color:var(--on-accent)}.rsum{margin:8px 0 12px;font-weight:700}
+.lfilter{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 14px}.lfilter button{padding:8px 15px;border-radius:99px;border:2px solid var(--line);background:var(--bg);color:var(--ink);font:700 15px var(--body);cursor:pointer}.lfilter button.on{background:var(--ink);color:var(--card);border-color:var(--ink)}
+.lgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:16px}.lcard{display:flex;flex-direction:column;gap:3px;color:var(--ink);text-decoration:none}
+.lcard figure{position:relative;margin:0 0 6px;aspect-ratio:4/3;border-radius:calc(var(--r) + 2px);overflow:hidden;background:var(--line)}.lcard img{width:100%;height:100%;object-fit:cover;transition:transform .5s}.lcard:hover img{transform:scale(1.05)}.lcard .noimg{display:grid;place-items:center;height:100%;font-size:72px;background:repeating-linear-gradient(45deg,var(--line) 0 12px,var(--bg) 12px 24px)}
+.lcard .deal,.lhead .deal{position:absolute;left:8px;top:8px;padding:3px 10px;border-radius:99px;background:var(--accent);color:var(--on-accent);font:800 12px/1.4 var(--body);letter-spacing:.06em;text-transform:uppercase}.lhead .deal{position:static}
+.lcard .st{position:absolute;right:8px;top:8px;padding:3px 10px;border-radius:99px;background:#111;color:#fff;font:800 12px/1.4 var(--body);text-transform:uppercase}.lcard.gone figure{filter:grayscale(.75)}.lcard .pr{font:800 19px/1.2 var(--body);color:var(--acc-ink)}.lcard small{color:var(--mute);font-size:14px}
+.lhead{display:flex;gap:8px;margin:0 0 6px}.lhead .st{padding:3px 10px;border-radius:99px;background:#0b8043;color:#fff;font:800 12px/1.4 var(--body);text-transform:uppercase}.lhead .st-sold,.lhead .st-rented{background:#111}.lhead .st-reserved{background:#b45309}
+.lprice{margin:6px 0 12px;font:800 clamp(28px,7vw,40px)/1.1 var(--display);color:var(--acc-ink)}.lfacts dl{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin:0}.lfacts dl div{padding:10px 12px;border-radius:12px;background:var(--bg)}.lfacts dt{font-size:13px;color:var(--mute)}.lfacts dd{margin:0;font-size:20px;font-weight:800}
+.foot .langs{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:0 0 10px}.foot .langs a{padding:5px 11px;border-radius:99px;box-shadow:inset 0 0 0 1.5px currentColor;text-decoration:none;font-size:14px}.foot .langs a[aria-current]{background:var(--ink);color:var(--bg);box-shadow:none}.foot .mt{font-size:12px;opacity:.8}
+.readin{position:fixed;left:50%;bottom:16px;z-index:40;display:flex;align-items:center;gap:8px;padding:10px 12px 10px 18px;border-radius:99px;background:var(--ink);color:var(--bg);font:700 15px/1.2 var(--body);text-decoration:none;box-shadow:0 8px 24px rgba(0,0,0,.3);transform:translateX(-50%);animation:up .5s cubic-bezier(.2,.8,.2,1);white-space:nowrap}
+@keyframes up{from{opacity:0;transform:translate(-50%,40px)}}
+@media (max-width:560px){.campin{flex-wrap:wrap;padding:18px 22px}.campin>[data-dingbat]{font-size:34px}.campt{flex:1 1 calc(100% - 52px)}.code{width:100%;flex-direction:row;justify-content:center;gap:12px}}.readin button{padding:0 4px;border:0;background:none;color:inherit;font:700 20px/1 system-ui;cursor:pointer}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}.rise{opacity:1;transform:none}}
 @media (min-width:760px){.top .t{padding:84px 16px 72px}.art{width:128px;height:128px;right:24px;top:24px}.t .art{right:auto;top:auto}.drawn{margin:30px -40px}}
 @media print{.reach,.foot,.art,.tools-row,.msgcard,.dmap{display:none}body{background:#fff;color:#000}}`
@@ -599,7 +640,7 @@ export function render(site, opt = {}) {
   const W = (k, v) => esc(word(lang, k, v))
   const img = opt.img || ((id, small) => `/img/${id}${small ? '-s' : ''}.webp`)
   const origin = opt.origin || HOME
-  const url = `${origin}/${site.name}`
+  const url = opt.base || `${origin}/${site.name}`
   const name = d.name || site.name
   const cur = d.currency || currencyFor(d.place.cc, lang)
   const st = openState(d.hours, opt.now)
@@ -611,18 +652,29 @@ export function render(site, opt = {}) {
   const photos = d.photos.slice(0, gold ? MAX_PHOTOS.gold : MAX_PHOTOS.free)
   const H2 = (k, label) => `<h2>${ding(HEAD_DING[k], dl)}${label}</h2>`
   const out = []
+  const L = gold && opt.listing ? d.lists.find((x) => x.id === opt.listing) || null : null
+  const tz = d.hours.tz
+  const sym = CURRENCY[cur] || ''
+  const now = opt.now ? +opt.now : Date.now()
+  const title = L ? `${L.t} · ${name}` : name
+  const pageUrl = L ? `${url}/l/${L.id}` : url
+  const langs = (opt.langs || []).filter((l) => PAGE_LANGS[l])
+  const home = opt.home || site.lang
 
   // head
-  const desc = d.tagline || d.about.slice(0, 160) || name
-  const card = d.card ? `${origin}/img/${d.card}.jpg` : d.cover ? origin + img(d.cover) : `${origin}/s/card.jpg`
-  out.push(`<!doctype html><html lang="${lang}" data-look="${lookId}"><head><meta charset="utf-8">`,
+  const desc = (L && L.note.slice(0, 160)) || d.tagline || d.about.slice(0, 160) || name
+  const card = L && L.photos[0] ? origin + img(L.photos[0]) : d.card ? `${origin}/img/${d.card}.jpg` : d.cover ? origin + img(d.cover) : `${origin}/s/card.jpg`
+  out.push(`<!doctype html><html lang="${lang}" data-look="${lookId}" translate="no" class="notranslate"><head><meta charset="utf-8"><meta name="google" content="notranslate">`,
+    opt.nonce ? `<script nonce="${opt.nonce}">if(/[.]translate[.]goog$/.test(location.hostname))location.replace("https://"+location.hostname.slice(0,-15).replace(/--/g,"~").replace(/-/g,".").replace(/~/g,"-")+location.pathname+location.search.replace(/([?&])_x_tr_[^&]*/g,"$1").replace(/[?&]+$/,"").replace(/[?]&+/,"?")+location.hash)</script>` : '',
     `<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">`,
-    `<title>${esc(name)}</title><meta name="description" content="${esc(desc)}">`,
-    `<meta property="og:title" content="${esc(name)}"><meta property="og:description" content="${esc(desc)}">`,
-    `<meta property="og:url" content="${esc(url)}"><meta property="og:type" content="website"><meta property="og:site_name" content="Mot Dang">`,
+    `<title>${esc(title)}</title><meta name="description" content="${esc(desc)}">`,
+    `<meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(desc)}">`,
+    `<meta property="og:url" content="${esc(pageUrl)}"><meta property="og:type" content="website"><meta property="og:site_name" content="Mot Dang">`,
     `<meta property="og:image" content="${esc(card)}"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:image:alt" content="${esc(name)}">`,
     `<meta name="twitter:card" content="summary_large_image"><meta name="twitter:image" content="${esc(card)}">`,
-    `<meta name="robots" content="${gold && site.status === 'live' ? 'index,follow' : 'noindex'}"><link rel="canonical" href="${esc(url)}">`,
+    `<meta name="robots" content="${gold && site.status === 'live' ? 'index,follow,notranslate' : 'noindex,notranslate'}"><link rel="canonical" href="${esc(opt.hl ? pageUrl + '?hl=' + opt.hl : pageUrl)}">`,
+    langs.length > 1 && gold && site.status === 'live' ? langs.map((l) => `<link rel="alternate" hreflang="${l}" href="${esc(l === home ? pageUrl : pageUrl + '?hl=' + l)}">`).join('') : '',
+    gold && site.status === 'live' && !opt.preview ? `<script type="application/ld+json">${ldJson(site, d, name, pageUrl, card, L, sym).replace(/</g, '\\u003c')}</script>` : '',
     `<meta name="theme-color" content="${/--bg:(#[0-9a-f]+)/i.exec(look.vars)?.[1] || '#ffffff'}">`,
     `<link rel="icon" href="/s/ant.svg">`,
     `<style>${faces(look.fonts)}:root{${look.vars};--accent:${accent};--on-accent:${onColor(accent)};--acc-ink:${accInk(look, accent)}}${BASE_CSS}${look.css}</style></head><body>`)
@@ -634,19 +686,23 @@ export function render(site, opt = {}) {
   }
 
   // top
-  out.push(`<header class="top${d.cover ? ' has-cover' : ''}">`)
+  const cov = L ? L.photos[0] || '' : d.cover
+  out.push(`<header class="top${cov ? ' has-cover' : ''}${gold ? ' gilt' : ''}">`)
   if (lookId === 'night') out.push('<div class="lights"></div>')
-  if (d.cover) out.push(`<img src="${esc(img(d.cover))}" alt="" fetchpriority="high">${look.art}${d.credits[d.cover] ? `<figcaption>${creditLine(d.credits[d.cover])}</figcaption>` : ''}`)
-  out.push(`<div class="t">${d.cover ? '' : look.art}`)
+  if (cov) out.push(`<img src="${esc(img(cov))}" alt="" fetchpriority="high">${look.art}${d.credits[cov] ? `<figcaption>${creditLine(d.credits[cov])}</figcaption>` : ''}`)
+  out.push(`<div class="t">${cov ? '' : look.art}`)
   if (gold) out.push(`<span class="goldtag">${ding('crown', 'mono')}${W('gold')}</span><br>`)
-  out.push(`<h1>${esc(name)}</h1>`)
+  out.push(`<h1>${esc(L ? L.t : name)}</h1>`)
   if (lookId === 'poster') out.push('<span class="bar"></span>')
-  if (d.tagline) out.push(`<p class="tag">${esc(d.tagline)}</p>`)
+  if (L) out.push(`<p class="tag"><a href="/${esc(site.name)}#lists">${esc(name)}</a></p>`)
+  else if (d.tagline) out.push(`<p class="tag">${esc(d.tagline)}</p>`)
   if (d.dings.length) out.push(`<p class="dings">${d.dings.map((n) => ding(n, dl)).join('')}</p>`)
   out.push(`<span id="st">${badge(lang, st)}</span></div></header>`)
   if (lookId === 'y1997' && d.tagline) out.push(`<div class="marq"><span>★ ${esc(d.tagline)} ★ ${esc(name)} ★</span></div>`)
 
   out.push('<main class="wrap">')
+  if (L) out.push(listingBody(L, { site, d, W, H2, img, sym, gold, opt, name }))
+  else {
 
   // reach: the buttons a reader came for
   const reach = []
@@ -660,6 +716,15 @@ export function render(site, opt = {}) {
   if (d.msg && !reach.length) reach.push(`<a class="btn" data-t="msg" href="#message">${icon('mail')}${W('msg')}</a>`)
   if (reach.length) out.push(`<nav class="reach">${reach.join('')}</nav>`)
 
+  // timed campaigns (Gold): only inside their window; the page counts down to the end
+  if (gold) for (const { c: k, e } of campsNow(d.camps, tz, now)) {
+    let ends
+    try { ends = new Intl.DateTimeFormat(lang, { dateStyle: 'medium', timeStyle: 'short', timeZone: tz }).format(new Date(e)) } catch { ends = k.end.replace('T', ' ') }
+    out.push(`<section class="camp" data-e="${e}"><div class="campin">${ding('megaphone', 'mono')}<div class="campt"><b>${esc(k.t)}</b>${k.note ? `<p>${esc(k.note)}</p>` : ''}`,
+      `<p class="cnt"><span data-left="${e}"></span> · ${W('campEnds', { t: esc(ends) })}</p></div>`,
+      k.code ? `<button class="code" data-t="code" data-code="${esc(k.code)}" aria-label="${W('campCopy')}"><small>${W('campCode')}</small>${esc(k.code)}</button>` : '', '</div></section>')
+  }
+
   // event
   if (d.event) {
     const s = zonedToUtc(d.event.start, d.event.tz)
@@ -669,6 +734,24 @@ export function render(site, opt = {}) {
     out.push(`<section class="card rise">${H2('when', W('when'))}<div class="when">${esc(when)}</div>`,
       `<div class="count" id="count" data-s="${s}" data-e="${e}"></div>`,
       `<div class="tools-row"><a class="btn ghost" data-t="ics" href="/${esc(site.name)}/event.ics">${icon('cal')}${W('addCal')}</a></div></section>`)
+  }
+
+  // calendar: the next dates, each to a phone calendar, the whole as a feed
+  if (d.cal.length) {
+    const seen = new Set()
+    const next = upcoming(d.cal, tz, now, 60).filter((x) => !x.item.rep || (!seen.has(x.item.id) && seen.add(x.item.id))).slice(0, 8)
+    if (next.length) {
+      const fm = (o, ms) => { try { return new Intl.DateTimeFormat(lang, { ...o, timeZone: tz }).format(new Date(ms)) } catch { return '' } }
+      out.push(`<section class="card rise" id="cal">${H2('cal', W('cal'))}<ol class="calz">`)
+      for (const x of next) {
+        const rep = x.item.rep === 'weekly' ? W('calEvery', { d: fm({ weekday: 'long' }, x.start) }) : x.item.rep === 'monthly' ? W('calMonthly') : ''
+        const live = x.start <= now && now < x.end
+        out.push(`<li${live ? ' class="now"' : ''}><time class="dt" datetime="${new Date(x.start).toISOString()}"><b>${esc(fm({ day: 'numeric' }, x.start))}</b><span>${esc(fm({ month: 'short' }, x.start))}</span></time>`,
+          `<div><b>${esc(x.item.t)}</b><small>${esc(fm({ weekday: 'short', hour: '2-digit', minute: '2-digit' }, x.start))}${rep ? ' · ' + rep : ''}${live ? ` · <em>${W('happening')}</em>` : ''}</small>${x.item.note ? `<p>${esc(x.item.note)}</p>` : ''}</div>`,
+          `<a class="add" data-t="calone" href="/${esc(site.name)}/calendar.ics?only=${esc(x.item.id)}" aria-label="${W('addCal')}">${icon('cal')}</a></li>`)
+      }
+      out.push(`</ol><div class="tools-row"><a class="btn ghost" data-t="calfollow" href="webcal://${esc(origin.replace(/^https?:\/\//, ''))}/${esc(site.name)}/calendar.ics">${icon('cal')}${W('calFollow')}</a></div></section>`)
+    }
   }
 
   // the drawing: the auto-doodler draws the place from its own facts, lit by the sun where it stands
@@ -689,6 +772,33 @@ export function render(site, opt = {}) {
     out.push('</ul>')
     if (oa) out.push(`<a class="btn line order" id="lineorder" data-t="order" data-oa="${esc(oa)}" href="${esc(lineHref(c.line))}" rel="nofollow noopener" hidden>${icon('chat')}${W('lineOrder')} <span></span></a>`)
     out.push('</section>')
+  }
+
+  if (gold && d.svc.length) {
+    out.push(`<section class="card rise" id="book">${H2('book', W('book'))}<ul class="svc">`)
+    for (const v of d.svc) out.push(`<li><button class="svcb" data-t="book" data-svc="${esc(v.id)}"><span class="n">${esc(v.n)}<small>${W('bookMins', { m: v.mins })}${v.note ? ' · ' + esc(v.note) : ''}</small></span><span class="p">${esc(money(v.p, sym))}</span></button></li>`)
+    out.push(`</ul><div class="bookui" id="bookui" hidden></div></section>`)
+  }
+
+  if (gold && d.rooms.length) {
+    out.push(`<section class="card rise" id="rooms">${H2('rooms', W('rooms'))}<div class="rooms">`)
+    for (const r of d.rooms) {
+      out.push(`<article class="room" data-room="${esc(r.id)}" data-p="${esc(r.p)}" data-g="${r.guests}">`,
+        r.photos.length ? `<div class="strip">${r.photos.map((p, i) => `<button data-t="photo" data-big="${esc(img(p))}"><img src="${esc(img(p, true))}" alt="" loading="lazy"${i ? '' : ''}></button>`).join('')}</div>` : '',
+        `<div class="rin"><h3>${esc(r.n)}</h3><p class="facts">${icon('people')}${W('roomGuests', { n: r.guests })}${r.beds ? ' · ' + esc(r.beds) : ''}</p>`,
+        r.note ? `<p>${esc(r.note)}</p>` : '', r.p ? `<p class="night">${W('roomNight', { p: esc(money(r.p, sym)) })}</p>` : '',
+        `<button class="btn" data-t="rooms" data-pick="${esc(r.id)}">${icon('cal')}${W('roomSend')}</button><div class="roomui" hidden></div></div></article>`)
+    }
+    out.push('</div></section>')
+  }
+
+  if (gold && d.lists.length) {
+    const deals = [...new Set(d.lists.map((x) => x.deal))]
+    out.push(`<section class="card rise" id="lists">${H2('lists', W('lists'))}`)
+    if (deals.length > 1) out.push(`<div class="lfilter" role="group"><button class="on" data-deal="">${W('all')}</button>${deals.map((k) => `<button data-deal="${k}">${W(k === 'sale' ? 'forSale' : 'forRent')}</button>`).join('')}</div>`)
+    out.push('<div class="lgrid">')
+    for (const x of d.lists) out.push(listCard(x, { site, W, img, sym }))
+    out.push('</div></section>')
   }
 
   if (d.hours.on) {
@@ -727,8 +837,8 @@ export function render(site, opt = {}) {
   if (hasPin || pl.addr) {
     out.push(`<section class="card mapcard rise" id="where">${H2('where', W('where'))}`)
     if (hasPin) {
-      const marks = gold ? d.spots : []
-      const q = new URLSearchParams({ pin: `${pl.lat},${pl.lng}`, pn: name, embed: '1', look: 'doodle' })
+      const marks = d.spots.slice(0, gold ? MAX.spotsGold : MAX.spotsFree)
+      const q = new URLSearchParams({ pin: `${pl.lat},${pl.lng}`, pn: name, embed: '1', look: d.map.style, s: String(MAP_NEAR[d.map.near]) })
       out.push(`<div class="dmap" id="dmap" data-marks="${esc(JSON.stringify(marks))}"><iframe src="/map?${esc(q.toString())}" title="${W('mapOpen')}" loading="lazy" allow="geolocation"></iframe></div>`)
     }
     out.push('<div class="in">')
@@ -744,9 +854,9 @@ export function render(site, opt = {}) {
     out.push('</div></section>')
   }
 
-  if (gold && d.spots.length) {
+  if (d.spots.length) {
     out.push(`<section class="card rise">${H2('spots', W('spots'))}<ol class="spots">`)
-    d.spots.forEach((x, i) => out.push(`<li><span><b>${esc(x.n)}</b>${x.note ? `<small>${esc(x.note)}</small>` : ''}<br><button data-spot="${i}" data-lat="${x.lat}" data-lng="${x.lng}">${W('spotsMap')}</button></span></li>`))
+    d.spots.slice(0, gold ? MAX.spotsGold : MAX.spotsFree).forEach((x, i) => out.push(`<li><span><b>${esc(x.n)}</b>${x.note ? `<small>${esc(x.note)}</small>` : ''}<br><button data-spot="${i}" data-lat="${x.lat}" data-lng="${x.lng}">${W('spotsMap')}</button></span></li>`))
     out.push('</ol></section>')
   }
 
@@ -787,21 +897,88 @@ export function render(site, opt = {}) {
       `<button class="btn" type="submit"${opt.preview ? ' disabled' : ''}>${icon('mail')}${W('msgSend')}</button></form></section>`)
   }
 
+  }
   if (lookId === 'lanna') out.push('<div class="kranok"></div>')
   if (lookId === 'gold') out.push('<div class="goldrule"></div>')
-  out.push('</main>', foot(site, d, lang, url, opt, false, gold, dl))
+  out.push('</main>', foot(site, d, lang, url, { ...opt, home, langs: gold ? langs : [] }, false, gold, dl))
   const pd = {
     lang, name: site.name, title: name, tagline: d.tagline, url, accent, preview: !!opt.preview, gold, look: lookId, main: '',
     bg: /--bg:(#[0-9a-f]+)/i.exec(look.vars)?.[1], ink: /--ink:(#[0-9a-f]+)/i.exec(look.vars)?.[1], cover: d.cover ? img(d.cover) : '',
     coverCredit: d.cover && d.credits[d.cover] ? `${d.credits[d.cover].title} — ${d.credits[d.cover].by} · ${d.credits[d.cover].license}` : '',
     north: hasPin && pl.lat > 17 && pl.lat < 20.6 && pl.lng > 97.3 && pl.lng < 101.8,
     fams: [...new Set(out.join('').match(/data-dingbat="([a-z0-9-]+)"/g)?.map((m) => DINGBATS[m.slice(14, -1)]).filter(Boolean) || [])],
-    w: Object.fromEntries(['happening', 'ended', 'farFrom', 'reportAsk', 'send', 'thanks', 'close', 'copied', 'orderHi', 'msgSent', 'msgFail', 'saveQr', 'story', 'drawnTap'].map((k) => [k, word(lang, k)])),
+    tz, sym, langs, hl: opt.hl || '', home, listing: L ? L.id : '', lnames: Object.fromEntries(langs.map((l) => [l, PAGE_LANGS[l]])),
+    book: gold && (d.svc.length || d.rooms.length) ? { ahead: d.book.ahead, svc: Object.fromEntries(d.svc.map((v) => [v.id, { cap: v.cap, mins: v.mins, p: v.p }])), rooms: Object.fromEntries(d.rooms.map((r) => [r.id, { g: r.guests, p: r.p }])) } : null,
+    w: Object.fromEntries(['happening', 'ended', 'farFrom', 'reportAsk', 'send', 'thanks', 'close', 'copied', 'orderHi', 'msgSent', 'msgFail', 'saveQr', 'story', 'drawnTap',
+      'bookPick', 'bookNone', 'bookName', 'bookReach', 'bookEmail', 'bookPeople', 'bookNote', 'bookSend', 'bookAsked', 'bookDone', 'bookFail', 'bookDeposit', 'bookScan', 'bookLeft',
+      'roomIn', 'roomOut', 'roomNights', 'roomNight1', 'roomSend', 'roomTotal', 'roomPickIn', 'roomPickOut', 'roomTaken', 'readIn', 'msgName', 'msgReach', 'msgBody', 'msgSend'].map((k) => [k, word(lang, k)])),
   }
   out.push(`<template id="qrsvg">${qrSvg(url, { dark: '#000', light: '#fff', label: url })}</template>`)
   out.push(`<script type="application/json" id="pd">${JSON.stringify(pd).replace(/</g, '\\u003c')}</script>`)
   out.push(`<script${opt.nonce ? ` nonce="${opt.nonce}"` : ''} src="/s/page.js" defer></script></body></html>`)
   return out.join('')
+}
+
+/** One listing as a card in the grid: first photo, status, deal, price, facts. */
+function listCard(x, { site, W, img, sym }) {
+  const facts = [x.beds ? `${W('beds')} ${x.beds}` : '', x.baths ? `${W('baths')} ${x.baths}` : '', x.area ? `${esc(x.area)} ${UNIT_LABEL[x.unit]}` : ''].filter(Boolean).join(' · ')
+  const pr = x.p ? (x.deal === 'rent' ? W('perMonth', { p: esc(money(x.p, sym)) }) : esc(money(x.p, sym))) : ''
+  return `<a class="lcard${x.status !== 'open' ? ' gone' : ''}" href="/${esc(site.name)}/l/${esc(x.id)}" data-deal="${x.deal}" data-t="listing"><figure>` +
+    (x.photos[0] ? `<img src="${esc(img(x.photos[0], true))}" alt="" loading="lazy">` : `<span class="noimg">${ding(x.deal === 'rent' ? 'key' : 'home', 'paper')}</span>`) +
+    `<span class="deal">${W(x.deal === 'rent' ? 'forRent' : 'forSale')}</span>${x.status !== 'open' ? `<span class="st">${W('st_' + x.status)}</span>` : ''}</figure>` +
+    `<b>${esc(x.t)}</b>${pr ? `<span class="pr">${pr}</span>` : ''}${facts ? `<small>${facts}</small>` : ''}</a>`
+}
+
+/** A listing's own page: its photos, facts, words, pin and an ask-about form. */
+function listingBody(x, { site, d, W, H2, img, sym, name }) {
+  const out = []
+  const pr = x.p ? (x.deal === 'rent' ? W('perMonth', { p: esc(money(x.p, sym)) }) : esc(money(x.p, sym))) : ''
+  out.push(`<section class="card lfacts rise"><p class="lhead"><span class="deal">${W(x.deal === 'rent' ? 'forRent' : 'forSale')}</span><span class="st st-${x.status}">${W('st_' + x.status)}</span></p>`,
+    pr ? `<p class="lprice">${pr}</p>` : '', '<dl>',
+    x.kind ? `<div><dt>${icon('shop')}</dt><dd>${esc(x.kind)}</dd></div>` : '',
+    x.beds ? `<div><dt>${W('beds')}</dt><dd>${x.beds}</dd></div>` : '', x.baths ? `<div><dt>${W('baths')}</dt><dd>${x.baths}</dd></div>` : '',
+    x.area ? `<div><dt>${W('area')}</dt><dd>${esc(x.area)} ${UNIT_LABEL[x.unit]}</dd></div>` : '', '</dl></section>')
+  if (x.photos.length > 1) out.push(`<section class="card rise">${H2('photos', W('photos'))}<div class="gallery">${x.photos.map((p) => `<figure><button data-t="photo" data-big="${esc(img(p))}"><img src="${esc(img(p, true))}" alt="" loading="lazy"></button></figure>`).join('')}</div></section>`)
+  if (x.note) out.push(`<section class="card rise">${H2('about', W('about'))}${paras(x.note)}</section>`)
+  const lat = x.lat ?? d.place.lat, lng = x.lng ?? d.place.lng
+  if (lat !== null && lng !== null) {
+    const q = new URLSearchParams({ pin: `${lat},${lng}`, pn: x.t, embed: '1', look: d.map.style, s: String(MAP_NEAR[d.map.near]) })
+    out.push(`<section class="card mapcard rise" id="where">${H2('where', W('where'))}<div class="dmap" id="dmap" data-marks="[]"><iframe src="/map?${esc(q.toString())}" title="${W('mapOpen')}" loading="lazy"></iframe></div>`,
+      `<div class="in"><div class="tools-row"><a class="btn dark" data-t="dir" href="${esc(dirHref(lat, lng))}" rel="nofollow noopener">${icon('route')}Google Maps</a></div></div></section>`)
+  }
+  const c = d.contact, line = lineHref(c.line)
+  const reach = []
+  if (c.phone) reach.push(`<a class="btn" data-t="call" href="${esc(telHref(c.phone))}">${icon('phone')}${W('call')}</a>`)
+  if (line) reach.push(`<a class="btn line" data-t="line" href="${esc(line)}" rel="nofollow noopener">${icon('chat')}${W('line')}</a>`)
+  out.push(`<section class="card msgcard rise" id="message">${H2('msg', W('listAsk'))}`, reach.length ? `<nav class="reach" style="margin:0 0 16px">${reach.join('')}</nav>` : '',
+    d.msg ? `<form class="msgf" id="msgf" data-about="${esc(x.t)}"><input name="name" maxlength="80" autocomplete="name" placeholder="${W('msgName')}" aria-label="${W('msgName')}">` +
+      `<input name="reach" maxlength="120" autocomplete="tel" placeholder="${W('msgReach')}" aria-label="${W('msgReach')}">` +
+      `<textarea name="body" maxlength="2000" required aria-label="${W('msgBody')}">${esc(x.t)} — </textarea><input class="hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">` +
+      `<button class="btn" type="submit">${icon('mail')}${W('msgSend')}</button></form>` : '', '</section>')
+  const others = d.lists.filter((y) => y.id !== x.id).slice(0, 6)
+  if (others.length) out.push(`<section class="card rise">${H2('lists', W('listAll'))}<div class="lgrid">${others.map((y) => listCard(y, { site, W, img, sym })).join('')}</div>`,
+    `<div class="tools-row"><a class="btn ghost" href="/${esc(site.name)}#lists">${icon('list')}${W('listAll')}</a></div></section>`)
+  return out.join('')
+}
+
+/** schema.org for a Gold page: the business, or one listing as an offer. */
+function ldJson(site, d, name, url, image, L, sym) {
+  const geo = d.place.lat !== null ? { '@type': 'GeoCoordinates', latitude: d.place.lat, longitude: d.place.lng } : undefined
+  if (L) {
+    const num = Number(String(L.p).replace(/[^\d.]/g, ''))
+    return JSON.stringify({ '@context': 'https://schema.org', '@type': 'RealEstateListing', name: L.t, url, image, description: L.note.slice(0, 500) || undefined,
+      offers: num ? { '@type': 'Offer', price: num, priceCurrency: d.currency || undefined, availability: L.status === 'open' ? 'https://schema.org/InStock' : 'https://schema.org/SoldOut' } : undefined })
+  }
+  const type = { food: 'Restaurant', shop: 'Store', service: d.rooms.length ? 'LodgingBusiness' : 'LocalBusiness', stay: 'LodgingBusiness', homes: 'RealEstateAgent', event: 'Event', group: 'Organization', me: 'Person' }[site.kind] || 'LocalBusiness'
+  const o = { '@context': 'https://schema.org', '@type': type, name, url, image, description: d.tagline || d.about.slice(0, 300) || undefined }
+  if (type !== 'Person' && type !== 'Event') {
+    if (d.contact.phone) o.telephone = d.contact.phone
+    if (d.place.addr) o.address = d.place.addr
+    if (geo) o.geo = geo
+    if (d.hours.on && !d.hours.always) o.openingHours = osmHours(d.hours).split('; ').filter((x) => !x.endsWith('off'))
+  }
+  if (type === 'Event' && d.event) { o.startDate = d.event.start; if (d.place.addr) o.location = { '@type': 'Place', name, address: d.place.addr } }
+  return JSON.stringify(o)
 }
 
 function foot(site, d, lang, url, opt, held, gold, dl) {
@@ -827,6 +1004,11 @@ function foot(site, d, lang, url, opt, held, gold, dl) {
   if (cr.length && !held) parts.push(`<details class="credits"><summary>${W('pictures')} (${cr.length})</summary><ul>${cr.map(([, c]) => `<li>${creditLine(c)}</li>`).join('')}</ul></details>`)
   if (d.counter && site.look === 'y1997') parts.push(`<p><span class="odo">${String(views).padStart(6, '0').split('').map((n) => `<b>${n}</b>`).join('')}</span><br>${W('visits')}</p><p><span class="badge88">BEST VIEWED ON ANY PHONE</span></p>`)
   else if (d.counter) parts.push(`<p>${new Intl.NumberFormat(lang).format(views)} ${W('visits')}</p>`)
+  if (!held && opt.langs && opt.langs.length > 1) {
+    const home = opt.home || site.lang, cur = opt.hl || home
+    parts.push(`<nav class="langs" aria-label="${W('readIn')}">${opt.langs.map((l) => `<a href="${l === home ? '?' : '?hl=' + l}" data-t="lang" hreflang="${l}"${l === cur ? ' aria-current="true"' : ''}>${esc(PAGE_LANGS[l])}</a>`).join('')}</nav>`)
+    if (opt.hl && opt.hl !== home) parts.push(`<p class="mt">${W('machine', { l: esc(PAGE_LANGS[home]) })}</p>`)
+  }
   parts.push('<nav>')
   if (!held) parts.push(`<a href="/${esc(site.name)}/sign" data-t="sign">${W('sign')}</a>`)
   parts.push(`<a href="/random">${W('random')}</a>`)
@@ -890,7 +1072,7 @@ export function sign(site, opt = {}) {
   const hrs = d.hours.on && !d.hours.always
     ? DAY_ORDER.map((i) => `<tr><td>${esc(dayName(lang, i))}</td><td>${d.hours.week[i] ? d.hours.week[i].map(([a, b]) => `${a}–${b}`).join(', ') : W('closed')}</td></tr>`).join('')
     : ''
-  return `<!doctype html><html lang="${lang}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(d.name || site.name)} · ${W('sign')}</title>
+  return `<!doctype html><html lang="${lang}" translate="no" class="notranslate"><head><meta charset="utf-8"><meta name="google" content="notranslate"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(d.name || site.name)} · ${W('sign')}</title>
 <meta name="robots" content="noindex"><style>${faces(look.fonts)}:root{${look.vars};--accent:${accent};--on-accent:${onColor(accent)}}
 *{box-sizing:border-box}body{margin:0;background:#ddd;font:400 18px/1.4 var(--body);color:#111}
 .sheet{width:210mm;min-height:297mm;margin:16px auto;background:#fff;padding:18mm 16mm;display:flex;flex-direction:column;gap:10mm;box-shadow:0 4px 20px rgba(0,0,0,.2)}
