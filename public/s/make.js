@@ -1131,7 +1131,7 @@ async function drawGold() {
   if (r.tier === 'gold' && !S.trial) { S.tier = 'gold'; S.goldUntil = r.gold_until; return drawGold() }
   const tail = String(r.amount).split('.')[1] || '00'
   const nf = new Intl.NumberFormat(S.lang)
-  tb.innerHTML = head + (S.trial ? `<p class="goldon">★ ${esc(ui(S.lang, 'g_trial').replace('{d}', S.goldUntil || ''))}</p>` : '') + `<section class="goldpay"><p class="price">${esc(ui(S.lang, 'g_price').replace('{p}', nf.format(r.baht)))}</p>
+  tb.innerHTML = head + (S.trial ? `<p class="goldon">★ ${esc(ui(S.lang, 'g_trial').replace('{d}', S.goldUntil || ''))}</p>` : '') + `<section class="goldpay"><p class="price">${esc(ui(S.lang, r.months === 1 ? 'g_priceMonth' : 'g_price').replace('{p}', nf.format(r.baht)))}</p>${r.hotel ? `<p class="hint">${T('g_hotelWhy')}</p>` : ''}
     ${r.payload ? `<div class="ppqr">${qrSvg(r.payload, { dark: '#0e3d78', light: '#ffffff', label: 'PromptPay' })}<b>฿${esc(nf.format(Number(r.amount)))}</b><span>PromptPay</span></div>
       <p class="hint">${esc(ui(S.lang, 'g_scan').replace('{s}', tail))}</p>
       <label class="pick goldslip">${icon('download')}${T('g_slip')}<input type="file" accept="image/*" id="slip"></label><p id="slipstate" class="pinstate"></p>` : `<p class="hint">${T('g_nopp')}</p>`}</section>` + (isGold() ? domainBox() : '')

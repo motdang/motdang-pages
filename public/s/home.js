@@ -12,7 +12,7 @@ const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches
 
 const W = {
   th: {
-    stayH: 'โรงแรม เกสต์เฮาส์: รับจองเอง', staySub: 'ห้องพัก ปฏิทินคืนว่าง ปฏิทิน Airbnb · Booking.com · Agoda ตรงกันทุก 30 นาที แขกจ่ายเข้าพร้อมเพย์หรือลิงก์ของคุณ', calcNight: 'ราคาต่อคืน', calcNights: 'คืนที่ขายผ่านแอปต่อเดือน', calcOta: 'ค่าคอม 15%', calcFlat: 'ทอง ราคาเดียว', calcKeep: 'เก็บไว้ได้ต่อปี', calcSrc: 'Agoda ราว 15% Booking.com 10–25% ส่วนใหญ่ราว 15%', stayGo: 'ทำหน้าเว็บโรงแรม', yr: 'ต่อปี',
+    stayH: 'โรงแรม เกสต์เฮาส์: รับจองเอง', staySub: 'ห้องพัก ปฏิทินคืนว่าง ปฏิทิน Airbnb · Booking.com · Agoda ตรงกันทุก 30 นาที แขกจ่ายเข้าพร้อมเพย์หรือลิงก์ของคุณ', calcNight: 'ราคาต่อคืน', calcNights: 'คืนที่ขายผ่านแอปต่อเดือน', calcOta: 'ค่าคอม 15%', calcFlat: 'ทองสำหรับโรงแรม', mo: 'ต่อเดือน', hotelPrice: 'โรงแรมที่รับจองห้อง: ฿{p} ต่อเดือน', calcKeep: 'เก็บไว้ได้ต่อปี', calcSrc: 'Agoda ราว 15% Booking.com 10–25% ส่วนใหญ่ราว 15%', stayGo: 'ทำหน้าเว็บโรงแรม', yr: 'ต่อปี',
     make: 'ทำเว็บของฉัน', kicker: 'มดแดง · เว็บของคุณเอง', h1: 'ร้านของคุณ <em>วาดเสร็จ</em> ขึ้นเว็บในห้านาที',
     lead: 'คนหาร้านคุณจากมือถือ ให้เขาเจอหน้าที่สวย โทรได้ แอดไลน์ได้ เรียก Grab มาถึงหน้าร้าน แล้วคุณเห็นว่าใครมาบ้าง',
     tryLabel: 'พิมพ์ชื่อร้านของคุณ แล้วดูภาพวาด', tryGo: 'ทำเว็บนี้เลย', tryPh: 'ร้านของคุณ', tapSky: 'แตะภาพ: เช้า เย็น กลางคืน',
@@ -44,7 +44,7 @@ const W = {
     ex: 'ตัวอย่าง',
   },
   en: {
-    stayH: 'Hotels and guesthouses: take your own bookings', staySub: 'Rooms, a calendar of nights, Airbnb · Booking.com · Agoda calendars kept in step every 30 minutes, guests paying your PromptPay or your own link.', calcNight: 'Price a night', calcNights: 'Nights sold through apps a month', calcOta: 'Commission at 15%', calcFlat: 'Gold, one price', calcKeep: 'Kept in a year', calcSrc: 'Agoda about 15%; Booking.com 10–25%, most often about 15%.', stayGo: 'Make a hotel page', yr: 'a year',
+    stayH: 'Hotels and guesthouses: take your own bookings', staySub: 'Rooms, a calendar of nights, Airbnb · Booking.com · Agoda calendars kept in step every 30 minutes, guests paying your PromptPay or your own link.', calcNight: 'Price a night', calcNights: 'Nights sold through apps a month', calcOta: 'Commission at 15%', calcFlat: 'Gold for hotels', mo: 'a month', hotelPrice: 'Hotels taking room bookings: ฿{p} a month', calcKeep: 'Kept in a year', calcSrc: 'Agoda about 15%; Booking.com 10–25%, most often about 15%.', stayGo: 'Make a hotel page', yr: 'a year',
     make: 'Make my page', kicker: 'Mot Dang · your own page', h1: 'Your shop, <em>drawn</em> and online in five minutes',
     lead: 'People look for you on their phones. Give them a page worth landing on: call, add you on LINE, send a Grab to your door, and you see who came.',
     tryLabel: 'Type your shop’s name and watch it drawn', tryGo: 'Make this page', tryPh: 'Your Shop', tapSky: 'Tap the drawing: morning, evening, night',
@@ -76,7 +76,7 @@ const W = {
     ex: 'Example',
   },
   my: {
-    stayH: 'ဟိုတယ်၊ တည်းခိုခန်း- ကိုယ်တိုင်ကြိုတင်မှာယူမှုလက်ခံ', staySub: 'အခန်းများ၊ ညများ၏ပြက္ခဒိန်၊ Airbnb · Booking.com · Agoda ပြက္ခဒိန်များ ၃၀ မိနစ်တိုင်း ညှိ၊ ဧည့်သည်များ သင့် PromptPay သို့ ပေးချေ။', calcNight: 'တစ်ညဈေး', calcNights: 'အက်ပ်မှ တစ်လရောင်းသည့်ည', calcOta: 'ကော်မရှင် 15%', calcFlat: 'ရွှေ၊ ဈေးတစ်မျိုး', calcKeep: 'တစ်နှစ်တွင် ကျန်ရှိ', calcSrc: 'Agoda ~15%; Booking.com 10–25%, များသောအားဖြင့် ~15%', stayGo: 'ဟိုတယ်စာမျက်နှာလုပ်ရန်', yr: 'တစ်နှစ်',
+    stayH: 'ဟိုတယ်၊ တည်းခိုခန်း- ကိုယ်တိုင်ကြိုတင်မှာယူမှုလက်ခံ', staySub: 'အခန်းများ၊ ညများ၏ပြက္ခဒိန်၊ Airbnb · Booking.com · Agoda ပြက္ခဒိန်များ ၃၀ မိနစ်တိုင်း ညှိ၊ ဧည့်သည်များ သင့် PromptPay သို့ ပေးချေ။', calcNight: 'တစ်ညဈေး', calcNights: 'အက်ပ်မှ တစ်လရောင်းသည့်ည', calcOta: 'ကော်မရှင် 15%', calcFlat: 'ဟိုတယ်အတွက် ရွှေ', mo: 'တစ်လ', hotelPrice: 'အခန်းကြိုတင်မှာယူမှုလက်ခံသော ဟိုတယ်- တစ်လ ฿{p}', calcKeep: 'တစ်နှစ်တွင် ကျန်ရှိ', calcSrc: 'Agoda ~15%; Booking.com 10–25%, များသောအားဖြင့် ~15%', stayGo: 'ဟိုတယ်စာမျက်နှာလုပ်ရန်', yr: 'တစ်နှစ်',
     make: 'စာမျက်နှာလုပ်ရန်', kicker: 'Mot Dang · သင့်ကိုယ်ပိုင်စာမျက်နှာ', h1: 'သင့်ဆိုင်ကို <em>ပုံဆွဲ</em>ပြီး ငါးမိနစ်အတွင်း အွန်လိုင်းတင်ပါ',
     lead: 'လူတွေက ဖုန်းနဲ့ သင့်ကိုရှာကြတယ်။ ဖုန်းခေါ်၊ LINE ထည့်၊ Grab ခေါ်နိုင်ပြီး ဘယ်သူလာလဲ သင်မြင်ရမယ်။',
     tryLabel: 'သင့်ဆိုင်အမည်ရိုက်ပြီး ပုံဆွဲတာကြည့်ပါ', tryGo: 'ဒီစာမျက်နှာလုပ်ရန်', tryPh: 'သင့်ဆိုင်', tapSky: 'ပုံကိုနှိပ်ပါ- နံနက်၊ ညနေ၊ ည',
@@ -100,7 +100,7 @@ const W = {
 howH: 'အဆင့်သုံးဆင့်', step1: 'ဘာအတွက်လဲ ရွေးပါ', step2: 'အမည်ပေးပါ', step3: 'ပုံစံရွေးပြီး အွန်လိုင်းတင်ပါ', ex: 'ဥပမာ',
   },
   zh: {
-    stayH: '酒店、民宿：自己接预订', staySub: '客房、空房日历，每 30 分钟同步 Airbnb · Booking.com · Agoda 日历，客人付款到你的 PromptPay 或你自己的链接。', calcNight: '每晚价格', calcNights: '每月通过 App 卖出的晚数', calcOta: '15% 佣金', calcFlat: '金卡，一个价', calcKeep: '一年多留下', calcSrc: 'Agoda 约 15%；Booking.com 10–25%，多数约 15%。', stayGo: '做酒店网页', yr: '每年',
+    stayH: '酒店、民宿：自己接预订', staySub: '客房、空房日历，每 30 分钟同步 Airbnb · Booking.com · Agoda 日历，客人付款到你的 PromptPay 或你自己的链接。', calcNight: '每晚价格', calcNights: '每月通过 App 卖出的晚数', calcOta: '15% 佣金', calcFlat: '酒店金卡', mo: '每月', hotelPrice: '接受客房预订的酒店：每月 ฿{p}', calcKeep: '一年多留下', calcSrc: 'Agoda 约 15%；Booking.com 10–25%，多数约 15%。', stayGo: '做酒店网页', yr: '每年',
     make: '做我的网页', kicker: 'Mot Dang · 你自己的网页', h1: '你的店，<em>画好了</em>，五分钟上线',
     lead: '大家用手机找你。给他们一个值得停留的网页：打电话、加 LINE、叫 Grab 到店门口，还能看到谁来过。',
     tryLabel: '输入店名，看它被画出来', tryGo: '做这个网页', tryPh: '你的店', tapSky: '点一下画：早上、傍晚、夜里',
@@ -253,7 +253,7 @@ function calc(price) {
   const draw = () => {
     const n = +N.value, m = +M.value, ota = Math.round(n * m * 12 * 0.15), keep = Math.max(0, ota - price)
     $('#cvN').textContent = '฿' + nf.format(n); $('#cvM').textContent = nf.format(m)
-    $('#vOta').textContent = '฿' + nf.format(ota) + ' ' + w('yr'); $('#vFlat').textContent = '฿' + nf.format(price) + ' ' + w('yr')
+    $('#vOta').textContent = '฿' + nf.format(ota) + ' ' + w('yr'); $('#vFlat').textContent = '฿' + nf.format(price) + ' ' + w('yr') + ' · ฿' + nf.format(Math.round(price / 12)) + ' ' + w('mo')
     const top = Math.max(ota, price)
     $('#bOta').style.width = (ota / top) * 100 + '%'; $('#bFlat').style.width = Math.max(1.5, (price / top) * 100) + '%'
     $('#vKeep').textContent = '฿' + nf.format(keep)
@@ -262,11 +262,11 @@ function calc(price) {
   draw()
 }
 
-function tiers(price) {
-  calc(price)
+function tiers(price, hotel) {
+  calc((hotel || 555) * 12)
   $('#freeList').innerHTML = ['f1', 'f2', 'f3', 'f4', 'f5', 'f6', 'f7', 'f8'].map((k, i) => `<li><i data-dingbat="${FREE_DING[i]}" data-look="ink"></i><span>${w(k)}</span></li>`).join('')
   $('#goldList').innerHTML = GOLD[L].map((t, i) => `<li><i data-dingbat="${GOLD_DING[i]}" data-look="paper"></i><span>${t}</span></li>`).join('')
-  $('#goldPrice').innerHTML = `฿${new Intl.NumberFormat(L).format(price)} <small>${w('perYear')}</small>`
+  $('#goldPrice').innerHTML = `฿${new Intl.NumberFormat(L).format(price)} <small>${w('perYear')}</small><span class="hotelp">${w('hotelPrice').replace('{p}', new Intl.NumberFormat(L).format(hotel || 555))}</span>`
 }
 
 let COUNT = null
@@ -296,9 +296,9 @@ function words() {
 }
 
 function all() {
-  words(); chips(); phones(); toys(); looks(); tiers(COUNT?.price || 3000); live()
+  words(); chips(); phones(); toys(); looks(); tiers(COUNT?.price || 3000, COUNT?.hotel || 555); live()
   paint(performance.now())
 }
 all()
-fetch('/api/count').then((r) => r.json()).then((j) => { COUNT = j; tiers(j.price); live() }).catch(() => {})
+fetch('/api/count').then((r) => r.json()).then((j) => { COUNT = j; tiers(j.price, j.hotel); live() }).catch(() => {})
 dbs.catch(() => {})

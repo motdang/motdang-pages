@@ -82,7 +82,7 @@ ${tops ? `<p style="margin:16px 0 4px;font-weight:700">มาจาก · Where 
 }
 
 /** Five days before a page's 30 Gold days end: the date, and what stays. */
-export async function trialNotes(env, origin, price, max = 15) {
+export async function trialNotes(env, origin, planOf, max = 15) {
   const soon = new Date(Date.now() + 5 * 864e5).toISOString().slice(0, 10)
   const rows = (await env.DB.prepare("SELECT * FROM site WHERE trial = 1 AND trial_told = 0 AND status IN ('live','held','draft') AND gold_until IS NOT NULL AND gold_until <= ? LIMIT ?").bind(soon, max).all()).results
   let sent = 0
@@ -90,13 +90,15 @@ export async function trialNotes(env, origin, price, max = 15) {
     await env.DB.prepare('UPDATE site SET trial_told = 1 WHERE id = ?').bind(s.id).run()
     if (!s.notify_ok || !s.notify_email || !(await mayMail(env, s.id))) continue
     const title = JSON.parse(s.d).name || s.name
+    const plan = planOf(JSON.parse(s.d)), price = plan.baht
+    const per = plan.months === 1 ? ['เดือนละ', 'a month'] : ['ปีละ', 'a year']
     const ok = await mail(env, {
       to: s.notify_email, subject: `${title} — ทองถึง ${s.gold_until} · Gold until ${s.gold_until}`.slice(0, 120),
       html: `<div style="font:16px/1.5 system-ui,-apple-system,'Segoe UI',sans-serif;color:#1c1530;max-width:560px">
 <h2 style="margin:0 0 10px;font-size:22px">${esc(title)}</h2>
 <p>ทองของหน้าเว็บนี้ถึงวันที่ <b>${esc(s.gold_until)}</b> หลังจากนั้นหน้าเว็บยังออนไลน์ต่อแบบฟรี<br>Gold on this page runs to <b>${esc(s.gold_until)}</b>. After that the page stays online as a free page.</p>
-<p>ทองหนึ่งปี ฿${nf(price)} · A year of Gold is ฿${nf(price)}: <a href="${origin}/make">${origin.replace(/^https:\/\//, '')}/make</a> → ทอง · Gold</p></div>`,
-      text: `${title}\nGold until ${s.gold_until}. After that the page stays online as a free page.\nA year of Gold: ฿${price} — ${origin}/make\n`,
+<p>ทอง ${per[0]} ฿${nf(price)} · Gold is ฿${nf(price)} ${per[1]}: <a href="${origin}/make">${origin.replace(/^https:\/\//, '')}/make</a> → ทอง · Gold</p></div>`,
+      text: `${title}\nGold until ${s.gold_until}. After that the page stays online as a free page.\nGold: ฿${price} ${per[1]} — ${origin}/make\n`,
     })
     if (ok) sent++
   }

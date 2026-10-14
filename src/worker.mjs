@@ -296,7 +296,7 @@ async function api(request, env, ctx, p, url, origin) {
     const g = await env.DB.prepare("SELECT COUNT(*) AS n FROM site WHERE status='live' AND tier='gold'").first()
     const latest = (await env.DB.prepare("SELECT name, kind, look, d, tier, gold_until FROM site WHERE status='live' ORDER BY published DESC LIMIT 12").all()).results
       .map((r) => { const d = JSON.parse(r.d); return { name: r.name, kind: r.kind, look: r.look, title: d.name || r.name, tagline: d.tagline || '', cover: d.cover ? `/img/${d.cover}-s.webp` : '', gold: gold.isGold(r) } })
-    return J({ live: r?.n || 0, countries: r?.cc || 0, gold: g?.n || 0, latest, price: Number(env.GOLD_THB) || gold.GOLD_THB }, 200, { 'cache-control': 'public, max-age=120' })
+    return J({ live: r?.n || 0, countries: r?.cc || 0, gold: g?.n || 0, latest, price: Number(env.GOLD_THB) || gold.GOLD_THB, hotel: Number(env.HOTEL_THB) || gold.HOTEL_THB }, 200, { 'cache-control': 'public, max-age=120' })
   }
 
   if (p === 'find' && m === 'GET') return J({ results: await find(env, url, origin) }, 200, { 'access-control-allow-origin': '*', 'cache-control': 'public, max-age=60' })
@@ -433,7 +433,7 @@ ${s ? `<p>ข้อความถึง ${escHtml(title)} จะส่งสำ
     return J({ id: s.id, name: s.name, status: s.status, kind: s.kind, look: s.look, lang: s.lang, d: JSON.parse(s.d), views: s.views,
       tier: isGold ? 'gold' : 'free', gold_until: s.gold_until, trial: !!s.trial, notify_email: s.notify_email || '', notify_ok: !!s.notify_ok, unread: un?.n || 0,
       asks: (await env.DB.prepare("SELECT COUNT(*) AS n FROM booking WHERE site_id = ? AND status = 'new'").bind(s.id).first())?.n || 0,
-      domain: s.domain || '', domain_state: s.domain_state || '', domains: dom.on(env), price: Number(env.GOLD_THB) || gold.GOLD_THB })
+      domain: s.domain || '', domain_state: s.domain_state || '', domains: dom.on(env), price: Number(env.GOLD_THB) || gold.GOLD_THB, plan: gold.planOf(env, JSON.parse(s.d)) })
   }
 
   if (p === 'site' && m === 'PUT') {
@@ -638,7 +638,7 @@ ${s ? `<p>ข้อความถึง ${escHtml(title)} จะส่งสำ
     return J({ domain: host, state: h.state, records: dom.records(host) })
   }
 
-  if (p === 'gold' && m === 'POST') return J({ ...(await gold.start(env, s.id, rand)), tier: isGold ? 'gold' : 'free', gold_until: s.gold_until })
+  if (p === 'gold' && m === 'POST') return J({ ...(await gold.start(env, s.id, rand, gold.planOf(env, normalize(JSON.parse(s.d))))), tier: isGold ? 'gold' : 'free', gold_until: s.gold_until })
   if (p === 'gold/slip' && m === 'POST') {
     const who = await sender(request, env)
     if (!(await take(env, who, 'slip'))) return J({ error: 'quota' }, 429)
@@ -652,7 +652,7 @@ ${s ? `<p>ข้อความถึง ${escHtml(title)} จะส่งสำ
     await env.MEDIA.put(key, await file.arrayBuffer(), { httpMetadata: { contentType: file.type || 'image/jpeg' }, customMetadata: { v: 'slip' } })
     const r = await gold.checkSlip(env, file, Number(pay.amount))
     if (r.ok) {
-      const until = await gold.grant(env, s.id)
+      const until = await gold.grant(env, s.id, pay.months || 12)
       await env.DB.prepare("UPDATE pay SET status='paid', slip=?, note=?, updated=? WHERE id=?").bind(key, 'slipok ' + r.ref, now, pay.id).run()
       await log(env, s.id, 'gold', 'slipok ' + r.ref)
       return J({ ok: true, tier: 'gold', gold_until: until })
@@ -756,8 +756,8 @@ async function admin(request, env, rest, url) {
     if (act === 'photo-ok') await releasePhoto(env, id)
     if (act === 'gold') await gold.grant(env, id)
     if (act === 'pay-ok') {
-      const p = await env.DB.prepare('SELECT site_id FROM pay WHERE id = ?').bind(id).first()
-      if (p) { await gold.grant(env, p.site_id); await env.DB.prepare("UPDATE pay SET status='paid', note=COALESCE(note,'') || ' · by hand', updated=? WHERE id=?").bind(new Date().toISOString(), id).run() }
+      const p = await env.DB.prepare('SELECT site_id, months FROM pay WHERE id = ?').bind(id).first()
+      if (p) { await gold.grant(env, p.site_id, p.months || 12); await env.DB.prepare("UPDATE pay SET status='paid', note=COALESCE(note,'') || ' · by hand', updated=? WHERE id=?").bind(new Date().toISOString(), id).run() }
     }
     if (act === 'pay-no') await env.DB.prepare("UPDATE pay SET status='refused', updated=? WHERE id=?").bind(new Date().toISOString(), id).run()
     await log(env, id, 'admin-' + act, '')
@@ -809,7 +809,7 @@ async function tidy(env) {
   await job('calendars', () => readCalendars(env, gold.isGold, normalize))
   await job('translate', () => tr.catchUp(env, gold.isGold, normalize))
   await job('monthly', () => monthly(env, gold.isGold, HOME))
-  await job('trial', () => trialNotes(env, HOME, Number(env.GOLD_THB) || gold.GOLD_THB))
+  await job('trial', () => trialNotes(env, HOME, (d) => gold.planOf(env, d)))
   await env.DB.prepare("UPDATE site SET trial = 0 WHERE trial = 1 AND gold_until < ?").bind(new Date().toISOString().slice(0, 10)).run()
   return done
 }

@@ -55,6 +55,7 @@ zone_name = "motdang.net"
 # Gold: the year's price in baht. PROMPTPAY (her phone's PromptPay) is a secret.
 [vars]
 GOLD_THB = "3000"
+HOTEL_THB = "555" # a month, for a page that takes room bookings (Nan 2026-10-14)
 MAIL_FROM = "Mot Dang <pages@motdang.net>"
 
 # Secrets (npx wrangler secret put NAME), never in this file:
