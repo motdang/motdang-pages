@@ -707,6 +707,7 @@ async function admin(request, env, rest, url) {
     const o = await env.MEDIA.get(`slip/${slip[1]}`)
     return o ? new Response(o.body, { headers: { 'content-type': o.httpMetadata?.contentType || 'image/jpeg', 'cache-control': 'no-store' } }) : new Response('', { status: 404 })
   }
+  if (request.method === 'POST' && rest === '/run' && sameOrigin(request, url)) return J(await tidy(env))
   if (request.method === 'POST' && rest === '/act' && sameOrigin(request, url)) {
     const f = await request.formData()
     const id = String(f.get('id') || ''), act = String(f.get('act') || '')
@@ -737,6 +738,7 @@ async function releasePhoto(env, id) {
 // ---- upkeep ----------------------------------------------------------------------
 
 async function tidy(env) {
+  const done = {}
   const old = new Date(Date.now() - 30 * 864e5).toISOString()
   const drafts = await env.DB.prepare("SELECT id FROM site WHERE status='draft' AND updated < ? LIMIT 100").bind(old).all()
   for (const r of drafts.results) {
@@ -764,12 +766,13 @@ async function tidy(env) {
   await env.DB.prepare('DELETE FROM seen WHERE day < ?').bind(day(2)).run()
   await env.DB.prepare("DELETE FROM pay WHERE status = 'open' AND created < ?").bind(new Date(Date.now() - 14 * 864e5).toISOString()).run()
   // 2026-10-14: room calendars, translations, the monthly note, the trial's end note
-  const job = async (name, f) => { try { await f() } catch (e) { console.error(name, e?.stack || e) } }
+  const job = async (name, f) => { try { done[name] = await f() } catch (e) { done[name] = 'error: ' + String(e?.message || e).slice(0, 300); console.error(name, e?.stack || e) } }
   await job('calendars', () => readCalendars(env, gold.isGold, normalize))
   await job('translate', () => tr.catchUp(env, gold.isGold, normalize))
   await job('monthly', () => monthly(env, gold.isGold, HOME))
   await job('trial', () => trialNotes(env, HOME, Number(env.GOLD_THB) || gold.GOLD_THB))
   await env.DB.prepare("UPDATE site SET trial = 0 WHERE trial = 1 AND gold_until < ?").bind(new Date().toISOString().slice(0, 10)).run()
+  return done
 }
 
 // ---- small helpers -----------------------------------------------------------------
