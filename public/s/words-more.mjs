@@ -4,6 +4,7 @@
 
 export const Y = {
   en: {
+    roomWeekend: 'Fri–Sat {p}', roomMin: 'At least {n} nights', roomLeft: '{n} left', bookRef: 'Booking', payNow: 'Pay now {p} by PromptPay', payHotel: 'Pay at the hotel', payLink: 'Pay the hotel', yourBooking: 'Your booking',
     cal: 'Calendar', calEvery: 'Every {d}', calMonthly: 'Every month', calFollow: 'Follow this calendar', calMore: 'More dates',
     camp: 'Offer', campEnds: 'Ends {t}', campCode: 'Code', campCopy: 'Copy the code',
     book: 'Book', bookPick: 'Pick a time', bookNone: 'No free times this day', bookMins: '{m} min',
@@ -17,6 +18,7 @@ export const Y = {
     readIn: 'Read in', machine: 'Machine translation from {l}',
   },
   th: {
+    roomWeekend: 'ศ.–ส. {p}', roomMin: 'พักอย่างน้อย {n} คืน', roomLeft: 'เหลือ {n}', bookRef: 'การจอง', payNow: 'จ่ายตอนนี้ {p} ผ่านพร้อมเพย์', payHotel: 'จ่ายที่โรงแรม', payLink: 'จ่ายกับโรงแรม', yourBooking: 'การจองของคุณ',
     cal: 'ปฏิทิน', calEvery: 'ทุก{d}', calMonthly: 'ทุกเดือน', calFollow: 'ติดตามปฏิทินนี้', calMore: 'วันอื่น ๆ',
     camp: 'โปรโมชั่น', campEnds: 'หมดเขต {t}', campCode: 'โค้ด', campCopy: 'คัดลอกโค้ด',
     book: 'จอง', bookPick: 'เลือกเวลา', bookNone: 'วันนี้ไม่มีเวลาว่าง', bookMins: '{m} นาที',
@@ -30,6 +32,7 @@ export const Y = {
     readIn: 'อ่านเป็น', machine: 'แปลด้วยเครื่องจาก{l}',
   },
   my: {
+    roomWeekend: 'သောကြာ–စနေ {p}', roomMin: 'အနည်းဆုံး {n} ည', roomLeft: '{n} ခန်းကျန်', bookRef: 'ကြိုတင်မှာယူမှု', payNow: 'PromptPay ဖြင့် ယခု {p} ပေးရန်', payHotel: 'ဟိုတယ်တွင်ပေးရန်', payLink: 'ဟိုတယ်ကို ပေးရန်', yourBooking: 'သင့်ကြိုတင်မှာယူမှု',
     cal: 'ပြက္ခဒိန်', calEvery: '{d} တိုင်း', calMonthly: 'လစဉ်', calFollow: 'ဤပြက္ခဒိန်ကို လိုက်ရန်', calMore: 'နောက်ထပ်ရက်များ',
     camp: 'အထူးလျှော့ဈေး', campEnds: '{t} တွင်ကုန်မည်', campCode: 'ကုဒ်', campCopy: 'ကုဒ်ကူးရန်',
     book: 'ကြိုတင်မှာရန်', bookPick: 'အချိန်ရွေးပါ', bookNone: 'ဤနေ့တွင် အချိန်လွတ်မရှိပါ', bookMins: '{m} မိနစ်',
@@ -43,6 +46,7 @@ export const Y = {
     readIn: 'ဖတ်ရန်', machine: '{l} မှ စက်ဘာသာပြန်',
   },
   zh: {
+    roomWeekend: '周五、周六 {p}', roomMin: '至少住 {n} 晚', roomLeft: '剩 {n} 间', bookRef: '预订号', payNow: '现在用 PromptPay 付 {p}', payHotel: '到店付款', payLink: '付款给酒店', yourBooking: '你的预订',
     cal: '日历', calEvery: '每{d}', calMonthly: '每月', calFollow: '订阅这个日历', calMore: '更多日期',
     camp: '优惠', campEnds: '{t} 结束', campCode: '优惠码', campCopy: '复制优惠码',
     book: '预约', bookPick: '选择时间', bookNone: '这天没有空位', bookMins: '{m} 分钟',
@@ -56,6 +60,7 @@ export const Y = {
     readIn: '阅读语言', machine: '由{l}机器翻译',
   },
   ja: {
+    roomWeekend: '金・土 {p}', roomMin: '{n}泊以上', roomLeft: '残り{n}室', bookRef: '予約番号', payNow: 'PromptPay で今 {p}', payHotel: 'ホテルで支払い', payLink: 'ホテルに支払う', yourBooking: 'あなたの予約',
     cal: 'カレンダー', calEvery: '毎週{d}', calMonthly: '毎月', calFollow: 'このカレンダーを購読', calMore: 'ほかの日程',
     camp: 'キャンペーン', campEnds: '{t} まで', campCode: 'コード', campCopy: 'コードをコピー',
     book: '予約', bookPick: '時間を選ぶ', bookNone: 'この日は空きがありません', bookMins: '{m}分',
@@ -69,6 +74,7 @@ export const Y = {
     readIn: '表示言語', machine: '{l}からの機械翻訳',
   },
   ko: {
+    roomWeekend: '금·토 {p}', roomMin: '최소 {n}박', roomLeft: '{n}실 남음', bookRef: '예약 번호', payNow: 'PromptPay로 지금 {p}', payHotel: '호텔에서 결제', payLink: '호텔에 결제', yourBooking: '내 예약',
     cal: '일정', calEvery: '매주 {d}', calMonthly: '매달', calFollow: '이 일정 구독하기', calMore: '다른 날짜',
     camp: '이벤트', campEnds: '{t} 종료', campCode: '코드', campCopy: '코드 복사',
     book: '예약', bookPick: '시간 선택', bookNone: '이 날은 빈 시간이 없어요', bookMins: '{m}분',
@@ -82,6 +88,7 @@ export const Y = {
     readIn: '언어', machine: '{l}에서 기계 번역',
   },
   vi: {
+    roomWeekend: 'T6–T7 {p}', roomMin: 'Ít nhất {n} đêm', roomLeft: 'Còn {n}', bookRef: 'Mã đặt phòng', payNow: 'Trả ngay {p} qua PromptPay', payHotel: 'Trả tại khách sạn', payLink: 'Trả cho khách sạn', yourBooking: 'Đặt phòng của bạn',
     cal: 'Lịch', calEvery: 'Mỗi {d}', calMonthly: 'Hằng tháng', calFollow: 'Theo dõi lịch này', calMore: 'Thêm ngày',
     camp: 'Ưu đãi', campEnds: 'Kết thúc {t}', campCode: 'Mã', campCopy: 'Sao chép mã',
     book: 'Đặt lịch', bookPick: 'Chọn giờ', bookNone: 'Ngày này đã kín chỗ', bookMins: '{m} phút',
@@ -121,6 +128,7 @@ export const Y = {
     readIn: 'ອ່ານເປັນ', machine: 'ແປດ້ວຍເຄື່ອງຈາກ{l}',
   },
   id: {
+    roomWeekend: 'Jum–Sab {p}', roomMin: 'Minimal {n} malam', roomLeft: 'Sisa {n}', bookRef: 'Pesanan', payNow: 'Bayar sekarang {p} lewat PromptPay', payHotel: 'Bayar di hotel', payLink: 'Bayar ke hotel', yourBooking: 'Pesanan Anda',
     cal: 'Kalender', calEvery: 'Setiap {d}', calMonthly: 'Setiap bulan', calFollow: 'Ikuti kalender ini', calMore: 'Tanggal lain',
     camp: 'Promo', campEnds: 'Berakhir {t}', campCode: 'Kode', campCopy: 'Salin kode',
     book: 'Pesan', bookPick: 'Pilih waktu', bookNone: 'Tidak ada waktu kosong hari ini', bookMins: '{m} menit',
@@ -134,6 +142,7 @@ export const Y = {
     readIn: 'Baca dalam', machine: 'Terjemahan mesin dari {l}',
   },
   es: {
+    roomWeekend: 'Vie–sáb {p}', roomMin: 'Mínimo {n} noches', roomLeft: 'Quedan {n}', bookRef: 'Reserva', payNow: 'Paga ahora {p} por PromptPay', payHotel: 'Pagas en el hotel', payLink: 'Pagar al hotel', yourBooking: 'Tu reserva',
     cal: 'Calendario', calEvery: 'Cada {d}', calMonthly: 'Cada mes', calFollow: 'Seguir este calendario', calMore: 'Más fechas',
     camp: 'Oferta', campEnds: 'Termina {t}', campCode: 'Código', campCopy: 'Copiar el código',
     book: 'Reservar', bookPick: 'Elige una hora', bookNone: 'No quedan horas este día', bookMins: '{m} min',
@@ -147,6 +156,7 @@ export const Y = {
     readIn: 'Leer en', machine: 'Traducción automática del {l}',
   },
   fr: {
+    roomWeekend: 'Ven–sam {p}', roomMin: 'Au moins {n} nuits', roomLeft: 'Encore {n}', bookRef: 'Réservation', payNow: 'Payer {p} maintenant par PromptPay', payHotel: 'Paiement à l’hôtel', payLink: 'Payer l’hôtel', yourBooking: 'Votre réservation',
     cal: 'Calendrier', calEvery: 'Chaque {d}', calMonthly: 'Chaque mois', calFollow: 'Suivre ce calendrier', calMore: 'Autres dates',
     camp: 'Offre', campEnds: 'Jusqu’au {t}', campCode: 'Code', campCopy: 'Copier le code',
     book: 'Réserver', bookPick: 'Choisir un horaire', bookNone: 'Plus de créneau ce jour-là', bookMins: '{m} min',

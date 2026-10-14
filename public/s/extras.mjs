@@ -53,9 +53,20 @@ export function normalizeExtras(d, o) {
   o.rooms = uniqIds((Array.isArray(d.rooms) ? d.rooms : []).map((x, i) => ({
     id: idOf(x?.id, i), n: str(x?.n, 80), p: str(x?.p, 24), note: str(x?.note, 400),
     guests: num(x?.guests, 1, 40, 2), beds: str(x?.beds, 60),
+    units: num(x?.units, 1, 200, 1), p2: str(x?.p2, 24), min: num(x?.min, 1, 30, 1),
+    rates: (Array.isArray(x?.rates) ? x.rates : []).map((r) => ({ from: DAY.test(r?.from || '') ? r.from : '', to: DAY.test(r?.to || '') ? r.to : '', p: str(r?.p, 24) }))
+      .filter((r) => r.from && r.to && r.to >= r.from && amount(r.p) > 0).slice(0, 8),
     photos: (Array.isArray(x?.photos) ? x.photos : []).filter((p) => PHOTO_ID.test(p)).slice(0, MAX.itemPhotos),
     ical: (Array.isArray(x?.ical) ? x.ical : []).map((u) => icalUrl(u)).filter(Boolean).slice(0, 4),
   })).filter((x) => x.n).slice(0, MAX.rooms))
+
+  const st = d.stay || {}
+  o.stay = {
+    in: HHMM.test(st.in || '') ? st.in : '14:00', out: HHMM.test(st.out || '') ? st.out : '12:00',
+    instant: st.instant !== false, pay: ['hotel', 'pp', 'link'].includes(st.pay) ? st.pay : 'hotel',
+    dep: ['none', 'night1', 'pct30', 'full'].includes(st.dep) ? st.dep : 'none',
+    pp: str(st.pp, 20).replace(/[^\d]/g, ''), link: payLink(st.link), policy: str(st.policy, 600),
+  }
 
   o.lists = uniqIds((Array.isArray(d.lists) ? d.lists : []).map((x, i) => {
     const lat = Number(x?.lat), lng = Number(x?.lng)
@@ -70,6 +81,32 @@ export function normalizeExtras(d, o) {
     }
   }).filter((x) => x.t).slice(0, MAX.lists))
   return o
+}
+
+/** A hotel's own payment page (Stripe, PayPal, Omise, a bank's link): any https address, else ''. */
+function payLink(u) {
+  let s2 = str(u, 400)
+  if (!s2) return ''
+  if (!/^[a-z][a-z0-9+.-]*:/i.test(s2)) s2 = 'https://' + s2
+  try { const x = new URL(s2); return x.protocol === 'https:' && x.hostname.includes('.') && !x.username && !x.password ? x.toString() : '' } catch { return '' }
+}
+
+/** A price as a number: '1,200' → 1200, words → 0. */
+export function amount(p) { const n = Number(String(p || '').replace(/[,\s]/g, '')); return Number.isFinite(n) && n > 0 ? n : 0 }
+
+/** One night's price for a room: a season's price, else the weekend price on Friday and Saturday nights, else the price. */
+export function nightPrice(room, day) {
+  const r = room.rates.find((x) => x.from <= day && day <= x.to)
+  if (r) return amount(r.p)
+  const w = new Date(day + 'T00:00:00Z').getUTCDay()
+  if ((w === 5 || w === 6) && amount(room.p2)) return amount(room.p2)
+  return amount(room.p)
+}
+/** The nights from `a` to the morning `b`, and their sum. */
+export function stayTotal(room, a, b) {
+  let total = 0, nights = 0
+  for (let x = a; x < b && nights < 400; x = addDays(x, 1)) { total += nightPrice(room, x); nights++ }
+  return { total, nights }
 }
 
 /** An Airbnb / Booking.com / Agoda / VRBO / Google calendar address, else ''. */

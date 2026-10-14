@@ -375,7 +375,11 @@
       .then(function (r) { return r.json().then(function (j) { if (!r.ok) throw j; return j }) })
       .then(function (j) {
         box.innerHTML = '<p class="ok" style="display:flex;gap:10px;align-items:center;font-weight:800;font-size:20px;color:var(--acc-ink)"><i data-dingbat="calendar" data-play="once" style="font-size:1.6em"></i>' + esc(j.status === 'ok' ? w.bookDone : w.bookAsked) + '</p>' +
-          (j.deposit ? '<div class="pp"><b>' + esc((w.bookDeposit || '').replace('{p}', moneyOf(j.deposit.amount))) + '</b>' + j.deposit.qr + '<p>' + esc(w.bookScan) + '</p></div>' : '')
+          (j.ref ? '<p style="font:800 18px ui-monospace,Menlo,monospace;letter-spacing:.06em">' + esc(w.bookRef) + ' ' + esc(j.ref) + (j.total ? ' · ' + moneyOf(j.total) : '') + '</p>' : '') +
+          (j.deposit ? '<div class="pp"><b>' + esc(((body.kind === 'room' ? w.payNow : w.bookDeposit) || '').replace('{p}', moneyOf(j.deposit.amount))) + '</b>' + j.deposit.qr + '<p>' + esc(w.bookScan) + '</p></div>' : '') +
+          (j.link ? '<a class="btn" href="' + esc(j.link) + '" rel="nofollow noopener">' + esc(w.payLink) + (j.due ? ' ' + moneyOf(j.due) : '') + '</a>' : '') +
+          (body.kind === 'room' && !j.deposit && !j.link ? '<p>' + esc(w.payHotel) + '</p>' : '') +
+          (j.page ? '<a class="btn ghost" style="margin-top:10px" href="' + esc(j.page) + '">' + esc(w.yourBooking) + '</a>' : '')
         if (window.Dingbats && window.Dingbats.burst) { var r = box.getBoundingClientRect(); try { window.Dingbats.burst(r.left + 40, r.top + 20, { names: ['calendar', 'sparkle', 'heart'], n: 12 }) } catch (e) {} }
       })
       .catch(function (e) { btn.disabled = false; if (e && e.error === 'taken') { btn.textContent = w.bookFail } else btn.textContent = w.msgFail || 'Try again' })
@@ -418,10 +422,18 @@
     b.onclick = function () {
       if (!pd.book) return
       var room = b.getAttribute('data-pick'), info = pd.book.rooms[room] || { g: 2, p: '' }, ui = b.parentNode.querySelector('.roomui')
-      var price = Number(String(info.p || '').replace(/[^\d.]/g, '')) || 0
+      var num = function (p) { var n = Number(String(p || '').replace(/[,\s]/g, '')); return n > 0 ? n : 0 }
+      var priceOf = function (day) {
+        var r = (info.rates || []).filter(function (x) { return x.from <= day && day <= x.to })[0]
+        if (r) return num(r.p)
+        var wd = new Date(day + 'T00:00:00Z').getUTCDay()
+        return (wd === 5 || wd === 6) && num(info.p2) ? num(info.p2) : num(info.p)
+      }
+      var short = function (n) { return n >= 10000 ? Math.round(n / 1000) + 'k' : n >= 1000 ? (Math.round(n / 100) / 10) + 'k' : String(n) }
+      var left = {}
       b.hidden = true; ui.hidden = false; ui.innerHTML = '<p>…</p>'
       fetch('/api/nights?n=' + encodeURIComponent(pd.name) + '&room=' + encodeURIComponent(room)).then(function (r) { return r.json() }).then(function (j) {
-        var taken = {}; (j.taken || []).forEach(function (d) { taken[d] = 1 })
+        var taken = {}; (j.taken || []).forEach(function (d) { taken[d] = 1 }); left = j.left || {}
         var t0 = todayIn(), m = t0.slice(0, 7), sIn = '', sOut = ''
         var heads = []; for (var i = 0; i < 7; i++) heads.push('<span>' + esc(fmtDay(addD('2024-01-01', i), { weekday: 'narrow' })) + '</span>')
         function freeRun(a, b) { for (var d = a; d < b; d = addD(d, 1)) if (taken[d]) return false; return true }
@@ -431,10 +443,16 @@
           for (var d = first; d.slice(0, 7) === m; d = addD(d, 1)) {
             var past = d < t0, dis = past || (!sIn || sOut ? taken[d] : (d <= sIn || !freeRun(sIn, d)))
             var cls = (d === sIn || d === sOut ? 'end' : sIn && sOut && d > sIn && d < sOut ? 'in' : '') + (taken[d] && !past ? ' tk' : '')
-            g += '<button data-d="' + d + '"' + (dis ? ' disabled' : '') + (cls ? ' class="' + cls + '"' : '') + (taken[d] ? ' title="' + esc(w.roomTaken) + '"' : '') + '>' + Number(d.slice(8)) + '</button>'
+            var few = !past && !taken[d] && (info.units || 1) > 1 && left[d] && left[d] <= 2
+            if (few) cls += ' few'
+            var pr = !past && !taken[d] && priceOf(d)
+            g += '<button data-d="' + d + '"' + (dis ? ' disabled' : '') + (cls ? ' class="' + cls + '"' : '') + ' title="' + esc(taken[d] ? w.roomTaken : few ? (w.roomLeft || '').replace('{n}', left[d]) : '') + '">' + Number(d.slice(8)) + (pr ? '<small>' + (few ? esc((w.roomLeft || '').replace('{n}', left[d])) : short(pr)) + '</small>' : '') + '</button>'
           }
-          var nights = sIn && sOut ? Math.round((Date.parse(sOut) - Date.parse(sIn)) / 864e5) : 0
-          var sum = !sIn ? w.roomPickIn : !sOut ? w.roomPickOut : (nights === 1 ? w.roomNight1 : (w.roomNights || '').replace('{n}', nights)) + (price ? ' · ' + (w.roomTotal || '').replace('{p}', moneyOf(price * nights)) : '')
+          var nights = sIn && sOut ? Math.round((Date.parse(sOut) - Date.parse(sIn)) / 864e5) : 0, total = 0
+          for (var q = sIn; nights && q < sOut; q = addD(q, 1)) total += priceOf(q)
+          var short2 = nights && nights < (info.min || 1)
+          var sum = !sIn ? w.roomPickIn : !sOut ? w.roomPickOut : (nights === 1 ? w.roomNight1 : (w.roomNights || '').replace('{n}', nights)) + (total ? ' · ' + (w.roomTotal || '').replace('{p}', moneyOf(total)) : '') + (short2 ? ' · ' + (w.roomMin || '').replace('{n}', info.min) : '')
+          if (short2) nights = 0
           ui.innerHTML = '<div class="mcal"><div class="mh"><button data-m="-1" aria-label="‹">‹</button><span>' + esc(fmtDay(first, { month: 'long', year: 'numeric' })) + '</span><button data-m="1" aria-label="›">›</button></div><div class="g">' + g + '</div></div><p class="rsum">' + esc(sum) + '</p>' + (nights ? askForm('', info.g, w.roomSend) : '')
           $$('.mh button', ui).forEach(function (mb) { mb.onclick = function () { var t = new Date(m + '-01T00:00:00Z'); t.setUTCMonth(t.getUTCMonth() + +mb.getAttribute('data-m')); var nm = t.toISOString().slice(0, 7); if (nm >= t0.slice(0, 7)) { m = nm; draw() } } })
           $$('.g button', ui).forEach(function (db) {

@@ -23,7 +23,7 @@ export async function readCalendars(env, isGold, normalize, max = 12) {
   if (!due.length) return 0
   const last = new Map((await env.DB.prepare('SELECT site_id, room, url, at FROM ical_read').all()).results.map((x) => [`${x.site_id}|${x.room}|${x.url}`, x.at]))
   const todo = due.filter((x) => (last.get(`${x.site}|${x.room}|${x.url}`) || '') < since).sort((a, b) => (last.get(`${a.site}|${a.room}|${a.url}`) || '').localeCompare(last.get(`${b.site}|${b.room}|${b.url}`) || '')).slice(0, max)
-  const byRoom = new Map()
+  const read = []
   for (const x of todo) {
     let nights = null
     try {
@@ -33,19 +33,21 @@ export async function readCalendars(env, isGold, normalize, max = 12) {
     } catch {}
     await env.DB.prepare('INSERT INTO ical_read (site_id, room, url, at, ok, nights) VALUES (?,?,?,?,?,?) ON CONFLICT(site_id, room, url) DO UPDATE SET at = excluded.at, ok = excluded.ok, nights = excluded.nights')
       .bind(x.site, x.room, x.url, new Date().toISOString(), nights ? 1 : 0, nights ? nights.length : null).run()
-    if (!nights) continue // a calendar that did not answer keeps its last nights
-    const k = x.site + '|' + x.room
-    if (!byRoom.has(k)) byRoom.set(k, { site: x.site, room: x.room, urls: due.filter((y) => y.site === x.site && y.room === x.room).length, got: [] })
-    byRoom.get(k).got.push(...nights)
+    if (nights) read.push({ ...x, nights }) // a calendar that did not answer keeps its last nights
   }
-  for (const r of byRoom.values()) {
-    // replace only when every calendar of the room was read this run; otherwise add
-    const all = r.urls === todo.filter((y) => y.site === r.site && y.room === r.room).length
-    const stmts = all ? [env.DB.prepare('DELETE FROM block WHERE site_id = ? AND room = ?').bind(r.site, r.room)] : []
-    for (const day of new Set(r.got)) stmts.push(env.DB.prepare('INSERT OR IGNORE INTO block (site_id, room, day) VALUES (?,?,?)').bind(r.site, r.room, day))
+  // each calendar's nights replace that calendar's last reading; a room type with several rooms counts each calendar as one
+  for (const x of read) {
+    const src = (await sha12(x.url))
+    const stmts = [env.DB.prepare('DELETE FROM blocks WHERE site_id = ? AND room = ? AND src = ?').bind(x.site, x.room, src)]
+    for (const day of new Set(x.nights)) stmts.push(env.DB.prepare('INSERT OR IGNORE INTO blocks (site_id, room, src, day) VALUES (?,?,?,?)').bind(x.site, x.room, src, day))
     for (let i = 0; i < stmts.length; i += 90) await env.DB.batch(stmts.slice(i, i + 90))
   }
   return todo.length
+}
+
+async function sha12(t) {
+  const h = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(t))
+  return [...new Uint8Array(h)].slice(0, 6).map((b) => b.toString(16).padStart(2, '0')).join('')
 }
 
 /** On the 1st (Bangkok), last month's numbers to each Gold maker who confirmed an email. */

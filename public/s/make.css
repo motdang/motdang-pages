@@ -216,3 +216,4 @@ textarea{min-height:130px;resize:vertical;line-height:1.5}
 .plain{margin:0;padding:0 0 0 18px}.plain li{margin:4px 0}
 .dns{border-collapse:collapse;margin:8px 0;font-size:15px}.dns td{padding:6px 10px 6px 0;border-bottom:1px dashed var(--line)}.dns code,.cp{font:14px ui-monospace,Menlo,monospace;background:var(--cream);padding:2px 6px;border-radius:6px;overflow-wrap:anywhere;cursor:copy}
 .go.small{min-height:42px;padding:8px 16px;font-size:15px}
+.paidy{color:var(--green)}.paidn{color:#b45309}.msg.bk.hold{box-shadow:0 0 0 2px var(--line);opacity:.8}.msg.bk.gone{opacity:.5}

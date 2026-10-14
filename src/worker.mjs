@@ -29,7 +29,8 @@ import * as tr from './tr.mjs'
 import * as dom from './domain.mjs'
 import { tellBeer } from './line.mjs'
 import { readCalendars, monthly, trialNotes } from './cron.mjs'
-import { calIcs, roomIcs } from '../public/s/extras.mjs'
+import { calIcs, roomIcs, addDays } from '../public/s/extras.mjs'
+import { guestPage } from './guest.mjs'
 
 const QUOTA = { site: 3, photo: 200, save: 400, report: 20, msg: 12, pd: 200, notify: 3, slip: 10, book: 10, domain: 6 }
 const TRIAL_DAYS = 30 // Nan 2026-10-14: a new page is Gold for its first 30 days
@@ -90,6 +91,14 @@ async function route(request, env, ctx) {
     return body ? html(body, 200, { nonce, map: true, cache: 'public, max-age=3600' }) : new Response('', { status: 400 })
   }
   if (path === '/feed.json') return feed(env, origin)
+  const gb = /^\/bk\/([a-z0-9]{14})$/.exec(path)
+  if (gb && m === 'GET') {
+    const bk = await env.DB.prepare('SELECT * FROM booking WHERE id = ?').bind(gb[1]).first()
+    const s = bk && await env.DB.prepare('SELECT * FROM site WHERE id = ?').bind(bk.site_id).first()
+    if (!bk || !s) return html(notFound(null, request), 404)
+    const nonce = rand(16)
+    return html(guestPage(bk, s, origin, nonce), 200, { nonce })
+  }
   if (path === '/robots.txt') return new Response(`User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /make\nDisallow: /admin\nSitemap: ${origin}/sitemap.xml\n`, { headers: { 'content-type': 'text/plain' } })
   if (path === '/sitemap.xml') return sitemap(env, origin)
   if (path === '/favicon.ico') return asset(request, env, '/s/ant.svg')
@@ -138,7 +147,7 @@ async function page(request, env, ctx, name, sub, url, origin, base) {
     const d = normalize(site.d)
     const room = d.rooms.find((x) => x.id === sub.slice(6, -4))
     if (s.status !== 'live' || site.tier !== 'gold' || !room) return new Response('', { status: 404 })
-    const b = (await env.DB.prepare("SELECT start, end FROM booking WHERE site_id = ? AND kind = 'room' AND item = ? AND status IN ('new','ok') AND end >= ?").bind(s.id, room.id, new Date(Date.now() - 864e5).toISOString().slice(0, 10)).all()).results
+    const b = (await env.DB.prepare("SELECT start, end FROM booking WHERE site_id = ? AND kind = 'room' AND item = ? AND status IN ('new','ok','hold') AND end >= ?").bind(s.id, room.id, new Date(Date.now() - 864e5).toISOString().slice(0, 10)).all()).results
     const nights = new Set()
     for (const x of b) for (let dd = x.start; dd < x.end; dd = new Date(Date.parse(dd) + 864e5).toISOString().slice(0, 10)) nights.add(dd)
     return new Response(roomIcs(name, room, nights), { headers: { 'content-type': 'text/calendar; charset=utf-8', 'cache-control': 'no-cache' } })
@@ -227,6 +236,7 @@ function asData(r, origin) {
     items: d.items, currency: d.currency, cover: d.cover ? im(d.cover) : '',
     photos: d.photos.slice(0, g ? MAX_PHOTOS.gold : MAX_PHOTOS.free).map((id) => ({ url: im(id), small: im(id, true), credit: d.credits[id] || null })),
     event: d.event, scene: d.drawing ? sceneOf(r.kind, d) : '', published: r.published, updated: r.updated,
+    rooms: g ? d.rooms.map((x) => ({ n: x.n, p: x.p, guests: x.guests, units: x.units })) : [], book: g && d.rooms.length ? `${origin}/${r.name}#rooms` : '',
   }
 }
 
@@ -306,7 +316,9 @@ async function api(request, env, ctx, p, url, origin) {
     if (p === 'slots') return J({ times: await book.freeTimes(env, s, d, String(url.searchParams.get('svc') || ''), String(url.searchParams.get('day') || '')) })
     const room = String(url.searchParams.get('room') || '')
     if (!d.rooms.some((x) => x.id === room)) return J({ error: 'not-found' }, 404)
-    return J({ taken: [...(await book.takenNights(env, s, d, room))].sort() })
+    const units = d.rooms.find((x) => x.id === room).units
+    const counts = await book.nightCounts(env, s, d, room)
+    return J({ taken: [...counts].filter(([, c]) => c >= units).map(([k]) => k).sort(), left: Object.fromEntries([...counts].filter(([, c]) => c < units).map(([k, c]) => [k, units - c])), units })
   }
   if (p === 'book' && m === 'POST') {
     const b = await body(request)
@@ -325,7 +337,20 @@ async function api(request, env, ctx, p, url, origin) {
       await book.tellReader(env, s, d, bk, origin, s.lang)
       await log(env, s.id, 'booking', `${bk.kind} ${bk.item} ${bk.start}`)
     })().catch((e) => console.error(e)))
-    return J({ ok: true, status: r.status, deposit: r.deposit })
+    return J({ ok: true, status: r.status, deposit: r.deposit, ref: r.ref, total: r.total, link: r.link || '', due: r.due || 0, page: r.ref && b.kind === 'room' ? `${origin}/bk/${r.id}` : '' })
+  }
+  const bkCx = /^bk\/([a-z0-9]{14})\/cancel$/.exec(p)
+  if (bkCx && m === 'POST') {
+    const bk = await env.DB.prepare("SELECT * FROM booking WHERE id = ? AND status IN ('new','ok')").bind(bkCx[1]).first()
+    if (bk) {
+      await env.DB.prepare("UPDATE booking SET status = 'gone' WHERE id = ?").bind(bk.id).run()
+      const s = await env.DB.prepare('SELECT * FROM site WHERE id = ?').bind(bk.site_id).first()
+      if (s) {
+        await log(env, s.id, 'booking-cancel', bk.ref || bk.id)
+        ctx.waitUntil(book.tellMaker(env, s, normalize(JSON.parse(s.d)), { ...bk, status: 'gone' }, origin).catch((e) => console.error(e)))
+      }
+    }
+    return Response.redirect(origin + '/bk/' + bkCx[1], 303)
   }
   const bkIcs = /^bk\/([a-z0-9]{14})\.ics$/.exec(p)
   if (bkIcs && m === 'GET') {
@@ -560,14 +585,28 @@ ${s ? `<p>ข้อความถึง ${escHtml(title)} จะส่งสำ
 
   if (p === 'bookings' && m === 'GET') {
     const d = normalize(JSON.parse(s.d))
-    const rows = (await env.DB.prepare("SELECT * FROM booking WHERE site_id = ? AND status != 'gone' AND (status = 'new' OR end >= ?) ORDER BY start LIMIT 300").bind(s.id, new Date(Date.now() - 2 * 864e5).toISOString().slice(0, 10)).all()).results
-    const blocks = (await env.DB.prepare('SELECT room, COUNT(*) AS n FROM block WHERE site_id = ? GROUP BY room').bind(s.id).all()).results
+    const rows = (await env.DB.prepare("SELECT * FROM booking WHERE site_id = ? AND (status NOT IN ('gone') OR at >= ?) AND (status = 'new' OR end >= ?) ORDER BY start LIMIT 300").bind(s.id, new Date(Date.now() - 3 * 864e5).toISOString(), new Date(Date.now() - 2 * 864e5).toISOString().slice(0, 10)).all()).results
+    const blocks = (await env.DB.prepare('SELECT room, COUNT(*) AS n FROM blocks WHERE site_id = ? GROUP BY room').bind(s.id).all()).results
     const reads = (await env.DB.prepare('SELECT room, url, at, ok, nights FROM ical_read WHERE site_id = ?').bind(s.id).all()).results
-    return J({ rows: rows.map((r) => ({ ...book.describe(r, d, s.lang), id: r.id, kind: r.kind, item: r.item, start: r.start, end: r.end, people: r.people, name: r.name, reach: r.reach, email: r.email, note: r.note, status: r.status, at: r.at })), blocks, reads })
+    return J({ rows: rows.map((r) => ({ ...book.describe(r, d, s.lang), id: r.id, kind: r.kind, item: r.item, start: r.start, end: r.end, people: r.people, name: r.name, reach: r.reach, email: r.email, note: r.note, status: r.status, at: r.at, total: r.total, paid: !!r.paid, ref: r.ref })), blocks, reads })
   }
   if (p === 'bookings' && m === 'POST') {
     const b = await body(request)
-    const st = { ok: 'ok', no: 'no', gone: 'gone', new: 'new' }[b.act]
+    if (b.act === 'paid' || b.act === 'unpaid') {
+      await env.DB.prepare('UPDATE booking SET paid = ? WHERE id = ? AND site_id = ?').bind(b.act === 'paid' ? 1 : 0, String(b.id || ''), s.id).run()
+      return J({ ok: true })
+    }
+    if (b.act === 'close') {
+      const d = normalize(JSON.parse(s.d))
+      const room = d.rooms.find((x) => x.id === b.room)
+      const from = String(b.from || ''), to = String(b.to || '')
+      if (!room || !/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to) || to <= from || to > addDays(from, 366)) return J({ error: 'bad' }, 400)
+      const id = rand(14)
+      await env.DB.prepare("INSERT INTO booking (id, site_id, kind, item, start, end, people, name, note, status, at, ref) VALUES (?,?,'room',?,?,?,1,?,?,'hold',?,?)")
+        .bind(id, s.id, room.id, from, to, String(b.name || '').slice(0, 80) || 'Closed', String(b.note || '').slice(0, 300), new Date().toISOString(), 'MD' + id.slice(0, 6).toUpperCase()).run()
+      return J({ ok: true, id })
+    }
+    const st = { ok: 'ok', no: 'no', gone: 'gone', new: 'new', hold: 'hold' }[b.act]
     const bk = st && await env.DB.prepare('SELECT * FROM booking WHERE id = ? AND site_id = ?').bind(String(b.id || ''), s.id).first()
     if (!bk) return J({ error: 'act' }, 400)
     await env.DB.prepare('UPDATE booking SET status = ? WHERE id = ?').bind(st, bk.id).run()

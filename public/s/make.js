@@ -512,10 +512,23 @@ Object.assign(SEC, {
       <label class="mini"><span>${T('b_pp')}</span><input data-k="book.pp" value="${val(b.pp)}" inputmode="numeric" maxlength="20"></label></div></details>`
   },
   rooms() {
-    return `<div class="rows">${S.d.rooms.map((x, i) => `<div class="rowc">${rowX('rooms', i)}
+    const st = S.d.stay
+    return `<div class="rowc" style="margin-bottom:12px"><b>${T('h_setup')}</b>
+      <div class="grid2f" style="margin-top:8px"><label class="mini"><span>${T('h_in')}</span><input type="time" data-k="stay.in" value="${val(st.in)}"></label><label class="mini"><span>${T('h_out')}</span><input type="time" data-k="stay.out" value="${val(st.out)}"></label></div>
+      <label class="check"><input type="checkbox" class="sw" data-k="stay.instant" ${st.instant ? 'checked' : ''}>${T('h_instant')}</label>
+      <div class="field"><span>${T('h_pay')}</span>${seg('stay.pay', st.pay, [['hotel', T('h_payHotel')], ['pp', 'PromptPay'], ['link', T('h_payLink')]])}</div>
+      ${st.pay === 'pp' ? `<label class="mini"><span>${T('b_pp')}</span><input data-k="stay.pp" value="${val(st.pp)}" inputmode="numeric" maxlength="20"></label>` : ''}
+      ${st.pay === 'link' ? `<label class="mini"><span>${T('h_link')}</span><input type="url" data-k="stay.link" value="${val(st.link)}" placeholder="https://buy.stripe.com/…"></label>` : ''}
+      ${st.pay !== 'hotel' ? `<label class="mini"><span>${T('h_dep')}</span>${sel('stay.dep', st.dep, [['none', T('h_depNone')], ['night1', T('h_dep1')], ['pct30', '30%'], ['full', T('h_depFull')]])}</label>` : ''}
+      <label class="field"><span>${T('h_policy')}</span><textarea data-k="stay.policy" maxlength="600" style="min-height:64px" placeholder="${T('h_policyEx')}">${val(st.policy)}</textarea></label></div>
+      <div class="rows">${S.d.rooms.map((x, i) => `<div class="rowc">${rowX('rooms', i)}
       <label class="field"><span>${T('r_name')}</span><input data-k="rooms.${i}.n" value="${val(x.n)}" maxlength="80"></label>
       <div class="grid3f">${num(`rooms.${i}.guests`, x.guests, T('r_guests'), 'min="1" max="40"')}<label class="mini"><span>${T('r_beds')}</span><input data-k="rooms.${i}.beds" value="${val(x.beds)}" maxlength="60"></label>
-      <label class="mini"><span>${T('r_price')}</span><input data-k="rooms.${i}.p" value="${val(x.p)}" maxlength="24" inputmode="decimal"></label></div>
+      ${num(`rooms.${i}.units`, x.units, T('r_units'), 'min="1" max="200"')}</div>
+      <div class="grid3f"><label class="mini"><span>${T('r_price')}</span><input data-k="rooms.${i}.p" value="${val(x.p)}" maxlength="24" inputmode="decimal"></label>
+      <label class="mini"><span>${T('r_p2')}</span><input data-k="rooms.${i}.p2" value="${val(x.p2)}" maxlength="24" inputmode="decimal"></label>${num(`rooms.${i}.min`, x.min, T('r_min'), 'min="1" max="30"')}</div>
+      <div class="field"><span>${T('r_seasons')}</span>${(x.rates || []).map((r, k) => `<div class="pair" style="margin:0 0 6px"><input type="date" data-k="rooms.${i}.rates.${k}.from" value="${val(r.from)}"><input type="date" data-k="rooms.${i}.rates.${k}.to" value="${val(r.to)}"><input data-k="rooms.${i}.rates.${k}.p" value="${val(r.p)}" placeholder="${T('price')}" inputmode="decimal" style="max-width:110px"><button class="x" data-rmrate="${i}.${k}" aria-label="${T('remove')}">×</button></div>`).join('')}
+      ${(x.rates || []).length < 8 ? `<button class="linkbtn" data-addrate="${i}">${icon('plus')}${T('r_addSeason')}</button>` : ''}</div>
       <label class="field"><span>${T('details')}</span><textarea data-k="rooms.${i}.note" maxlength="400" style="min-height:70px">${val(x.note)}</textarea></label>
       <div class="field"><span>${T('r_photos')}</span>${photoPick(`rooms.${i}.photos`, x.photos) || `<small>${T('addPhotos')} ↑</small>`}</div>
       <label class="field"><span>${T('r_ical')}</span><textarea data-ical="${i}" style="min-height:64px" placeholder="https://www.airbnb.com/calendar/ical/….ics">${val(x.ical.join('\n'))}</textarea><small>${T('r_icalHint')}</small></label>
@@ -545,7 +558,7 @@ const NEW_ROW = {
   cal: () => { const t = new Date(Date.now() + 864e5); const p = (n) => String(n).padStart(2, '0'); return { id: rid(), t: '', note: '', start: `${t.getFullYear()}-${p(t.getMonth() + 1)}-${p(t.getDate())}T18:00`, end: '', rep: '', until: '' } },
   camps: () => { const p = (n) => String(n).padStart(2, '0'); const f = (t) => `${t.getFullYear()}-${p(t.getMonth() + 1)}-${p(t.getDate())}T${p(t.getHours())}:00`; return { id: rid(), t: '', note: '', code: '', start: f(new Date()), end: f(new Date(Date.now() + 7 * 864e5)) } },
   svc: () => ({ id: rid(), n: '', p: '', note: '', mins: 60, cap: 1 }),
-  rooms: () => ({ id: rid(), n: '', guests: 2, beds: '', p: '', note: '', photos: [], ical: [] }),
+  rooms: () => ({ id: rid(), n: '', guests: 2, beds: '', p: '', p2: '', units: 1, min: 1, rates: [], note: '', photos: [], ical: [] }),
   lists: () => ({ id: rid(), t: '', deal: 'sale', status: 'open', p: '', area: '', unit: 'm2', beds: 0, baths: 0, kind: '', note: '', photos: [], lat: null, lng: null }),
 }
 
@@ -645,6 +658,9 @@ function bindEdit() {
       changed()
     }
     if (b.dataset.rmrow) { S.d[b.dataset.rmrow].splice(+b.dataset.i, 1); redrawSec(b.dataset.rmrow); changed() }
+    if (b.dataset.addrate) { const r = S.d.rooms[+b.dataset.addrate]; r.rates = r.rates || []; r.rates.push({ from: '', to: '', p: '' }); redrawSec('rooms') }
+    if (b.dataset.rmrate) { const [i, k] = b.dataset.rmrate.split('.').map(Number); S.d.rooms[i].rates.splice(k, 1); redrawSec('rooms'); changed() }
+    if (b.dataset.seg === 'stay.pay') redrawSec('rooms')
     if (b.dataset.pp) {
       const path = b.closest('.pickph').dataset.path, [k, i] = path.split('.'), item = S.d[k][+i]
       if (item) { item.photos = item.photos.includes(b.dataset.pp) ? item.photos.filter((x) => x !== b.dataset.pp) : [...item.photos, b.dataset.pp].slice(0, MAX.itemPhotos); b.classList.toggle('on', item.photos.includes(b.dataset.pp)); changed() }
@@ -981,18 +997,30 @@ async function drawBookings() {
   const card = (x) => {
     const rp = replyHref(x.reach)
     return `<article class="msg bk ${x.status}" data-id="${esc(x.id)}"><header><b>${esc(x.what)}</b><span class="bst">${T('bk_' + x.status)}</span></header>
-      <p class="when">${esc(x.when)}</p><p class="body"><b>${esc(x.name || '—')}</b> · ${esc(x.reach || '')}${x.email ? ' · ' + esc(x.email) : ''}${x.people > 1 ? ` · ${x.people} ${T('bk_people')}` : ''}</p>
+      <p class="when">${esc(x.when)}</p><p class="body">${x.ref ? `<code>${esc(x.ref)}</code> · ` : ''}<b>${esc(x.name || '—')}</b>${x.reach ? ' · ' + esc(x.reach) : ''}${x.email ? ' · ' + esc(x.email) : ''}${x.people > 1 ? ` · ${x.people} ${T('bk_people')}` : ''}${x.kind === 'room' && x.status !== 'hold' ? ` · <b class="${x.paid ? 'paidy' : 'paidn'}">${T(x.paid ? 'bk_paid' : 'bk_unpaid')}</b>` : ''}</p>
       ${x.note ? `<p class="reach">${esc(x.note)}</p>` : ''}
-      <footer>${x.status !== 'ok' ? `<button class="go small" data-bk="ok">${icon('check')}${T('bk_accept')}</button>` : ''}${x.status !== 'no' ? `<button class="go ghost small" data-bk="no">${T('bk_decline')}</button>` : ''}
+      <footer>${x.status === 'hold' ? '' : `${x.status !== 'ok' ? `<button class="go small" data-bk="ok">${icon('check')}${T('bk_accept')}</button>` : ''}${x.status !== 'no' ? `<button class="go ghost small" data-bk="no">${T('bk_decline')}</button>` : ''}`}
+      ${x.kind === 'room' && x.status === 'ok' ? `<button class="go ghost small" data-bk="${x.paid ? 'unpaid' : 'paid'}">${T(x.paid ? 'bk_markUnpaid' : 'bk_markPaid')}</button>` : ''}
       ${rp ? `<a class="go line small" href="${esc(rp.href)}" target="_blank" rel="noopener">${icon('chat')}${T('m_reply')} · ${esc(rp.label)}</a>` : ''}<button class="go ghost small" data-bk="gone">${T('bk_del')}</button></footer></article>`
   }
-  const groups = ['new', 'ok', 'no'].map((st) => [st, r.rows.filter((x) => x.status === st)]).filter(([, l]) => l.length)
+  const groups = ['new', 'ok', 'hold', 'no', 'gone'].map((st) => [st, r.rows.filter((x) => x.status === st)]).filter(([, l]) => l.length)
+  const closeBox = S.d.rooms.length ? `<section class="panel"><h3>${T('bk_close')}</h3><div class="grid3f"><label class="mini"><span>${T('r_name')}</span><select id="clroom">${S.d.rooms.map((x) => `<option value="${esc(x.id)}">${esc(x.n)}</option>`).join('')}</select></label>
+    <label class="mini"><span>${T('roomInB')}</span><input type="date" id="clfrom"></label><label class="mini"><span>${T('roomOutB')}</span><input type="date" id="clto"></label></div>
+    <label class="mini"><span>${T('bk_closeWho')}</span><input id="clname" maxlength="80"></label><button class="go ghost small" id="clgo">${icon('plus')}${T('bk_closeGo')}</button></section>` : ''
+  const sumOk = r.rows.filter((x) => x.status === 'ok' && x.kind === 'room')
+  const money = (n) => '฿' + new Intl.NumberFormat(S.lang).format(n)
+  const tot = sumOk.reduce((a, x) => a + (Number(x.total) || 0), 0), paidT = sumOk.filter((x) => x.paid).reduce((a, x) => a + (Number(x.total) || 0), 0)
+  const head = sumOk.length ? `<div class="tiles"><div class="tile"><b>${sumOk.length}</b><span>${T('bk_ok')}</span></div><div class="tile"><b>${money(tot)}</b><span>${T('bk_total')}</span></div><div class="tile"><b>${money(paidT)}</b><span>${T('bk_paid')}</span></div></div>` : ''
   const cals = (r.reads || []).length ? `<section class="panel"><h3>${T('bk_cal')}</h3><ul class="plain">${r.reads.map((x) => {
     const room = S.d.rooms.find((y) => y.id === x.room)
     let host = x.url; try { host = new URL(x.url).hostname.replace(/^www\./, '') } catch {}
     return `<li>${esc(room ? room.n : x.room)} · ${esc(host)} · ${x.ok ? `${T('bk_read')} ${esc(when(x.at))} · ${x.nights ?? 0}` : `<b style="color:var(--red)">${T('bk_failed')}</b>`}</li>`
   }).join('')}</ul></section>` : ''
-  tb.innerHTML = (groups.length ? groups.map(([st, l]) => `<h3 class="bkh">${T('bk_' + st)} · ${l.length}</h3><div class="msgs">${l.map(card).join('')}</div>`).join('') : `<div class="empty">${ding('calendar', 'paper')}<p>${T('bk_none')}</p></div>`) + cals
+  tb.innerHTML = head + (groups.length ? groups.map(([st, l]) => `<h3 class="bkh">${T('bk_' + st)} · ${l.length}</h3><div class="msgs">${l.map(card).join('')}</div>`).join('') : `<div class="empty">${ding('calendar', 'paper')}<p>${T('bk_none')}</p></div>`) + closeBox + cals
+  const clgo = $('#clgo')
+  if (clgo) clgo.onclick = async () => {
+    try { await call('POST', 'bookings', { act: 'close', room: $('#clroom').value, from: $('#clfrom').value, to: $('#clto').value, name: $('#clname').value }); drawBookings() } catch { toast(ui(S.lang, 'e_net')) }
+  }
   tb.onclick = async (e) => {
     const b = e.target.closest('[data-bk]'); if (!b) return
     const id = b.closest('[data-id]')?.dataset.id

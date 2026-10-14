@@ -7,7 +7,7 @@
 // the reader's bank to the maker's, and Mot Dang only draws the QR.
 
 import { qrSvg } from '../public/s/render.mjs'
-import { slots, utcOf, dayIn, addDays, nightsOf } from '../public/s/extras.mjs'
+import { slots, utcOf, dayIn, addDays, stayTotal } from '../public/s/extras.mjs'
 import { promptPayPayload } from './promptpay.mjs'
 import { mail, mayMail } from './msg.mjs'
 import { squash } from './screen.mjs'
@@ -39,12 +39,22 @@ export async function freeTimes(env, s, d, item, day, now = Date.now()) {
   return slots(d, svc, day, await heldTimes(env, s.id, item, day, tz), now).map((x) => ({ t: x.t, left: x.left }))
 }
 
-/** Nights a room is taken from today on: bookings asked or accepted, and other sites' calendars. */
-export async function takenNights(env, s, d, room, now = Date.now()) {
+/** Rooms of a type in use each night from today on: bookings asked, accepted or closed by the hotel,
+ *  and one room for each other site's calendar that has the night. Map day → count. */
+export async function nightCounts(env, s, d, room, now = Date.now()) {
   const today = dayIn(d.hours.tz, now)
-  const b = (await env.DB.prepare("SELECT start, end FROM booking WHERE site_id = ? AND kind = 'room' AND item = ? AND status IN ('new','ok') AND end > ?").bind(s.id, room, today).all()).results
-  const bl = (await env.DB.prepare('SELECT day FROM block WHERE site_id = ? AND room = ? AND day >= ?').bind(s.id, room, today).all()).results.map((r) => r.day)
-  return nightsOf(b, bl)
+  const b = (await env.DB.prepare("SELECT start, end FROM booking WHERE site_id = ? AND kind = 'room' AND item = ? AND status IN ('new','ok','hold') AND end > ?").bind(s.id, room, today).all()).results
+  const bl = (await env.DB.prepare('SELECT day FROM blocks WHERE site_id = ? AND room = ? AND day >= ?').bind(s.id, room, today).all()).results
+  const n = new Map()
+  for (const x of b) for (let day = x.start < today ? today : x.start; day < x.end; day = addDays(day, 1)) n.set(day, (n.get(day) || 0) + 1)
+  for (const x of bl) n.set(x.day, (n.get(x.day) || 0) + 1)
+  return n
+}
+/** Nights with no room of the type left. */
+export async function takenNights(env, s, d, room, now = Date.now()) {
+  const units = d.rooms.find((x) => x.id === room)?.units || 1
+  const n = await nightCounts(env, s, d, room, now)
+  return new Set([...n].filter(([, c]) => c >= units).map(([day]) => day))
 }
 
 /** A reader's ask, checked against what is free now. { ok, id, status, deposit } or { error }. */
@@ -56,7 +66,7 @@ export async function ask(env, s, d, b, who, now = Date.now()) {
   const q = squash(`${name} ${reach} ${note}`)
   if (/บาคาร่า|baccarat|สล็อต|casino|ufabet|viagra/.test(q) || (note.match(/https?:\/\//g) || []).length >= 2) return { error: 'held' }
   const tz = d.hours.tz
-  let start, end, people = 1, item = str(b.item, 12)
+  let start, end, people = 1, item = str(b.item, 12), total = null, nights = null
   if (kind === 'svc') {
     const svc = d.svc.find((x) => x.id === item)
     if (!svc || !DAY.test(b.day) || !HHMM.test(b.t)) return { error: 'bad' }
@@ -72,16 +82,37 @@ export async function ask(env, s, d, b, who, now = Date.now()) {
     const today = dayIn(tz, now)
     const nights = Math.round((Date.parse(b.out) - Date.parse(b.day)) / 864e5)
     if (b.day < today || nights > MAX_NIGHTS || b.day > addDays(today, 540)) return { error: 'bad' }
+    if (nights < room.min) return { error: 'min', min: room.min }
     people = Math.min(room.guests, Math.max(1, Math.round(Number(b.people) || 1)))
     const taken = await takenNights(env, s, d, item, now)
     for (let x = b.day; x < b.out; x = addDays(x, 1)) if (taken.has(x)) return { error: 'taken' }
     start = b.day; end = b.out
+    const t = stayTotal(room, start, end)
+    total = t.total ? String(t.total) : null
   }
   const id = rand(14)
-  const status = d.book.auto && kind === 'svc' ? 'ok' : 'new'
-  await env.DB.prepare('INSERT INTO booking (id, site_id, kind, item, start, end, people, name, reach, email, note, status, at, sender) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)')
-    .bind(id, s.id, kind, item, start, end, people, name, reach, email, note, status, new Date(now).toISOString(), who.slice(0, 16)).run()
-  return { ok: true, id, status, deposit: deposit(d, s, id) }
+  const ref = 'MD' + id.slice(0, 6).toUpperCase()
+  const status = (kind === 'svc' ? d.book.auto : d.stay.instant) ? 'ok' : 'new'
+  await env.DB.prepare('INSERT INTO booking (id, site_id, kind, item, start, end, people, name, reach, email, note, status, at, sender, total, nights, ref) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)')
+    .bind(id, s.id, kind, item, start, end, people, name, reach, email, note, status, new Date(now).toISOString(), who.slice(0, 16), total, nights, ref).run()
+  const bk = { id, kind, item, start, end, total, ref, status }
+  return { ok: true, id, ref, status, total: total ? Number(total) : null, ...payFor(d, s, bk) }
+}
+
+/** What the guest pays the hotel now, and how: { deposit: { amount, qr } } or { link } or nothing.
+ *  The money goes from the guest to the hotel; Mot Dang draws the QR or shows the hotel's own link. */
+export function payFor(d, s, bk) {
+  if (bk.kind !== 'room') return { deposit: deposit(d, s, bk.id) }
+  const st = d.stay, total = Number(bk.total) || 0
+  const room = d.rooms.find((x) => x.id === bk.item)
+  const due = st.dep === 'full' ? total : st.dep === 'pct30' ? Math.round(total * 0.3) : st.dep === 'night1' && room ? stayTotal(room, bk.start, addDays(bk.start, 1)).total : 0
+  if (st.pay === 'link' && st.link) return { link: st.link, due }
+  const pp = st.pay === 'pp' ? st.pp || d.book.pp : ''
+  if (!pp || !(due > 0)) return { due }
+  try {
+    const payload = promptPayPayload({ payeeId: pp, satang: Math.round(due * 100), merchantName: (d.name || s.name).replace(/[^\x20-\x7e]/g, '') || 'Mot Dang', ref: bk.ref || 'BK' + bk.id.slice(0, 8).toUpperCase() })
+    return { due, deposit: { amount: due, qr: qrSvg(payload, { dark: '#0e1f3d', light: '#ffffff', label: 'PromptPay' }) } }
+  } catch { return { due } }
 }
 
 /** The deposit QR, when the maker set an amount and a PromptPay number. */
@@ -101,7 +132,8 @@ export function describe(bk, d, lang = 'th') {
     const room = d.rooms.find((x) => x.id === bk.item)
     const nights = Math.round((Date.parse(bk.end) - Date.parse(bk.start)) / 864e5)
     const f = (x) => { try { return new Intl.DateTimeFormat(lang, { dateStyle: 'medium', timeZone: 'UTC' }).format(new Date(x + 'T00:00:00Z')) } catch { return x } }
-    return { what: room ? room.n : bk.item, when: `${f(bk.start)} → ${f(bk.end)} · ${nights} ${nights === 1 ? 'night · คืน' : 'nights · คืน'}` }
+    const tot = Number(bk.total) ? ` · ฿${new Intl.NumberFormat('en').format(Number(bk.total))}` : ''
+    return { what: room ? room.n : bk.item, when: `${f(bk.start)} → ${f(bk.end)} · ${nights} ${nights === 1 ? 'night · คืน' : 'nights · คืน'}${tot}` }
   }
   const svc = d.svc.find((x) => x.id === bk.item)
   let when
@@ -118,7 +150,7 @@ export async function tellMaker(env, s, d, bk, origin) {
   return mail(env, {
     to: s.notify_email, subject: `${head} — ${x.what} · ${title}`.slice(0, 140), replyTo: EMAIL.test(bk.email || '') ? bk.email : '',
     html: `<div style="font:16px/1.5 system-ui,-apple-system,'Segoe UI',sans-serif;color:#1c1530;max-width:560px">
-<p style="margin:0 0 4px;color:#5a4f6a">${esc(head)}</p><h2 style="margin:0 0 12px;font-size:22px">${esc(x.what)}</h2>
+<p style="margin:0 0 4px;color:#5a4f6a">${esc(head)}${bk.ref ? ' · ' + esc(bk.ref) : ''}</p><h2 style="margin:0 0 12px;font-size:22px">${esc(x.what)}</h2>
 <p style="margin:0 0 12px;font-size:19px;font-weight:700">${esc(x.when)}</p>
 <p style="margin:0"><b>${esc(bk.name)}</b> · ${esc(bk.reach)}${bk.email ? ' · ' + esc(bk.email) : ''}${bk.people > 1 ? ' · ' + bk.people + ' คน · people' : ''}</p>
 ${bk.note ? `<div style="margin:12px 0 0;padding:12px 14px;border-radius:12px;background:#fff7ec;border:2px solid #efd9bf;white-space:pre-wrap">${esc(bk.note)}</div>` : ''}
@@ -139,14 +171,15 @@ export async function tellReader(env, s, d, bk, origin, lang) {
   }[bk.status] || null
   if (!words) return false
   const page = `${origin}/${s.name}`
+  const mine = bk.kind === 'room' ? `<p><a href="${origin}/bk/${bk.id}" style="display:inline-block;padding:12px 20px;border-radius:99px;background:#1c1530;color:#fff;font-weight:800;text-decoration:none">การจองของคุณ · Your booking${bk.ref ? ' ' + esc(bk.ref) : ''}</a></p>` : ''
   const cal = bk.status === 'ok' ? `<p><a href="${origin}/api/bk/${bk.id}.ics" style="display:inline-block;padding:12px 20px;border-radius:99px;background:#ffb000;color:#000;font-weight:800;text-decoration:none">ใส่ปฏิทิน · Add to calendar</a></p>` : ''
   return mail(env, {
     to: bk.email, subject: `${words[0]} · ${words[1]} — ${title}`.slice(0, 140), replyTo: EMAIL.test(d.contact.email || '') ? d.contact.email : '',
     html: `<div style="font:16px/1.5 system-ui,-apple-system,'Segoe UI',sans-serif;color:#1c1530;max-width:560px">
 <p style="margin:0 0 4px;color:#5a4f6a">${esc(words[0])} · ${esc(words[1])}</p><h2 style="margin:0 0 10px;font-size:22px">${esc(title)}</h2>
-<p style="margin:0;font-size:18px"><b>${esc(x.what)}</b><br>${esc(x.when)}</p><p>${esc(words[2])} · ${esc(words[3])}</p>${cal}
+<p style="margin:0;font-size:18px"><b>${esc(x.what)}</b><br>${esc(x.when)}</p><p>${esc(words[2])} · ${esc(words[3])}</p>${cal}${mine}
 ${d.contact.phone ? `<p>☎ ${esc(d.contact.phone)}</p>` : ''}<p style="font-size:14px;color:#5a4f6a"><a href="${page}">${esc(page.replace(/^https:\/\//, ''))}</a></p></div>`,
-    text: `${words[0]} · ${words[1]}\n${title}\n${x.what}\n${x.when}\n${words[2]} · ${words[3]}\n${page}\n`,
+    text: `${words[0]} · ${words[1]}\n${title}\n${x.what}\n${x.when}\n${words[2]} · ${words[3]}\n${bk.kind === 'room' ? origin + '/bk/' + bk.id + '\n' : ''}${page}\n`,
   })
 }
 

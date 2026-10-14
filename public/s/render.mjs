@@ -556,7 +556,8 @@ dialog.qrd{background:#fff;color:#000;padding:26px;text-align:center;width:min(9
 .rin{padding:16px 18px}.rin h3{margin:0 0 4px;font:700 23px/1.2 var(--display)}.rin .facts{display:flex;gap:6px;align-items:center;margin:0 0 8px;color:var(--mute)}.rin .night{font:800 21px/1.2 var(--body);color:var(--acc-ink)}
 .mcal{margin:14px 0}.mcal .mh{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-weight:800}.mcal .mh button{width:42px;height:42px;border-radius:50%;border:2px solid var(--line);background:var(--card);color:var(--ink);font:700 18px system-ui;cursor:pointer}
 .mcal .g{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}.mcal .g span{padding:4px 0;text-align:center;font:700 11px var(--body);color:var(--mute)}.mcal .g button{aspect-ratio:1;border:0;border-radius:8px;background:var(--card);color:var(--ink);font:600 15px var(--body);cursor:pointer}
-.mcal .g button:disabled{opacity:.32;cursor:default}.mcal .g button.tk{text-decoration:line-through}.mcal .g button.in{background:var(--line)}.mcal .g button.end{background:var(--accent);color:var(--on-accent)}.rsum{margin:8px 0 12px;font-weight:700}
+.mcal .g button{display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.05}.mcal .g button small{font-size:9px;font-weight:700;opacity:.75;margin-top:2px}.mcal .g button.few small{color:#c2410c;opacity:1}
+.mcal .g button:disabled{opacity:.32;cursor:default}#rooms>.facts{display:flex;gap:6px;align-items:center;color:var(--mute);margin:-4px 0 12px}.rin .night small{font-size:15px;color:var(--mute);font-weight:600}.mcal .g button.tk{text-decoration:line-through}.mcal .g button.in{background:var(--line)}.mcal .g button.end{background:var(--accent);color:var(--on-accent)}.rsum{margin:8px 0 12px;font-weight:700}
 .lfilter{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 14px}.lfilter button{padding:8px 15px;border-radius:99px;border:2px solid var(--line);background:var(--bg);color:var(--ink);font:700 15px var(--body);cursor:pointer}.lfilter button.on{background:var(--ink);color:var(--card);border-color:var(--ink)}
 .lgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:16px}.lcard{display:flex;flex-direction:column;gap:3px;color:var(--ink);text-decoration:none}
 .lcard figure{position:relative;margin:0 0 6px;aspect-ratio:4/3;border-radius:calc(var(--r) + 2px);overflow:hidden;background:var(--line)}.lcard img{width:100%;height:100%;object-fit:cover;transition:transform .5s}.lcard:hover img{transform:scale(1.05)}.lcard .noimg{display:grid;place-items:center;height:100%;font-size:72px;background:repeating-linear-gradient(45deg,var(--line) 0 12px,var(--bg) 12px 24px)}
@@ -781,12 +782,13 @@ export function render(site, opt = {}) {
   }
 
   if (gold && d.rooms.length) {
-    out.push(`<section class="card rise" id="rooms">${H2('rooms', W('rooms'))}<div class="rooms">`)
+    out.push(`<section class="card rise" id="rooms">${H2('rooms', W('rooms'))}<p class="facts">${icon('clock')} ${W('roomIn')} ${esc(d.stay.in)} · ${W('roomOut')} ${esc(d.stay.out)}</p><div class="rooms">`)
     for (const r of d.rooms) {
       out.push(`<article class="room" data-room="${esc(r.id)}" data-p="${esc(r.p)}" data-g="${r.guests}">`,
         r.photos.length ? `<div class="strip">${r.photos.map((p, i) => `<button data-t="photo" data-big="${esc(img(p))}"><img src="${esc(img(p, true))}" alt="" loading="lazy"${i ? '' : ''}></button>`).join('')}</div>` : '',
         `<div class="rin"><h3>${esc(r.n)}</h3><p class="facts">${icon('people')}${W('roomGuests', { n: r.guests })}${r.beds ? ' · ' + esc(r.beds) : ''}</p>`,
-        r.note ? `<p>${esc(r.note)}</p>` : '', r.p ? `<p class="night">${W('roomNight', { p: esc(money(r.p, sym)) })}</p>` : '',
+        r.note ? `<p>${esc(r.note)}</p>` : '', r.p ? `<p class="night">${W('roomNight', { p: esc(money(r.p, sym)) })}${r.p2 ? ` <small>· ${W('roomWeekend', { p: esc(money(r.p2, sym)) })}</small>` : ''}</p>` : '',
+        r.min > 1 ? `<p class="facts">${W('roomMin', { n: r.min })}</p>` : '',
         `<button class="btn" data-t="rooms" data-pick="${esc(r.id)}">${icon('cal')}${W('roomSend')}</button><div class="roomui" hidden></div></div></article>`)
     }
     out.push('</div></section>')
@@ -908,10 +910,10 @@ export function render(site, opt = {}) {
     north: hasPin && pl.lat > 17 && pl.lat < 20.6 && pl.lng > 97.3 && pl.lng < 101.8,
     fams: [...new Set(out.join('').match(/data-dingbat="([a-z0-9-]+)"/g)?.map((m) => DINGBATS[m.slice(14, -1)]).filter(Boolean) || [])],
     tz, sym, langs, hl: opt.hl || '', home, listing: L ? L.id : '', lnames: Object.fromEntries(langs.map((l) => [l, PAGE_LANGS[l]])),
-    book: gold && (d.svc.length || d.rooms.length) ? { ahead: d.book.ahead, svc: Object.fromEntries(d.svc.map((v) => [v.id, { cap: v.cap, mins: v.mins, p: v.p }])), rooms: Object.fromEntries(d.rooms.map((r) => [r.id, { g: r.guests, p: r.p }])) } : null,
+    book: gold && (d.svc.length || d.rooms.length) ? { ahead: d.book.ahead, svc: Object.fromEntries(d.svc.map((v) => [v.id, { cap: v.cap, mins: v.mins, p: v.p }])), rooms: Object.fromEntries(d.rooms.map((r) => [r.id, { g: r.guests, p: r.p, p2: r.p2, rates: r.rates, min: r.min, units: r.units }])), stay: { in: d.stay.in, out: d.stay.out } } : null,
     w: Object.fromEntries(['happening', 'ended', 'farFrom', 'reportAsk', 'send', 'thanks', 'close', 'copied', 'orderHi', 'msgSent', 'msgFail', 'saveQr', 'story', 'drawnTap',
       'bookPick', 'bookNone', 'bookName', 'bookReach', 'bookEmail', 'bookPeople', 'bookNote', 'bookSend', 'bookAsked', 'bookDone', 'bookFail', 'bookDeposit', 'bookScan', 'bookLeft',
-      'roomIn', 'roomOut', 'roomNights', 'roomNight1', 'roomSend', 'roomTotal', 'roomPickIn', 'roomPickOut', 'roomTaken', 'readIn', 'msgName', 'msgReach', 'msgBody', 'msgSend'].map((k) => [k, word(lang, k)])),
+      'roomIn', 'roomOut', 'roomNights', 'roomNight1', 'roomSend', 'roomTotal', 'roomPickIn', 'roomPickOut', 'roomTaken', 'roomMin', 'roomLeft', 'bookRef', 'payNow', 'payHotel', 'payLink', 'yourBooking', 'readIn', 'msgName', 'msgReach', 'msgBody', 'msgSend'].map((k) => [k, word(lang, k)])),
   }
   out.push(`<template id="qrsvg">${qrSvg(url, { dark: '#000', light: '#fff', label: url })}</template>`)
   out.push(`<script type="application/json" id="pd">${JSON.stringify(pd).replace(/</g, '\\u003c')}</script>`)

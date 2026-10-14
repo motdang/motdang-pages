@@ -3,6 +3,7 @@
 
 export const Z = {
   en: {
+    h_setup: 'Your rooms take bookings', h_in: 'Check-in from', h_out: 'Check-out by', h_instant: 'Confirm a free stay at once (no need to accept)', h_pay: 'Guests pay', h_payHotel: 'At the hotel', h_payLink: 'Your payment link', h_link: 'Your payment page (Stripe, PayPal, your bank…)', h_dep: 'Paid when booking', h_depNone: 'Nothing', h_dep1: 'First night', h_depFull: 'All of it', h_policy: 'Cancellation and house rules', h_policyEx: 'Free cancellation up to 3 days before arrival.', r_units: 'Rooms of this type', r_p2: 'Fri & Sat night', r_min: 'Fewest nights', r_seasons: 'Season prices (from, to, a night)', r_addSeason: 'Add a season', bk_paid: 'Paid', bk_unpaid: 'Not paid', bk_markPaid: 'Mark paid', bk_markUnpaid: 'Mark not paid', bk_hold: 'Closed', bk_gone: 'Cancelled', bk_total: 'Booked', bk_close: 'Close nights (walk-in, repairs, a booking from elsewhere)', bk_closeWho: 'Name or note', bk_closeGo: 'Close these nights', roomInB: 'First night', roomOutB: 'Morning out',
     k_stay: 'Hotel or guesthouse', h_stay: 'Rooms · dates · calendars', k_homes: 'Homes to sell or rent', h_homes: 'Listings · photos · map',
     s_cal: 'Calendar', s_camps: 'Timed offers', s_svc: 'Bookings', s_rooms: 'Rooms', s_lists: 'Listings', s_dings: 'Dingbats',
     c_title: 'What', c_start: 'Starts', c_end: 'Ends at', c_rep: 'Repeats', c_once: 'Once', c_weekly: 'Every week', c_monthly: 'Every month', c_until: 'Until (if it stops)', c_note: 'Details', c_add: 'Add a date',
@@ -27,6 +28,7 @@ export const Z = {
     g_f7: 'Bookings, rooms with calendars, listings', g_f8: 'Timed offers with a countdown', g_f9: 'Your page in 12 languages',
   },
   th: {
+    h_setup: 'ห้องพักรับจองได้', h_in: 'เช็คอินตั้งแต่', h_out: 'เช็คเอาท์ก่อน', h_instant: 'ยืนยันทันทีเมื่อห้องว่าง (ไม่ต้องกดรับ)', h_pay: 'แขกจ่าย', h_payHotel: 'ที่โรงแรม', h_payLink: 'ลิงก์จ่ายเงินของคุณ', h_link: 'หน้าจ่ายเงินของคุณ (Stripe, PayPal, ธนาคาร…)', h_dep: 'จ่ายตอนจอง', h_depNone: 'ไม่ต้องจ่าย', h_dep1: 'คืนแรก', h_depFull: 'ทั้งหมด', h_policy: 'การยกเลิกและกฎของที่พัก', h_policyEx: 'ยกเลิกฟรีก่อนวันเข้าพัก 3 วัน', r_units: 'จำนวนห้องแบบนี้', r_p2: 'คืนศุกร์และเสาร์', r_min: 'พักน้อยสุด (คืน)', r_seasons: 'ราคาตามฤดู (ตั้งแต่ ถึง ต่อคืน)', r_addSeason: 'เพิ่มฤดู', bk_paid: 'จ่ายแล้ว', bk_unpaid: 'ยังไม่จ่าย', bk_markPaid: 'จ่ายแล้ว', bk_markUnpaid: 'ยังไม่จ่าย', bk_hold: 'ปิดห้อง', bk_gone: 'ยกเลิกแล้ว', bk_total: 'ยอดจอง', bk_close: 'ปิดห้อง (walk-in ซ่อม จองจากที่อื่น)', bk_closeWho: 'ชื่อหรือหมายเหตุ', bk_closeGo: 'ปิดคืนเหล่านี้', roomInB: 'คืนแรก', roomOutB: 'วันออก',
     k_stay: 'โรงแรม เกสต์เฮาส์', h_stay: 'ห้องพัก · วันว่าง · ปฏิทิน', k_homes: 'บ้าน ที่ดิน ขายหรือเช่า', h_homes: 'ประกาศ · รูป · แผนที่',
     s_cal: 'ปฏิทิน', s_camps: 'โปรโมชั่นตั้งเวลา', s_svc: 'รับจอง', s_rooms: 'ห้องพัก', s_lists: 'ประกาศ', s_dings: 'ดิงแบต',
     c_title: 'อะไร', c_start: 'เริ่ม', c_end: 'จบเวลา', c_rep: 'ซ้ำ', c_once: 'ครั้งเดียว', c_weekly: 'ทุกสัปดาห์', c_monthly: 'ทุกเดือน', c_until: 'ถึงวันที่ (ถ้ามี)', c_note: 'รายละเอียด', c_add: 'เพิ่มวัน',
@@ -61,6 +63,7 @@ export const Z = {
     t_book: 'ကြိုတင်မှာယူမှု', bk_accept: 'လက်ခံ', bk_decline: 'ငြင်း', bk_del: 'ဖျက်', db_find: 'ရှာရန်', db_all: 'အားလုံး',
   },
   zh: {
+    h_setup: '客房可以接受预订', h_in: '入住时间', h_out: '退房时间', h_instant: '有空房就直接确认（不用接受）', h_pay: '客人付款', h_payHotel: '到店付', h_payLink: '你的付款链接', h_link: '你的付款页面（Stripe、PayPal、银行…）', h_dep: '预订时付', h_depNone: '不用付', h_dep1: '第一晚', h_depFull: '全部', h_policy: '取消和入住规定', h_policyEx: '入住前 3 天可免费取消。', r_units: '这种房间有几间', r_p2: '周五、周六晚', r_min: '最少几晚', r_seasons: '季节价格（从、到、每晚）', r_addSeason: '添加季节', bk_paid: '已付', bk_unpaid: '未付', bk_markPaid: '标为已付', bk_markUnpaid: '标为未付', bk_hold: '已关房', bk_gone: '已取消', bk_total: '预订金额', bk_close: '关房（散客、维修、别处的预订）', bk_closeWho: '名字或备注', bk_closeGo: '关闭这些晚上', roomInB: '第一晚', roomOutB: '离开那天',
     k_stay: '酒店、民宿', h_stay: '客房 · 日期 · 日历', k_homes: '房屋出售或出租', h_homes: '房源 · 照片 · 地图',
     s_cal: '日历', s_camps: '限时优惠', s_svc: '预约', s_rooms: '客房', s_lists: '房源', s_dings: '小图标',
     c_title: '内容', c_start: '开始', c_end: '结束时间', c_rep: '重复', c_once: '一次', c_weekly: '每周', c_monthly: '每月', c_until: '截止日期（如有）', c_note: '详情', c_add: '添加日期',
