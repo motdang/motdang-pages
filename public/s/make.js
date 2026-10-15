@@ -188,51 +188,122 @@ $('#langs').addEventListener('click', (e) => {
 
 function draw() {
   langs()
-  if (S.step === 'kind') return drawKind()
-  if (S.step === 'name') return drawName()
-  if (S.step === 'look') return drawLook()
+  if (S.step !== 'edit') return drawTry()
   return drawEdit()
 }
 
-function drawKind() {
+// ---- the first screen: the page itself, drawn as the maker types (Nan 2026-10-15: lead with why,
+// lead with "try it", be not afraid, what you see is what you get) ----------------------------
+
+// a picture for each kind (tools/kinds.py): the tile, and the new page's cover until the maker adds a photo
+let KPIC = {}
+const kpicReady = fetch('/s/kinds/kinds.json').then((r) => r.json()).then((j) => { KPIC = j }).catch(() => {})
+const KPIC_ID = 'kindpic000000'
+const kpicUrl = (kind, small) => `/s/kinds/${kind}${small ? '-s' : ''}.webp`
+
+function tryData() {
+  const d = normalize(applyPrefill({ ...starter(S.kind), name: S.name.trim() || ui(S.lang, 'yourName') }))
+  if (KPIC[S.kind]) { d.cover = KPIC_ID; d.photos = [KPIC_ID]; d.credits = { [KPIC_ID]: { title: KPIC[S.kind].title, by: 'Wikimedia Commons', src: KPIC[S.kind].src, license: KPIC[S.kind].license, from: 'commons' } } }
+  return d
+}
+
+function drawTry() {
+  if (!Object.keys(KPIC).length) kpicReady.then(() => { if (S.step !== 'edit' && Object.keys(KPIC).length && $('#nm')) { const f = document.activeElement?.id; drawTry(); if (f) $('#' + f)?.focus() } })
   const mine = store.get('pages', [])
-  app.innerHTML = `<section class="hero"><h1 class="q">${T('q1')}</h1><p class="sub">${T('heroMake')}</p></section>` +
-    `<div class="kinds">${KINDS.map((k) => `<button class="kind" data-kind="${k}"><span class="kd">${ding(KIND_DING[k], 'paper', 'hover')}</span><b>${T('k_' + k)}</b><small>${T('h_' + k)}</small></button>`).join('')}</div>` +
-    (mine.length ? `<section class="mine"><h2>${T('mine')}</h2>${mine.map((p) => `<a href="/make#t=${esc(p.token)}">${esc(p.title)}<span>sites.motdang.net/${esc(p.name)}</span></a>`).join('')}</section>` : '')
-  app.querySelectorAll('.kind').forEach((b) => (b.onclick = () => { S.kind = b.dataset.kind; S.look = S.lookWanted || LOOK_FOR[S.kind]; S.step = 'name'; draw() }))
+  const pageLang = PAGE_LANGS[S.lang] ? S.lang : 'en'
+  app.innerHTML = `<section class="try">
+    <div class="tw"><p class="why">${T('why')}</p><p class="why2">${T('why2')}</p>
+      <h1 class="q">${T('try')}</h1>
+      <input id="nm" class="bigname" maxlength="60" autocomplete="off" placeholder="${T('ph')}" value="${esc(S.name)}"></div>
+    <div class="tphone"><div class="shell"><div class="url">${icon('globe')}<span>sites.motdang.net/<b id="pvaddr">${esc(S.addr || '…')}</b></span></div><iframe id="tryframe" title="${T('preview')}"></iframe></div></div>
+    <div class="tkind"><p class="lbl">${T('for')}</p>
+      <div class="kinds">${KINDS.map((k) => `<button class="kind${k === S.kind ? ' on' : ''}" data-kind="${k}">${KPIC[k] ? `<img src="${kpicUrl(k, true)}" alt="" loading="lazy">` : `<span class="kd">${ding(KIND_DING[k] || 'star', 'paper')}</span>`}<b>${T('k_' + k)}</b></button>`).join('')}</div></div>
+    <div class="tpick">
+      <p class="lbl">${T('look')}</p>
+      <div class="lks">${LOOK_IDS.map((id) => { const L = LOOKS[id]; return `<button class="lk${id === S.look ? ' on' : ''}" data-look="${id}" style="${esc(L.vars.replace(/\s+/g, ' ') + ';--accent:' + L.accent)}"><b>Aa</b><span class="acc"></span><small>${esc(L.label)}${L.gold ? ' ★' : ''}</small></button>` }).join('')}</div>
+      <label class="field taddr"><span>${T('addr')}</span><div class="addr"><span>sites.motdang.net/</span><input id="ad" maxlength="30" autocomplete="off" autocapitalize="off" spellcheck="false" inputmode="url" value="${esc(S.addr)}"></div><span class="avail" id="av"></span></label>
+      <div class="row"><button class="go big" id="next">${T('go')} →</button></div>
+      <p class="afraid">${ding('heart', 'paper')}${T('afraid')}</p>
+      ${mine.length ? `<section class="mine"><h2>${T('mine')}</h2>${mine.map((p) => `<a href="/make#t=${esc(p.token)}">${esc(p.title)}<span>sites.motdang.net/${esc(p.name)}</span></a>`).join('')}</section>` : ''}
+    </div></section>`
+  const nm = $('#nm'), ad = $('#ad')
+  if (matchMedia('(min-width:980px)').matches || S.name) nm.focus()
+  nm.oninput = () => {
+    S.name = nm.value
+    if (!S.addrTouched) { ad.value = S.addr = slugify(nm.value, S.kind) }
+    $('#pvaddr').textContent = S.addr || '…'
+    // the name changes in the page at once; the whole page is drawn again when typing stops
+    const h1 = $('#tryframe').contentDocument?.querySelector('header.top h1')
+    if (h1) h1.textContent = S.name.trim() || ui(S.lang, 'yourName')
+    tryPreview(700)
+    check()
+  }
+  ad.oninput = () => { S.addrTouched = true; ad.value = ad.value.toLowerCase().replace(/[^a-z0-9-]/g, ''); S.addr = ad.value; $('#pvaddr').textContent = S.addr || '…'; check() }
+  nm.onkeydown = ad.onkeydown = (e) => { if (e.key === 'Enter') $('#next').click() }
+  app.querySelectorAll('.kind').forEach((b) => (b.onclick = () => {
+    S.kind = b.dataset.kind
+    if (!S.lookWanted) S.look = LOOK_FOR[S.kind] || S.look
+    if (!S.addrTouched && S.name) { ad.value = S.addr = slugify(S.name, S.kind); check() }
+    app.querySelectorAll('.kind').forEach((x) => x.classList.toggle('on', x === b))
+    app.querySelectorAll('.lk').forEach((x) => x.classList.toggle('on', x.dataset.look === S.look))
+    tryPreview(0)
+  }))
+  app.querySelectorAll('.lk').forEach((b) => (b.onclick = () => {
+    S.look = S.lookWanted = b.dataset.look
+    app.querySelectorAll('.lk').forEach((x) => x.classList.toggle('on', x === b))
+    tryPreview(0)
+  }))
+  $('#next').onclick = () => {
+    if (!S.name.trim()) { nm.focus(); nm.classList.add('nudge'); setTimeout(() => nm.classList.remove('nudge'), 600); return }
+    if (availOk) create(S.look, $('#next'))
+  }
   app.querySelectorAll('.mine a').forEach((a) => (a.onclick = (e) => { e.preventDefault(); history.replaceState(null, '', a.getAttribute('href')); boot() }))
+  S.pageLangTry = pageLang
+  if (S.addr) check()
+  kpicReady.then(() => tryPreview(0))
+}
+
+let tryTimer = 0
+function tryPreview(ms) {
+  clearTimeout(tryTimer)
+  tryTimer = setTimeout(() => {
+    const f = $('#tryframe')
+    if (!f) return
+    const y = f.contentWindow?.scrollY || 0
+    f.srcdoc = render({ name: S.addr || 'your-page', look: S.look, lang: S.pageLangTry || 'en', kind: S.kind, d: tryData(), views: 1234, status: 'live', tier: 'gold' },
+      { preview: true, gold: true, hotel: true, origin: location.origin, img: (id, small) => (id === KPIC_ID ? kpicUrl(S.kind, small) : imgUrl(id, small)) })
+    f.onload = () => {
+      try {
+        f.contentWindow.scrollTo(0, y)
+        // a tap on the page's name goes to the name box; links stay inside
+        const doc = f.contentDocument
+        doc.addEventListener('click', (e) => { const a = e.target.closest('a[href]'); if (a && !a.getAttribute('href').startsWith('#')) e.preventDefault(); if (e.target.closest('header.top')) $('#nm')?.focus() }, true)
+      } catch {}
+    }
+  }, ms)
 }
 
 let availTimer = 0, availOk = false
-function drawName() {
-  app.innerHTML = `<button class="back" id="back">← ${T('back')}</button><h1 class="q">${T('q2')}</h1>
-  <label class="field big"><span>${T('name')}</span><input id="nm" maxlength="60" autocomplete="off" value="${esc(S.name)}"></label>
-  <label class="field"><span>${T('addr')}</span><div class="addr"><span>sites.motdang.net/</span><input id="ad" maxlength="30" autocomplete="off" autocapitalize="off" spellcheck="false" inputmode="url" value="${esc(S.addr)}"></div>
-  <small>${T('addrHint')}</small><span class="avail" id="av"></span></label>
-  <div class="row"><button class="go" id="next" disabled>${T('next')} →</button></div>`
-  const nm = $('#nm'), ad = $('#ad')
-  nm.focus()
-  nm.oninput = () => { S.name = nm.value; if (!S.addrTouched) { ad.value = S.addr = slugify(nm.value, S.kind) }; check() }
-  ad.oninput = () => { S.addrTouched = true; ad.value = ad.value.toLowerCase().replace(/[^a-z0-9-]/g, ''); S.addr = ad.value; check() }
-  $('#back').onclick = () => { S.step = 'kind'; draw() }
-  $('#next').onclick = () => { if (availOk && S.name.trim()) { S.step = 'look'; draw() } }
-  nm.onkeydown = ad.onkeydown = (e) => { if (e.key === 'Enter') $('#next').click() }
-  if (S.addr) check()
-}
 function check() {
   const av = $('#av'), next = $('#next')
   availOk = false
   next.disabled = true
   clearTimeout(availTimer)
-  if (!S.addr) { av.textContent = ''; return }
+  if (!S.addr) { av.textContent = ''; next.disabled = false; return }
   av.className = 'avail'; av.textContent = ui(S.lang, 'a_wait')
   availTimer = setTimeout(async () => {
     try {
       const r = await call('GET', 'name?n=' + encodeURIComponent(S.addr))
+      // a taken address the maker did not type: the next free one, -2, -3 …
+      if (!r.ok && (r.why || 'taken') === 'taken' && !S.addrTouched && $('#ad')) {
+        const m = /^(.*?)(?:-(\d+))?$/.exec(S.addr)
+        const n = (+m[2] || 1) + 1
+        if (n <= 9) { S.addr = `${m[1].slice(0, 27)}-${n}`; $('#ad').value = S.addr; const pa = $('#pvaddr'); if (pa) pa.textContent = S.addr; return check() }
+      }
       availOk = r.ok
       av.className = 'avail ' + (r.ok ? 'ok' : 'no')
       av.innerHTML = r.ok ? `${icon('check')}${T('a_ok')}` : esc(ui(S.lang, 'a_' + (r.why || 'taken')))
-      next.disabled = !(r.ok && S.name.trim())
+      next.disabled = !r.ok
     } catch { av.textContent = ui(S.lang, 'e_net') }
   }, 350)
 }
@@ -242,13 +313,6 @@ function lookCard(id, on) {
   const vars = L.vars.replace(/\s+/g, ' ') + `;--accent:${L.accent}`
   const locked = L.gold && !isGold()
   return `<button class="look${on ? ' on' : ''}${L.gold ? ' goldlook' : ''}" data-look="${id}" style="${esc(vars)}">${L.art}<b>${esc(S.d?.name || S.name || L.label)}</b><small>${esc(L.label)}</small><span class="acc"></span>${L.gold ? `<span class="glock">${locked ? T('goldLock') : '★'}</span>` : ''}</button>`
-}
-
-function drawLook() {
-  app.innerHTML = `<button class="back" id="back">← ${T('back')}</button><h1 class="q">${T('q3')}</h1>
-  <div class="looks">${LOOK_IDS.map((id) => lookCard(id, id === S.look)).join('')}</div>`
-  $('#back').onclick = () => { S.step = 'name'; draw() }
-  app.querySelectorAll('.look').forEach((b) => (b.onclick = () => create(b.dataset.look, b)))
 }
 
 function goldTease() {
@@ -288,6 +352,19 @@ function applyPrefill(d) {
   return d
 }
 
+// the kind's picture goes on as the cover, credited, so the page looks like the one on the first screen
+async function starterPic(kind) {
+  S.busy++
+  redrawSec('photos')
+  try {
+    const bmp = await createImageBitmap(await (await fetch(kpicUrl(kind))).blob())
+    await addBitmap(bmp, KPIC[kind].pd)
+    changed()
+  } catch {}
+  S.busy--
+  redrawSec('photos')
+}
+
 async function create(look, btn) {
   S.look = look
   btn.classList.add('on')
@@ -306,6 +383,7 @@ async function create(look, btn) {
     S.open = new Set(DEFAULT_OPEN[S.kind])
     S.step = 'edit'
     draw()
+    if (KPIC[S.kind]) starterPic(S.kind)
   } catch (e) {
     toast(ui(S.lang, e.message === 'quota' ? 'e_quota' : e.message === 'name' ? 'e_name' : 'e_net'))
     if (e.message === 'name') { S.step = 'name'; draw() }
@@ -341,7 +419,7 @@ function drawEdit() {
   S.open.add('look'); S.open.add('drawing'); S.open.add('msg')
   const shown = SECTIONS.filter(([id]) => S.open.has(id))
   const more = SECTIONS.filter(([id]) => !S.open.has(id))
-  app.innerHTML = tabs() + `<div class="ed"><div class="form" id="form">
+  app.innerHTML = tabs() + `<div class="ed"><div class="form" id="form"><p class="taphint">${ding('pencil', 'paper')}${T('tap')}</p>
     ${shown.map(([id, ic, t, g], n) => `<details class="sec${g ? ' gsec' : ''}" data-sec="${id}"${n < 3 || id === 'map' ? ' open' : ''}><summary>${icon(ic)}${T(t)}${g ? `<span class="gpill">★ ${T('t_gold')}</span>` : ''}</summary><div class="in">${g && !isGold() ? goldLocked() : SEC[id]()}</div></details>`).join('')}
     ${more.length ? `<div class="adds">${more.map(([id, ic, t, g]) => `<button data-add="${id}"${g ? ' class="g"' : ''}>${icon('plus')}${T(t)}${g ? ' ★' : ''}</button>`).join('')}</div>` : ''}
     <div class="danger"><button id="del">${T('del')}</button></div></div>
@@ -858,6 +936,83 @@ function paintDrawing(t) {
 }
 function drawPreviewSoon() { lastDraw = 0 }
 
+// ---- the page is the editor (Nan 2026-10-15: what you see is what you get) --------------------
+// A tap on a part of the page opens the part of the form that draws it; the name and the line under
+// it are typed on the page itself.
+
+const PART = [
+  ['header.top img:not(.av)', 'photos'], ['header.top img.av', 'face'], ['header.top .dings', 'look'], ['header.top #st', 'hours'], ['header.top', 'words'],
+  ['nav.reach', 'contact'], ['.camp', 'camps'], ['#count', 'event'], ['.when', 'event'], ['#cal', 'cal'], ['figure.drawn', 'drawing'], ['#works', 'works'], ['.quotes', 'quotes'],
+  ['ul.menu', 'items'], ['#book', 'svc'], ['#rooms', 'rooms'], ['#lists', 'lists'], ['table.hours', 'hours'], ['.gallery', 'photos'], ['.video', 'video'],
+  ['#where', 'map'], ['ol.spots', 'spots'], ['.lineqr', 'contact'], ['.card.links', 'links'], ['.contact', 'contact'], ['#message', 'msg'], ['#amulets', 'amulets'],
+  ['.card', 'words'], ['footer', 'look'],
+]
+const PART_CSS = `[data-part]{cursor:pointer}[data-part]:hover{outline:3px dashed #d7261e;outline-offset:3px}
+[contenteditable]{cursor:text;outline:0}[contenteditable]:hover,[contenteditable]:focus{outline:3px solid #ffb000;outline-offset:4px;border-radius:6px}
+.mk-ghost{opacity:.55;font-style:italic}.mk-pic{position:absolute;left:12px;top:12px;z-index:5;padding:6px 12px;border-radius:99px;background:#1c1530e0;color:#fff;font:600 13px/1.2 system-ui,sans-serif;cursor:pointer}`
+
+// a block of the page and the part of the form that draws it: by what it is, else by what it holds
+function partOf(el) {
+  const own = PART.find(([sel]) => sel !== '.card' && el.matches(sel))
+  if (own) return own[1]
+  const held = PART.find(([sel]) => !sel.startsWith('header') && sel !== '.card' && sel !== 'footer' && el.querySelector(sel))
+  return held ? held[1] : 'words'
+}
+
+function openPart(id) {
+  if (!SEC[id]) return
+  if (window.innerWidth < 980) { $('#pv')?.classList.remove('show'); document.body.classList.remove('pvopen') }
+  if (!S.open.has(id)) { S.open.add(id); drawEdit() }
+  const sec = $(`[data-sec="${id}"]`)
+  if (!sec) return
+  sec.open = true
+  if (id === 'map') mountMap()
+  if (id === 'drawing') mountDrawing()
+  sec.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  sec.classList.remove('flash'); void sec.offsetWidth; sec.classList.add('flash')
+}
+
+function wireFrame(f) {
+  const doc = f.contentDocument
+  if (!doc) return
+  const st = doc.createElement('style'); st.textContent = PART_CSS; doc.head.appendChild(st)
+  doc.querySelectorAll('header.top img, header.top #st, header.top .dings, header.top, main.wrap > *, footer').forEach((el) => { el.dataset.part = partOf(el) })
+  // the name and the line under it, typed on the page
+  const top = doc.querySelector('header.top .t')
+  const h1 = top?.querySelector('h1')
+  let tag = top?.querySelector('p.tag')
+  if (h1 && !tag) { tag = doc.createElement('p'); tag.className = 'tag mk-ghost'; tag.textContent = ui(S.lang, 'addTag'); h1.after(tag) }
+  const inline = (el, key, max) => {
+    if (!el) return
+    el.contentEditable = 'plaintext-only'
+    el.spellcheck = false
+    el.addEventListener('focus', () => { S.inline = true; if (el.classList.contains('mk-ghost')) { el.textContent = ''; el.classList.remove('mk-ghost') } })
+    el.addEventListener('input', () => {
+      const v = el.textContent.replace(/\s+/g, ' ').slice(0, max)
+      S.d[key] = v
+      const box = $(`[data-k="${key}"]`); if (box) box.value = v
+      changed()
+    })
+    el.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); el.blur() } })
+    el.addEventListener('blur', () => { S.inline = false; preview(true) })
+  }
+  inline(h1, 'name', 60)
+  inline(tag, 'tagline', 140)
+  // the kind's picture, until the maker's own goes on
+  const cov = S.d.cover && S.d.credits?.[S.d.cover]
+  if (cov && KPIC[S.kind] && (cov.src === KPIC[S.kind].src || cov.title === KPIC[S.kind].title) && doc.querySelector('header.top')) {
+    const b = doc.createElement('span'); b.className = 'mk-pic'; b.textContent = ui(S.lang, 'yourPic'); b.dataset.part = 'photos'
+    doc.querySelector('header.top').appendChild(b)
+  }
+  doc.addEventListener('click', (e) => {
+    if (e.target.closest('[contenteditable]')) return
+    const p = e.target.closest('[data-part]')
+    if (!p) return
+    e.preventDefault(); e.stopPropagation()
+    openPart(p.dataset.part)
+  }, true)
+}
+
 // ---- preview + saving ----------------------------------------------------------------------
 
 function imgUrl(id, small) { return S.local.get(id) || `/img/${id}${small ? '-s' : ''}.webp` }
@@ -869,10 +1024,11 @@ function preview(now) {
     const f = $('#frame')
     if (!f) return
     if (window.innerWidth < 980 && !$('#pv').classList.contains('show') && !now) return
+    if (S.inline) return
     const html = render({ name: S.name, look: S.look, lang: S.pageLang, kind: S.kind, d: S.d, views: S.views || 1234, status: 'live', tier: S.tier }, { preview: true, img: imgUrl, origin: location.origin, hotel: S.hotel })
     const y = f.contentWindow?.scrollY || 0
     f.srcdoc = html
-    f.onload = () => { try { f.contentWindow.scrollTo(0, y) } catch {} ; f.contentDocument?.querySelectorAll('a[href]').forEach((a) => a.setAttribute('target', '_blank')) }
+    f.onload = () => { try { f.contentWindow.scrollTo(0, y) } catch {} ; f.contentDocument?.querySelectorAll('a[href]').forEach((a) => a.setAttribute('target', '_blank')); try { wireFrame(f) } catch {} }
   }, now ? 0 : 260)
 }
 
