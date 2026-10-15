@@ -269,6 +269,7 @@ export const LOOKS = {
       .fin{position:absolute;z-index:4;width:34px;height:48px;pointer-events:none;transform-origin:50% 100%}
       .fin.a{left:50%;top:-44px;margin-left:-17px}.fin.l{left:-20px;top:calc(26% - 40px);transform:rotate(-38deg)}.fin.r{right:-20px;top:calc(26% - 40px);transform:rotate(38deg)}
       .top .pf .art{display:none}
+      .t .art{float:none;display:block;margin:0 auto 8px;width:64px;height:64px}
       .top .cr{bottom:8px;right:10px}
       .top .t{padding:26px 20px 34px}
       .kick{color:#f3c552}
@@ -338,6 +339,7 @@ export const LOOKS = {
       .top .ph{animation:fadein 1.2s .3s ease both}@keyframes fadein{from{opacity:0}}
       .top h1{animation:deco 1.5s .5s cubic-bezier(.2,.8,.2,1) both}.top h1.th{animation:wordup 1s .5s cubic-bezier(.2,.8,.2,1) both}@keyframes deco{from{opacity:0;letter-spacing:.55em}}
       .top .pf .art{top:auto;bottom:-34px;right:50%;margin-right:-34px;width:68px;height:68px}
+      .t .art{float:none;display:block;margin:0 auto 6px;width:76px;height:76px}
       .flakes i{position:absolute;top:-24px;z-index:3;width:var(--s);height:calc(var(--s) * .8);background:linear-gradient(135deg,#fff6d5,#e7b84a 45%,#8e5f17);clip-path:polygon(10% 30%,60% 0,100% 40%,70% 100%,20% 85%);
         animation:fall var(--d) linear infinite;animation-delay:var(--w);opacity:.9;pointer-events:none}
       .top.go .flakes i{animation-duration:3.5s}.top.go h1 .w{animation:sweep2 1.1s ease-in-out}@keyframes sweep2{from{background-position:130% 0}to{background-position:-30% 0}}
@@ -379,7 +381,7 @@ export const HERO_CSS = `.top{position:relative;overflow:hidden;color:var(--ink)
 .top h1{margin:0;font-family:var(--display);font-weight:var(--h1w);font-size:min(clamp(40px,11cqi,88px),calc((100cqi - 40px) / (var(--lw,8) * var(--em,.62))));line-height:1;letter-spacing:var(--track);text-transform:var(--case);overflow-wrap:break-word;text-wrap:balance}
 .top h1.th{text-transform:none;letter-spacing:0}
 .top h1 .w{display:inline-block}
-.kick{margin:0 0 12px;font:700 12px/1.4 var(--body);letter-spacing:.2em;text-transform:uppercase;color:var(--acc-ink)}
+.kick{margin:0 0 12px;font:700 12px/1.4 var(--body);letter-spacing:.2em;text-transform:uppercase;color:var(--acc-ink);text-wrap:balance}
 .top .tag{margin:12px 0 0;font-size:clamp(18px,4.8cqi,22px);line-height:1.38;max-width:30em}
 .top .bar{display:none}
 .top .cr{position:absolute;right:10px;bottom:8px;z-index:4;margin:0;max-width:calc(100% - 20px);font-size:10.5px;line-height:1.3;color:#fff;opacity:.78;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 2px #000,0 0 6px #000}
