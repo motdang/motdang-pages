@@ -14,6 +14,7 @@ const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches
 
 const W = {
   th: {
+    likeThis: 'ทำแบบนี้', useLook: 'ใช้แบบนี้', picGo: 'ลองกับรูปของคุณ',
     putOnline: 'ขึ้นออนไลน์เลย', s2ph: 'ชื่อร้านหรือชื่อคุณ',
     k_stay: 'ที่พัก',
     bk: "สตูดิโอรูป", b_path: "ซ้ายคือรูปจากมือถือ ขวาคือสีน้ำ", b_pai: "ทุ่งนาที่ปาย พิมพ์แบบริโซ่", b_wat: "วัดเชียงมั่น เป็นลายรดน้ำ", b_map: "เชียงใหม่ ปี 2433 ทุกหน้าเว็บมีแผนที่วาดมือ", picH: "รูปมืด กลายเป็นรูปสวย", picSub: "ทุกหน้าเว็บมีสตูดิโอรูป แตะเลือกแบบ รูปข้างล่างตั้งใจให้มืดและเบลอ", s_raw: "รูปเดิม", s_rawP: "มืดและเบลอ", s_fix: "แก้แสง", s_fixP: "แสงและสีกลับมา", s_ink: "ลายเส้นปากกา", s_inkP: "เส้นและแรเงา", s_wash: "สีน้ำ", s_washP: "สีซึมที่ขอบ", s_riso: "พิมพ์ริโซ่", s_risoP: "หมึกสองสี จุดและเส้น", s_gold: "ลายรดน้ำ", s_goldP: "ทองบนพื้นดำ", s_pop: "การ์ตูน", s_popP: "สีจัด เส้นหนา", mkH: "ไม่มีรูปเลย?", mkP: "ประกอบภาพปกหรือรูปโปรไฟล์เอง: สี ลาย ไอคอนหนึ่งใน 267 แบบ และชื่อของคุณ", mkGo: "อีกแบบ", t_work: "พอร์ตผลงาน", t_workP: "ผลงานแต่ละชิ้นมีหน้าของตัวเอง กรองตามแท็ก พร้อมคำพูดจากลูกค้า", t_face: "รูปโปรไฟล์", t_faceP: "หน้าคุณ โลโก้ หรือประกอบเอง วางข้างชื่อ", f9: "สตูดิโอรูป รูปโปรไฟล์ พอร์ตผลงาน 6 ชิ้น", pics: "รูป",
@@ -49,6 +50,7 @@ const W = {
     ex: 'ตัวอย่าง',
   },
   en: {
+    likeThis: 'Make one like this', useLook: 'Use this look', picGo: 'Try it on your photo',
     putOnline: 'Put it online', s2ph: 'Your shop or your name',
     k_stay: 'Guesthouse',
     bk: "Picture studio", b_path: "A phone photo on the left. Watercolour on the right.", b_pai: "Rice fields in Pai, printed in riso.", b_wat: "Wat Chiang Man, in gold lacquer.", b_map: "Chiang Mai in 1890. Every page gets a drawn map.", picH: "A dim photo becomes a good picture", picSub: "Every page has a picture studio. Tap a style. The photo below is dim and soft on purpose.", s_raw: "The photo", s_rawP: "dim and soft", s_fix: "Fixed", s_fixP: "light and colour put right", s_ink: "Pen and ink", s_inkP: "lines and hatching", s_wash: "Watercolour", s_washP: "washes that pool at the edges", s_riso: "Riso print", s_risoP: "two inks, dots and lines", s_gold: "Gold lacquer", s_goldP: "gold on black, as lai rot nam", s_pop: "Comic", s_popP: "loud colours, fat lines", mkH: "No photo at all?", mkP: "Build a cover or an avatar from parts: a colour, a pattern, one of 267 dingbats, your name.", mkGo: "Another", t_work: "Portfolio", t_workP: "Your work, each project on its own page, filtered by tag, with what clients said.", t_face: "Avatar", t_faceP: "Your face, your logo, or one built from parts, beside your name.", f9: "Picture studio, an avatar, a portfolio of 6 projects", pics: "Pictures",
@@ -84,6 +86,7 @@ const W = {
     ex: 'Example',
   },
   my: {
+    likeThis: 'ဒီလိုတစ်ခု လုပ်မယ်', useLook: 'ဒီပုံစံကို သုံးမယ်', picGo: 'ကိုယ့်ဓာတ်ပုံနဲ့ စမ်းကြည့်မယ်',
     putOnline: 'အွန်လိုင်းတင်မယ်', s2ph: 'ဆိုင်အမည် သို့မဟုတ် သင့်အမည်',
     k_stay: 'တည်းခိုခန်း',
     bk: "ဓာတ်ပုံစတူဒီယို", b_path: "ဘယ်ဘက်မှာ ဖုန်းဓာတ်ပုံ။ ညာဘက်မှာ ရေဆေး။", b_pai: "ပိုင်မြို့က စပါးခင်းတွေ၊ ရီဆိုပုံနှိပ်နဲ့။", b_wat: "ရွှေယွန်းနဲ့ ဝပ်ချင်းမန်ဘုရား။", b_map: "၁၈၉၀ ခုနှစ်က ချင်းမိုင်။ စာမျက်နှာတိုင်းမှာ ရေးဆွဲထားတဲ့ မြေပုံပါတယ်။", picH: "မှုန်ဝါးတဲ့ဓာတ်ပုံက ပုံကောင်းတစ်ပုံ ဖြစ်လာတယ်", picSub: "စာမျက်နှာတိုင်းမှာ ဓာတ်ပုံစတူဒီယိုပါတယ်။ စတိုင်တစ်ခုကို နှိပ်ပါ။ အောက်ကဓာတ်ပုံက တမင်တကာ မှုန်ဝါးပျော့ပျောင်းထားတာပါ။", s_raw: "ဓာတ်ပုံ", s_rawP: "မှုန်ဝါးပြီး ပျော့ပျောင်းတယ်", s_fix: "ပြင်ထားပြီး", s_fixP: "အလင်းနဲ့ အရောင်ကို မှန်အောင်လုပ်ထားတယ်", s_ink: "မှင်နဲ့ ဘောပင်", s_inkP: "မျဉ်းကြောင်းတွေနဲ့ အရိပ်ခြယ်တာ", s_wash: "ရေဆေး", s_washP: "အနားတွေမှာ စုနေတဲ့ ရေဆေးခြယ်ချက်တွေ", s_riso: "ရီဆိုပုံနှိပ်", s_risoP: "မှင်နှစ်ရောင်၊ အစက်တွေနဲ့ မျဉ်းကြောင်းတွေ", s_gold: "ရွှေယွန်း", s_goldP: "အနက်ပေါ်မှာ ရွှေ၊ လာယ်ရော့နမ်လိုပဲ", s_pop: "ကာတွန်း", s_popP: "ကျယ်လောင်တဲ့အရောင်တွေ၊ မျဉ်းထူတွေ", mkH: "ဓာတ်ပုံ လုံးဝမရှိဘူးလား။", mkP: "အစိတ်အပိုင်းတွေကနေ ကာဗာ ဒါမှမဟုတ် ပရိုဖိုင်ပုံတစ်ခု ဆောက်ပါ။ အရောင်တစ်ရောင်၊ ပုံစံတစ်ခု၊ သင်္ကေတပုံ ၂၆၇ ခုထဲက တစ်ခု၊ နာမည်။", mkGo: "နောက်တစ်ခု", t_work: "လက်ရာစုစည်းမှု", t_workP: "ခင်ဗျားရဲ့အလုပ်တွေ၊ ပရောဂျက်တစ်ခုစီက သူ့စာမျက်နှာပေါ်မှာ၊ တဂ်နဲ့ စစ်ထုတ်ထားတယ်၊ ဖောက်သည်တွေပြောတာတွေပါတယ်။", t_face: "ပရိုဖိုင်ပုံ", t_faceP: "ခင်ဗျားရဲ့မျက်နှာ၊ လိုဂို၊ ဒါမှမဟုတ် အစိတ်အပိုင်းတွေကနေ ဆောက်ထားတဲ့ပုံ၊ နာမည်ဘေးမှာ။", f9: "ဓာတ်ပုံစတူဒီယို၊ ပရိုဖိုင်ပုံ၊ ပရောဂျက် ၆ ခုရဲ့ လက်ရာစုစည်းမှု", pics: "ဓာတ်ပုံတွေ",
@@ -111,6 +114,7 @@ const W = {
 howH: 'အဆင့်သုံးဆင့်', step1: 'ဘာအတွက်လဲ ရွေးပါ', step2: 'အမည်ပေးပါ', step3: 'ပုံစံရွေးပြီး အွန်လိုင်းတင်ပါ', ex: 'ဥပမာ',
   },
   zh: {
+    likeThis: '做一个这样的', useLook: '用这个样式', picGo: '用你的照片试试',
     putOnline: '上线', s2ph: '店名或你的名字',
     k_stay: '民宿',
     bk: "图片工作室", b_path: "左边是手机照片，右边是水彩。", b_pai: "拜县的稻田，孔版印刷。", b_wat: "清曼寺，泰式金漆。", b_map: "1890 年的清迈。每个网页都有手绘地图。", picH: "暗照片，变成好图片", picSub: "每个网页都有图片工作室。点一个样式。下面这张照片是故意调暗、调模糊的。", s_raw: "原图", s_rawP: "又暗又糊", s_fix: "调光", s_fixP: "光线和颜色调好", s_ink: "钢笔线描", s_inkP: "线条和排线", s_wash: "水彩", s_washP: "颜色在边缘晕开", s_riso: "孔版印刷", s_risoP: "两种墨，网点和线", s_gold: "泰式金漆", s_goldP: "黑底描金", s_pop: "漫画", s_popP: "大色块，粗线条", mkH: "一张照片都没有？", mkP: "用零件拼一个封面或头像：颜色、图案、267 个小图标之一，还有你的名字。", mkGo: "换一个", t_work: "作品集", t_workP: "每个项目都有自己的网页，按标签筛选，附客户评价。", t_face: "头像", t_faceP: "你的脸、你的标志，或用零件拼一个，放在名字旁边。", f9: "图片工作室、头像、6 个项目的作品集", pics: "图片",
@@ -156,6 +160,7 @@ const w = (k) => (W[L] && W[L][k]) || W.en[k] || ''
 // ---- the hero: the visitor's shop, drawn as they type ----------------------------------------
 const KINDS = [['food', 'restaurant', 'noodles'], ['cafe', 'cafe', 'coffee'], ['shop', 'clothes', 'cart'], ['service', 'massage', 'gear'], ['event', 'market', 'party']]
 let kind = 0, alt = null, typed = ''
+const HERO_LOOK = { food: 'lanna', shop: 'poster', service: 'clean', event: 'gold' }
 const ALTS = [null, 38, 2, -6, -22]
 let ai = 0
 
@@ -183,7 +188,7 @@ $('#try').onsubmit = (e) => {
   e.preventDefault()
   const k = KINDS[kind][0], pk = k === 'cafe' ? 'food' : k
   const q = new URLSearchParams({ kind: pk })
-  if (typed) q.set('title', typed)
+  if (typed) { q.set('title', typed); q.set('look', HERO_LOOK[pk] || 'poster'); q.set('go', '1') }
   location.href = '/make#' + q
 }
 
@@ -239,7 +244,7 @@ async function avatar() {
 function phones() {
   const labels = [[w('t_work'), 'Clean'], [w('k_food'), 'Lanna'], [w('k_stay'), 'Loom ★'], [w('k_event'), 'Gold leaf ★']]
   const list = EXAMPLES()
-  $('#rail').innerHTML = list.map((x, i) => `<div class="phone"><div class="shell"><iframe title="${w('ex')}" loading="lazy" data-i="${i}"></iframe></div><p><span class="ex">${w('ex')}</span><br>${labels[i][0]}<small>${labels[i][1]}</small></p></div>`).join('')
+  $('#rail').innerHTML = list.map((x, i) => `<div class="phone"><div class="shell"><iframe title="${w('ex')}" loading="lazy" data-i="${i}"></iframe></div><p>${labels[i][0]}<small>${labels[i][1]}</small></p><a class="cta like" href="/make#${new URLSearchParams({ kind: x.kind, look: x.look })}">${w('likeThis')}</a></div>`).join('')
   const io = new IntersectionObserver((es) => es.forEach((e) => {
     if (!e.isIntersecting) return
     io.unobserve(e.target)
@@ -257,20 +262,20 @@ const HELLO = ['เปิดอยู่', 'Open now', 'ယခုဖွင့်
 function toys() {
   const days = [3, 5, 4, 8, 12, 9, 14, 11, 18, 16, 22, 19, 27, 24]
   $('#toys').innerHTML = [
-    `<div class="toy rise" data-go="draw"><div class="art"><i data-dingbat="pencil" data-look="riso"></i></div><h3>${w('t_draw')}</h3><p>${w('t_drawP')}</p></div>`,
-    `<div class="toy line rise"><div class="art">${qrSvg('https://sites.motdang.net/make', { dark: '#06c755', light: '#0e1f3d', label: 'LINE' })}</div><h3>${w('t_line')}</h3><p>${w('t_lineP')}</p></div>`,
-    `<div class="toy grab rise"><div class="art"><i data-dingbat="scooter" data-look="ink"></i></div><h3>${w('t_grab')}</h3><p>${w('t_grabP')}</p></div>`,
-    `<div class="toy rise"><div class="art"><span class="badge"><i></i>${w('t_openB')}</span></div><h3>${w('t_open')}</h3><p>${w('t_openP')}</p></div>`,
-    `<div class="toy map rise"><iframe loading="lazy" title="${w('t_map')}" data-src="/map?pin=18.7883,98.9853&amp;pn=${encodeURIComponent(w('tryPh'))}&amp;embed=1&amp;look=doodle"></iframe><div class="tx"><h3>${w('t_map')}</h3><p>${w('t_mapP')}</p></div></div>`,
-    `<div class="toy rise"><div class="art" style="display:flex;flex-direction:column;gap:8px;place-items:stretch"><span class="bubble">${w('t_msg1')}</span><span class="bubble b2">${w('t_msg2')}</span></div><h3>${w('t_msg')}</h3><p>${w('t_msgP')}</p></div>`,
-    `<div class="toy rise"><div class="art"><div class="minibars" style="width:100%">${days.map((n, i) => `<i style="height:${(n / 27) * 100}%;animation-delay:${i * 50}ms"></i>`).join('')}</div></div><h3>${w('t_stats')}</h3><p>${w('t_statsP')}</p></div>`,
-    `<div class="toy rise"><div class="art"><i data-dingbat="share" data-look="riso"></i></div><h3>${w('t_share')}</h3><p>${w('t_shareP')}</p></div>`,
-    `<div class="toy rise"><div class="art"><span class="words12" id="w12">${HELLO[0]}</span></div><h3>${w('t_lang')}</h3><p>${w('t_langP')}</p></div>`,
-    `<div class="toy rise"><div class="art"><i data-dingbat="sparkle" data-look="riso"></i></div><h3>${w('t_pics')}</h3><p>${w('t_picsP')}</p></div>`,
-    `<div class="toy rise"><div class="art"><span class="a4"><b>${esc(typed || w('tryPh'))}</b>${qrSvg('https://sites.motdang.net/', { dark: '#000', light: '#fff', label: 'QR' })}</span></div><h3>${w('t_sign')}</h3><p>${w('t_signP')}</p></div>`,
-    `<a class="toy rise" href="/make#kind=work" style="text-decoration:none"><div class="art"><i data-dingbat="nib" data-look="riso"></i></div><h3>${w('t_work')}</h3><p>${w('t_workP')}</p></a>`,
-    `<a class="toy rise" href="#pictures" style="text-decoration:none"><div class="art"><i data-dingbat="smile" data-look="paper"></i></div><h3>${w('t_face')}</h3><p>${w('t_faceP')}</p></a>`,
-    `<a class="toy gold rise" href="#gold"><div class="art"><i data-dingbat="crown" data-look="paper"></i></div><h3>${w('t_gold')}</h3><p>${w('t_goldP')}</p></a>`,
+    `<div class="toy rise" data-go="draw"><div class="art"><i data-dingbat="pencil" data-look="riso"></i></div><h3>${w('t_draw')}</h3></div>`,
+    `<div class="toy line rise"><div class="art">${qrSvg('https://sites.motdang.net/make', { dark: '#06c755', light: '#0e1f3d', label: 'LINE' })}</div><h3>${w('t_line')}</h3></div>`,
+    `<div class="toy grab rise"><div class="art"><i data-dingbat="scooter" data-look="ink"></i></div><h3>${w('t_grab')}</h3></div>`,
+    `<div class="toy rise"><div class="art"><span class="badge"><i></i>${w('t_openB')}</span></div><h3>${w('t_open')}</h3></div>`,
+    `<div class="toy map rise"><iframe loading="lazy" title="${w('t_map')}" data-src="/map?pin=18.7883,98.9853&amp;pn=${encodeURIComponent(w('tryPh'))}&amp;embed=1&amp;look=doodle"></iframe><div class="tx"><h3>${w('t_map')}</h3></div></div>`,
+    `<div class="toy rise"><div class="art" style="display:flex;flex-direction:column;gap:8px;place-items:stretch"><span class="bubble">${w('t_msg1')}</span><span class="bubble b2">${w('t_msg2')}</span></div><h3>${w('t_msg')}</h3></div>`,
+    `<div class="toy rise"><div class="art"><div class="minibars" style="width:100%">${days.map((n, i) => `<i style="height:${(n / 27) * 100}%;animation-delay:${i * 50}ms"></i>`).join('')}</div></div><h3>${w('t_stats')}</h3></div>`,
+    `<div class="toy rise"><div class="art"><i data-dingbat="share" data-look="riso"></i></div><h3>${w('t_share')}</h3></div>`,
+    `<div class="toy rise"><div class="art"><span class="words12" id="w12">${HELLO[0]}</span></div><h3>${w('t_lang')}</h3></div>`,
+    `<div class="toy rise"><div class="art"><i data-dingbat="sparkle" data-look="riso"></i></div><h3>${w('t_pics')}</h3></div>`,
+    `<div class="toy rise"><div class="art"><span class="a4"><b>${esc(typed || w('tryPh'))}</b>${qrSvg('https://sites.motdang.net/', { dark: '#000', light: '#fff', label: 'QR' })}</span></div><h3>${w('t_sign')}</h3></div>`,
+    `<a class="toy rise" href="/make#kind=work" style="text-decoration:none"><div class="art"><i data-dingbat="nib" data-look="riso"></i></div><h3>${w('t_work')}</h3></a>`,
+    `<a class="toy rise" href="#pictures" style="text-decoration:none"><div class="art"><i data-dingbat="smile" data-look="paper"></i></div><h3>${w('t_face')}</h3></a>`,
+    `<a class="toy gold rise" href="#gold"><div class="art"><i data-dingbat="crown" data-look="paper"></i></div><h3>${w('t_gold')}</h3></a>`,
   ].join('')
   $('#toys').querySelector('[data-go=draw]').onclick = () => $('#stage').scrollIntoView({ behavior: REDUCED ? 'auto' : 'smooth', block: 'center' })
   const mio = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { mio.disconnect(); e.target.src = e.target.dataset.src } }), { rootMargin: '200px' })
@@ -284,7 +289,7 @@ function toys() {
 function looks() {
   $('#looks').innerHTML = LOOK_IDS.map((id) => {
     const Lk = LOOKS[id]
-    return `<button class="lk" data-look="${id}" style="${(Lk.vars.replace(/\s+/g, ' ') + ';--accent:' + Lk.accent).replace(/"/g, '&quot;')}">${Lk.art}${Lk.gold ? '<span class="gl">★ Gold</span>' : ''}<b>${typed || w('tryPh')}</b><small>${Lk.label}</small><span class="acc"></span></button>`
+    return `<button class="lk" data-look="${id}" style="${(Lk.vars.replace(/\s+/g, ' ') + ';--accent:' + Lk.accent).replace(/"/g, '&quot;')}">${Lk.art}${Lk.gold ? '<span class="gl">★ Gold</span>' : ''}<b>${typed || w('tryPh')}</b><small>${Lk.label}</small><span class="acc"></span><a class="use" href="/make#look=${id}">${w('useLook')} →</a></button>`
   }).join('')
   $('#looks').querySelectorAll('.lk').forEach((b) => (b.onclick = () => { const a = b.querySelector('.art'); a.classList.remove('go'); void a.getBoundingClientRect(); a.classList.add('go') }))
 }
@@ -437,6 +442,7 @@ function all() {
 }
 all()
 lanterns()
+new IntersectionObserver((es) => { $('#dock').classList.toggle('on', !es[0].isIntersecting) }).observe($('.hero'))
 $('#mshuffle').onclick = () => { cvI++; cover() }
 $('#tn').addEventListener('change', () => cover())
 Promise.all([fetch('/s/home/examples.json').then((r) => r.json()).then((j) => { EXCR = j }).catch(() => {}), avatar()]).then(() => phones())
