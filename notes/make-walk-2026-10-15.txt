@@ -1,0 +1,25 @@
+The builder after the first screen, walked as a new maker on 2026-10-15 (food page "Noi Noodles", desktop 1280 and phone 375), before the redesign.
+
+EDITOR (Page tab)
+Dull: ten open boxes of form fields, one under another, 3,300 px tall; thirteen more "+ Add" pills piled at the bottom with no hint of what any of them puts on the page.
+Dull: every box looks the same: a line icon, a title, a chevron. Nothing shows what the box has done to the page.
+Confusing: on the phone the bar says "Tap anything on your page to change it", but the page is hidden behind a Preview button. The first thing a phone maker sees is a Name box they have already filled.
+Confusing: "Drawing", "Moving drawings", "Dingbats", "Look", "Colour" are spread over three boxes; "Messages" is a box in the editor and also a tab.
+Confusing: Gold parts (Rooms ★, Listings ★, Video ★) sit among free ones with no word on what they are for.
+Frightening: "Delete this page" sits at the bottom of the form in red, the last thing under the fields.
+Broken: "Saved as a draft" floats over the form's bottom-left corner on desktop; the hours time boxes cut off "08:00 PM" at 375.
+
+MESSAGES
+Dull: an empty mailbox and one line. It does not show what a reader sees or where a copy goes; the email box for copies lives in the Page tab.
+
+TRAFFIC
+Dull: five tiles of 0 (three of them called "People") and an empty chart, under a line saying to share. There is no way to share from here.
+
+GOLD
+Dull on the phone: a full screen of nine features in a dark box; the price and the QR are below the fold. The tab itself is cut off at 375.
+Missing: the maker never sees their own page in gold.
+
+PUT IT ONLINE (done sheet)
+Dull: no picture of the page or of the card people will see in LINE.
+Frightening: the edit link prints in full as a long token; it reads like an error and gives no reason to keep it.
+Confusing: the close button says "Edit".
