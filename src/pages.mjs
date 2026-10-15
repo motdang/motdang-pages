@@ -17,7 +17,7 @@ main{padding:18px 16px 80px}.chips{display:flex;flex-wrap:wrap;gap:8px;margin:0 
 .chips a.on{background:#1c1530;color:#fff7ec;box-shadow:none}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px}
 .tile{display:flex;flex-direction:column;border-radius:14px;overflow:hidden;background:#fff;text-decoration:none;box-shadow:0 1px 0 #efd9bf,0 6px 18px rgba(28,21,48,.08);transition:transform .2s}
-.tile:hover{transform:translateY(-3px)}.tile .pic{aspect-ratio:16/10;background:var(--bg);color:var(--ink);display:grid;place-items:center;position:relative;overflow:hidden}
+.tile:hover{transform:translateY(-3px)}.tile .pic{aspect-ratio:1200/630;background:var(--bg);color:var(--ink);display:grid;place-items:center;position:relative;overflow:hidden}
 .tile .pic img{width:100%;height:100%;object-fit:cover}.tile .pic b{font:var(--h1w) 30px/1 var(--display);text-transform:var(--case);padding:0 14px;text-align:center;overflow-wrap:anywhere}
 .tile .tx{padding:12px 14px 14px}.tile .gd{position:absolute;right:8px;top:8px;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-style:normal;background:linear-gradient(135deg,#f8dd8e,#c99a3a);color:#2a1a04;font-weight:800}.tile .nm{font-weight:700}.tile .tg{font-size:15px;color:#5a4f6a;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .tile .meta{display:flex;gap:8px;align-items:center;margin-top:6px;font-size:13px;color:#5a4f6a}
@@ -53,7 +53,7 @@ export async function directory(env, url, request, origin = 'https://sites.motda
   const tiles = rows.slice(0, 48).map((r) => {
     const d = JSON.parse(r.d)
     const L = LOOKS[r.look] || LOOKS.poster
-    const pic = (d.cover ? `<img src="/img/${esc(d.cover)}-s.webp" alt="" loading="lazy">` : `<b>${esc(d.name || r.name)}</b>`) + (r.tier === 'gold' && r.gold_until >= new Date().toISOString().slice(0, 10) ? '<i class="gd">★</i>' : '')
+    const pic = (d.card ? `<img src="/img/${esc(d.card)}.jpg" alt="" loading="lazy">` : d.cover ? `<img src="/img/${esc(d.cover)}-s.webp" alt="" loading="lazy">` : `<b>${esc(d.name || r.name)}</b>`) + (r.tier === 'gold' && r.gold_until >= new Date().toISOString().slice(0, 10) ? '<i class="gd">★</i>' : '')
     return `<a class="tile" href="/${esc(r.name)}"><span class="pic" style="${esc(L.vars.replace(/\s+/g, ' '))};--accent:${esc(d.accent || L.accent)}">${pic}</span>` +
       `<span class="tx"><span class="nm">${esc(d.name || r.name)}</span>${d.tagline ? `<span class="tg">${esc(d.tagline)}</span>` : ''}` +
       `<span class="meta">${icon(KIND_ICON[r.kind] || 'star')}${T('k_' + r.kind)}${r.cc ? ' · ' + esc(region(r.cc)) : ''}</span></span></a>`

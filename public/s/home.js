@@ -5,7 +5,7 @@
 
 import { render, LOOKS, LOOK_IDS, qrSvg } from './render.mjs'
 import { makeOver } from './studio.mjs'
-import { drawCover, loadFaces, MARK_COLOURS, inkOn } from './mark.mjs'
+import { drawCover, drawMark, loadFaces, inkOn } from './mark.mjs'
 
 const $ = (s, el = document) => el.querySelector(s)
 const store = { get(k, d) { try { const v = localStorage.getItem('mdh:' + k); return v === null ? d : v } catch { return d } }, set(k, v) { try { localStorage.setItem('mdh:' + k, v) } catch {} } }
@@ -14,6 +14,8 @@ const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches
 
 const W = {
   th: {
+    putOnline: 'ขึ้นออนไลน์เลย', s2ph: 'ชื่อร้านหรือชื่อคุณ',
+    k_stay: 'ที่พัก',
     bk: "สตูดิโอรูป", b_path: "ซ้ายคือรูปจากมือถือ ขวาคือสีน้ำ", b_pai: "ทุ่งนาที่ปาย พิมพ์แบบริโซ่", b_wat: "วัดเชียงมั่น เป็นลายรดน้ำ", b_map: "เชียงใหม่ ปี 2433 ทุกหน้าเว็บมีแผนที่วาดมือ", picH: "รูปมืด กลายเป็นรูปสวย", picSub: "ทุกหน้าเว็บมีสตูดิโอรูป แตะเลือกแบบ รูปข้างล่างตั้งใจให้มืดและเบลอ", s_raw: "รูปเดิม", s_rawP: "มืดและเบลอ", s_fix: "แก้แสง", s_fixP: "แสงและสีกลับมา", s_ink: "ลายเส้นปากกา", s_inkP: "เส้นและแรเงา", s_wash: "สีน้ำ", s_washP: "สีซึมที่ขอบ", s_riso: "พิมพ์ริโซ่", s_risoP: "หมึกสองสี จุดและเส้น", s_gold: "ลายรดน้ำ", s_goldP: "ทองบนพื้นดำ", s_pop: "การ์ตูน", s_popP: "สีจัด เส้นหนา", mkH: "ไม่มีรูปเลย?", mkP: "ประกอบภาพปกหรือรูปโปรไฟล์เอง: สี ลาย ไอคอนหนึ่งใน 267 แบบ และชื่อของคุณ", mkGo: "อีกแบบ", t_work: "พอร์ตผลงาน", t_workP: "ผลงานแต่ละชิ้นมีหน้าของตัวเอง กรองตามแท็ก พร้อมคำพูดจากลูกค้า", t_face: "รูปโปรไฟล์", t_faceP: "หน้าคุณ โลโก้ หรือประกอบเอง วางข้างชื่อ", f9: "สตูดิโอรูป รูปโปรไฟล์ พอร์ตผลงาน 6 ชิ้น", pics: "รูป",
     stayH: 'โรงแรม เกสต์เฮาส์: รับจองเอง', staySub: 'ห้องพัก ปฏิทินคืนว่าง ปฏิทิน Airbnb · Booking.com · Agoda ตรงกันทุก 30 นาที แขกจ่ายเข้าพร้อมเพย์หรือลิงก์ของคุณ', calcNight: 'ราคาต่อคืน', calcNights: 'คืนที่ขายผ่านแอปต่อเดือน', calcOta: 'ค่าคอม 15%', calcFlat: 'ทองสำหรับโรงแรม', mo: 'ต่อเดือน', hotelPrice: 'โรงแรมที่รับจองห้อง: ฿{p} ต่อเดือน', calcKeep: 'เก็บไว้ได้ต่อปี', calcSrc: 'Agoda ราว 15% Booking.com 10–25% ส่วนใหญ่ราว 15%', stayGo: 'ทำหน้าเว็บโรงแรม', yr: 'ต่อปี',
     make: 'ทำเว็บของฉัน', kicker: 'มดแดง · เว็บของคุณเอง', h1: 'ร้านของคุณ <em>วาดเสร็จ</em> ขึ้นเว็บในห้านาที',
@@ -47,6 +49,8 @@ const W = {
     ex: 'ตัวอย่าง',
   },
   en: {
+    putOnline: 'Put it online', s2ph: 'Your shop or your name',
+    k_stay: 'Guesthouse',
     bk: "Picture studio", b_path: "A phone photo on the left. Watercolour on the right.", b_pai: "Rice fields in Pai, printed in riso.", b_wat: "Wat Chiang Man, in gold lacquer.", b_map: "Chiang Mai in 1890. Every page gets a drawn map.", picH: "A dim photo becomes a good picture", picSub: "Every page has a picture studio. Tap a style. The photo below is dim and soft on purpose.", s_raw: "The photo", s_rawP: "dim and soft", s_fix: "Fixed", s_fixP: "light and colour put right", s_ink: "Pen and ink", s_inkP: "lines and hatching", s_wash: "Watercolour", s_washP: "washes that pool at the edges", s_riso: "Riso print", s_risoP: "two inks, dots and lines", s_gold: "Gold lacquer", s_goldP: "gold on black, as lai rot nam", s_pop: "Comic", s_popP: "loud colours, fat lines", mkH: "No photo at all?", mkP: "Build a cover or an avatar from parts: a colour, a pattern, one of 267 dingbats, your name.", mkGo: "Another", t_work: "Portfolio", t_workP: "Your work, each project on its own page, filtered by tag, with what clients said.", t_face: "Avatar", t_faceP: "Your face, your logo, or one built from parts, beside your name.", f9: "Picture studio, an avatar, a portfolio of 6 projects", pics: "Pictures",
     stayH: 'Hotels and guesthouses: take your own bookings', staySub: 'Rooms, a calendar of nights, Airbnb · Booking.com · Agoda calendars kept in step every 30 minutes, guests paying your PromptPay or your own link.', calcNight: 'Price a night', calcNights: 'Nights sold through apps a month', calcOta: 'Commission at 15%', calcFlat: 'Gold for hotels', mo: 'a month', hotelPrice: 'Hotels taking room bookings: ฿{p} a month', calcKeep: 'Kept in a year', calcSrc: 'Agoda about 15%; Booking.com 10–25%, most often about 15%.', stayGo: 'Make a hotel page', yr: 'a year',
     make: 'Make my page', kicker: 'Mot Dang · your own page', h1: 'Your shop, <em>drawn</em> and online in five minutes',
@@ -80,6 +84,8 @@ const W = {
     ex: 'Example',
   },
   my: {
+    putOnline: 'အွန်လိုင်းတင်မယ်', s2ph: 'ဆိုင်အမည် သို့မဟုတ် သင့်အမည်',
+    k_stay: 'တည်းခိုခန်း',
     bk: "ဓာတ်ပုံစတူဒီယို", b_path: "ဘယ်ဘက်မှာ ဖုန်းဓာတ်ပုံ။ ညာဘက်မှာ ရေဆေး။", b_pai: "ပိုင်မြို့က စပါးခင်းတွေ၊ ရီဆိုပုံနှိပ်နဲ့။", b_wat: "ရွှေယွန်းနဲ့ ဝပ်ချင်းမန်ဘုရား။", b_map: "၁၈၉၀ ခုနှစ်က ချင်းမိုင်။ စာမျက်နှာတိုင်းမှာ ရေးဆွဲထားတဲ့ မြေပုံပါတယ်။", picH: "မှုန်ဝါးတဲ့ဓာတ်ပုံက ပုံကောင်းတစ်ပုံ ဖြစ်လာတယ်", picSub: "စာမျက်နှာတိုင်းမှာ ဓာတ်ပုံစတူဒီယိုပါတယ်။ စတိုင်တစ်ခုကို နှိပ်ပါ။ အောက်ကဓာတ်ပုံက တမင်တကာ မှုန်ဝါးပျော့ပျောင်းထားတာပါ။", s_raw: "ဓာတ်ပုံ", s_rawP: "မှုန်ဝါးပြီး ပျော့ပျောင်းတယ်", s_fix: "ပြင်ထားပြီး", s_fixP: "အလင်းနဲ့ အရောင်ကို မှန်အောင်လုပ်ထားတယ်", s_ink: "မှင်နဲ့ ဘောပင်", s_inkP: "မျဉ်းကြောင်းတွေနဲ့ အရိပ်ခြယ်တာ", s_wash: "ရေဆေး", s_washP: "အနားတွေမှာ စုနေတဲ့ ရေဆေးခြယ်ချက်တွေ", s_riso: "ရီဆိုပုံနှိပ်", s_risoP: "မှင်နှစ်ရောင်၊ အစက်တွေနဲ့ မျဉ်းကြောင်းတွေ", s_gold: "ရွှေယွန်း", s_goldP: "အနက်ပေါ်မှာ ရွှေ၊ လာယ်ရော့နမ်လိုပဲ", s_pop: "ကာတွန်း", s_popP: "ကျယ်လောင်တဲ့အရောင်တွေ၊ မျဉ်းထူတွေ", mkH: "ဓာတ်ပုံ လုံးဝမရှိဘူးလား။", mkP: "အစိတ်အပိုင်းတွေကနေ ကာဗာ ဒါမှမဟုတ် ပရိုဖိုင်ပုံတစ်ခု ဆောက်ပါ။ အရောင်တစ်ရောင်၊ ပုံစံတစ်ခု၊ သင်္ကေတပုံ ၂၆၇ ခုထဲက တစ်ခု၊ နာမည်။", mkGo: "နောက်တစ်ခု", t_work: "လက်ရာစုစည်းမှု", t_workP: "ခင်ဗျားရဲ့အလုပ်တွေ၊ ပရောဂျက်တစ်ခုစီက သူ့စာမျက်နှာပေါ်မှာ၊ တဂ်နဲ့ စစ်ထုတ်ထားတယ်၊ ဖောက်သည်တွေပြောတာတွေပါတယ်။", t_face: "ပရိုဖိုင်ပုံ", t_faceP: "ခင်ဗျားရဲ့မျက်နှာ၊ လိုဂို၊ ဒါမှမဟုတ် အစိတ်အပိုင်းတွေကနေ ဆောက်ထားတဲ့ပုံ၊ နာမည်ဘေးမှာ။", f9: "ဓာတ်ပုံစတူဒီယို၊ ပရိုဖိုင်ပုံ၊ ပရောဂျက် ၆ ခုရဲ့ လက်ရာစုစည်းမှု", pics: "ဓာတ်ပုံတွေ",
     stayH: 'ဟိုတယ်၊ တည်းခိုခန်း- ကိုယ်တိုင်ကြိုတင်မှာယူမှုလက်ခံ', staySub: 'အခန်းများ၊ ညများ၏ပြက္ခဒိန်၊ Airbnb · Booking.com · Agoda ပြက္ခဒိန်များ ၃၀ မိနစ်တိုင်း ညှိ၊ ဧည့်သည်များ သင့် PromptPay သို့ ပေးချေ။', calcNight: 'တစ်ညဈေး', calcNights: 'အက်ပ်မှ တစ်လရောင်းသည့်ည', calcOta: 'ကော်မရှင် 15%', calcFlat: 'ဟိုတယ်အတွက် ရွှေ', mo: 'တစ်လ', hotelPrice: 'အခန်းကြိုတင်မှာယူမှုလက်ခံသော ဟိုတယ်- တစ်လ ฿{p}', calcKeep: 'တစ်နှစ်တွင် ကျန်ရှိ', calcSrc: 'Agoda ~15%; Booking.com 10–25%, များသောအားဖြင့် ~15%', stayGo: 'ဟိုတယ်စာမျက်နှာလုပ်ရန်', yr: 'တစ်နှစ်',
     make: 'စာမျက်နှာလုပ်ရန်', kicker: 'Mot Dang · သင့်ကိုယ်ပိုင်စာမျက်နှာ', h1: 'သင့်ဆိုင်ကို <em>ပုံဆွဲ</em>ပြီး ငါးမိနစ်အတွင်း အွန်လိုင်းတင်ပါ',
@@ -105,6 +111,8 @@ const W = {
 howH: 'အဆင့်သုံးဆင့်', step1: 'ဘာအတွက်လဲ ရွေးပါ', step2: 'အမည်ပေးပါ', step3: 'ပုံစံရွေးပြီး အွန်လိုင်းတင်ပါ', ex: 'ဥပမာ',
   },
   zh: {
+    putOnline: '上线', s2ph: '店名或你的名字',
+    k_stay: '民宿',
     bk: "图片工作室", b_path: "左边是手机照片，右边是水彩。", b_pai: "拜县的稻田，孔版印刷。", b_wat: "清曼寺，泰式金漆。", b_map: "1890 年的清迈。每个网页都有手绘地图。", picH: "暗照片，变成好图片", picSub: "每个网页都有图片工作室。点一个样式。下面这张照片是故意调暗、调模糊的。", s_raw: "原图", s_rawP: "又暗又糊", s_fix: "调光", s_fixP: "光线和颜色调好", s_ink: "钢笔线描", s_inkP: "线条和排线", s_wash: "水彩", s_washP: "颜色在边缘晕开", s_riso: "孔版印刷", s_risoP: "两种墨，网点和线", s_gold: "泰式金漆", s_goldP: "黑底描金", s_pop: "漫画", s_popP: "大色块，粗线条", mkH: "一张照片都没有？", mkP: "用零件拼一个封面或头像：颜色、图案、267 个小图标之一，还有你的名字。", mkGo: "换一个", t_work: "作品集", t_workP: "每个项目都有自己的网页，按标签筛选，附客户评价。", t_face: "头像", t_faceP: "你的脸、你的标志，或用零件拼一个，放在名字旁边。", f9: "图片工作室、头像、6 个项目的作品集", pics: "图片",
     stayH: '酒店、民宿：自己接预订', staySub: '客房、空房日历，每 30 分钟同步 Airbnb · Booking.com · Agoda 日历，客人付款到你的 PromptPay 或你自己的链接。', calcNight: '每晚价格', calcNights: '每月通过 App 卖出的晚数', calcOta: '15% 佣金', calcFlat: '酒店金卡', mo: '每月', hotelPrice: '接受客房预订的酒店：每月 ฿{p}', calcKeep: '一年多留下', calcSrc: 'Agoda 约 15%；Booking.com 10–25%，多数约 15%。', stayGo: '做酒店网页', yr: '每年',
     make: '做我的网页', kicker: 'Mot Dang · 你自己的网页', h1: '你的店，<em>画好了</em>，五分钟上线',
@@ -186,31 +194,58 @@ function chips() {
 
 // ---- example pages, drawn by the real renderer --------------------------------------------
 const wk = (a, b) => Array.from({ length: 7 }, (_, i) => (i === 2 ? null : [[a, b]]))
+// the example pages' pictures: made over by the picture studio from CC0 photos (tools/bands.py)
+const EXP = { exkhaosoi0000: 'khaosoi', exkhaosoi2000: 'khaosoi2', exbungalow000: 'bungalow', expaifields00: 'paifields', exlanterns000: 'lanternsx',
+  exwatgold0000: 'watgold', expathwash000: 'pathwash', exmapink00000: 'mapink', expairiso0000: 'pairiso' }
+let EXCR = {}, AVATAR = ''
+const exImg = (id, small) => (id === 'exavatar00000' ? AVATAR : EXP[id] ? `/s/home/ex-${EXP[id]}${small ? '-s' : ''}.webp` : '')
+const exCredits = (ids) => Object.fromEntries(ids.filter((id) => EXCR[EXP[id]]).map((id) => [id, EXCR[EXP[id]]]))
+const th = () => L === 'th'
 const EXAMPLES = () => [
-  { name: 'example-khao-soi', look: 'night', lang: L === 'th' ? 'th' : L, kind: 'food', d: {
-    name: L === 'th' ? 'ข้าวซอยบ้านมด' : 'Ant House Khao Soi', tagline: L === 'th' ? 'ข้าวซอยไก่สูตรเชียงใหม่ น้ำแกงเคี่ยวทุกเช้า' : 'Chiang Mai chicken khao soi, the curry simmered every morning',
-    scene: 'noodle', dings: ['khao-soi', 'chili', 'lantern'], hours: { on: true, tz: 'Asia/Bangkok', week: wk('08:00', '16:00') },
-    items: [{ n: L === 'th' ? 'ข้าวซอยไก่' : 'Khao soi, chicken', p: '60' }, { n: L === 'th' ? 'ข้าวซอยเนื้อ' : 'Khao soi, beef', p: '70' }, { n: L === 'th' ? 'น้ำเงี้ยว' : 'Nam ngiao', p: '55' }],
-    contact: { line: '@example' }, place: { lat: 18.7953, lng: 98.9937, cc: 'TH', zoom: 17 }, msg: true } },
-  { name: 'example-massage', look: 'stitch', lang: L, kind: 'service', d: {
-    name: L === 'th' ? 'นวดบ้านมด' : 'Ant House Massage', tagline: L === 'th' ? 'นวดไทย นวดเท้า ประคบสมุนไพร' : 'Thai massage, foot massage, herbal compress',
-    scene: 'massage', dings: ['lotus', 'frangipani'], hours: { on: true, tz: 'Asia/Bangkok', week: wk('10:00', '22:00') },
-    items: [{ n: L === 'th' ? 'นวดไทย 1 ชม.' : 'Thai massage, 1 hr', p: '250' }, { n: L === 'th' ? 'นวดเท้า 1 ชม.' : 'Foot massage, 1 hr', p: '250' }],
+  { name: 'example-studio', look: 'clean', lang: L, kind: 'work', tier: 'gold', d: {
+    name: th() ? 'มดแดงสตูดิโอ' : 'Ant House Studio', tagline: th() ? 'ป้าย เมนู ฉลาก และเว็บ สำหรับร้านเล็ก ๆ ในภาคเหนือ' : 'Signs, menus, labels and websites for small shops in the north',
+    avatar: 'exavatar00000', cover: 'exmapink00000', photos: ['exmapink00000', 'exwatgold0000', 'expathwash000', 'expairiso0000', 'exkhaosoi0000'], accent: '#d7261e', drawing: false,
+    works: [
+      { id: 'w1map', t: th() ? 'แผนที่เมืองเก่า' : 'Old city map', client: th() ? 'ชุมชนประตูท่าแพ' : 'Tha Phae Gate community', year: '2026', tags: 'Maps, Print', photos: ['exmapink00000'] },
+      { id: 'w2wat', t: th() ? 'โปสเตอร์ลายรดน้ำ' : 'Gold lacquer posters', client: th() ? 'วัดในเวียง' : 'Wats in the old city', year: '2026', tags: 'Print', photos: ['exwatgold0000'] },
+      { id: 'w3path', t: th() ? 'ป้ายทางเดินโคมไฟ' : 'Lantern path signs', client: th() ? 'บ้านพักแม่ฮ่องสอน' : 'A Mae Hong Son homestay', year: '2025', tags: 'Signs', photos: ['expathwash000'] },
+      { id: 'w4pai', t: th() ? 'ฉลากข้าวปาย' : 'Pai rice labels', client: th() ? 'นาข้าวปาย' : 'Pai rice farmers', year: '2025', tags: 'Packaging, Print', photos: ['expairiso0000'] },
+    ],
+    quotes: [{ q: th() ? 'แผนที่สวยจนคนถ่ายรูปกับป้าย' : 'People stop to take photos of the map.', who: th() ? 'ป้าแดง ตลาดประตูท่าแพ' : 'Pa Daeng, Tha Phae market' }],
     contact: { line: '@example' }, msg: true } },
+  { name: 'example-khao-soi', look: 'lanna', lang: L, kind: 'food', d: {
+    name: th() ? 'ข้าวซอยบ้านมด' : 'Ant House Khao Soi', tagline: th() ? 'ข้าวซอยไก่สูตรเชียงใหม่ น้ำแกงเคี่ยวทุกเช้า' : 'Chiang Mai chicken khao soi, the curry simmered every morning',
+    cover: 'exkhaosoi0000', photos: ['exkhaosoi0000', 'exkhaosoi2000'],
+    items: [{ n: th() ? 'ข้าวซอยไก่' : 'Khao soi, chicken', p: '60' }, { n: th() ? 'ข้าวซอยเนื้อ' : 'Khao soi, beef', p: '70' }, { n: th() ? 'น้ำเงี้ยว' : 'Nam ngiao', p: '55' }],
+    hours: { on: true, tz: 'Asia/Bangkok', week: wk('09:00', '16:00') }, contact: { line: '@example' }, place: { lat: 18.7953, lng: 98.9937, cc: 'TH', zoom: 17 }, msg: true } },
+  { name: 'example-pai', look: 'loom', lang: L, kind: 'stay', tier: 'gold', d: {
+    name: th() ? 'บ้านมดปาย' : 'Ant House Pai', tagline: th() ? 'บังกะโลริมทุ่งนา ห้านาทีจากถนนคนเดิน' : 'Bungalows by the rice fields, five minutes from the walking street',
+    cover: 'exbungalow000', photos: ['exbungalow000', 'expaifields00'], drawing: false,
+    rooms: [{ id: 'r1bun', n: th() ? 'บังกะโลวิวนา' : 'Field-view bungalow', guests: 2, beds: th() ? 'เตียงคู่' : 'Double bed', p: '1200', photos: ['exbungalow000', 'expaifields00'] }],
+    ota: { agoda: 'https://www.agoda.com/', booking: 'https://www.booking.com/' }, contact: { line: '@example' }, msg: true } },
   { name: 'example-night', look: 'gold', lang: L, kind: 'event', tier: 'gold', d: {
-    name: L === 'th' ? 'คืนดนตรีบ้านมด' : 'Ant House Music Night', tagline: L === 'th' ? 'ดนตรีสด ไฟประดับ ของกินริมทาง' : 'Live music, lights and street food',
-    scene: 'band', dings: ['string-lights', 'note', 'lantern'], event: { start: new Date(Date.now() + 9 * 864e5).toISOString().slice(0, 10) + 'T19:00', end: '', tz: 'Asia/Bangkok' },
+    name: th() ? 'คืนโคมบ้านมด' : 'Ant House Lantern Night', tagline: th() ? 'ดนตรีสด โคมลอย ของกินริมทาง' : 'Live music, lanterns and street food',
+    cover: 'exlanterns000', photos: ['exlanterns000'], dings: ['lantern', 'string-lights', 'note'],
     contact: { line: '@example' }, msg: true } },
 ]
+async function avatar() {
+  try {
+    await dbs; await loadFaces()
+    const c = document.createElement('canvas'); c.width = c.height = 256
+    drawMark(c.getContext('2d'), 256, { shape: 'stamp', bg: '#d7261e', pat: 'rays', glyph: 'nib', letters: 'AH', font: 'Prompt', ink: '#ffffff' }, window.Dingbats || null)
+    AVATAR = c.toDataURL('image/png')
+  } catch {}
+}
 function phones() {
-  const labels = [[w('k_food'), 'Night market'], [w('k_service'), 'Stitch'], [w('k_event'), 'Gold leaf ★']]
-  $('#rail').innerHTML = EXAMPLES().map((x, i) => `<div class="phone"><div class="shell"><iframe title="${w('ex')}" loading="lazy" data-i="${i}"></iframe></div><p><span class="ex">${w('ex')}</span><br>${labels[i][0]}<small>${labels[i][1]}</small></p></div>`).join('')
+  const labels = [[w('t_work'), 'Clean'], [w('k_food'), 'Lanna'], [w('k_stay'), 'Loom ★'], [w('k_event'), 'Gold leaf ★']]
   const list = EXAMPLES()
+  $('#rail').innerHTML = list.map((x, i) => `<div class="phone"><div class="shell"><iframe title="${w('ex')}" loading="lazy" data-i="${i}"></iframe></div><p><span class="ex">${w('ex')}</span><br>${labels[i][0]}<small>${labels[i][1]}</small></p></div>`).join('')
   const io = new IntersectionObserver((es) => es.forEach((e) => {
     if (!e.isIntersecting) return
     io.unobserve(e.target)
     const x = list[+e.target.dataset.i]
-    e.target.srcdoc = render({ ...x, status: 'live', views: 1200 + 37 * +e.target.dataset.i }, { preview: true, gold: x.tier === 'gold', origin: location.origin })
+    const d = { ...x.d, credits: exCredits([...new Set([x.d.cover, ...(x.d.photos || [])].filter(Boolean))]) }
+    e.target.srcdoc = render({ ...x, d, status: 'live', views: 1200 + 37 * +e.target.dataset.i }, { preview: true, gold: x.tier === 'gold', hotel: false, origin: location.origin, img: exImg })
     // an example's buttons stay inside it: no call, chat or map leaves the page
     e.target.onload = () => { try { e.target.contentDocument.addEventListener('click', (ev) => { const a = ev.target.closest('a[href]'); if (a && !a.getAttribute('href').startsWith('#')) ev.preventDefault() }, true) } catch {} }
   }), { rootMargin: '300px' })
@@ -350,6 +385,26 @@ function credits() {
   }).catch(() => {})
 }
 
+// ---- the three steps, done here: what for, the name and its address, the look → the page ------
+const STEP_KINDS = [['food', 'noodles'], ['shop', 'cart'], ['service', 'gear'], ['work', 'nib'], ['stay', 'key'], ['event', 'party'], ['me', 'wave']]
+const FREE_LOOKS = LOOK_IDS
+const inkFor = (Lk) => { const bg = /--bg:#([0-9a-f]{6})/i.exec(Lk.vars)?.[1] || 'ffffff', v = parseInt(bg, 16); return (0.2126 * (v >> 16) + 0.7152 * ((v >> 8) & 255) + 0.0722 * (v & 255)) / 255 < 0.45 ? '#fff8ec' : /--ink:(#[0-9a-f]{6})/i.exec(Lk.vars)?.[1] || '#111' }
+let sKind = 'food', sLook = 'poster', sName = ''
+const slug = (n) => n.toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 30)
+function steps() {
+  $('#s1').innerHTML = STEP_KINDS.map(([k, d]) => `<button type="button" data-k="${k}"${k === sKind ? ' class="on"' : ''}><i data-dingbat="${d}" data-look="ink" data-play="hover"></i>${w(k === 'work' ? 't_work' : 'k_' + k)}</button>`).join('')
+  $('#s1').querySelectorAll('button').forEach((b) => (b.onclick = () => { sKind = b.dataset.k; steps() }))
+  $('#s3').innerHTML = FREE_LOOKS.map((id) => { const Lk = LOOKS[id]; return `<button type="button" data-l="${id}" title="${Lk.label}" aria-label="${Lk.label}" style="${(Lk.vars.replace(/\s+/g, ' ') + ';--accent:' + Lk.accent + ';color:' + inkFor(Lk)).replace(/"/g, '&quot;')}"${id === sLook ? ' class="on"' : ''}>Aa${Lk.gold ? '<i class="g">★</i>' : ''}</button>` }).join('')
+  $('#s3').querySelectorAll('button').forEach((b) => (b.onclick = () => { sLook = b.dataset.l; steps() }))
+  $('#s2').placeholder = w('s2ph')
+  const sl = slug(sName)
+  $('#s2a').textContent = 'sites.motdang.net/' + (sl.length >= 3 ? sl : sName ? '…' : slug(w('s2ph')))
+  const q = new URLSearchParams({ kind: sKind, look: sLook, go: '1' })
+  if (sName) q.set('title', sName)
+  $('#s3go').href = '/make#' + q
+}
+$('#s2').addEventListener('input', (e) => { sName = e.target.value.trim(); steps() })
+
 let COUNT = null
 function live() {
   if (!COUNT || COUNT.live < 3) { $('#live').hidden = true; return }
@@ -357,7 +412,7 @@ function live() {
   $('#liveH').textContent = w('liveH').replace('{n}', new Intl.NumberFormat(L).format(COUNT.live)).replace('{c}', new Intl.NumberFormat(L).format(COUNT.countries))
   $('#latest').innerHTML = COUNT.latest.map((p) => {
     const Lk = LOOKS[p.look] || LOOKS.poster
-    const pic = p.cover ? `<img src="${p.cover}" alt="" loading="lazy">` : esc(p.title)
+    const pic = p.card || p.cover ? `<img src="${p.card || p.cover}" alt="" loading="lazy">` : esc(p.title)
     return `<a href="/${esc(p.name)}"><span class="pic" style="${(Lk.vars.replace(/\s+/g, ' ')).replace(/"/g, '&quot;')}">${pic}</span><span class="t">${p.gold ? '★ ' : ''}${esc(p.title)}</span></a>`
   }).join('')
 }
@@ -377,12 +432,13 @@ function words() {
 }
 
 function all() {
-  words(); chips(); phones(); toys(); looks(); tiers(COUNT?.price || 3000, COUNT?.hotel || 555); live(); studio(); cover(); credits()
+  words(); chips(); phones(); toys(); looks(); tiers(COUNT?.price || 3000, COUNT?.hotel || 555); live(); studio(); cover(); credits(); steps()
   paint(performance.now())
 }
 all()
 lanterns()
 $('#mshuffle').onclick = () => { cvI++; cover() }
 $('#tn').addEventListener('change', () => cover())
+Promise.all([fetch('/s/home/examples.json').then((r) => r.json()).then((j) => { EXCR = j }).catch(() => {}), avatar()]).then(() => phones())
 fetch('/api/count').then((r) => r.json()).then((j) => { COUNT = j; tiers(j.price, j.hotel); live() }).catch(() => {})
 dbs.catch(() => {})

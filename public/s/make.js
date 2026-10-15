@@ -10,6 +10,8 @@ import { PAGE_LANGS } from './words.mjs'
 import { ui, UI_LANGS } from './make-words.mjs'
 import { exifBlock, readExif } from './exif.mjs'
 import { openStudio, openMark } from './studio-ui.mjs'
+import { drawCard, cardKey, CARD } from './card.mjs'
+import { loadFaces } from './mark.mjs'
 
 const $ = (s, el = document) => el.querySelector(s)
 const app = $('#app')
@@ -875,6 +877,8 @@ async function save(extra = {}) {
   S.saving = true
   const st = $('#state'); if (st) st.textContent = stateText()
   try {
+    // a live page whose name, picture, avatar or look changed gets a new share card
+    if (S.status === 'live' && !extra.publish && cardKey({ look: S.look, name: S.name, kind: S.kind, tier: S.tier }, S.d) !== S.cardKey) await makeCard().catch(() => {})
     const r = await call('PUT', 'site', { d: S.d, look: S.look, lang: S.pageLang, kind: S.kind, ...extra })
     S.status = r.status
     if (r.d) { S.d.credits = r.d.credits; S.d.video = r.d.video }
@@ -1306,50 +1310,32 @@ function bindDomain() {
 
 // ---- putting it online ---------------------------------------------------------------------
 
+/** The page's share card (card.mjs), drawn here and uploaded; the old one is dropped by the server. */
 async function makeCard() {
-  const L = LOOKS[S.look]
-  const v = (n) => new RegExp('--' + n + ':(#[0-9a-f]+)', 'i').exec(L.vars)?.[1]
-  const accent = S.d.accent || L.accent
-  const c = document.createElement('canvas')
-  c.width = 1200; c.height = 630
-  const g = c.getContext('2d')
-  g.fillStyle = v('bg') || '#fff7ec'; g.fillRect(0, 0, 1200, 630)
-  let ink = v('ink') || '#111'
-  let pic = false
-  if (S.d.cover) {
+  const load = (src) => new Promise((ok, no) => { const im = new Image(); im.onload = () => ok(im); im.onerror = no; im.src = src })
+  const blobImg = async (id, small) => (S.big.get(id) && !small ? load(URL.createObjectURL(S.big.get(id))) : load(imgUrl(id, small)))
+  await dingbats(S.d.dings.map((n) => DINGBATS[n]).filter(Boolean))
+  let drawing = null
+  if (!S.d.cover && S.d.drawing) {
     try {
-      const im = new Image()
-      im.src = imgUrl(S.d.cover)
-      await im.decode()
-      const r = Math.max(1200 / im.width, 630 / im.height)
-      g.drawImage(im, (1200 - im.width * r) / 2, (630 - im.height * r) / 2, im.width * r, im.height * r)
-      pic = true
-    } catch {}
-  } else if (S.d.drawing && drawCv && drawCv.width) {
-    try { const r = Math.max(1200 / drawCv.width, 630 / drawCv.height); g.drawImage(drawCv, (1200 - drawCv.width * r) / 2, (630 - drawCv.height * r) / 2, drawCv.width * r, drawCv.height * r); pic = true } catch {}
+      const add = (src) => new Promise((ok, no) => { const sc = document.createElement('script'); sc.src = src; sc.onload = ok; sc.onerror = no; document.head.appendChild(sc) })
+      drawLoad = drawLoad || add('/front/skyline.js').then(() => add('/front/doodler.js'))
+      await drawLoad
+      const D = window.MDDOODLER, set = S.d.scene || (SCENES[S.kind] || SCENES.shop)[0][0], p = S.d.place
+      drawing = document.createElement('canvas'); drawing.width = 1200; drawing.height = 630
+      D.portrait(drawing.getContext('2d'), 1200, 630, 4000, { set, place: { id: S.name, name: S.d.name || S.name, nameTh: S.d.name, nameEn: S.d.name, cat: S.kind, sub: [set], hours: osmHours(S.d.hours) || undefined, lat: p.lat ?? undefined, lng: p.lng ?? undefined } })
+    } catch { drawing = null }
   }
-  if (pic) {
-    const gr = g.createLinearGradient(0, 160, 0, 630); gr.addColorStop(0, 'rgba(0,0,0,0)'); gr.addColorStop(1, 'rgba(0,0,0,.78)')
-    g.fillStyle = gr; g.fillRect(0, 0, 1200, 630)
-    ink = '#ffffff'
-  } else if (['stitch', 'night', 'y1997', 'lanna', 'gold'].includes(S.look)) ink = '#ffffff'
-  g.fillStyle = accent; g.fillRect(64, 64, 120, 14)
-  g.fillStyle = ink
-  g.font = '800 96px "Avenir Next Condensed","Arial Narrow",Impact,"Prompt","Noto Sans Thai",system-ui,sans-serif'
-  const words = (S.d.name || S.name).split(' ')
-  const lines = []; let cur = ''
-  for (const w of words) { const t = cur ? cur + ' ' + w : w; if (g.measureText(t).width > 1060 && cur) { lines.push(cur); cur = w } else cur = t }
-  lines.push(cur)
-  const name = lines.slice(0, 2)
-  let y = 630 - 150 - (name.length - 1) * 100 - (S.d.tagline ? 56 : 0)
-  for (const l of name) { g.fillText(l, 64, y, 1072); y += 100 }
-  if (S.d.tagline) { g.font = '500 40px system-ui,"Prompt","Noto Sans Thai",sans-serif'; g.fillText(S.d.tagline.slice(0, 70), 64, y - 30, 1072) }
-  g.fillStyle = '#d7261e'; g.beginPath(); g.roundRect(64, 540, 54, 54, 12); g.fill()
-  g.fillStyle = '#fff'; g.beginPath(); g.arc(91, 567, 11, 0, 7); g.fill()
-  g.fillStyle = ink; g.font = '700 32px ui-monospace,Menlo,monospace'; g.fillText('sites.motdang.net/' + S.name, 134, 578)
-  const blob = await new Promise((ok) => c.toBlob(ok, 'image/jpeg', 0.86))
+  const [cover, avatar] = await Promise.all([S.d.cover ? blobImg(S.d.cover).catch(() => null) : null, S.d.avatar ? blobImg(S.d.avatar, true).catch(() => null) : null])
+  await loadFaces()
+  const c = document.createElement('canvas')
+  c.width = CARD.W; c.height = CARD.H
+  drawCard(c.getContext('2d'), { look: S.look, accent: S.d.accent, name: S.d.name || S.name, tagline: S.d.tagline, url: `${location.host}/${S.name}`, gold: isGold(),
+    cover, drawing, avatar, round: S.d.avround, dings: S.d.dings, D: window.Dingbats || null })
+  const blob = await new Promise((ok) => c.toBlob(ok, 'image/jpeg', 0.88))
   const r = await upload(blob, null, 'card')
   S.d.card = r.id
+  S.cardKey = cardKey({ look: S.look, name: S.name, kind: S.kind, tier: S.tier }, S.d)
 }
 
 async function publish() {
@@ -1445,8 +1431,14 @@ async function boot() {
   } else if (h.get('title') || KINDS.includes(h.get('kind'))) {
     if (h.get('title')) { S.name = h.get('title').slice(0, 60); S.addr = slugify(S.name, h.get('kind') || 'shop') }
     if (KINDS.includes(h.get('kind'))) { S.kind = h.get('kind'); S.look = LOOK_FOR[S.kind]; S.step = 'name' }
+    if (LOOK_IDS.includes(h.get('look'))) S.look = h.get('look')
   }
   draw()
+  // from the front page's three steps: what for, a name, a look, and "Put it online"
+  if (h.get('go') && S.step === 'name' && S.name.trim() && LOOK_IDS.includes(h.get('look'))) {
+    history.replaceState(null, '', '/make')
+    create(S.look, document.createElement('b')).then(() => { if (S.step === 'edit') publish() })
+  }
 }
 window.addEventListener('hashchange', boot)
 window.addEventListener('resize', () => preview())

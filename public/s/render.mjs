@@ -448,11 +448,11 @@ img{max-width:100%;display:block}a{color:inherit}.i{width:22px;height:22px;flex:
 .wrap{max-width:760px;margin:0 auto;padding:0 16px}
 .top{position:relative;overflow:hidden;color:var(--ink)}
 .top.has-cover{color:#fff;min-height:min(78vh,640px);display:flex;align-items:flex-end;background:var(--hero)}
-.top.has-cover>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;animation:drift 22s ease-in-out infinite alternate}
+.top.has-cover{clip-path:inset(0)}.top.has-cover>img{position:fixed;inset:0;width:100%;height:100vh;height:100lvh;object-fit:cover}
 @keyframes drift{to{transform:scale(1.07) translate(-1%,-1%)}}
 .top.has-cover::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0) 30%,rgba(0,0,0,.74) 100%)}
 .top .t{position:relative;z-index:1;width:100%;padding:56px 16px 50px;max-width:760px;margin:0 auto}
-.top h1{margin:0;font-family:var(--display);font-weight:var(--h1w);font-size:clamp(40px,11vw,88px);line-height:.98;letter-spacing:var(--track);text-transform:var(--case);overflow-wrap:break-word;hyphens:auto}
+.top{container-type:inline-size}.top h1{margin:0;font-family:var(--display);font-weight:var(--h1w);font-size:min(clamp(40px,11vw,88px),calc((100cqi - 56px) / (var(--lw,8) * var(--em,.66))));line-height:.98;letter-spacing:var(--track);text-transform:var(--case);overflow-wrap:break-word;text-wrap:balance}
 .top .tag{margin:12px 0 0;font-size:clamp(18px,4.6vw,23px);line-height:1.35;max-width:34em}
 .top figcaption{position:absolute;right:10px;bottom:8px;z-index:2;font-size:11px;opacity:.8;max-width:60%;text-align:right}
 .top figcaption a{color:#fff}
@@ -708,7 +708,8 @@ export function render(site, opt = {}) {
   out.push(`<div class="t">${cov ? '' : look.art}`)
   if (d.avatar && !L && !Wk) out.push(`<img class="av${d.avround ? ' round' : ''}" src="${esc(img(d.avatar, true))}" alt="" width="104" height="104">`)
   if (gold) out.push(`<span class="goldtag">${ding('crown', 'mono')}${W('gold')}</span><br>`)
-  out.push(`<h1>${esc(L ? L.t : Wk ? Wk.t : name)}</h1>`)
+  const h1 = L ? L.t : Wk ? Wk.t : name
+  out.push(`<h1 style="--lw:${longestWord(h1)}">${esc(h1)}</h1>`)
   if (lookId === 'poster') out.push('<span class="bar"></span>')
   if (L) out.push(`<p class="tag"><a href="/${esc(site.name)}#lists">${esc(name)}</a></p>`)
   else if (Wk) out.push(`<p class="tag"><a href="/${esc(site.name)}#works">${esc(name)}</a></p>`)
@@ -989,6 +990,13 @@ function workBody(x, { site, d, W, H2, img, gold }) {
     `<div class="tools-row"><a class="btn ghost" href="/${esc(site.name)}#works">${icon('list')}${W('w_all')}</a></div></section>`)
   if (d.msg) out.push(`<section class="card rise"><div class="tools-row"><a class="btn" href="/${esc(site.name)}#message">${icon('mail')}${W('w_ask')}</a></div></section>`)
   return out.join('')
+}
+
+/** Letters in the title's longest word, so the title is sized to keep every word whole.
+ *  Thai, Lao, Khmer and Burmese run without spaces and break between words on their own. */
+export function longestWord(t) {
+  const words = String(t || '').split(/\s+/).filter((w) => /[\p{Script=Latin}\p{Script=Cyrillic}\p{Script=Greek}\d]/u.test(w))
+  return Math.min(16, Math.max(6, ...words.map((w) => [...w].length)))
 }
 
 function listCard(x, { site, W, img, sym }) {

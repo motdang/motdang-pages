@@ -145,8 +145,12 @@
   <section class="how">
     <div class="wrap">
       <h2 data-w="howH"></h2>
-      <ol class="steps"><li><b>1</b><span data-w="step1"></span></li><li><b>2</b><span data-w="step2"></span></li><li><b>3</b><span data-w="step3"></span></li></ol>
-      <a class="cta big" href="/make" data-w="make"></a>
+      <ol class="steps live3" id="steps">
+        <li><b>1</b><span data-w="step1"></span><div class="opts" id="s1"></div></li>
+        <li><b>2</b><span data-w="step2"></span><input id="s2" maxlength="60" autocomplete="off"><code class="addr" id="s2a"></code></li>
+        <li><b>3</b><span data-w="step3"></span><div class="opts looks3" id="s3"></div></li>
+      </ol>
+      <a class="cta big" id="s3go" href="/make" data-w="putOnline"></a>
     </div>
   </section>
 </main>

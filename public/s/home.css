@@ -121,7 +121,7 @@ h2{font-size:clamp(30px,6vw,52px);line-height:1.08;margin:0 0 12px}
 /* live pages */
 .live{padding:60px 0}.latest{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin:18px 0}
 .latest a{display:flex;flex-direction:column;border-radius:18px;overflow:hidden;background:#fff;text-decoration:none;box-shadow:0 0 0 2px var(--line)}
-.latest .pic{aspect-ratio:16/10;display:grid;place-items:center;background:var(--bg);color:var(--ink);padding:10px;text-align:center;font:var(--h1w) 24px/1 var(--display);overflow:hidden}.latest .pic img{width:100%;height:100%;object-fit:cover}
+.latest .pic{aspect-ratio:1200/630;display:grid;place-items:center;background:var(--bg);color:var(--ink);padding:10px;text-align:center;font:var(--h1w) 24px/1 var(--display);overflow:hidden}.latest .pic img{width:100%;height:100%;object-fit:cover}
 .latest span.t{padding:10px 12px;font-weight:600}.more{font-weight:600}
 
 /* how */
@@ -195,3 +195,14 @@ main>section{position:relative;z-index:1}
 .marks h3{margin:0 0 8px;font-size:30px;line-height:1.1}.marks p{margin:0 0 18px;color:var(--mute)}
 .credits{max-width:880px;margin:0 auto 14px;font-size:12px;line-height:1.5}.credits a{color:inherit}
 @media (prefers-reduced-motion:reduce){.hero.night #lanterns{display:none}}
+
+/* the three steps, done right here (2026-10-15) */
+.steps.live3{max-width:1060px;text-align:left}.steps.live3 li{align-items:stretch;gap:12px}.steps.live3 li>b{align-self:center}.steps.live3 li>span{text-align:center;font-weight:600}
+.opts{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+.opts button{display:inline-flex;align-items:center;gap:6px;padding:7px 12px 7px 9px;border:0;border-radius:99px;background:var(--cream);color:var(--ink);font:600 15px "Prompt",system-ui,sans-serif;cursor:pointer;box-shadow:inset 0 0 0 2px var(--line)}
+.opts button [data-dingbat]{font-size:20px}.opts button.on{background:var(--ink);color:#fff;box-shadow:none}
+#s2{min-height:54px;padding:10px 16px;border-radius:16px;border:3px solid var(--ink);font:600 19px "Prompt",system-ui,sans-serif;color:var(--ink);background:#fff;outline:0;width:100%}#s2:focus{border-color:var(--red)}
+.addr{display:block;padding:8px 12px;border-radius:12px;background:var(--paper);font:600 14px ui-monospace,Menlo,monospace;color:var(--mute);overflow-wrap:anywhere;text-align:center}
+.looks3 button{padding:0;width:52px;height:52px;border-radius:14px;justify-content:center;box-shadow:0 0 0 2px var(--line);font:var(--h1w) 22px/1 var(--display);background:var(--bg)}
+.looks3 button.on{box-shadow:0 0 0 3px var(--red),0 0 0 6px #fff;background:var(--bg)}
+.looks3 button i.g{position:absolute;margin:-40px 0 0 40px;font-style:normal;font-size:12px}
