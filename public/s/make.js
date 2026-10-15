@@ -196,7 +196,7 @@ function drawKind() {
   app.innerHTML = `<section class="hero"><h1 class="q">${T('q1')}</h1><p class="sub">${T('heroMake')}</p></section>` +
     `<div class="kinds">${KINDS.map((k) => `<button class="kind" data-kind="${k}"><span class="kd">${ding(KIND_DING[k], 'paper', 'hover')}</span><b>${T('k_' + k)}</b><small>${T('h_' + k)}</small></button>`).join('')}</div>` +
     (mine.length ? `<section class="mine"><h2>${T('mine')}</h2>${mine.map((p) => `<a href="/make#t=${esc(p.token)}">${esc(p.title)}<span>sites.motdang.net/${esc(p.name)}</span></a>`).join('')}</section>` : '')
-  app.querySelectorAll('.kind').forEach((b) => (b.onclick = () => { S.kind = b.dataset.kind; S.look = LOOK_FOR[S.kind]; S.step = 'name'; draw() }))
+  app.querySelectorAll('.kind').forEach((b) => (b.onclick = () => { S.kind = b.dataset.kind; S.look = S.lookWanted || LOOK_FOR[S.kind]; S.step = 'name'; draw() }))
   app.querySelectorAll('.mine a').forEach((a) => (a.onclick = (e) => { e.preventDefault(); history.replaceState(null, '', a.getAttribute('href')); boot() }))
 }
 
@@ -1433,6 +1433,7 @@ async function boot() {
     if (KINDS.includes(h.get('kind'))) { S.kind = h.get('kind'); S.look = LOOK_FOR[S.kind]; S.step = 'name' }
     if (LOOK_IDS.includes(h.get('look'))) S.look = h.get('look')
   }
+  if (LOOK_IDS.includes(h.get('look'))) S.lookWanted = S.look = h.get('look')
   draw()
   // from the front page's three steps: what for, a name, a look, and "Put it online"
   if (h.get('go') && S.step === 'name' && S.name.trim() && LOOK_IDS.includes(h.get('look'))) {

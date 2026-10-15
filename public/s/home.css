@@ -15,7 +15,7 @@ a{color:inherit}img{max-width:100%;display:block}
 .brand img{border-radius:9px}
 .langs{margin-left:auto;display:flex;gap:2px}.langs button{border:0;background:none;padding:6px 9px;border-radius:99px;font:inherit;font-size:14px;color:var(--mute);cursor:pointer}.langs button.on{background:var(--ink);color:#fff}
 .mk{flex:none;padding:9px 16px;border-radius:99px;background:var(--gold);color:#000;font-weight:600;text-decoration:none;font-size:15px}
-@media (max-width:560px){.mk{display:none}.langs button{padding:6px 7px}}
+@media (max-width:560px){.mk{padding:8px 12px;font-size:14px}.langs button{padding:5px 6px;font-size:13px}.brand span{display:none}.bar{gap:6px}}
 h1,h2,h3{font-family:"Chonburi","Iowan Old Style",Georgia,"Prompt",serif;font-weight:400;letter-spacing:-.01em}
 h2{font-size:clamp(30px,6vw,52px);line-height:1.08;margin:0 0 12px}
 .sub{color:var(--mute);font-size:19px;margin:0 0 20px;max-width:40em}
@@ -206,3 +206,10 @@ main>section{position:relative;z-index:1}
 .looks3 button{padding:0;width:52px;height:52px;border-radius:14px;justify-content:center;box-shadow:0 0 0 2px var(--line);font:var(--h1w) 22px/1 var(--display);background:var(--bg)}
 .looks3 button.on{box-shadow:0 0 0 3px var(--red),0 0 0 6px #fff;background:var(--bg)}
 .looks3 button i.g{position:absolute;margin:-40px 0 0 40px;font-style:normal;font-size:12px}
+
+/* less talking, more doing (2026-10-15) */
+.phone .like{min-height:46px;margin:10px auto 0;display:flex;width:max-content;font-size:16px;padding:8px 18px;box-shadow:0 4px 0 #c98a00}
+.lk .use{position:relative;z-index:1;display:inline-block;margin-top:10px;padding:6px 12px;border-radius:99px;background:var(--accent);color:var(--on-accent,#fff);font:600 14px/1.2 "Prompt",system-ui,sans-serif;text-decoration:none}
+.toy{min-height:200px}
+.dockcta{position:fixed;left:50%;bottom:calc(14px + env(safe-area-inset-bottom));z-index:50;transform:translate(-50%,140%);display:inline-flex;align-items:center;min-height:56px;padding:12px 30px;border-radius:99px;background:var(--gold);color:#000;font:600 19px/1.2 "Prompt",system-ui,sans-serif;text-decoration:none;box-shadow:0 6px 0 #c98a00,0 16px 40px -10px rgba(0,0,0,.45);transition:transform .35s cubic-bezier(.2,.8,.2,1)}
+.dockcta.on{transform:translate(-50%,0)}
