@@ -3,7 +3,7 @@
 // own; "Put it online" is the only button that matters. Beside the page:
 // its messages, its traffic, and Gold.
 
-import { render, normalize, LOOKS, LOOK_IDS, GOLD_LOOKS, KINDS, ACCENTS, CURRENCY, SCENES, MAX_PHOTOS, osmHours, currencyFor, qrSvg, lineShare, esc } from './render.mjs'
+import { render, normalize, LOOKS, LOOK_IDS, GOLD_LOOKS, lookOf, KINDS, ACCENTS, CURRENCY, SCENES, MAX_PHOTOS, osmHours, currencyFor, qrSvg, lineShare, esc } from './render.mjs'
 import { MAX, UNIT_LABEL } from './extras.mjs'
 import { DINGBATS } from './db/names.mjs'
 import { PAGE_LANGS } from './words.mjs'
@@ -65,7 +65,7 @@ const DEFAULT_OPEN = {
   event: ['event', 'words', 'cal', 'photos', 'map', 'contact'],
   group: ['words', 'cal', 'photos', 'links', 'contact'],
 }
-const LOOK_FOR = { shop: 'poster', food: 'night', service: 'clean', work: 'clean', stay: 'loom', homes: 'clean', me: 'y1997', event: 'stitch', group: 'loom' }
+const LOOK_FOR = { shop: 'poster', food: 'night', service: 'loom', work: 'clean', stay: 'lanna', homes: 'clean', me: 'stitch', event: 'poster', group: 'stitch' }
 
 function guessCc() {
   const zone = { 'Asia/Bangkok': 'TH', 'Asia/Yangon': 'MM', 'Asia/Rangoon': 'MM', 'Asia/Vientiane': 'LA', 'Asia/Phnom_Penh': 'KH',
@@ -265,12 +265,31 @@ function getsHtml() {
 
 function lookTile(id) {
   const L = LOOKS[id]
-  const vars = L.vars.replace(/\s+/g, ' ') + `;--accent:${S.accent || L.accent}`
-  return `<button class="lp lp-${id}${id === S.look ? ' on' : ''}" data-look="${id}" aria-pressed="${id === S.look}" style="${esc(vars)}">
-    <span class="mp"><span class="mpc"${KPIC[S.kind] ? ` style="background-image:url(${kpicUrl(S.kind, true)})"` : ''}></span>${L.art}
-      <span class="mpn">${esc(shownName())}</span><span class="mpk"><span class="mpb"></span><span class="mpl"></span><span class="mpl s"></span><span class="mpbtn"></span></span></span>
+  return `<button class="lp${id === S.look ? ' on' : ''}" data-look="${id}" aria-pressed="${id === S.look}">
+    <span class="mp"><iframe data-th="${id}" tabindex="-1" aria-hidden="true" sandbox="allow-same-origin" scrolling="no" loading="lazy" title=""></iframe></span>
     <span class="lkt"><b>${T('lk_' + id)}${L.gold ? `<i class="gtag">★ ${T('tagGold')}</i>` : ''}</b><small>${T('m_' + id)}</small></span></button>`
 }
+
+// Each look tile is the page itself in that look, the top of it, drawn by the same render() and
+// scaled down: what the maker picks is what the page will be.
+const THUMB_W = 390, THUMB_H = 660
+function thumbData() { return S.step === 'edit' && S.d ? { ...S.d, name: S.d.name || S.name } : tryData() }
+function fillThumbs(root = app) {
+  const d = thumbData()
+  root.querySelectorAll('iframe[data-th]').forEach((f) => {
+    const id = f.dataset.th
+    const html = render({ name: S.addr || S.name || 'your-page', look: id, lang: (S.step === 'edit' ? S.pageLang : S.pageLangTry) || 'en', kind: S.kind, d, views: 1234, status: 'live', tier: 'gold' },
+      { preview: true, thumb: true, gold: true, hotel: true, origin: location.origin, img: (x, small) => (x === KPIC_ID ? kpicUrl(S.kind, small) : imgUrl(x, small)) })
+    if (f.dataset.html !== html) { f.dataset.html = html; f.srcdoc = html }
+  })
+  sizeThumbs(root)
+}
+function sizeThumbs(root = app) {
+  root.querySelectorAll('.mp').forEach((m) => m.style.setProperty('--k', String(m.clientWidth / THUMB_W)))
+}
+let thumbTimer = 0
+const thumbsSoon = (ms = 600) => { clearTimeout(thumbTimer); thumbTimer = setTimeout(() => fillThumbs(), ms) }
+addEventListener('resize', () => sizeThumbs())
 
 function accDots() {
   const own = LOOKS[S.look].accent
@@ -290,6 +309,7 @@ function syncPick() {
   const a = $('#accs'); if (a) a.innerHTML = accDots()
   const n = $('#lknav'); if (n) n.innerHTML = lookNav()
   wirePick()
+  fillThumbs()
 }
 
 function setLook(id, how) {
@@ -370,7 +390,7 @@ function drawTry() {
     // the name changes in the page and in every look at once; the whole page is drawn again when typing stops
     const h1 = $('#tryframe').contentDocument?.querySelector('header.top h1')
     if (h1) h1.textContent = shownName()
-    app.querySelectorAll('.mpn').forEach((x) => (x.textContent = shownName()))
+    thumbsSoon(700)
     tryPreview(700)
     check()
   }
@@ -398,7 +418,7 @@ function drawTry() {
   app.querySelectorAll('.mine a').forEach((a) => (a.onclick = (e) => { e.preventDefault(); history.replaceState(null, '', a.getAttribute('href')); boot() }))
   S.pageLangTry = pageLang
   if (S.addr) check()
-  kpicReady.then(() => tryPreview(0))
+  kpicReady.then(() => { tryPreview(0); fillThumbs() })
 }
 
 let tryTimer = 0
@@ -457,9 +477,10 @@ function check() {
 
 function lookCard(id, on) {
   const L = LOOKS[id]
-  const vars = L.vars.replace(/\s+/g, ' ') + `;--accent:${L.accent}`
   const locked = L.gold && !isGold()
-  return `<button class="look${on ? ' on' : ''}${L.gold ? ' goldlook' : ''}" data-look="${id}" style="${esc(vars)}">${L.art}<b>${esc(S.d?.name || S.name || L.label)}</b><small>${esc(L.label)}</small><span class="acc"></span>${L.gold ? `<span class="glock">${locked ? T('goldLock') : '★'}</span>` : ''}</button>`
+  return `<button class="lp${on ? ' on' : ''}" data-look="${id}" aria-pressed="${on}">
+    <span class="mp"><iframe data-th="${id}" tabindex="-1" aria-hidden="true" sandbox="allow-same-origin" scrolling="no" loading="lazy" title=""></iframe></span>
+    <span class="lkt"><b>${T('lk_' + id)}${L.gold ? `<i class="gtag">★ ${locked ? T('goldLock') : T('tagGold')}</i>` : ''}</b><small>${T('m_' + id)}</small></span></button>`
 }
 
 function goldTease() {
@@ -658,6 +679,7 @@ function drawParts() {
   if (open) {
     if (open.querySelector('#mapel')) mountMap()
     if (open.querySelector('#drawpv')) mountDrawing()
+    if (open.querySelector('iframe[data-th]')) fillThumbs(open)
   }
   lightPart()
 }
@@ -771,7 +793,7 @@ const SEC = {
   },
   look() {
     const acc = S.d.accent || LOOKS[S.look].accent
-    return `<div class="lookrow">${LOOK_IDS.map((id) => lookCard(id, id === S.look)).join('')}</div>
+    return `<div class="lks">${LOOK_IDS.map((id) => lookCard(id, id === S.look)).join('')}</div>
       <div><b>${T('colour')}</b><div class="swatches">${[LOOKS[S.look].accent, ...ACCENTS.filter((a) => a !== LOOKS[S.look].accent)].map((a) => `<button data-acc="${a}" style="background:${a}"${a === acc ? ' class="on"' : ''} aria-label="${a}"></button>`).join('')}</div></div>
       <div><b>${T('s_dings')}</b><p class="hint">${T('dingsHint')}</p>${dingBrowser()}</div>
       <label class="check"><input type="checkbox" class="sw" data-k="counter" ${S.d.counter ? 'checked' : ''}>${T('counter')}</label>
@@ -1142,6 +1164,7 @@ function redrawSec(id) {
   sec.innerHTML = g && !isGold() ? goldLocked() : SEC[id]()
   if (id === 'map') { S.picker = null; mountMap() }
   if (id === 'drawing') { drawCv = null; mountDrawing() }
+  if (sec.querySelector('iframe[data-th]')) fillThumbs(sec)
 }
 
 // ---- the drawing preview in the editor ----------------------------------------------------
@@ -1924,7 +1947,7 @@ async function boot() {
     S.token = t
     try {
       const r = await call('GET', 'site')
-      Object.assign(S, { name: r.name, kind: r.kind, look: r.look, pageLang: r.lang, status: r.status, views: r.views, d: normalize(r.d), step: 'edit',
+      Object.assign(S, { name: r.name, kind: r.kind, look: lookOf(r.look), pageLang: r.lang, status: r.status, views: r.views, d: normalize(r.d), step: 'edit',
         tier: r.tier, goldUntil: r.gold_until || '', notifyEmail: r.notify_email, notifyOk: r.notify_ok, unread: r.unread,
         trial: !!r.trial, asks: r.asks || 0, domain: r.domain || '', domainState: r.domain_state || '', domains: !!r.domains, price: r.price || 3000,
         plan: r.plan || 'gold', hotel: !!r.hotel, plans: r.plans || null, cardUrl: '' })

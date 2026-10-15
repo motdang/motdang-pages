@@ -50,3 +50,27 @@ Looks
 8. Arrows on the phone (‹ Night market ›) and a swipe on the phone change
    the look in place. On a computer, pointing at a look shows it on the phone.
 9. "Surprise me": a look and a colour at random.
+
+THE LOOKS THEMSELVES (same evening)
+
+Nan, on the pages the looks made: "This design somehow passed muster. You're not
+sending your best." · "the design is NOT GOOD" · "I can't really tell the difference
+between any of the designs, they do nothing and all suck equally" · "Nobody said you
+need 9 of everything. Prune what isn't good or useful."
+
+Shot at 390 px, all nine were one page: photo, name bottom left, a GOLD pill, a grey
+pill, two rows of buttons. Only the font and button colour changed.
+
+Kept seven, each its own page, started from the minisites she rates best:
+  Poster      Golden Gate, Mae Hong Son: the photo in two inks, huge condensed caps
+  Loom        Warp and Weft: a woven band, the photo weaving open, serif on dark wood
+  Stitch      her bright-pages rule: indigo, Akha cross-stitch, a sewn-on photo
+  Night       lights strung over the photo after dark, lanterns going up, neon name
+  Lanna gold  Lanna Craft: lacquer red stencilled in gold, the photo in a temple gable
+  Clean       the photo, then a white sheet sliding up with the name in black
+  Gold leaf   Gold only: black, a fan of gold rays, an arched window, gold leaf falling
+Cut 1997 and Riso. A page that had one shows Night or Poster.
+
+Every look moves on its own and plays again when the top of the page is tapped.
+The look tiles in both pickers are the page itself, the top of it, scaled down.
+Code: public/s/looks.mjs.

@@ -1,6 +1,6 @@
 // pages.mjs — the directory of everyone's pages, the not-found page, admin.
 
-import { esc, LOOKS, KINDS } from '../public/s/render.mjs'
+import { esc, LOOKS, KINDS, lookOf } from '../public/s/render.mjs'
 import { ui, pickLang, UI_LANGS } from '../public/s/make-words.mjs'
 
 const icon = (id) => `<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><use href="/s/icons.svg#i-${id}"/></svg>`
@@ -52,7 +52,7 @@ export async function directory(env, url, request, origin = 'https://sites.motda
   const region = (c) => { try { return new Intl.DisplayNames([lang], { type: 'region' }).of(c) } catch { return c } }
   const tiles = rows.slice(0, 48).map((r) => {
     const d = JSON.parse(r.d)
-    const L = LOOKS[r.look] || LOOKS.poster
+    const L = LOOKS[lookOf(r.look)]
     const pic = (d.card ? `<img src="/img/${esc(d.card)}.jpg" alt="" loading="lazy">` : d.cover ? `<img src="/img/${esc(d.cover)}-s.webp" alt="" loading="lazy">` : `<b>${esc(d.name || r.name)}</b>`) + (r.tier === 'gold' && r.gold_until >= new Date().toISOString().slice(0, 10) ? '<i class="gd">★</i>' : '')
     return `<a class="tile" href="/${esc(r.name)}"><span class="pic" style="${esc(L.vars.replace(/\s+/g, ' '))};--accent:${esc(d.accent || L.accent)}">${pic}</span>` +
       `<span class="tx"><span class="nm">${esc(d.name || r.name)}</span>${d.tagline ? `<span class="tg">${esc(d.tagline)}</span>` : ''}` +

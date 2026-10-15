@@ -13,13 +13,18 @@ test('maker text is escaped everywhere it lands', () => {
   assert.ok(!html.includes('javascript:'))
 })
 
-test('every look renders a whole page with its tap drawing', () => {
+test('every look renders a whole page, and the top of it answers a tap', () => {
   for (const look of LOOK_IDS) {
     const html = render({ ...base, look, d: { name: 'ข้าวซอย', tagline: 'อร่อย', hours: { on: true, week: Array(7).fill([['09:00', '18:00']]) } } })
     assert.match(html, /^<!doctype html>/)
-    assert.match(html, /class="art /)
+    assert.match(html, /\.top\.go /, look + ' plays again on a tap')
     assert.match(html, /<\/html>$/)
   }
+})
+
+test('a page with a look that was taken out shows the nearest one that stayed', () => {
+  assert.match(render({ ...base, look: 'y1997', d: { name: 'x' } }), /data-look="night"/)
+  assert.match(render({ ...base, look: 'riso', tier: 'gold', d: { name: 'x' } }), /data-look="poster"/)
 })
 
 test('normalize drops unknown keys, bad photo ids, bad urls', () => {

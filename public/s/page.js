@@ -34,6 +34,12 @@
   $$('.art').forEach(function (a) {
     a.addEventListener('click', function () { a.classList.remove('go'); void a.getBoundingClientRect(); a.classList.add('go') })
   })
+  // a tap on the top of the page plays its look again: the weave, the neon, the gold (looks.mjs .top.go)
+  var top = $('header.top')
+  if (top) top.addEventListener('click', function (e) {
+    if (e.target.closest && e.target.closest('a,button,[contenteditable]')) return
+    top.classList.remove('go'); void top.getBoundingClientRect(); top.classList.add('go')
+  })
 
   // sections rise into place as they scroll in
   if ('IntersectionObserver' in window && !REDUCED) {
