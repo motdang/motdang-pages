@@ -73,10 +73,15 @@ export async function grant(env, siteId, months = 12, plan = months === 1 ? 'hot
 export const isGold = (s) => s?.tier === 'gold' && (!s.gold_until || s.gold_until >= new Date().toISOString().slice(0, 10))
 
 /** A paid plan, posted to the team's sales channel when DISCORD_SALES is set. */
-export async function tellSales(env, { title, url, amount, months, plan, how }) {
-  if (!env.DISCORD_SALES) return 'off'
+export async function tellSales(env, { title, url, amount, months, plan, how, cut }) {
   const what = plan === 'hotel' ? (months === 1 ? 'Hotel month' : 'Hotel year') : 'Gold year'
+  const by = cut ? `\n${cut.name} +฿${cut.cut} (${cut.rate}%)` : ''
+  return postSales(env, `💰 **${what}** · ฿${amount} · ${title}\n${url} · ${how}${by}`)
+}
+/** One message to the team's sales channel. */
+export async function postSales(env, content) {
+  if (!env.DISCORD_SALES) return 'off'
   const r = await fetch(env.DISCORD_SALES, { method: 'POST', headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ username: 'motdang sales', content: `💰 **${what}** · ฿${amount} · ${title}\n${url} · ${how}`, allowed_mentions: { parse: [] } }) })
+    body: JSON.stringify({ username: 'motdang sales', content, allowed_mentions: { parse: [] } }) })
   return r.ok ? 'sent' : 'discord ' + r.status
 }
