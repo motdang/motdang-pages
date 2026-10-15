@@ -22,6 +22,19 @@ BANDS = [
     ('map', 'Chiang_Mai_City_Map_(Chiengmai)_1890.png', 'fix', 'ink', '', (0.5, 0.5), 'Map of Chiang Mai, 1890', 'Public domain'),
 ]
 
+# pictures for the example phones on the front page: (id, file on Commons, style, title, licence)
+EXAMPLES = [
+    ('khaosoi', 'Khao_soi_-_Bangkok_-_2017-05-07_(002).jpg', 'wash', 'Khao soi, Bangkok', 'CC0'),
+    ('khaosoi2', 'Khao_soi_-_Bangkok_-_2017-05-07_(005).jpg', 'fix', 'Khao soi, Bangkok', 'CC0'),
+    ('bungalow', 'Bungalow_in_Pai,_Thailand.JPG', 'wash', 'Bungalow in Pai, Thailand', 'CC0'),
+    ('paifields', 'View_of_rice_farms_in_Pai,_Thailand..JPG', 'fix', 'Rice farms in Pai, Thailand', 'CC0'),
+    ('lanternsx', 'YI_PENG_LANTERN_FESTIVAL_THAILAND.jpg', 'fix', 'Yi Peng lantern festival, Thailand', 'CC0'),
+    ('watgold', 'Temple_Wat_Chiang_Man_3.jpg', 'gold', 'Wat Chiang Man, Chiang Mai', 'CC0'),
+    ('pathwash', 'Mae_Hong_Son,_Thailand_(Unsplash).jpg', 'wash', 'Mae Hong Son, Thailand (Unsplash)', 'CC0'),
+    ('mapink', 'Chiang_Mai_City_Map_(Chiengmai)_1890.png', 'ink', 'Map of Chiang Mai, 1890', 'Public domain'),
+    ('pairiso', 'View_of_rice_farms_in_Pai,_Thailand..JPG', 'riso', 'Rice farms in Pai, Thailand', 'CC0'),
+]
+
 SAMPLE = ('Bungalow_in_Pai,_Thailand.JPG', 'Bungalow in Pai, Thailand')
 
 
@@ -82,6 +95,16 @@ def main():
         im = Image.merge('RGB', (r.point(lambda v: v * 0.92), g, b.point(lambda v: min(255, v * 1.08 + 6))))
         im.save(os.path.join(OUT, 'sample.webp'), 'WEBP', quality=80)
         credits['sample'] = {'title': SAMPLE[1], 'src': C + SAMPLE[0], 'license': 'CC0', 'made': 'dimmed'}
+        ex = {}
+        for eid, name, style, title, lic in EXAMPLES:
+            im = Image.open(io.BytesIO(fetch(name, 1400))).convert('RGB')
+            im.thumbnail((1100, 1100))
+            pic = styled(im, style, '', tmp)
+            pic.save(os.path.join(OUT, f'ex-{eid}.webp'), 'WEBP', quality=72, method=6)
+            sm = pic.copy(); sm.thumbnail((480, 480)); sm.save(os.path.join(OUT, f'ex-{eid}-s.webp'), 'WEBP', quality=72, method=6)
+            ex[eid] = {'title': title, 'by': 'Wikimedia Commons', 'src': C + name, 'license': lic, 'licenseUrl': '', 'from': 'commons'}
+            print('ex', eid, pic.size, flush=True)
+        json.dump(ex, open(os.path.join(OUT, 'examples.json'), 'w'), ensure_ascii=False, indent=1)
     json.dump(credits, open(os.path.join(OUT, 'credits.json'), 'w'), ensure_ascii=False, indent=1)
 
 
