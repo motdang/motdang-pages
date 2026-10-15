@@ -29,13 +29,15 @@ test('Gold looks, video, places and indexing show only for Gold', () => {
   const d = { name: 'x', video: 'https://youtu.be/dQw4w9WgXcQ', spots: [{ n: 'Wat', lat: 18.79, lng: 98.98 }], place: { lat: 18.79, lng: 98.99, cc: 'TH' } }
   const free = render({ ...base, look: 'gold', d })
   assert.match(free, /data-look="poster"/)
-  assert.ok(!free.includes('youtube') && !free.includes('class="spots"'))
-  assert.match(free, /name="robots" content="noindex"/)
+  assert.ok(!free.includes('youtube'))
+  assert.match(free, /class="spots"/) // up to 3 places on a free page since 2026-10-14
+  assert.equal(render({ ...base, d: { ...d, spots: Array.from({ length: 6 }, (_, i) => ({ n: 'P' + i, lat: 18.7 + i / 100, lng: 98.9 })) } }).match(/data-spot=/g).length, 3)
+  assert.match(free, /name="robots" content="noindex,notranslate"/)
   const gold = render({ ...base, look: 'gold', tier: 'gold', d })
   assert.match(gold, /data-look="gold"/)
   assert.match(gold, /data-kind="youtube" data-id="dQw4w9WgXcQ"/)
   assert.match(gold, /class="spots"/)
-  assert.match(gold, /content="index,follow"/)
+  assert.match(gold, /content="index,follow,notranslate"/)
 })
 
 test('library pictures carry their credit on the page', () => {
@@ -87,4 +89,35 @@ test('people and machines', () => {
   assert.equal(isMachine(req('Mozilla/5.0 (compatible; Googlebot/2.1)')), true)
   assert.equal(isMachine(req('Mozilla/5.0 Chrome/130.0 Safari/537.36')), true)
   assert.equal(isMachine(req('Mozilla/5.0 Chrome/130.0 Safari/537.36', { 'sec-fetch-mode': 'navigate' })), false)
+})
+
+test('no browser auto-translation on own pages; the page offers its own languages', () => {
+  const html = render({ ...base, d: { name: 'x' } }, { nonce: 'n1' })
+  assert.match(html, /<html [^>]*translate="no" class="notranslate"/)
+  assert.match(html, /<meta name="google" content="notranslate">/)
+  assert.match(html, /<script nonce="n1">if\(\/\[\.\]translate\[\.\]goog\$\//)
+})
+
+test('calendar, offers, bookings, rooms and listings: Gold parts only on Gold', () => {
+  const d = { name: 'x', cal: [{ id: 'aaaa', t: 'Yoga', start: '2026-10-01T07:00', rep: 'weekly' }], camps: [{ t: 'Sale', start: '2026-10-01T00:00', end: '2027-01-01T00:00', code: 'A1' }],
+    svc: [{ n: 'Massage', mins: 60 }], rooms: [{ n: 'Room' }], lists: [{ id: 'list01', t: 'House' }] }
+  const now = new Date('2026-10-14T05:00:00Z')
+  const free = render({ ...base, d }, { now })
+  assert.match(free, /id="cal"/)
+  assert.ok(!/class="camp"|id="book"|id="rooms"|id="lists"/.test(free))
+  const gold = render({ ...base, tier: 'gold', d }, { now })
+  for (const k of ['class="camp"', 'id="book"', 'id="rooms"', 'id="lists"', 'href="/khaosoi-mae-sai/l/list01"']) assert.ok(gold.includes(k), k)
+  assert.equal((gold.match(/<li[^>]*><time class="dt"/g) || []).length, 1) // a weekly item shows once
+})
+
+test('Gold year: Agoda and Booking.com buttons, rooms without direct booking; hotel month: direct booking', () => {
+  const d = { name: 'x', rooms: [{ id: 'room01', n: 'Room', p: '900' }], ota: { agoda: 'https://www.agoda.com/x/hotel/chiang-mai-th.html', booking: 'https://www.booking.com/hotel/th/x.html', evil: 1 } }
+  const year = render({ ...base, tier: 'gold', d })
+  assert.match(year, /class="btn ota ota-agoda"[^>]*href="https:\/\/www\.agoda\.com\//)
+  assert.match(year, /class="btn ota ota-booking"/)
+  assert.ok(year.includes('id="rooms"') && !year.includes('data-pick='))
+  const hotel = render({ ...base, tier: 'gold', hotel: true, d })
+  assert.match(hotel, /data-pick="room01"/)
+  assert.ok(!render({ ...base, d }).includes('class="btn ota ota-agoda"')) // free pages: no buttons
+  assert.equal(normalize({ ota: { agoda: 'https://evil.example/agoda.com' } }).ota.agoda, '')
 })

@@ -4,7 +4,7 @@
 // which buttons they pressed. One D1 row per page, day, measure and key.
 
 const MACHINE = /bot|crawl|spider|slurp|facebookexternalhit|meta-externalagent|preview|embedly|whatsapp|telegrambot|linkexpand|skypeuripreview|discordbot|slackbot|twitterbot|bluesky|cardyb|mastodon|curl|wget|python|httpx|go-http|node-fetch|axios|java\/|okhttp|headless|lighthouse|pingdom|uptime|monitor|scan|gptbot|claude|anthropic|perplexity|bytespider|ahrefs|semrush|mj12|dotbot|petal|yandex|baidu/i
-export const TAPS = ['call', 'line', 'dir', 'ride', 'food', 'lineman', 'whatsapp', 'share', 'copy', 'shareline', 'sharefb', 'sharex', 'sharewa', 'sharetg', 'qr', 'story', 'map', 'far', 'vcf', 'ics', 'sign', 'order', 'msg', 'link', 'social', 'email', 'web', 'photo', 'video', 'drawing']
+export const TAPS = ['call', 'line', 'dir', 'ride', 'food', 'lineman', 'whatsapp', 'share', 'copy', 'shareline', 'sharefb', 'sharex', 'sharewa', 'sharetg', 'qr', 'story', 'map', 'far', 'vcf', 'ics', 'sign', 'order', 'msg', 'link', 'social', 'email', 'web', 'photo', 'video', 'drawing', 'book', 'rooms', 'listing', 'code', 'calone', 'calfollow', 'lang', 'agoda', 'booking']
 
 /** People or machines, from the request alone. */
 export function isMachine(request) {

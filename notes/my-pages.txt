@@ -24,3 +24,18 @@ Into Mot Dang: sites.motdang.net/feed.json and /api/find. A page whose pin match
 
 Code: /Users/annikapeacock/Developer/claude code projects/motdang-pages
 Forks: QUEUE.txt C179–C181, C183, C185, C190–C192.
+
+2026-10-14 — more Gold, and more on every page (go/gold-plan)
+
+Every page: the drawing sketches itself in with a pen the first time it comes into view; the whole dingbat library (267, by family, searchable); the map's look (drawn, terrain, streets) and how close; up to 3 places on the map; a calendar (one-off, weekly, monthly) with each date to a phone calendar and the whole as a feed (/name/calendar.ics); no browser auto-translation.
+
+Gold: timed offers (shown only between two times, counting down, a code that copies); bookings (services with minutes, price and how many at once; free times from the Hours; a Bookings tab to accept or decline; the reader's copy by email; a deposit QR to the maker's own PromptPay); rooms (nightly price, guests, photos, a month of nights; Airbnb, Booking.com and Agoda calendars read every 30 minutes; /name/room/<id>.ics for them to read); listings (sale or rent, price, area in m², rai or ตร.ว., bedrooms, status; each at /name/l/<id> with its share card and schema.org); the page in the 12 page languages (Workers AI, Gemma 4, written once the words sit 10 minutes; ?hl=xx; a chip offers the reader's language); a monthly visitor note on the 1st; 120 photos.
+
+New kinds in the builder: hotel or guesthouse (rooms first), homes to sell or rent (listings first).
+
+Every new page is Gold for 30 days; 5 days before the end a note goes to a confirmed email (C194). A waiting Gold slip sends a LINE note to Beer (C191 c): direct when she has added @964yxgnk, the team room until then.
+
+Own address (yourshop.com): built, off until Cloudflare for SaaS is on for motdang.net (QUEUE B). Then set secrets CF_SAAS_TOKEN (SSL and Certificates: Edit on motdang.net) and ZONE_ID, and add a Worker route */* on the zone; the Worker answers unknown hosts only on page paths.
+
+Showcases: sites.motdang.net/motdang-net and /hongdam-studio (edit links: token get MOTDANG_PAGE_MOTDANG_NET, MOTDANG_PAGE_HONGDAM_STUDIO).
+Run the half-hourly jobs now: POST /admin/run (admin password), answers what each job did.

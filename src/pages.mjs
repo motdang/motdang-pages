@@ -25,7 +25,7 @@ main{padding:18px 16px 80px}.chips{display:flex;flex-wrap:wrap;gap:8px;margin:0 
 .nf{max-width:560px;margin:10vh auto;padding:0 16px;text-align:center}.nf h1{color:#1c1530}`
 
 function shell(lang, title, inner, { langLinks = '' } = {}) {
-  return `<!doctype html><html lang="${lang}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  return `<!doctype html><html lang="${lang}" translate="no" class="notranslate"><head><meta charset="utf-8"><meta name="google" content="notranslate"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${esc(title)} · Mot Dang</title><meta name="robots" content="noindex"><link rel="icon" href="/s/ant.svg"><meta name="theme-color" content="#1c1530">
 <style>${CSS}</style></head><body>${langLinks}${inner}</body></html>`
 }

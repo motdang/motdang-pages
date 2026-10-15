@@ -1,0 +1,44 @@
+sites.motdang.net — Gold and all pages, plan of 2026-10-14
+
+Her answers 2026-10-14: build 1–3, 5, 6; Gold free for a new page's first 30 days;
+a waiting slip goes to Beer on LINE; Gold showcases for motdang.net Co. and Hongdam.
+Her brief: more gorgeous, more functional, motdang magic on every page; browse dingbats,
+customize maps, run calendars and timed campaigns; what Wix charges for, free or cheap;
+real estate listings, hotels, businesses that take many bookings.
+
+Start: 0 live pages, 0 Gold, 0 payments.
+
+ALL PAGES
+1. The page draws itself: on first sight the doodler's picture is sketched in by a pen
+   line, then lit. Gold pages add a sweep of gold leaf.
+2. Dingbats: the whole library (all families) in the builder, searchable, up to 6.
+3. Map: drawn, terrain or streets; how close; up to 3 of the maker's own places
+   (Gold 20).
+4. Calendar: dated items, one-off or weekly; next ones on the page; each to a phone
+   calendar; the whole calendar as a feed a phone can follow (/name/calendar.ics).
+
+GOLD (฿3,000 a year; new pages Gold for 30 days)
+5. Timed campaigns: a banner with a start and an end, a countdown, a code; shows
+   only inside its window; taps counted.
+6. Bookings: services with length, price and how many at once; times from the hours;
+   a reader asks for a time, the maker accepts or declines in a Bookings tab; the
+   reader's copy by email with a calendar file; a deposit by the maker's own PromptPay.
+7. Hotels: rooms with nightly prices; a reader picks dates; Airbnb, Booking.com and
+   Agoda calendars read in every 30 minutes to block taken nights; each room's
+   calendar out for those sites.
+8. Listings (houses, land, condos, rentals): price, size in m² or rai, beds, baths,
+   status; each listing its own address, share card and search markup; ask-about form.
+9. Page in the reader's language: Workers AI writes the 11 other page languages;
+   a switcher.
+10. Monthly visitor note by email.
+11. Own domain (yourshop.com): built, off until Cloudflare for SaaS is on for
+    motdang.net (dashboard click, card on file, 100 domains free).
+12. Gold pin on motdang.net doodle maps; first on its shelf (mot-dang side, rides the walk).
+
+MONEY
+- Trial: 30 days of Gold from the first save.
+- A slip that waits: LINE note to Beer from @964yxgnk. Beer has not added the account;
+  until she does, the note goes to the team room with her name.
+- Showcases: motdang.net Co. (48–49 Thai Wiwat Alley) and Hongdam, Gold for a year.
+
+Cost: $0 up front. Workers AI, D1, R2, Resend inside free tiers at this size.

@@ -2,6 +2,8 @@
 // Day names, "in 3 days" and "1.2 km" come from Intl in the reader's
 // language; only these phrases are written here. English fills any gap.
 
+import { Y } from './words-more.mjs'
+
 export const PAGE_LANGS = {
   th: 'ไทย', en: 'English', my: 'မြန်မာ', zh: '中文', ja: '日本語', ko: '한국어',
   vi: 'Tiếng Việt', km: 'ខ្មែរ', lo: 'ລາວ', id: 'Bahasa Indonesia', es: 'Español', fr: 'Français',
@@ -204,7 +206,7 @@ const X = {
 
 /** The label `k` in `lang`, English when missing; `{t}` and `{d}` filled from `vars`. */
 export function word(lang, k, vars) {
-  let s = (W[lang] && W[lang][k]) || (X[lang] && X[lang][k]) || W.en[k] || X.en[k] || k
+  let s = (W[lang] && W[lang][k]) || (X[lang] && X[lang][k]) || (Y[lang] && Y[lang][k]) || W.en[k] || X.en[k] || Y.en[k] || k
   if (vars) for (const [a, b] of Object.entries(vars)) s = s.replace('{' + a + '}', b)
   return s
 }

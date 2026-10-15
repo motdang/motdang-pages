@@ -47,19 +47,58 @@
   }
 
   // ---- the drawing: Mot Dang's auto-doodler draws the place, lit by the sun where it stands ----
+  // The first time it comes into view a pen scribbles it in (2026-10-14, "the page draws itself").
+  var PEN = '<svg class="pen" viewBox="0 0 36 36" aria-hidden="true"><path d="M6 30l3-9L26 4l6 6-17 17z" fill="#ffd400" stroke="#1c1530" stroke-width="2" stroke-linejoin="round"/><path d="M6 30l3-9 6 6z" fill="#f6d3a8" stroke="#1c1530" stroke-width="2" stroke-linejoin="round"/><path d="M6 30l1.6-4.6 3 3z" fill="#1c1530"/><path d="M23 7l6 6" stroke="#ff5a7a" stroke-width="4"/></svg>'
   var drawn = $('#drawn')
   if (drawn) (function () {
     var cv = drawn.querySelector('canvas'), c = cv.getContext('2d'), set = cv.getAttribute('data-set'), place = {}
     try { place = JSON.parse(cv.getAttribute('data-p')) } catch (e) {}
-    var W = 0, H = 0, on = false, last = 0, ridge = null, started = false
+    var W = 0, H = 0, dpr = 1, on = false, last = 0, ridge = null, started = false
     var ALTS = [null, 38, 2, -6, -22], ai = 0
-    function size() { var dpr = Math.min(2, window.devicePixelRatio || 1); W = cv.clientWidth; H = cv.clientHeight; cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); c.setTransform(dpr, 0, 0, dpr, 0, 0) }
+    var off = document.createElement('canvas'), oc = off.getContext('2d'), mask = document.createElement('canvas'), mc = mask.getContext('2d')
+    var revealAt = null, revealed = REDUCED, pen = null, ROWS = 6, DUR = 1900
+    function size() { dpr = Math.min(2, window.devicePixelRatio || 1); W = cv.clientWidth; H = cv.clientHeight; cv.width = off.width = mask.width = Math.round(W * dpr); cv.height = off.height = mask.height = Math.round(H * dpr); c.setTransform(dpr, 0, 0, dpr, 0, 0) }
+    // the scribble: rows back and forth with a wobble, as a hand fills a shape in
+    function scribble(p) {
+      var pts = [], n = ROWS * 14
+      for (var i = 0; i <= n; i++) {
+        var r = Math.floor(i / 14), k = (i % 14) / 13, x = r % 2 ? 1 - k : k
+        pts.push([(-0.06 + x * 1.12) * W, ((r + 0.5) / ROWS + Math.sin(i * 1.7) * 0.035) * H])
+      }
+      var upto = Math.max(1, Math.floor(p * n))
+      mc.setTransform(dpr, 0, 0, dpr, 0, 0); mc.clearRect(0, 0, W, H)
+      mc.lineCap = mc.lineJoin = 'round'; mc.lineWidth = H / ROWS * 1.55; mc.strokeStyle = '#000'
+      mc.beginPath(); mc.moveTo(pts[0][0], pts[0][1]); for (var j = 1; j <= upto; j++) mc.lineTo(pts[j][0], pts[j][1]); mc.stroke()
+      return pts[upto]
+    }
     function paint(t) {
       var D = window.MDDOODLER; if (!D || !W) return
+      if (revealed) {
+        c.clearRect(0, 0, W, H)
+        try { D.portrait(c, W, H, t, { set: set, place: place, ridge: ridge, alt: ALTS[ai] }) } catch (e) {}
+        return
+      }
       c.clearRect(0, 0, W, H)
-      try { D.portrait(c, W, H, t, { set: set, place: place, ridge: ridge, alt: ALTS[ai] }) } catch (e) {}
+      if (revealAt === null) return
+      var p = Math.min(1, (performance.now() - revealAt) / DUR)
+      oc.setTransform(dpr, 0, 0, dpr, 0, 0); oc.clearRect(0, 0, W, H)
+      try { D.portrait(oc, W, H, t, { set: set, place: place, ridge: ridge, alt: ALTS[ai] }) } catch (e) {}
+      var at = scribble(1 - Math.pow(1 - p, 1.6))
+      c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.drawImage(off, 0, 0); c.globalCompositeOperation = 'destination-in'; c.drawImage(mask, 0, 0); c.restore()
+      if (pen) pen.style.transform = 'translate(' + (Math.max(0, Math.min(W - 10, at[0])) - 4) + 'px,' + (at[1] - 32) + 'px)'
+      if (p >= 1) {
+        revealed = true
+        if (pen) { pen.style.opacity = '0'; setTimeout(function () { pen && pen.remove(); pen = null }, 600) }
+        if (window.Dingbats && window.Dingbats.burst) { var r = drawn.getBoundingClientRect(); try { window.Dingbats.burst(r.left + r.width / 2, r.top + r.height / 2, { names: pd.gold ? ['sparkle', 'star', 'crown'] : ['sparkle', 'star', 'heart'], n: pd.gold ? 14 : 8 }) } catch (e) {} }
+      }
     }
-    function f(t) { if (!on) return; if (t - last > 32) { last = t; paint(t) } requestAnimationFrame(f) }
+    function f(t) { if (!on && revealed) return; if (t - last > 32) { last = t; paint(t) } requestAnimationFrame(f) }
+    function begin() {
+      if (revealed || revealAt !== null) return
+      revealAt = performance.now()
+      drawn.insertAdjacentHTML('beforeend', PEN); pen = drawn.querySelector('.pen')
+      requestAnimationFrame(f)
+    }
     function start() {
       if (started) return; started = true
       var ready = load(MAIN + '/front/skyline.js').then(function () { return load(MAIN + '/front/doodler.js') })
@@ -68,14 +107,20 @@
         size(); paint(4000)
         addEventListener('resize', function () { size(); paint(4000) })
         addEventListener('mddoodler', function () { paint(REDUCED ? 4000 : performance.now()) })
-        if (!REDUCED) new IntersectionObserver(function (es) { var was = on; on = es[0].isIntersecting; if (on && !was) requestAnimationFrame(f) }).observe(cv)
+        if (REDUCED) return
+        new IntersectionObserver(function (es) {
+          var was = on; on = es[0].isIntersecting && es[0].intersectionRatio > 0.35
+          if (on && !revealed) begin()
+          if (on && !was) requestAnimationFrame(f)
+        }, { threshold: [0, 0.35, 0.6] }).observe(cv)
       }, function () { drawn.remove() })
     }
     drawn.addEventListener('click', function () {
+      if (!revealed) return
       ai = (ai + 1) % ALTS.length; paint(REDUCED ? 4000 : performance.now())
       if (window.Dingbats && window.Dingbats.burst) { var r = drawn.getBoundingClientRect(); try { window.Dingbats.burst(r.left + r.width / 2, r.top + r.height / 2, { names: ['sparkle', 'star', 'lantern'], n: 9 }) } catch (e) {} }
     })
-    if ('IntersectionObserver' in window) { var o = new IntersectionObserver(function (es) { if (es[0].isIntersecting) { o.disconnect(); start() } }, { rootMargin: '400px' }); o.observe(drawn) } else start()
+    if ('IntersectionObserver' in window) { var o = new IntersectionObserver(function (es) { if (es[0].isIntersecting) { o.disconnect(); start() } }, { rootMargin: '400px' }); o.observe(drawn) } else { revealed = true; start() }
   })()
 
   // ---- the drawn map (motdang.net's doodle-map engine, any country) ----
@@ -220,7 +265,7 @@
   }
 
   // ---- photos, video ----
-  $$('.gallery button').forEach(function (b) {
+  $$('button[data-big]').forEach(function (b) {
     b.onclick = function () { dialog('<img src="' + b.dataset.big + '" alt="">' + (b.dataset.cap ? '<div class="cap">' + b.dataset.cap + '</div>' : '')) }
   })
   $$('button.video').forEach(function (b) {
@@ -280,6 +325,169 @@
       e2.preventDefault()
       fetch('/api/report', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name: pd.name, why: d.querySelector('textarea').value }) })
         .finally(function () { d.querySelector('form').innerHTML = '<p><b>' + w.thanks + '</b></p>'; setTimeout(function () { d.close() }, 1400) })
+    }
+  }
+
+  // ---- timed campaigns: the time left, ticking; the code copies on a tap ----
+  var lefts = $$('[data-left]')
+  if (lefts.length) {
+    var unit = function (n, u) { try { return new Intl.NumberFormat(lang, { style: 'unit', unit: u, unitDisplay: 'narrow' }).format(n) } catch (e) { return n + u[0] } }
+    var two = function (n) { return (n < 10 ? '0' : '') + n }
+    var tickC = function () {
+      lefts.forEach(function (el) {
+        var ms = +el.getAttribute('data-left') - Date.now(), box = el.closest('.camp')
+        if (ms <= 0) { if (box) box.remove(); return }
+        var s = Math.floor(ms / 1000), dd = Math.floor(s / 86400), hh = Math.floor(s % 86400 / 3600), mm = Math.floor(s % 3600 / 60), ss = s % 60
+        el.textContent = (dd ? unit(dd, 'day') + ' ' : '') + two(hh) + ':' + two(mm) + ':' + two(ss)
+      })
+    }
+    tickC(); setInterval(tickC, 1000)
+  }
+  $$('.code').forEach(function (b) {
+    b.onclick = function () {
+      var code = b.getAttribute('data-code'), done = function () { var sm = b.querySelector('small'), t = sm.textContent; sm.textContent = w.copied || '✓'; setTimeout(function () { sm.textContent = t }, 1600) }
+      if (navigator.clipboard) navigator.clipboard.writeText(code).then(done, function () { prompt('', code) }); else prompt('', code)
+      if (window.Dingbats && window.Dingbats.burst) { var r = b.getBoundingClientRect(); try { window.Dingbats.burst(r.left + r.width / 2, r.top, { names: ['gift', 'sparkle', 'star'], n: 10 }) } catch (e) {} }
+    }
+  })
+
+  // ---- bookings: a service, a day, a free time, a name ----
+  var esc = function (x) { return String(x == null ? '' : x).replace(/[&<>"']/g, function (ch) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch] }) }
+  var todayIn = function () { try { return new Intl.DateTimeFormat('en-CA', { timeZone: pd.tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date()) } catch (e) { return new Date().toISOString().slice(0, 10) } }
+  var addD = function (day, n) { var t = new Date(day + 'T00:00:00Z'); t.setUTCDate(t.getUTCDate() + n); return t.toISOString().slice(0, 10) }
+  var fmtDay = function (day, o) { try { return new Intl.DateTimeFormat(lang, Object.assign({ timeZone: 'UTC' }, o)).format(new Date(day + 'T00:00:00Z')) } catch (e) { return day } }
+  var moneyOf = function (n) { return (pd.sym || '') + new Intl.NumberFormat(lang).format(n) }
+  function askForm(extra, people, label) {
+    return '<form class="msgf bookf" data-born="' + Date.now() + '">' + extra +
+      '<input name="name" maxlength="80" autocomplete="name" required placeholder="' + esc(w.bookName) + '" aria-label="' + esc(w.bookName) + '">' +
+      '<input name="reach" maxlength="120" autocomplete="tel" required placeholder="' + esc(w.bookReach) + '" aria-label="' + esc(w.bookReach) + '">' +
+      '<input name="email" type="email" maxlength="254" autocomplete="email" placeholder="' + esc(w.bookEmail) + '" aria-label="' + esc(w.bookEmail) + '">' +
+      (people > 1 ? '<label style="display:flex;gap:10px;align-items:center;font-weight:700">' + esc(w.bookPeople) + '<input name="people" type="number" min="1" max="' + people + '" value="1" style="width:90px"></label>' : '') +
+      '<textarea name="note" maxlength="600" placeholder="' + esc(w.bookNote) + '" aria-label="' + esc(w.bookNote) + '" style="min-height:70px"></textarea>' +
+      '<input class="hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true"><button class="btn" type="submit">' + esc(label || w.bookSend) + '</button></form>'
+  }
+  function sendAsk(form, body, box) {
+    var f = new FormData(form), btn = form.querySelector('button[type=submit]')
+    btn.disabled = true
+    ;['name', 'reach', 'email', 'people', 'note', 'website'].forEach(function (k) { if (f.get(k) != null) body[k] = f.get(k) })
+    body.n = pd.name; body.ms = Date.now() - (+form.getAttribute('data-born') || 0)
+    fetch('/api/book', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
+      .then(function (r) { return r.json().then(function (j) { if (!r.ok) throw j; return j }) })
+      .then(function (j) {
+        box.innerHTML = '<p class="ok" style="display:flex;gap:10px;align-items:center;font-weight:800;font-size:20px;color:var(--acc-ink)"><i data-dingbat="calendar" data-play="once" style="font-size:1.6em"></i>' + esc(j.status === 'ok' ? w.bookDone : w.bookAsked) + '</p>' +
+          (j.ref ? '<p style="font:800 18px ui-monospace,Menlo,monospace;letter-spacing:.06em">' + esc(w.bookRef) + ' ' + esc(j.ref) + (j.total ? ' · ' + moneyOf(j.total) : '') + '</p>' : '') +
+          (j.deposit ? '<div class="pp"><b>' + esc(((body.kind === 'room' ? w.payNow : w.bookDeposit) || '').replace('{p}', moneyOf(j.deposit.amount))) + '</b>' + j.deposit.qr + '<p>' + esc(w.bookScan) + '</p></div>' : '') +
+          (j.link ? '<a class="btn" href="' + esc(j.link) + '" rel="nofollow noopener">' + esc(w.payLink) + (j.due ? ' ' + moneyOf(j.due) : '') + '</a>' : '') +
+          (body.kind === 'room' && !j.deposit && !j.link ? '<p>' + esc(w.payHotel) + '</p>' : '') +
+          (j.page ? '<a class="btn ghost" style="margin-top:10px" href="' + esc(j.page) + '">' + esc(w.yourBooking) + '</a>' : '')
+        if (window.Dingbats && window.Dingbats.burst) { var r = box.getBoundingClientRect(); try { window.Dingbats.burst(r.left + 40, r.top + 20, { names: ['calendar', 'sparkle', 'heart'], n: 12 }) } catch (e) {} }
+      })
+      .catch(function (e) { btn.disabled = false; if (e && e.error === 'taken') { btn.textContent = w.bookFail } else btn.textContent = w.msgFail || 'Try again' })
+  }
+  var bookui = $('#bookui')
+  $$('.svcb').forEach(function (b) {
+    b.onclick = function () {
+      if (!pd.book || !bookui) return
+      $$('.svcb').forEach(function (x) { x.classList.toggle('on', x === b) })
+      var id = b.getAttribute('data-svc'), sv = pd.book.svc[id] || { cap: 1 }, t0 = todayIn(), n = Math.min(pd.book.ahead || 30, 60), days = ''
+      for (var i = 0; i < n; i++) { var dd = addD(t0, i); days += '<button data-day="' + dd + '"' + (i ? '' : ' class="on"') + '>' + esc(fmtDay(dd, { weekday: 'short' })) + '<b>' + esc(fmtDay(dd, { day: 'numeric' })) + '</b>' + esc(fmtDay(dd, { month: 'short' })) + '</button>' }
+      bookui.hidden = false
+      bookui.innerHTML = '<p style="font-weight:800;margin:0 0 6px">' + esc(w.bookPick) + '</p><div class="days">' + days + '</div><div class="times" aria-live="polite"></div><div class="ask"></div>'
+      var times = bookui.querySelector('.times'), ask = bookui.querySelector('.ask')
+      function load(day) {
+        times.innerHTML = '<p>…</p>'; ask.innerHTML = ''
+        fetch('/api/slots?n=' + encodeURIComponent(pd.name) + '&svc=' + encodeURIComponent(id) + '&day=' + day).then(function (r) { return r.json() }).then(function (j) {
+          if (!j.times || !j.times.length) { times.innerHTML = '<p>' + esc(w.bookNone) + '</p>'; return }
+          times.innerHTML = j.times.map(function (x) { return '<button data-t="' + x.t + '">' + x.t + (sv.cap > 1 ? '<small>' + esc((w.bookLeft || '').replace('{n}', x.left)) + '</small>' : '') + '</button>' }).join('')
+          $$('button', times).forEach(function (tb) {
+            tb.onclick = function () {
+              $$('button', times).forEach(function (x) { x.classList.toggle('on', x === tb) })
+              ask.innerHTML = askForm('', sv.cap)
+              var form = ask.querySelector('form')
+              form.onsubmit = function (e) { e.preventDefault(); sendAsk(form, { kind: 'svc', item: id, day: day, t: tb.getAttribute('data-t') }, ask) }
+              form.querySelector('input[name=name]').focus({ preventScroll: true })
+              ask.scrollIntoView({ behavior: REDUCED ? 'auto' : 'smooth', block: 'nearest' })
+            }
+          })
+        }, function () { times.innerHTML = '<p>' + esc(w.msgFail) + '</p>' })
+      }
+      $$('.days button', bookui).forEach(function (db) { db.onclick = function () { $$('.days button', bookui).forEach(function (x) { x.classList.toggle('on', x === db) }); load(db.getAttribute('data-day')) } })
+      load(t0)
+      bookui.scrollIntoView({ behavior: REDUCED ? 'auto' : 'smooth', block: 'nearest' })
+    }
+  })
+
+  // ---- rooms: a month of nights, taken ones struck through; first night, then the morning out ----
+  $$('[data-pick]').forEach(function (b) {
+    b.onclick = function () {
+      if (!pd.book) return
+      var room = b.getAttribute('data-pick'), info = pd.book.rooms[room] || { g: 2, p: '' }, ui = b.parentNode.querySelector('.roomui')
+      var num = function (p) { var n = Number(String(p || '').replace(/[,\s]/g, '')); return n > 0 ? n : 0 }
+      var priceOf = function (day) {
+        var r = (info.rates || []).filter(function (x) { return x.from <= day && day <= x.to })[0]
+        if (r) return num(r.p)
+        var wd = new Date(day + 'T00:00:00Z').getUTCDay()
+        return (wd === 5 || wd === 6) && num(info.p2) ? num(info.p2) : num(info.p)
+      }
+      var short = function (n) { return n >= 10000 ? Math.round(n / 1000) + 'k' : n >= 1000 ? (Math.round(n / 100) / 10) + 'k' : String(n) }
+      var left = {}
+      b.hidden = true; ui.hidden = false; ui.innerHTML = '<p>…</p>'
+      fetch('/api/nights?n=' + encodeURIComponent(pd.name) + '&room=' + encodeURIComponent(room)).then(function (r) { return r.json() }).then(function (j) {
+        var taken = {}; (j.taken || []).forEach(function (d) { taken[d] = 1 }); left = j.left || {}
+        var t0 = todayIn(), m = t0.slice(0, 7), sIn = '', sOut = ''
+        var heads = []; for (var i = 0; i < 7; i++) heads.push('<span>' + esc(fmtDay(addD('2024-01-01', i), { weekday: 'narrow' })) + '</span>')
+        function freeRun(a, b) { for (var d = a; d < b; d = addD(d, 1)) if (taken[d]) return false; return true }
+        function draw() {
+          var first = m + '-01', wd = (new Date(first + 'T00:00:00Z').getUTCDay() + 6) % 7, g = heads.join('')
+          for (var i = 0; i < wd; i++) g += '<span></span>'
+          for (var d = first; d.slice(0, 7) === m; d = addD(d, 1)) {
+            var past = d < t0, dis = past || (!sIn || sOut ? taken[d] : (d <= sIn || !freeRun(sIn, d)))
+            var cls = (d === sIn || d === sOut ? 'end' : sIn && sOut && d > sIn && d < sOut ? 'in' : '') + (taken[d] && !past ? ' tk' : '')
+            var few = !past && !taken[d] && (info.units || 1) > 1 && left[d] && left[d] <= 2
+            if (few) cls += ' few'
+            var pr = !past && !taken[d] && priceOf(d)
+            g += '<button data-d="' + d + '"' + (dis ? ' disabled' : '') + (cls ? ' class="' + cls + '"' : '') + ' title="' + esc(taken[d] ? w.roomTaken : few ? (w.roomLeft || '').replace('{n}', left[d]) : '') + '">' + Number(d.slice(8)) + (pr ? '<small>' + (few ? esc((w.roomLeft || '').replace('{n}', left[d])) : short(pr)) + '</small>' : '') + '</button>'
+          }
+          var nights = sIn && sOut ? Math.round((Date.parse(sOut) - Date.parse(sIn)) / 864e5) : 0, total = 0
+          for (var q = sIn; nights && q < sOut; q = addD(q, 1)) total += priceOf(q)
+          var short2 = nights && nights < (info.min || 1)
+          var sum = !sIn ? w.roomPickIn : !sOut ? w.roomPickOut : (nights === 1 ? w.roomNight1 : (w.roomNights || '').replace('{n}', nights)) + (total ? ' · ' + (w.roomTotal || '').replace('{p}', moneyOf(total)) : '') + (short2 ? ' · ' + (w.roomMin || '').replace('{n}', info.min) : '')
+          if (short2) nights = 0
+          ui.innerHTML = '<div class="mcal"><div class="mh"><button data-m="-1" aria-label="‹">‹</button><span>' + esc(fmtDay(first, { month: 'long', year: 'numeric' })) + '</span><button data-m="1" aria-label="›">›</button></div><div class="g">' + g + '</div></div><p class="rsum">' + esc(sum) + '</p>' + (nights ? askForm('', info.g, w.roomSend) : '')
+          $$('.mh button', ui).forEach(function (mb) { mb.onclick = function () { var t = new Date(m + '-01T00:00:00Z'); t.setUTCMonth(t.getUTCMonth() + +mb.getAttribute('data-m')); var nm = t.toISOString().slice(0, 7); if (nm >= t0.slice(0, 7)) { m = nm; draw() } } })
+          $$('.g button', ui).forEach(function (db) {
+            db.onclick = function () {
+              var d = db.getAttribute('data-d')
+              if (!sIn || sOut || d <= sIn) { sIn = d; sOut = '' } else sOut = d
+              draw()
+            }
+          })
+          var form = ui.querySelector('form')
+          if (form) form.onsubmit = function (e) { e.preventDefault(); sendAsk(form, { kind: 'room', item: room, day: sIn, out: sOut }, ui) }
+        }
+        draw()
+      }, function () { ui.innerHTML = '<p>' + esc(w.msgFail) + '</p>' })
+    }
+  })
+
+  // ---- listings: sale, rent, all ----
+  $$('.lfilter button').forEach(function (b) {
+    b.onclick = function () {
+      var k = b.getAttribute('data-deal')
+      $$('.lfilter button').forEach(function (x) { x.classList.toggle('on', x === b) })
+      $$('.lgrid .lcard').forEach(function (c) { c.hidden = !!k && c.getAttribute('data-deal') !== k })
+    }
+  })
+
+  // ---- read in your own language, when the page has it ----
+  if (pd.langs && pd.langs.length > 1 && !pd.hl && !pd.preview) {
+    var want = (navigator.languages || [navigator.language || '']).map(function (x) { return String(x).slice(0, 2).toLowerCase() }).filter(function (x) { return pd.langs.indexOf(x) >= 0 })[0]
+    var shut = false; try { shut = sessionStorage.getItem('mdp-readin') === '1' } catch (e) {}
+    if (want && want !== pd.home && !shut) {
+      var a = document.createElement('a'); a.className = 'readin'; a.href = '?hl=' + want
+      a.innerHTML = '<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><use href="/s/icons.svg#i-globe"/></svg>' + esc(pd.lnames[want] || want) + '<button aria-label="' + esc(w.close || 'Close') + '">×</button>'
+      a.querySelector('button').onclick = function (e) { e.preventDefault(); a.remove(); try { sessionStorage.setItem('mdp-readin', '1') } catch (x) {} }
+      setTimeout(function () { document.body.appendChild(a) }, 1800)
     }
   }
 })()
