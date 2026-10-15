@@ -5,7 +5,7 @@
 // address sits at the foot. The builder draws it and uploads it as the page's card; the tiles
 // on the front page and /all show it.
 
-import { LOOKS } from './render.mjs'
+import { LOOKS, lookOf } from './render.mjs'
 
 const W = 1200, H = 630, PAD = 64
 
@@ -46,7 +46,7 @@ function ant(g, x, y, s, fill) {
  *   avatar: image|null, round, dings: [names], D: window.Dingbats|null, focus: [fx, fy] }
  */
 export function drawCard(g, o) {
-  const look = LOOKS[o.look] || LOOKS.poster
+  const look = LOOKS[lookOf(o.look)]
   const bg = varOf(look, 'bg') || '#fff7ec', inkLook = varOf(look, 'ink') || '#111111'
   const accent = o.accent || look.accent
   const display = varOf(look, 'display') || '"Prompt",system-ui,sans-serif'
