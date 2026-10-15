@@ -1,0 +1,68 @@
+{
+ "lanterns": {
+  "title": "Yi Peng lantern festival, Thailand",
+  "src": "https://commons.wikimedia.org/wiki/File:YI_PENG_LANTERN_FESTIVAL_THAILAND.jpg",
+  "license": "CC0",
+  "made": "fix → fix",
+  "focus": [
+   0.6,
+   0.5
+  ],
+  "w": 2400,
+  "h": 1589
+ },
+ "path": {
+  "title": "Mae Hong Son, Thailand (Unsplash)",
+  "src": "https://commons.wikimedia.org/wiki/File:Mae_Hong_Son,_Thailand_(Unsplash).jpg",
+  "license": "CC0",
+  "made": "fix → wash",
+  "focus": [
+   0.5,
+   0.5
+  ],
+  "w": 2400,
+  "h": 1596
+ },
+ "pai": {
+  "title": "Rice farms in Pai, Thailand",
+  "src": "https://commons.wikimedia.org/wiki/File:View_of_rice_farms_in_Pai,_Thailand..JPG",
+  "license": "CC0",
+  "made": "fix → riso",
+  "focus": [
+   0.5,
+   0.45
+  ],
+  "w": 2400,
+  "h": 1800
+ },
+ "wat": {
+  "title": "Wat Chiang Man, Chiang Mai",
+  "src": "https://commons.wikimedia.org/wiki/File:Temple_Wat_Chiang_Man_3.jpg",
+  "license": "CC0",
+  "made": "fix → gold",
+  "focus": [
+   0.5,
+   0.55
+  ],
+  "w": 2400,
+  "h": 1800
+ },
+ "map": {
+  "title": "Map of Chiang Mai, 1890",
+  "src": "https://commons.wikimedia.org/wiki/File:Chiang_Mai_City_Map_(Chiengmai)_1890.png",
+  "license": "Public domain",
+  "made": "fix → ink",
+  "focus": [
+   0.5,
+   0.5
+  ],
+  "w": 2048,
+  "h": 1563
+ },
+ "sample": {
+  "title": "Bungalow in Pai, Thailand",
+  "src": "https://commons.wikimedia.org/wiki/File:Bungalow_in_Pai,_Thailand.JPG",
+  "license": "CC0",
+  "made": "dimmed"
+ }
+}

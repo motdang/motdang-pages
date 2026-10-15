@@ -20,8 +20,10 @@
 <link rel="canonical" href="https://sites.motdang.net/">
 <meta name="theme-color" content="#d7261e">
 <link rel="icon" href="/s/ant.svg">
-<link rel="stylesheet" href="/s/home.css?v=6">
-<script type="module" src="/s/home.js?v=6"></script>
+<link rel="stylesheet" href="/s/home.css?v=7">
+<link rel="preload" as="image" href="/s/home/lanterns-2000.webp" media="(min-width:1100px)">
+<link rel="preload" as="image" href="/s/home/lanterns-1100.webp" media="(max-width:1099px)">
+<script type="module" src="/s/home.js?v=7"></script>
 </head>
 <body>
 <header class="bar">
@@ -31,7 +33,8 @@
 </header>
 
 <main id="home">
-  <section class="hero">
+  <section class="hero night">
+    <div class="sky" aria-hidden="true"><img class="fx" src="/s/home/lanterns-1100.webp" srcset="/s/home/lanterns-1100.webp 1100w, /s/home/lanterns-2000.webp 2000w" sizes="100vw" alt=""><canvas id="lanterns"></canvas></div>
     <div class="hcopy">
       <p class="kicker" data-w="kicker"></p>
       <h1 data-w="h1"></h1>
@@ -56,6 +59,25 @@
     </div>
   </section>
 
+  <section class="band" style="--fx:50%;--fy:50%">
+    <img class="fx" src="/s/home/path-1100.webp" srcset="/s/home/path-1100.webp 1100w, /s/home/path-2000.webp 2000w" sizes="100vw" alt="" loading="lazy" decoding="async">
+    <div class="bcap rise"><p class="bk" data-w="bk"></p><h2 data-w="b_path"></h2><small class="cr" data-cr="path"></small></div>
+  </section>
+
+  <section class="pics" id="pictures">
+    <div class="wrap">
+      <h2 data-w="picH"></h2><p class="sub" data-w="picSub"></p>
+      <div class="studio">
+        <figure class="sframe"><canvas id="sdemo" role="img"></canvas><figcaption id="scap"></figcaption></figure>
+        <div class="sbtns" id="sbtns"></div>
+      </div>
+      <div class="marks">
+        <figure class="mframe"><canvas id="mdemo" role="img"></canvas></figure>
+        <div><h3 data-w="mkH"></h3><p data-w="mkP"></p><button class="cta" id="mshuffle" type="button"><i data-dingbat="sparkle" data-look="mono"></i><span data-w="mkGo"></span></button></div>
+      </div>
+    </div>
+  </section>
+
   <section class="phones">
     <div class="wrap"><h2 data-w="exH"></h2><p class="sub" data-w="exSub"></p></div>
     <div class="rail" id="rail"></div>
@@ -68,9 +90,19 @@
     </div>
   </section>
 
+  <section class="band" style="--fx:50%;--fy:28%">
+    <img class="fx" src="/s/home/pai-1100.webp" srcset="/s/home/pai-1100.webp 1100w, /s/home/pai-2000.webp 2000w" sizes="100vw" alt="" loading="lazy" decoding="async">
+    <div class="bcap rise"><p class="bk" data-w="bk"></p><h2 data-w="b_pai"></h2><small class="cr" data-cr="pai"></small></div>
+  </section>
+
   <section class="looks">
     <div class="wrap"><h2 data-w="looksH"></h2><p class="sub" data-w="looksSub"></p></div>
     <div class="lrail" id="looks"></div>
+  </section>
+
+  <section class="band tall" style="--fx:50%;--fy:55%">
+    <img class="fx" src="/s/home/wat-1100.webp" srcset="/s/home/wat-1100.webp 1100w, /s/home/wat-2000.webp 2000w" sizes="100vw" alt="" loading="lazy" decoding="async">
+    <div class="bcap rise"><p class="bk" data-w="bk"></p><h2 data-w="b_wat"></h2><small class="cr" data-cr="wat"></small></div>
   </section>
 
   <section class="stays" id="hotels">
@@ -105,6 +137,11 @@
     <div class="wrap"><h2 id="liveH"></h2><div class="latest" id="latest"></div><p><a class="more" href="/all" data-w="allPages"></a></p></div>
   </section>
 
+  <section class="band" style="--fx:50%;--fy:50%">
+    <img class="fx" src="/s/home/map-1100.webp" srcset="/s/home/map-1100.webp 1100w, /s/home/map-2000.webp 2000w" sizes="100vw" alt="" loading="lazy" decoding="async">
+    <div class="bcap rise"><p class="bk" data-w="bk"></p><h2 data-w="b_map"></h2><small class="cr" data-cr="map"></small></div>
+  </section>
+
   <section class="how">
     <div class="wrap">
       <h2 data-w="howH"></h2>
@@ -114,6 +151,6 @@
   </section>
 </main>
 
-<footer class="foot"><a href="https://motdang.net/">มดแดง · motdang.net</a> · <a href="/all" data-w="allPages"></a> · <a href="/random" data-w="random"></a></footer>
+<footer class="foot"><p class="credits" id="credits"></p><a href="https://motdang.net/">มดแดง · motdang.net</a> · <a href="/all" data-w="allPages"></a> · <a href="/random" data-w="random"></a></footer>
 </body>
 </html>

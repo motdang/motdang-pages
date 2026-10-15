@@ -147,3 +147,51 @@ html[lang=th] .hero h1,html[lang=my] .hero h1{line-height:1.2}html[lang=th] h2,h
 .src{margin:0 0 18px;font-size:13px;color:#a8977a}.src a{color:#d7c29a}
 @media (max-width:560px){.cbar{grid-template-columns:1fr auto}.cbar i{grid-column:1/-1;grid-row:2}}
 .tc .pr .hotelp{display:block;margin-top:8px;font:600 16px/1.3 "Prompt",system-ui,sans-serif;color:#d7c29a}
+
+/* 2026-10-15: wide still pictures the page slides over (Nan: "big wide pictures that don't move
+   while the rest of the page scrolls over them"), a lantern night to open on, the picture studio.
+   A fixed <img> inside a clip-path box holds still on phones too, where background-attachment
+   does not. */
+main>section{position:relative;z-index:1}
+.fx{position:fixed;inset:0;width:100%;height:100vh;height:100lvh;object-fit:cover;object-position:var(--fx,50%) var(--fy,50%);pointer-events:none}
+.band{position:relative;z-index:0;clip-path:inset(0);min-height:clamp(380px,82vh,860px);display:grid;align-items:end;background:#0b0906;color:#fff8e7}
+.band.tall{min-height:clamp(440px,100vh,1000px)}
+.band::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(11,9,6,.28) 0,transparent 26%,transparent 58%,rgba(11,9,6,.72));pointer-events:none}
+.bcap{position:relative;z-index:1;max-width:1120px;width:100%;margin:0 auto;padding:0 20px clamp(28px,7vh,64px)}
+.bcap h2{max-width:15em;margin:0;font-size:clamp(30px,5.4vw,60px);line-height:1.06;text-shadow:0 2px 24px rgba(0,0,0,.55)}
+.bk{display:inline-flex;align-items:center;gap:8px;margin:0 0 10px;padding:5px 14px;border-radius:99px;background:rgba(18,13,8,.55);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);color:#f3c552;font-weight:600;font-size:14px;letter-spacing:.06em;text-transform:uppercase;box-shadow:inset 0 0 0 1px rgba(243,197,82,.45)}
+.cr{display:block;margin-top:12px;font-size:12px;color:rgba(255,248,231,.72)}.cr a{color:inherit}
+/* the sections after a band ride up over it on a curved edge */
+.band+section{border-radius:34px 34px 0 0;margin-top:-34px;box-shadow:0 -24px 50px -20px rgba(0,0,0,.45)}
+.band+section.phones,.band+section.looks,.band+section.how,.band+section.pics{background:var(--cream)}
+
+/* the opening: Yi Peng lanterns, fixed, more lanterns rising over them */
+.hero.night{max-width:none;margin:0;color:#fff8e7;clip-path:inset(0);background:#07060f;padding-left:max(16px,calc((100vw - 1240px)/2 + 16px));padding-right:max(16px,calc((100vw - 1240px)/2 + 16px));min-height:min(100vh,980px);align-content:center}
+.hero.night .sky{position:absolute;inset:0;z-index:-1}
+.hero.night .sky::after{content:"";position:fixed;inset:0;background:radial-gradient(120% 90% at 70% 40%,transparent 0,rgba(7,6,15,.35) 55%,rgba(7,6,15,.82) 100%),linear-gradient(90deg,rgba(7,6,15,.78),rgba(7,6,15,.2) 60%,transparent)}
+.hero.night #lanterns{position:fixed;inset:0;width:100%;height:100vh;z-index:1;pointer-events:none}
+.hero.night>.hcopy,.hero.night>.stage{position:relative;z-index:2}
+.hero.night .kicker{background:rgba(243,197,82,.12);color:#f3c552;box-shadow:inset 0 0 0 1px rgba(243,197,82,.5)}
+.hero.night h1{color:#fff8e7;text-shadow:0 4px 40px rgba(255,170,60,.25)}
+.hero.night h1 em{color:#f3c552}.hero.night h1 em::after{background:linear-gradient(90deg,#9c6a1c,#f8dd8e,#d9a441);opacity:.55}
+.hero.night .lead{color:#efe3cc}.hero.night .try label{color:#f3c552}
+.hero.night .tryrow input{border-color:#f3c552;background:rgba(255,248,231,.96)}
+.hero.night .chips button{background:rgba(255,248,231,.1);color:#fff8e7;box-shadow:inset 0 0 0 1px rgba(255,248,231,.35);backdrop-filter:blur(4px)}
+.hero.night .chips button.on{background:#f3c552;color:#120d08}
+.hero.night .stage{box-shadow:0 0 0 1px rgba(243,197,82,.6),0 0 0 8px rgba(18,13,8,.55),0 0 80px 10px rgba(255,170,60,.18),0 40px 80px -20px rgba(0,0,0,.8)}
+
+/* the picture studio, live on a dim photo */
+.pics{padding:80px 0 70px}
+.studio{display:grid;gap:18px;margin-top:10px}@media (min-width:900px){.studio{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);align-items:center}}
+.sframe{position:relative;margin:0;border-radius:24px;overflow:hidden;background:#1d150d;box-shadow:0 0 0 1px #c99a3a,0 0 0 8px #fff,0 0 0 9px var(--line),0 30px 60px -24px rgba(28,21,48,.55)}
+.sframe canvas{display:block;width:100%;height:auto}
+.sframe figcaption{position:absolute;left:12px;bottom:12px;padding:5px 12px;border-radius:99px;background:rgba(0,0,0,.6);color:#fff;font-size:14px;font-weight:600}
+.sbtns{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}@media (min-width:600px){.sbtns{grid-template-columns:repeat(3,1fr)}}@media (min-width:900px){.sbtns{grid-template-columns:repeat(2,1fr)}}
+.sbtns button{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:14px 16px;border:0;border-radius:18px;background:#fff;color:var(--ink);font:600 18px/1.2 "Prompt",system-ui,sans-serif;text-align:left;cursor:pointer;box-shadow:inset 0 0 0 2px var(--line);transition:transform .15s}
+.sbtns button small{font-weight:400;font-size:14px;color:var(--mute)}
+.sbtns button:hover{transform:translateY(-2px)}.sbtns button.on{background:var(--lacquer);color:#f3c552;box-shadow:inset 0 0 0 1px #c99a3a}.sbtns button.on small{color:#d7c29a}
+.marks{display:grid;gap:20px;align-items:center;margin-top:46px;padding:26px;border-radius:28px;background:var(--paper)}@media (min-width:760px){.marks{grid-template-columns:minmax(0,1.3fr) minmax(0,1fr)}}
+.mframe{margin:0}.mframe canvas{display:block;width:100%;height:auto;border-radius:16px;box-shadow:0 20px 40px -20px rgba(28,21,48,.5)}
+.marks h3{margin:0 0 8px;font-size:30px;line-height:1.1}.marks p{margin:0 0 18px;color:var(--mute)}
+.credits{max-width:880px;margin:0 auto 14px;font-size:12px;line-height:1.5}.credits a{color:inherit}
+@media (prefers-reduced-motion:reduce){.hero.night #lanterns{display:none}}

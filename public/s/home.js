@@ -4,6 +4,8 @@
 // toys are the tools a page carries. Thai, English, Burmese and Chinese.
 
 import { render, LOOKS, LOOK_IDS, qrSvg } from './render.mjs'
+import { makeOver } from './studio.mjs'
+import { drawCover, loadFaces, MARK_COLOURS, inkOn } from './mark.mjs'
 
 const $ = (s, el = document) => el.querySelector(s)
 const store = { get(k, d) { try { const v = localStorage.getItem('mdh:' + k); return v === null ? d : v } catch { return d } }, set(k, v) { try { localStorage.setItem('mdh:' + k, v) } catch {} } }
@@ -12,6 +14,7 @@ const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches
 
 const W = {
   th: {
+    bk: "สตูดิโอรูป", b_path: "ซ้ายคือรูปจากมือถือ ขวาคือสีน้ำ", b_pai: "ทุ่งนาที่ปาย พิมพ์แบบริโซ่", b_wat: "วัดเชียงมั่น เป็นลายรดน้ำ", b_map: "เชียงใหม่ ปี 2433 ทุกหน้าเว็บมีแผนที่วาดมือ", picH: "รูปมืด กลายเป็นรูปสวย", picSub: "ทุกหน้าเว็บมีสตูดิโอรูป แตะเลือกแบบ รูปข้างล่างตั้งใจให้มืดและเบลอ", s_raw: "รูปเดิม", s_rawP: "มืดและเบลอ", s_fix: "แก้แสง", s_fixP: "แสงและสีกลับมา", s_ink: "ลายเส้นปากกา", s_inkP: "เส้นและแรเงา", s_wash: "สีน้ำ", s_washP: "สีซึมที่ขอบ", s_riso: "พิมพ์ริโซ่", s_risoP: "หมึกสองสี จุดและเส้น", s_gold: "ลายรดน้ำ", s_goldP: "ทองบนพื้นดำ", s_pop: "การ์ตูน", s_popP: "สีจัด เส้นหนา", mkH: "ไม่มีรูปเลย?", mkP: "ประกอบภาพปกหรือรูปโปรไฟล์เอง: สี ลาย ไอคอนหนึ่งใน 267 แบบ และชื่อของคุณ", mkGo: "อีกแบบ", t_work: "พอร์ตผลงาน", t_workP: "ผลงานแต่ละชิ้นมีหน้าของตัวเอง กรองตามแท็ก พร้อมคำพูดจากลูกค้า", t_face: "รูปโปรไฟล์", t_faceP: "หน้าคุณ โลโก้ หรือประกอบเอง วางข้างชื่อ", f9: "สตูดิโอรูป รูปโปรไฟล์ พอร์ตผลงาน 6 ชิ้น", pics: "รูป",
     stayH: 'โรงแรม เกสต์เฮาส์: รับจองเอง', staySub: 'ห้องพัก ปฏิทินคืนว่าง ปฏิทิน Airbnb · Booking.com · Agoda ตรงกันทุก 30 นาที แขกจ่ายเข้าพร้อมเพย์หรือลิงก์ของคุณ', calcNight: 'ราคาต่อคืน', calcNights: 'คืนที่ขายผ่านแอปต่อเดือน', calcOta: 'ค่าคอม 15%', calcFlat: 'ทองสำหรับโรงแรม', mo: 'ต่อเดือน', hotelPrice: 'โรงแรมที่รับจองห้อง: ฿{p} ต่อเดือน', calcKeep: 'เก็บไว้ได้ต่อปี', calcSrc: 'Agoda ราว 15% Booking.com 10–25% ส่วนใหญ่ราว 15%', stayGo: 'ทำหน้าเว็บโรงแรม', yr: 'ต่อปี',
     make: 'ทำเว็บของฉัน', kicker: 'มดแดง · เว็บของคุณเอง', h1: 'ร้านของคุณ <em>วาดเสร็จ</em> ขึ้นเว็บในห้านาที',
     lead: 'คนหาร้านคุณจากมือถือ ให้เขาเจอหน้าที่สวย โทรได้ แอดไลน์ได้ เรียก Grab มาถึงหน้าร้าน แล้วคุณเห็นว่าใครมาบ้าง',
@@ -44,6 +47,7 @@ const W = {
     ex: 'ตัวอย่าง',
   },
   en: {
+    bk: "Picture studio", b_path: "A phone photo on the left. Watercolour on the right.", b_pai: "Rice fields in Pai, printed in riso.", b_wat: "Wat Chiang Man, in gold lacquer.", b_map: "Chiang Mai in 1890. Every page gets a drawn map.", picH: "A dim photo becomes a good picture", picSub: "Every page has a picture studio. Tap a style. The photo below is dim and soft on purpose.", s_raw: "The photo", s_rawP: "dim and soft", s_fix: "Fixed", s_fixP: "light and colour put right", s_ink: "Pen and ink", s_inkP: "lines and hatching", s_wash: "Watercolour", s_washP: "washes that pool at the edges", s_riso: "Riso print", s_risoP: "two inks, dots and lines", s_gold: "Gold lacquer", s_goldP: "gold on black, as lai rot nam", s_pop: "Comic", s_popP: "loud colours, fat lines", mkH: "No photo at all?", mkP: "Build a cover or an avatar from parts: a colour, a pattern, one of 267 dingbats, your name.", mkGo: "Another", t_work: "Portfolio", t_workP: "Your work, each project on its own page, filtered by tag, with what clients said.", t_face: "Avatar", t_faceP: "Your face, your logo, or one built from parts, beside your name.", f9: "Picture studio, an avatar, a portfolio of 6 projects", pics: "Pictures",
     stayH: 'Hotels and guesthouses: take your own bookings', staySub: 'Rooms, a calendar of nights, Airbnb · Booking.com · Agoda calendars kept in step every 30 minutes, guests paying your PromptPay or your own link.', calcNight: 'Price a night', calcNights: 'Nights sold through apps a month', calcOta: 'Commission at 15%', calcFlat: 'Gold for hotels', mo: 'a month', hotelPrice: 'Hotels taking room bookings: ฿{p} a month', calcKeep: 'Kept in a year', calcSrc: 'Agoda about 15%; Booking.com 10–25%, most often about 15%.', stayGo: 'Make a hotel page', yr: 'a year',
     make: 'Make my page', kicker: 'Mot Dang · your own page', h1: 'Your shop, <em>drawn</em> and online in five minutes',
     lead: 'People look for you on their phones. Give them a page worth landing on: call, add you on LINE, send a Grab to your door, and you see who came.',
@@ -76,6 +80,7 @@ const W = {
     ex: 'Example',
   },
   my: {
+    bk: "ဓာတ်ပုံစတူဒီယို", b_path: "ဘယ်ဘက်မှာ ဖုန်းဓာတ်ပုံ။ ညာဘက်မှာ ရေဆေး။", b_pai: "ပိုင်မြို့က စပါးခင်းတွေ၊ ရီဆိုပုံနှိပ်နဲ့။", b_wat: "ရွှေယွန်းနဲ့ ဝပ်ချင်းမန်ဘုရား။", b_map: "၁၈၉၀ ခုနှစ်က ချင်းမိုင်။ စာမျက်နှာတိုင်းမှာ ရေးဆွဲထားတဲ့ မြေပုံပါတယ်။", picH: "မှုန်ဝါးတဲ့ဓာတ်ပုံက ပုံကောင်းတစ်ပုံ ဖြစ်လာတယ်", picSub: "စာမျက်နှာတိုင်းမှာ ဓာတ်ပုံစတူဒီယိုပါတယ်။ စတိုင်တစ်ခုကို နှိပ်ပါ။ အောက်ကဓာတ်ပုံက တမင်တကာ မှုန်ဝါးပျော့ပျောင်းထားတာပါ။", s_raw: "ဓာတ်ပုံ", s_rawP: "မှုန်ဝါးပြီး ပျော့ပျောင်းတယ်", s_fix: "ပြင်ထားပြီး", s_fixP: "အလင်းနဲ့ အရောင်ကို မှန်အောင်လုပ်ထားတယ်", s_ink: "မှင်နဲ့ ဘောပင်", s_inkP: "မျဉ်းကြောင်းတွေနဲ့ အရိပ်ခြယ်တာ", s_wash: "ရေဆေး", s_washP: "အနားတွေမှာ စုနေတဲ့ ရေဆေးခြယ်ချက်တွေ", s_riso: "ရီဆိုပုံနှိပ်", s_risoP: "မှင်နှစ်ရောင်၊ အစက်တွေနဲ့ မျဉ်းကြောင်းတွေ", s_gold: "ရွှေယွန်း", s_goldP: "အနက်ပေါ်မှာ ရွှေ၊ လာယ်ရော့နမ်လိုပဲ", s_pop: "ကာတွန်း", s_popP: "ကျယ်လောင်တဲ့အရောင်တွေ၊ မျဉ်းထူတွေ", mkH: "ဓာတ်ပုံ လုံးဝမရှိဘူးလား။", mkP: "အစိတ်အပိုင်းတွေကနေ ကာဗာ ဒါမှမဟုတ် ပရိုဖိုင်ပုံတစ်ခု ဆောက်ပါ။ အရောင်တစ်ရောင်၊ ပုံစံတစ်ခု၊ သင်္ကေတပုံ ၂၆၇ ခုထဲက တစ်ခု၊ နာမည်။", mkGo: "နောက်တစ်ခု", t_work: "လက်ရာစုစည်းမှု", t_workP: "ခင်ဗျားရဲ့အလုပ်တွေ၊ ပရောဂျက်တစ်ခုစီက သူ့စာမျက်နှာပေါ်မှာ၊ တဂ်နဲ့ စစ်ထုတ်ထားတယ်၊ ဖောက်သည်တွေပြောတာတွေပါတယ်။", t_face: "ပရိုဖိုင်ပုံ", t_faceP: "ခင်ဗျားရဲ့မျက်နှာ၊ လိုဂို၊ ဒါမှမဟုတ် အစိတ်အပိုင်းတွေကနေ ဆောက်ထားတဲ့ပုံ၊ နာမည်ဘေးမှာ။", f9: "ဓာတ်ပုံစတူဒီယို၊ ပရိုဖိုင်ပုံ၊ ပရောဂျက် ၆ ခုရဲ့ လက်ရာစုစည်းမှု", pics: "ဓာတ်ပုံတွေ",
     stayH: 'ဟိုတယ်၊ တည်းခိုခန်း- ကိုယ်တိုင်ကြိုတင်မှာယူမှုလက်ခံ', staySub: 'အခန်းများ၊ ညများ၏ပြက္ခဒိန်၊ Airbnb · Booking.com · Agoda ပြက္ခဒိန်များ ၃၀ မိနစ်တိုင်း ညှိ၊ ဧည့်သည်များ သင့် PromptPay သို့ ပေးချေ။', calcNight: 'တစ်ညဈေး', calcNights: 'အက်ပ်မှ တစ်လရောင်းသည့်ည', calcOta: 'ကော်မရှင် 15%', calcFlat: 'ဟိုတယ်အတွက် ရွှေ', mo: 'တစ်လ', hotelPrice: 'အခန်းကြိုတင်မှာယူမှုလက်ခံသော ဟိုတယ်- တစ်လ ฿{p}', calcKeep: 'တစ်နှစ်တွင် ကျန်ရှိ', calcSrc: 'Agoda ~15%; Booking.com 10–25%, များသောအားဖြင့် ~15%', stayGo: 'ဟိုတယ်စာမျက်နှာလုပ်ရန်', yr: 'တစ်နှစ်',
     make: 'စာမျက်နှာလုပ်ရန်', kicker: 'Mot Dang · သင့်ကိုယ်ပိုင်စာမျက်နှာ', h1: 'သင့်ဆိုင်ကို <em>ပုံဆွဲ</em>ပြီး ငါးမိနစ်အတွင်း အွန်လိုင်းတင်ပါ',
     lead: 'လူတွေက ဖုန်းနဲ့ သင့်ကိုရှာကြတယ်။ ဖုန်းခေါ်၊ LINE ထည့်၊ Grab ခေါ်နိုင်ပြီး ဘယ်သူလာလဲ သင်မြင်ရမယ်။',
@@ -100,6 +105,7 @@ const W = {
 howH: 'အဆင့်သုံးဆင့်', step1: 'ဘာအတွက်လဲ ရွေးပါ', step2: 'အမည်ပေးပါ', step3: 'ပုံစံရွေးပြီး အွန်လိုင်းတင်ပါ', ex: 'ဥပမာ',
   },
   zh: {
+    bk: "图片工作室", b_path: "左边是手机照片，右边是水彩。", b_pai: "拜县的稻田，孔版印刷。", b_wat: "清曼寺，泰式金漆。", b_map: "1890 年的清迈。每个网页都有手绘地图。", picH: "暗照片，变成好图片", picSub: "每个网页都有图片工作室。点一个样式。下面这张照片是故意调暗、调模糊的。", s_raw: "原图", s_rawP: "又暗又糊", s_fix: "调光", s_fixP: "光线和颜色调好", s_ink: "钢笔线描", s_inkP: "线条和排线", s_wash: "水彩", s_washP: "颜色在边缘晕开", s_riso: "孔版印刷", s_risoP: "两种墨，网点和线", s_gold: "泰式金漆", s_goldP: "黑底描金", s_pop: "漫画", s_popP: "大色块，粗线条", mkH: "一张照片都没有？", mkP: "用零件拼一个封面或头像：颜色、图案、267 个小图标之一，还有你的名字。", mkGo: "换一个", t_work: "作品集", t_workP: "每个项目都有自己的网页，按标签筛选，附客户评价。", t_face: "头像", t_faceP: "你的脸、你的标志，或用零件拼一个，放在名字旁边。", f9: "图片工作室、头像、6 个项目的作品集", pics: "图片",
     stayH: '酒店、民宿：自己接预订', staySub: '客房、空房日历，每 30 分钟同步 Airbnb · Booking.com · Agoda 日历，客人付款到你的 PromptPay 或你自己的链接。', calcNight: '每晚价格', calcNights: '每月通过 App 卖出的晚数', calcOta: '15% 佣金', calcFlat: '酒店金卡', mo: '每月', hotelPrice: '接受客房预订的酒店：每月 ฿{p}', calcKeep: '一年多留下', calcSrc: 'Agoda 约 15%；Booking.com 10–25%，多数约 15%。', stayGo: '做酒店网页', yr: '每年',
     make: '做我的网页', kicker: 'Mot Dang · 你自己的网页', h1: '你的店，<em>画好了</em>，五分钟上线',
     lead: '大家用手机找你。给他们一个值得停留的网页：打电话、加 LINE、叫 Grab 到店门口，还能看到谁来过。',
@@ -127,13 +133,13 @@ howH: 'အဆင့်သုံးဆင့်', step1: 'ဘာအတွက်�
   },
 }
 const GOLD = {
-  th: ['รับจอง ประกาศขายเช่า ปุ่มไปหน้า Agoda และ Booking.com ของคุณ', 'โปรโมชั่นตั้งเวลา นับถอยหลัง', 'หน้าเว็บ 12 ภาษา', 'แบบลายคำทองและริโซ่', 'หน้าเว็บขึ้นบน Google และเสิร์ชเอนจินอื่น', 'รูป 120 รูปและวิดีโอ', 'แถวนี้: ที่ของคุณเองบนแผนที่วาดมือ', 'สถิติหนึ่งปี และไฟล์ CSV', 'ขึ้นก่อนในรายชื่อเว็บ มีดาวทอง', 'ทุกอย่างในแบบฟรี'],
-  en: ['Bookings, listings to sell or rent, buttons to your Agoda and Booking.com pages', 'Timed offers with a countdown', 'Your page in 12 languages', 'Gold leaf and Riso looks', 'Your page on Google and other search engines', '120 photos and a video', 'Around here: your own places on your drawn map', 'A year of traffic, and a CSV', 'First in the list of pages, with a gold star', 'Everything in Free'],
-  my: ['ကြိုတင်မှာယူမှု၊ အိမ်ကြော်ငြာ၊ Agoda နှင့် Booking.com ခလုတ်များ', 'နောက်ပြန်ရေတွက်သည့် ပရိုမိုးရှင်း', 'ဘာသာစကား ၁၂ မျိုး', 'ရွှေနှင့် Riso ပုံစံများ', 'Google တွင် ပေါ်သည်', 'ဓာတ်ပုံ ၁၂၀ ပုံနှင့် ဗီဒီယို', 'ဤအနီး- သင့်နေရာများ မြေပုံပေါ်တွင်', 'တစ်နှစ်စာ စာရင်းနှင့် CSV', 'စာရင်းတွင် ရှေ့ဆုံး', 'အခမဲ့ရှိသမျှ'],
-  zh: ['预约、买卖租赁房源、通往你 Agoda 和 Booking.com 页面的按钮', '带倒计时的限时优惠', '网页有 12 种语言', '金箔和 Riso 两种样式', '网页能出现在 Google 等搜索引擎', '120 张照片和一个视频', '附近：你的地方标在手绘地图上', '一年的访问数据和 CSV', '在网页列表里排前面，带金星', '免费版的一切'],
+  th: ['รับจอง ประกาศขายเช่า ปุ่มไปหน้า Agoda และ Booking.com ของคุณ', 'โปรโมชั่นตั้งเวลา นับถอยหลัง', 'หน้าเว็บ 12 ภาษา', 'แบบลายคำทองและริโซ่', 'หน้าเว็บขึ้นบน Google และเสิร์ชเอนจินอื่น', 'รูป 120 รูปและวิดีโอ', 'พอร์ตผลงาน 60 ชิ้น', 'แถวนี้: ที่ของคุณเองบนแผนที่วาดมือ', 'สถิติหนึ่งปี และไฟล์ CSV', 'ขึ้นก่อนในรายชื่อเว็บ มีดาวทอง', 'ทุกอย่างในแบบฟรี'],
+  en: ['Bookings, listings to sell or rent, buttons to your Agoda and Booking.com pages', 'Timed offers with a countdown', 'Your page in 12 languages', 'Gold leaf and Riso looks', 'Your page on Google and other search engines', '120 photos and a video', 'A portfolio of 60 projects', 'Around here: your own places on your drawn map', 'A year of traffic, and a CSV', 'First in the list of pages, with a gold star', 'Everything in Free'],
+  my: ['ကြိုတင်မှာယူမှု၊ အိမ်ကြော်ငြာ၊ Agoda နှင့် Booking.com ခလုတ်များ', 'နောက်ပြန်ရေတွက်သည့် ပရိုမိုးရှင်း', 'ဘာသာစကား ၁၂ မျိုး', 'ရွှေနှင့် Riso ပုံစံများ', 'Google တွင် ပေါ်သည်', 'ဓာတ်ပုံ ၁၂၀ ပုံနှင့် ဗီဒီယို', 'ပရောဂျက် ၆၀ ရဲ့ လက်ရာစုစည်းမှု', 'ဤအနီး- သင့်နေရာများ မြေပုံပေါ်တွင်', 'တစ်နှစ်စာ စာရင်းနှင့် CSV', 'စာရင်းတွင် ရှေ့ဆုံး', 'အခမဲ့ရှိသမျှ'],
+  zh: ['预约、买卖租赁房源、通往你 Agoda 和 Booking.com 页面的按钮', '带倒计时的限时优惠', '网页有 12 种语言', '金箔和 Riso 两种样式', '网页能出现在 Google 等搜索引擎', '120 张照片和一个视频', '60 个项目的作品集', '附近：你的地方标在手绘地图上', '一年的访问数据和 CSV', '在网页列表里排前面，带金星', '免费版的一切'],
 }
-const GOLD_DING = ['key', 'megaphone', 'chat', 'crown', 'search', 'camera', 'compass', 'calendar', 'star', 'check']
-const FREE_DING = ['link', 'pencil', 'telephone', 'envelope', 'calendar', 'camera', 'share', 'sparkle']
+const GOLD_DING = ['key', 'megaphone', 'chat', 'crown', 'search', 'camera', 'nib', 'compass', 'calendar', 'star', 'check']
+const FREE_DING = ['link', 'pencil', 'telephone', 'envelope', 'calendar', 'camera', 'share', 'sparkle', 'nib']
 
 let L = store.get('lang', (navigator.language || 'th').slice(0, 2))
 if (!W[L]) L = 'th'
@@ -227,6 +233,8 @@ function toys() {
     `<div class="toy rise"><div class="art"><span class="words12" id="w12">${HELLO[0]}</span></div><h3>${w('t_lang')}</h3><p>${w('t_langP')}</p></div>`,
     `<div class="toy rise"><div class="art"><i data-dingbat="sparkle" data-look="riso"></i></div><h3>${w('t_pics')}</h3><p>${w('t_picsP')}</p></div>`,
     `<div class="toy rise"><div class="art"><span class="a4"><b>${esc(typed || w('tryPh'))}</b>${qrSvg('https://sites.motdang.net/', { dark: '#000', light: '#fff', label: 'QR' })}</span></div><h3>${w('t_sign')}</h3><p>${w('t_signP')}</p></div>`,
+    `<a class="toy rise" href="/make#kind=work" style="text-decoration:none"><div class="art"><i data-dingbat="nib" data-look="riso"></i></div><h3>${w('t_work')}</h3><p>${w('t_workP')}</p></a>`,
+    `<a class="toy rise" href="#pictures" style="text-decoration:none"><div class="art"><i data-dingbat="smile" data-look="paper"></i></div><h3>${w('t_face')}</h3><p>${w('t_faceP')}</p></a>`,
     `<a class="toy gold rise" href="#gold"><div class="art"><i data-dingbat="crown" data-look="paper"></i></div><h3>${w('t_gold')}</h3><p>${w('t_goldP')}</p></a>`,
   ].join('')
   $('#toys').querySelector('[data-go=draw]').onclick = () => $('#stage').scrollIntoView({ behavior: REDUCED ? 'auto' : 'smooth', block: 'center' })
@@ -264,9 +272,82 @@ function calc(price) {
 
 function tiers(price, hotel) {
   calc((hotel || 555) * 12)
-  $('#freeList').innerHTML = ['f1', 'f2', 'f3', 'f4', 'f5', 'f6', 'f7', 'f8'].map((k, i) => `<li><i data-dingbat="${FREE_DING[i]}" data-look="ink"></i><span>${w(k)}</span></li>`).join('')
+  $('#freeList').innerHTML = ['f1', 'f2', 'f3', 'f4', 'f5', 'f6', 'f7', 'f8', 'f9'].map((k, i) => `<li><i data-dingbat="${FREE_DING[i]}" data-look="ink"></i><span>${w(k)}</span></li>`).join('')
   $('#goldList').innerHTML = GOLD[L].map((t, i) => `<li><i data-dingbat="${GOLD_DING[i]}" data-look="paper"></i><span>${t}</span></li>`).join('')
   $('#goldPrice').innerHTML = `฿${new Intl.NumberFormat(L).format(price)} <small>${w('perYear')}</small><span class="hotelp">${w('hotelPrice').replace('{p}', new Intl.NumberFormat(L).format(hotel || 555))}</span>`
+}
+
+
+// ---- the lantern night: lanterns rising over the photo (2026-10-15) --------------------------
+function lanterns() {
+  const c = $('#lanterns')
+  if (!c || REDUCED) return
+  const x = c.getContext('2d'), R = (() => { let a = 1015; return () => ((a = (a * 16807) % 2147483647) / 2147483647) })()
+  let W = 0, H = 0, on = true
+  const L = Array.from({ length: 26 }, () => ({ x: R(), y: R(), z: 0.35 + R() * 0.9, s: R() * 6.28, v: 0.25 + R() * 0.5 }))
+  const fit = () => { const d = Math.min(2, devicePixelRatio || 1); W = c.clientWidth; H = c.clientHeight; c.width = W * d; c.height = H * d; x.setTransform(d, 0, 0, d, 0, 0) }
+  fit(); addEventListener('resize', fit)
+  new IntersectionObserver((es) => { on = es[0].isIntersecting }).observe($('.hero'))
+  let last = 0
+  const draw = (t) => {
+    requestAnimationFrame(draw)
+    if (!on || t - last < 33) return
+    const dt = Math.min(60, t - last); last = t
+    x.clearRect(0, 0, W, H)
+    for (const l of L) {
+      l.y -= (l.v * l.z * dt) / 60000; if (l.y < -0.08) { l.y = 1.08; l.x = R() }
+      const px = (l.x + Math.sin(t / 3200 + l.s) * 0.012) * W, py = l.y * H, r = 9 * l.z
+      const flick = 0.82 + Math.sin(t / 180 + l.s * 7) * 0.08
+      const g = x.createRadialGradient(px, py, 0, px, py, r * 4)
+      g.addColorStop(0, `rgba(255,190,90,${0.42 * flick * l.z})`); g.addColorStop(1, 'rgba(255,140,40,0)')
+      x.fillStyle = g; x.beginPath(); x.arc(px, py, r * 4, 0, 6.29); x.fill()
+      x.fillStyle = `rgba(255,${200 + 30 * flick},${120 + 40 * flick},${0.9 * l.z})`
+      x.beginPath(); x.moveTo(px - r * 0.62, py - r); x.lineTo(px + r * 0.62, py - r); x.lineTo(px + r * 0.48, py + r * 0.7); x.lineTo(px - r * 0.48, py + r * 0.7); x.closePath(); x.fill()
+      x.fillStyle = `rgba(255,250,220,${0.85 * flick})`; x.beginPath(); x.arc(px, py + r * 0.45, r * 0.22, 0, 6.29); x.fill()
+    }
+  }
+  requestAnimationFrame(draw)
+}
+
+// ---- the picture studio, live: a dim photo, fixed or drawn on a tap ---------------------------
+const SAMPLE = new Promise((ok, no) => { const im = new Image(); im.onload = () => ok(im); im.onerror = no; im.src = '/s/home/sample.webp' })
+const SKEYS = ['raw', 'fix', 'ink', 'wash', 'riso', 'gold', 'pop']
+let sNow = 'gold'
+async function studio() {
+  const b = $('#sbtns')
+  b.innerHTML = SKEYS.map((k) => `<button type="button" data-s="${k}"${k === sNow ? ' class="on"' : ''}>${w('s_' + k)}<small>${w('s_' + k + 'P')}</small></button>`).join('')
+  b.querySelectorAll('button').forEach((x) => (x.onclick = () => { sNow = x.dataset.s; b.querySelectorAll('button').forEach((y) => y.classList.toggle('on', y === x)); showStyle() }))
+  showStyle()
+}
+let srcPx = null
+async function showStyle() {
+  const c = $('#sdemo'), im = await SAMPLE.catch(() => null)
+  if (!im) return
+  c.width = im.naturalWidth; c.height = im.naturalHeight
+  const x = c.getContext('2d', { willReadFrequently: true })
+  if (!srcPx) { x.drawImage(im, 0, 0); srcPx = x.getImageData(0, 0, c.width, c.height) }
+  $('#scap').textContent = w('s_' + sNow)
+  if (sNow === 'raw') { x.putImageData(srcPx, 0, 0); return }
+  await new Promise((r) => setTimeout(r, 0))
+  const o = makeOver(srcPx, sNow, { accent: '#f04a00' })
+  x.putImageData(new ImageData(o.data, o.width, o.height), 0, 0)
+}
+
+// ---- a cover from parts, shuffled ---------------------------------------------------------------
+const COVERS = [['#e9b43b', 'tiles', 'noodles', 'Chonburi'], ['#22386b', 'rays', 'lantern', 'Prompt'], ['#1f9aa6', 'dots', 'koi', 'Sriracha'], ['#e85a8b', 'stripes', 'lotus', 'Chonburi'], ['#1e1e1e', 'rings', 'elephant', 'Prompt'], ['#62b04a', 'tiles', 'coffee', 'Sriracha']]
+let cvI = 0
+async function cover() {
+  await dbs.catch(() => {}); await loadFaces()
+  const c = $('#mdemo'), [bg, pat, glyph, font] = COVERS[cvI % COVERS.length]
+  c.width = 800; c.height = 450
+  drawCover(c.getContext('2d'), 800, 450, { bg, pat, glyph, font, ink: inkOn(bg), letters: '' }, window.Dingbats || null, typed || w('tryPh'), w('mkTag'))
+}
+
+function credits() {
+  fetch('/s/home/credits.json').then((r) => r.json()).then((cr) => {
+    document.querySelectorAll('[data-cr]').forEach((el) => { const c = cr[el.dataset.cr]; if (c) el.innerHTML = `${esc(c.title)} · ${esc(c.license)} · <a href="${esc(c.src)}" rel="noopener">Wikimedia Commons</a>` })
+    $('#credits').innerHTML = w('pics') + ': ' + Object.values(cr).map((c) => `<a href="${esc(c.src)}" rel="noopener">${esc(c.title)}</a> (${esc(c.license)})`).join(' · ')
+  }).catch(() => {})
 }
 
 let COUNT = null
@@ -296,9 +377,12 @@ function words() {
 }
 
 function all() {
-  words(); chips(); phones(); toys(); looks(); tiers(COUNT?.price || 3000, COUNT?.hotel || 555); live()
+  words(); chips(); phones(); toys(); looks(); tiers(COUNT?.price || 3000, COUNT?.hotel || 555); live(); studio(); cover(); credits()
   paint(performance.now())
 }
 all()
+lanterns()
+$('#mshuffle').onclick = () => { cvI++; cover() }
+$('#tn').addEventListener('change', () => cover())
 fetch('/api/count').then((r) => r.json()).then((j) => { COUNT = j; tiers(j.price, j.hotel); live() }).catch(() => {})
 dbs.catch(() => {})
