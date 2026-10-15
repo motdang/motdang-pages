@@ -10,6 +10,8 @@ import { PAGE_LANGS } from './words.mjs'
 import { ui, UI_LANGS } from './make-words.mjs'
 import { exifBlock, readExif } from './exif.mjs'
 import { openStudio, openMark } from './studio-ui.mjs'
+import { amuletsSec, amToggle, amUi, newAmulet } from './make-amulet.mjs'
+import { AM_MAX } from './amulet.mjs'
 import { drawCard, cardKey, CARD } from './card.mjs'
 import { loadFaces } from './mark.mjs'
 
@@ -20,7 +22,7 @@ const store = {
   set(k, v) { try { localStorage.setItem('mdp:' + k, JSON.stringify(v)) } catch {} },
 }
 const icon = (id) => `<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><use href="/s/icons.svg#i-${id}"/></svg>`
-const KIND_ICON = { shop: 'shop', food: 'food', service: 'gear', work: 'star', stay: 'moon', homes: 'tag', me: 'me', event: 'party', group: 'people' }
+const KIND_ICON = { shop: 'shop', food: 'food', service: 'gear', work: 'star', amulet: 'flower', stay: 'moon', homes: 'tag', me: 'me', event: 'party', group: 'people' }
 const TZ = (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone } catch { return 'Asia/Bangkok' } })()
 
 const S = {
@@ -42,7 +44,7 @@ function dingbats(fams) {
 }
 dingbats.loaded = new Set()
 dingbats(['signals', 'classic', 'kitchen', 'faces', 'lanna'])
-const KIND_DING = { shop: 'cart', food: 'noodles', service: 'gear', work: 'nib', stay: 'key', homes: 'home', me: 'wave', event: 'party', group: 'crown' }
+const KIND_DING = { shop: 'cart', food: 'noodles', service: 'gear', work: 'nib', amulet: 'lotus', stay: 'key', homes: 'home', me: 'wave', event: 'party', group: 'crown' }
 const DB_FAMS = [...new Set(Object.values(DINGBATS))]
 const rid = () => Math.random().toString(36).slice(2, 8).padEnd(6, 'x')
 // the dingbats a maker can put beside the name: a handful from each family
@@ -59,13 +61,14 @@ const DEFAULT_OPEN = {
   food: ['words', 'photos', 'items', 'order', 'map', 'hours', 'contact'],
   service: ['words', 'face', 'photos', 'svc', 'items', 'contact', 'map'],
   work: ['words', 'face', 'works', 'photos', 'quotes', 'contact', 'links'],
+  amulet: ['words', 'face', 'amulets', 'contact', 'photos', 'map', 'hours'],
   me: ['words', 'face', 'photos', 'links', 'contact'],
   stay: ['words', 'photos', 'rooms', 'ota', 'map', 'contact'],
   homes: ['words', 'lists', 'photos', 'contact', 'map'],
   event: ['event', 'words', 'cal', 'photos', 'map', 'contact'],
   group: ['words', 'cal', 'photos', 'links', 'contact'],
 }
-const LOOK_FOR = { shop: 'poster', food: 'night', service: 'clean', work: 'clean', stay: 'loom', homes: 'clean', me: 'y1997', event: 'stitch', group: 'loom' }
+const LOOK_FOR = { shop: 'poster', food: 'night', service: 'clean', work: 'clean', amulet: 'lanna', stay: 'loom', homes: 'clean', me: 'y1997', event: 'stitch', group: 'loom' }
 
 function guessCc() {
   const zone = { 'Asia/Bangkok': 'TH', 'Asia/Yangon': 'MM', 'Asia/Rangoon': 'MM', 'Asia/Vientiane': 'LA', 'Asia/Phnom_Penh': 'KH',
@@ -293,6 +296,7 @@ async function create(look, btn) {
   if (S.kind === 'stay') S.d.rooms = [NEW_ROW.rooms()]
   if (S.kind === 'homes') S.d.lists = [NEW_ROW.lists()]
   if (S.kind === 'work') S.d.works = [NEW_ROW.works()]
+  if (S.kind === 'amulet') S.d.amulets = [NEW_ROW.amulets()]
   S.pageLang = PAGE_LANGS[S.lang] ? S.lang : 'en'
   try {
     const r = await call('POST', 'sites', { name: S.addr, kind: S.kind, look, lang: S.pageLang, d: S.d, by: new URLSearchParams(location.search).get('by') || '' })
@@ -311,7 +315,7 @@ async function create(look, btn) {
 // ---- the editor ------------------------------------------------------------------------
 
 const SECTIONS = [
-  ['event', 'cal', 's_event'], ['words', 'note', 's_words'], ['face', 'me', 's_face'], ['works', 'star', 's_works'], ['drawing', 'sparkle', 's_drawing'], ['photos', 'camera', 's_photos'], ['quotes', 'chat', 's_quotes'],
+  ['event', 'cal', 's_event'], ['words', 'note', 's_words'], ['face', 'me', 's_face'], ['works', 'star', 's_works'], ['amulets', 'flower', 's_amulets'], ['drawing', 'sparkle', 's_drawing'], ['photos', 'camera', 's_photos'], ['quotes', 'chat', 's_quotes'],
   ['rooms', 'moon', 's_rooms', 'gold'], ['ota', 'globe', 's_ota', 'gold'], ['lists', 'tag', 's_lists', 'gold'], ['svc', 'clock', 's_svc', 'gold'], ['items', 'tag', 's_items'],
   ['cal', 'cal', 's_cal'], ['camps', 'party', 's_camps', 'gold'],
   ['order', 'basket', 's_order'], ['contact', 'phone', 's_contact'], ['map', 'pin', 's_map'], ['spots', 'compass', 's_spots'], ['hours', 'clock', 's_hours'],
@@ -322,7 +326,7 @@ function hasData(id) {
   const d = S.d
   return { event: !!d.event, words: true, drawing: true, photos: d.photos.length > 0, items: d.items.length > 0, order: !!(d.order.grabfood || d.order.lineman),
     contact: Object.values(d.contact).some(Boolean), map: d.place.lat !== null || !!d.place.addr, hours: d.hours.on, links: d.links.length > 0, msg: true, look: true,
-    video: !!d.video, spots: d.spots.length > 0, cal: d.cal.length > 0, ota: !!(d.ota.agoda || d.ota.booking), camps: d.camps.length > 0, svc: d.svc.length > 0, rooms: d.rooms.length > 0, lists: d.lists.length > 0, face: !!d.avatar, works: d.works.length > 0, quotes: d.quotes.length > 0 }[id]
+    video: !!d.video, spots: d.spots.length > 0, cal: d.cal.length > 0, ota: !!(d.ota.agoda || d.ota.booking), camps: d.camps.length > 0, svc: d.svc.length > 0, rooms: d.rooms.length > 0, lists: d.lists.length > 0, face: !!d.avatar, works: d.works.length > 0, amulets: d.amulets.length > 0, quotes: d.quotes.length > 0 }[id]
 }
 
 function tabs() {
@@ -575,11 +579,13 @@ const NEW_ROW = {
   lists: () => ({ id: rid(), t: '', deal: 'sale', status: 'open', p: '', area: '', unit: 'm2', beds: 0, baths: 0, kind: '', note: '', photos: [], lat: null, lng: null }),
   works: () => ({ id: rid(), t: '', client: '', year: String(new Date().getFullYear()), role: '', tags: '', note: '', u: '', photos: [] }),
   quotes: () => ({ q: '', who: '' }),
+  amulets: () => newAmulet(rid),
 }
 
 // ---- the parts added 2026-10-15: an avatar, a portfolio, the picture studio ---------------
 
 Object.assign(SEC, {
+  amulets() { return amuletsSec({ S, val, esc, icon, imgUrl, photoPick, rowX, seg, isGold, lang: S.lang }) },
   face() {
     const a = S.d.avatar
     return `<p class="hint">${T('face_hint')}</p><div class="avrow">${a ? `<img class="avpv${S.d.avround ? ' round' : ''}" src="${esc(imgUrl(a, true))}" alt="">` : `<span class="avpv none">${ding('smile', 'paper')}</span>`}
@@ -638,8 +644,8 @@ async function makeOver(id) {
     const swap = (x) => (x === id ? nid : x)
     S.d.photos = S.d.photos.map(swap)
     if (S.d.cover === id) S.d.cover = nid
-    for (const k of ['rooms', 'lists', 'works']) for (const x of S.d[k] || []) x.photos = x.photos.map(swap)
-    redrawSec('photos'); if (S.open.has('works')) redrawSec('works')
+    for (const k of ['rooms', 'lists', 'works', 'amulets']) for (const x of S.d[k] || []) x.photos = x.photos.map(swap)
+    redrawSec('photos'); if (S.open.has('works')) redrawSec('works'); if (S.open.has('amulets')) redrawSec('amulets')
     changed()
   } })
 }
@@ -697,6 +703,7 @@ function bindTabs() {
 
 function bindEdit() {
   const form = $('#form')
+  form.addEventListener('toggle', amToggle, true)
   form.addEventListener('input', (e) => {
     const k = e.target.dataset.k
     if (!k) return
@@ -722,6 +729,7 @@ function bindEdit() {
   form.addEventListener('change', (e) => {
     const t = e.target
     if (t.id === 'files') addFiles([...t.files])
+    if (t.dataset.amfile !== undefined) amFiles(+t.dataset.amfile, [...t.files])
     if (t.id === 'avfile' && t.files[0]) createImageBitmap(t.files[0], { imageOrientation: 'from-image' }).then((bmp) => avatarStudio(bmp)).catch(() => toast(ui(S.lang, 'e_net')))
     if (t.id === 'avround') { S.d.avround = t.checked; changed() }
     if (t.id === 'plang') { S.pageLang = t.value; changed() }
@@ -772,9 +780,11 @@ function bindEdit() {
     if (b.dataset.addrate) { const r = S.d.rooms[+b.dataset.addrate]; r.rates = r.rates || []; r.rates.push({ from: '', to: '', p: '' }); redrawSec('rooms') }
     if (b.dataset.rmrate) { const [i, k] = b.dataset.rmrate.split('.').map(Number); S.d.rooms[i].rates.splice(k, 1); redrawSec('rooms'); changed() }
     if (b.dataset.seg === 'stay.pay') redrawSec('rooms')
+    if (b.dataset.seg?.startsWith('amulets.')) redrawSec('amulets')
+    if (b.dataset.amrm) { const [i, k] = b.dataset.amrm.split('.').map(Number); S.d.amulets[i]?.photos.splice(k, 1); redrawSec('amulets'); changed() }
     if (b.dataset.pp) {
       const path = b.closest('.pickph').dataset.path, [k, i] = path.split('.'), item = S.d[k][+i]
-      if (item) { item.photos = item.photos.includes(b.dataset.pp) ? item.photos.filter((x) => x !== b.dataset.pp) : [...item.photos, b.dataset.pp].slice(0, k === 'works' ? 24 : MAX.itemPhotos); b.classList.toggle('on', item.photos.includes(b.dataset.pp)); changed() }
+      if (item) { item.photos = item.photos.includes(b.dataset.pp) ? item.photos.filter((x) => x !== b.dataset.pp) : [...item.photos, b.dataset.pp].slice(0, k === 'works' ? 24 : k === 'amulets' ? AM_MAX.photos : MAX.itemPhotos); b.classList.toggle('on', item.photos.includes(b.dataset.pp)); changed() }
     }
     if (b.dataset.lpingo) listingPin(+b.dataset.lpingo)
     if (b.dataset.lpinx) { const x = S.d.lists[+b.dataset.lpinx]; if (x) { x.lat = x.lng = null; redrawSec('lists'); changed() } }
@@ -815,6 +825,8 @@ function redrawSec(id) {
   sec.innerHTML = g && !isGold() ? goldLocked() : SEC[id]()
   if (id === 'map') { S.picker = null; mountMap() }
   if (id === 'drawing') { drawCv = null; mountDrawing() }
+  // the amulets pick from the page's photos: show new ones there too, unless the maker is typing in it
+  if (id === 'photos' && S.d.amulets?.length && !$('[data-sec="amulets"]')?.contains(document.activeElement)) redrawSec('amulets')
 }
 
 // ---- the drawing preview in the editor ----------------------------------------------------
@@ -937,6 +949,16 @@ async function addFiles(files) {
   changed()
 }
 
+/** Photos taken for one amulet: they join the page's photos and that amulet's, in the order taken. */
+async function amFiles(i, files) {
+  const before = new Set(S.d.photos)
+  await addFiles(files)
+  const x = S.d.amulets[i]
+  if (!x) return
+  x.photos = [...x.photos, ...S.d.photos.filter((id) => !before.has(id))].slice(0, AM_MAX.photos)
+  redrawSec('amulets'); changed()
+}
+
 async function addBitmap(bmp, pd) {
   const big = await shrink(bmp, 1600, 0.82)
   const small = await shrink(bmp, 480, 0.76)
@@ -956,6 +978,7 @@ const PD_IDEAS = {
   food: ['still life fruit', 'noodles', 'tea', 'market', 'rice field', 'botanical illustration'],
   shop: ['textile pattern', 'ceramics', 'still life', 'woodblock print', 'flowers', 'market'],
   service: ['botanical illustration', 'garden', 'hands', 'woodblock print', 'temple', 'mountains'],
+  amulet: ['Buddha', 'lotus', 'temple', 'gold leaf', 'Thai manuscript', 'woodblock print'],
   work: ['architecture drawing', 'woodblock print', 'textile pattern', 'botanical illustration', 'map', 'abstract painting'],
   stay: ['Chiang Mai', 'garden', 'mountains', 'temple', 'river', 'bedroom painting'],
   homes: ['house', 'garden', 'architecture drawing', 'window', 'courtyard', 'rice field'],
@@ -1203,7 +1226,7 @@ async function drawMsgs() {
 
 const TAP_WORD = { call: 'call', line: 'line', dir: 'dir', ride: 'ride', food: 'food', lineman: 'lineman', share: 'share', copy: 'copy', map: 'map', far: 'far', vcf: 'saveContact',
   ics: 'addCal', sign: 'sign', order: 'lineOrder', msg: 'msg', link: 'links', photo: 'photos', video: 'video', email: 'email', web: 'web', qr: 'qr', story: 'story' }
-const TAP_EXTRA = { shareline: 'LINE', sharefb: 'Facebook', sharex: 'X', sharewa: 'WhatsApp', sharetg: 'Telegram', social: 'Facebook · Instagram · TikTok', whatsapp: 'WhatsApp' }
+const TAP_EXTRA = { get amulet() { return amUi(S.lang, 'tap_amulet') }, get reserve() { return amUi(S.lang, 'tap_reserve') }, shareline: 'LINE', sharefb: 'Facebook', sharex: 'X', sharewa: 'WhatsApp', sharetg: 'Telegram', social: 'Facebook · Instagram · TikTok', whatsapp: 'WhatsApp' }
 
 async function drawStats(days) {
   const tb = $('#tb')

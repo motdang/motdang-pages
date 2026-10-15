@@ -489,6 +489,26 @@
   var askTag = new URLSearchParams(location.search).get('tag')
   if (askTag && wf.some(function (b) { return b.getAttribute('data-tag') === askTag })) byTag(askTag)
 
+  // ---- amulets: by kind, or only what is available; reserve on a personal LINE copies the message first ----
+  var af = $$('.afilter button')
+  af.forEach(function (b) {
+    b.onclick = function () {
+      var k = b.getAttribute('data-af') || ''
+      af.forEach(function (x) { x.classList.toggle('on', x === b) })
+      $$('.agrid .acard').forEach(function (c) { c.hidden = !!k && (k.indexOf('st:') === 0 ? c.getAttribute('data-st') !== k.slice(3) : c.getAttribute('data-form') !== k) })
+    }
+  })
+  var amr = $('#amreserve')
+  if (amr && amr.getAttribute('data-copy')) {
+    amr.onclick = function (e) {
+      var text = amr.getAttribute('data-copy'), href = amr.href
+      if (!navigator.clipboard) return
+      e.preventDefault()
+      var go = function () { location.href = href }
+      navigator.clipboard.writeText(text).then(function () { amr.lastChild.textContent = amr.getAttribute('data-done'); setTimeout(go, 900) }, go)
+    }
+  }
+
   // ---- read in your own language, when the page has it ----
   if (pd.langs && pd.langs.length > 1 && !pd.hl && !pd.preview) {
     var want = (navigator.languages || [navigator.language || '']).map(function (x) { return String(x).slice(0, 2).toLowerCase() }).filter(function (x) { return pd.langs.indexOf(x) >= 0 })[0]

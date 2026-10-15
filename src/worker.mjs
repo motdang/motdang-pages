@@ -7,7 +7,7 @@
 //   /feed.json            every live page as data, for motdang.net (search, place pages, maps)
 //   /api/…                the builder's and the pages' calls    /img/…  photos    /s/…  static files
 //   /admin                held and reported pages, Gold slips
-//   /name/calendar.ics    the page's calendar to follow    /name/l/<id>  a listing    /name/w/<id>  a portfolio project    /name/room/<id>.ics  a room's taken nights
+//   /name/calendar.ics    the page's calendar to follow    /name/l/<id>  a listing    /name/w/<id>  a portfolio project    /name/a/<id>  an amulet    /name/room/<id>.ics  a room's taken nights
 //   yourshop.com/         a Gold page at its own address (Cloudflare for SaaS, domain.mjs)
 //   /vendor/ /fonts/ /tiles/ /data/ /front/ /sites/doodle-map/   read from motdang.net, so a page asks one host
 //
@@ -15,6 +15,7 @@
 // The edit link is the sign-in: a long random token, stored only as its hash.
 
 import { render, normalize, vcard, ics, sign, KINDS, LOOK_IDS, GOLD_LOOKS, MAX_PHOTOS, sceneOf, HOME } from '../public/s/render.mjs'
+import { AM_MAX } from '../public/s/amulet.mjs'
 import { PAGE_LANGS } from '../public/s/words.mjs'
 import { nameProblem, screen } from './screen.mjs'
 import { clean, look, typeOf, MAX_BIG, MAX_SMALL } from './photo.mjs'
@@ -61,7 +62,7 @@ async function route(request, env, ctx) {
   // a Gold page at its own address: the page's paths without its name
   const host = url.hostname.toLowerCase()
   if (!env.DEV_ORIGIN && !/(^|\.)motdang\.net$|^(localhost|127\.0\.0\.1)$|\.workers\.dev$/.test(host)) {
-    const sub = /^\/(sign|contact\.vcf|event\.ics|calendar\.ics|l\/[a-z0-9]{4,12}|w\/[a-z0-9]{4,12}|room\/[a-z0-9]{4,12}\.ics)?\/?$/.exec(path)
+    const sub = /^\/(sign|contact\.vcf|event\.ics|calendar\.ics|l\/[a-z0-9]{4,12}|w\/[a-z0-9]{4,12}|a\/[a-z0-9]{4,12}|room\/[a-z0-9]{4,12}\.ics)?\/?$/.exec(path)
     if (sub && m === 'GET') {
       const own = await env.DB.prepare('SELECT name, tier, gold_until FROM site WHERE domain = ? OR domain = ?').bind(host, host.replace(/^www\./, '')).first()
       if (!own || !gold.isGold(own)) return html(notFound(null, request), 404)
@@ -107,7 +108,7 @@ async function route(request, env, ctx) {
   if (path === '/admin' || path.startsWith('/admin/')) return admin(request, env, path.slice(6), url)
   if (path.startsWith('/q/')) return slipPage(request, env, path, url, origin)
 
-  const pm = /^\/([a-z0-9-]{3,30})(\/sign|\/contact\.vcf|\/event\.ics|\/calendar\.ics|\/l\/[a-z0-9]{4,12}|\/w\/[a-z0-9]{4,12}|\/room\/[a-z0-9]{4,12}\.ics)?\/?$/.exec(path)
+  const pm = /^\/([a-z0-9-]{3,30})(\/sign|\/contact\.vcf|\/event\.ics|\/calendar\.ics|\/l\/[a-z0-9]{4,12}|\/w\/[a-z0-9]{4,12}|\/a\/[a-z0-9]{4,12}|\/room\/[a-z0-9]{4,12}\.ics)?\/?$/.exec(path)
   if (pm && m === 'GET') return page(request, env, ctx, pm[1], pm[2] || '', url, origin)
   return html(notFound(null, request), 404)
 }
@@ -177,6 +178,11 @@ async function page(request, env, ctx, name, sub, url, origin, base) {
     const id = sub.slice(3)
     if (!normalize(site.d).works.some((x) => x.id === id)) return html(notFound(null, request), 404)
     opt.work = id
+  }
+  if (sub.startsWith('/a/')) {
+    const id = sub.slice(3)
+    if (!normalize(site.d).amulets.slice(0, site.tier === 'gold' ? AM_MAX.gold : AM_MAX.free).some((x) => x.id === id)) return html(notFound(null, request), 404)
+    opt.amulet = id
   }
   if (site.tier === 'gold' && s.status === 'live') {
     const d = normalize(site.d)
@@ -278,7 +284,7 @@ async function sitemap(env, origin) {
   const rows = (await env.DB.prepare("SELECT name, updated, tier, gold_until, d FROM site WHERE status='live'").all()).results.filter((r) => gold.isGold(r))
   const loc = (u, day) => `<url><loc>${u}</loc><lastmod>${day}</lastmod></url>`
   const body = `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>${origin}/</loc></url>` +
-    rows.map((r) => { const day = r.updated.slice(0, 10); let works = []; try { works = normalize(JSON.parse(r.d)).works } catch {} return loc(`${origin}/${r.name}`, day) + works.map((x) => loc(`${origin}/${r.name}/w/${x.id}`, day)).join('') }).join('') + '</urlset>'
+    rows.map((r) => { const day = r.updated.slice(0, 10); let works = [], ams = []; try { const n = normalize(JSON.parse(r.d)); works = n.works; ams = n.amulets } catch {} return loc(`${origin}/${r.name}`, day) + works.map((x) => loc(`${origin}/${r.name}/w/${x.id}`, day)).join('') + ams.map((x) => loc(`${origin}/${r.name}/a/${x.id}`, day)).join('') }).join('') + '</urlset>'
   return new Response(body, { headers: { 'content-type': 'application/xml', 'cache-control': 'public, max-age=3600' } })
 }
 
@@ -477,7 +483,7 @@ ${s ? `<p>ข้อความถึง ${escHtml(title)} จะส่งสำ
       for (const [id, c] of ok) if (c) { try { d.credits[id] = JSON.parse(c) } catch {} }
     }
     const pool = new Set(d.photos)
-    for (const x of [...(d.rooms || []), ...(d.lists || []), ...(d.works || [])]) if (Array.isArray(x.photos)) x.photos = x.photos.filter((id) => pool.has(id))
+    for (const x of [...(d.rooms || []), ...(d.lists || []), ...(d.works || []), ...(d.amulets || [])]) if (Array.isArray(x.photos)) x.photos = x.photos.filter((id) => pool.has(id))
     const nd = normalize(d)
     let status = s.status, held = null
     const publish = b.publish === true || s.status !== 'draft'
