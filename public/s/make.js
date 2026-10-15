@@ -29,7 +29,7 @@ const S = {
   pageLang: '', d: null, open: new Set(), local: new Map(), big: new Map(), photoGps: null, picker: null, busy: 0,
   tab: 'edit', tier: 'gold', goldUntil: '', notifyEmail: '', notifyOk: false, unread: 0, // a page starts with 30 days of Gold
   trial: false, asks: 0, domain: '', domainState: '', domains: false, price: 3000, dbFam: '', dbQ: '',
-  plan: 'gold', hotel: true, plans: null, payPlan: '',
+  plan: 'gold', hotel: true, plans: null, payPlan: '', part: '',
 }
 const isGold = () => S.tier === 'gold'
 const ding = (n, look = 'ink', play = 'loop') => `<i data-dingbat="${n}" data-look="${look}" data-play="${play}" aria-hidden="true"></i>`
@@ -376,7 +376,7 @@ async function create(look, btn) {
     S.token = r.token; S.name = r.name; S.status = r.status; S.tier = r.tier || 'gold'; S.goldUntil = r.gold_until || ''; S.trial = !!r.trial; S.hotel = !!r.trial
     history.replaceState(null, '', '/make#t=' + S.token)
     remember()
-    S.open = new Set(DEFAULT_OPEN[S.kind])
+    S.open = new Set(DEFAULT_OPEN[S.kind]); S.part = ''
     S.step = 'edit'
     draw()
     if (KPIC[S.kind]) starterPic(S.kind)
@@ -409,25 +409,124 @@ function tabs() {
   return `<nav class="tabs">${t('edit', T('t_edit'))}${t('msgs', T('t_msgs'), S.unread ? `<span class="dot">${S.unread}</span>` : '')}${bk}${t('stats', T('t_stats'))}${t('gold', (isGold() ? '★ ' : '') + T('t_gold'))}</nav>`
 }
 
+// The editor is the page and six parts under it (Nan 2026-10-15: lead with why, try it, be not afraid,
+// what you see is what you get). A part is a card with a picture of what it puts on the page, a line on
+// why, and what it holds now; one opens at a time, beside the page on a wide screen and as a sheet under
+// the page on a phone. The page lights the part that is open.
+const GROUPS = [
+  ['words', ['event', 'words'], 'pencil'],
+  ['pics', ['photos', 'drawing', 'face', 'video'], 'camera'],
+  ['offer', ['items', 'works', 'amulets', 'svc', 'rooms', 'lists', 'ota', 'cal', 'camps', 'quotes'], 'cart'],
+  ['reach', ['contact', 'order', 'msg', 'links'], 'telephone'],
+  ['where', ['map', 'hours', 'spots'], 'compass'],
+  ['look', ['look'], 'sparkle'],
+]
+const groupOf = (id) => (GROUPS.find(([g, ids]) => g === id || ids.includes(id)) || GROUPS[0])[0]
+const secRow = (id) => SECTIONS.find((x) => x[0] === id)
+const narrow = () => window.innerWidth < 980
+
+function groupTitle(g) {
+  if (g !== 'offer') return T('g_' + g)
+  const k = 'g_offer_' + S.kind
+  return ui(S.lang, k) === k ? T('g_offer') : T(k)
+}
+
+function thumb(g, ding0) {
+  const L = LOOKS[S.look], d = S.d
+  const vars = esc(L.vars.replace(/\s+/g, ' ') + ';--accent:' + (d.accent || L.accent))
+  const img = (src) => `<span class="th" data-d="${ding0}"><img src="${esc(src)}" alt="" loading="lazy"></span>`
+  if (g === 'words') {
+    const nm = (d.name || S.name).slice(0, 24), L = Math.max(4, ...nm.split(/\s+/).map((w) => [...w].length))
+    return `<span class="th lookth" style="${vars};--L:${L}"><b>${esc(nm)}</b></span>`
+  }
+  if (g === 'look') return `<span class="th lookth" style="${vars}"><b>Aa</b><i class="acc"></i>${d.dings[0] ? `<span class="tdg">${ding(d.dings[0], 'ink')}</span>` : ''}</span>`
+  if (g === 'pics') {
+    const c = d.cover && d.cover !== KPIC_ID ? imgUrl(d.cover, true) : (d.photos[0] ? imgUrl(d.photos[0], true) : '')
+    if (c) return img(c)
+  }
+  if (g === 'offer') {
+    const ph = ['works', 'amulets', 'rooms', 'lists'].flatMap((k) => (d[k] || []).flatMap((x) => x.photos || []))[0]
+    if (ph) return img(imgUrl(ph, true))
+    if (KPIC[S.kind]) return img(kpicUrl(S.kind, true))
+  }
+  if (g === 'where' && d.place.snap) return img(imgUrl(d.place.snap, true))
+  return `<span class="th dgth">${ding(ding0, 'riso')}</span>`
+}
+
+// what the part puts on the page now, in a few words; '' = nothing yet
+function summary(g) {
+  const d = S.d, n = (k) => (d[k] || []).length, out = []
+  const sec = (id) => T(secRow(id)?.[2] || id)
+  if (g === 'words') { if (d.event?.start) out.push(when(d.event.start)); if (d.tagline) out.push(d.tagline); else if (d.about) out.push(d.about.slice(0, 60)) }
+  if (g === 'pics') {
+    const own = d.photos.filter((x) => x !== KPIC_ID && !(d.credits?.[x] && KPIC[S.kind] && d.credits[x].src === KPIC[S.kind].src)).length
+    if (own) out.push(`${own} ${T('sm_photos')}`); else if (d.photos.length) out.push(T('sm_example'))
+    if (d.drawing) out.push(sec('drawing')); if (d.avatar) out.push(sec('face')); if (d.video) out.push(sec('video'))
+  }
+  if (g === 'offer') for (const k of ['items', 'works', 'amulets', 'svc', 'rooms', 'lists', 'cal', 'camps', 'quotes']) if (n(k)) out.push(`${sec(k)} · ${n(k)}`)
+  if (g === 'offer' && (d.ota.agoda || d.ota.booking)) out.push(sec('ota'))
+  if (g === 'reach') {
+    const c = d.contact
+    if (c.phone) out.push(T('phone')); if (c.line) out.push('LINE'); if (c.facebook || c.instagram || c.tiktok) out.push('Facebook · Instagram · TikTok'.split(' · ').filter((x, i) => [c.facebook, c.instagram, c.tiktok][i]).join(' · '))
+    if (d.order.grabfood) out.push('GrabFood'); if (d.order.lineman) out.push('LINE MAN'); if (d.msg) out.push(sec('msg')); if (n('links')) out.push(`${sec('links')} · ${n('links')}`)
+  }
+  if (g === 'where') { if (d.place.lat !== null) out.push(T('pinSet')); else if (d.place.addr) out.push(d.place.addr.slice(0, 40)); if (d.hours.on) out.push(d.hours.always ? T('open24') : sec('hours')); if (n('spots')) out.push(`${sec('spots')} · ${n('spots')}`) }
+  if (g === 'look') { out.push(LOOKS[S.look].label); if (d.dings.length) out.push(`${T('s_dings')} · ${d.dings.length}`) }
+  return out.join(' · ')
+}
+
+function partCard([g, ids, ding0]) {
+  const order = DEFAULT_OPEN[S.kind] || []
+  const rank = (id) => (order.includes(id) ? order.indexOf(id) : 99 + ids.indexOf(id))
+  const subs = ids.filter((id) => SEC[id] && secRow(id))
+  const shown = subs.filter((id) => S.open.has(id)).sort((a, b) => rank(a) - rank(b))
+  const more = subs.filter((id) => !S.open.has(id))
+  if (!shown.length && !more.length) return ''
+  const open = S.part === g, sm = summary(g)
+  const sub = (id) => {
+    const [, , t, gold] = secRow(id)
+    const head = gold || (shown.length > 1 && ui(S.lang, t) !== groupTitle(g))
+    return `<div class="sub${gold ? ' gsec' : ''}" data-sec="${id}">${head ? `<h4>${T(t)}${gold ? `<span class="gpill">★ ${T('t_gold')}</span>` : ''}</h4>` : ''}<div class="in">${gold && !isGold() ? goldLocked() : SEC[id]()}</div></div>`
+  }
+  return `<section class="part${open ? ' open' : ''}${sm ? '' : ' none'}" data-grp="${g}">
+    <button class="phead" data-pg="${g}" aria-expanded="${open}">${thumb(g, ding0)}<span class="pt"><b>${esc(groupTitle(g))}</b><small>${T('gw_' + g)}</small>
+      <em>${sm ? `${icon('check')}${esc(sm)}` : T('sm_none')}</em></span><span class="chev" aria-hidden="true"></span></button>
+    ${open ? `<div class="pbody"><div class="ptop"><b>${esc(groupTitle(g))}</b><button class="go small" data-pg="">${T('g_done')}</button></div>
+      ${shown.map(sub).join('')}
+      ${more.length ? `<div class="adds"><p>${T('g_more')}</p>${more.map((id) => { const [, , t, gold] = secRow(id); return `<button data-add="${id}"${gold ? ' class="g"' : ''}><b>+ ${T(t)}${gold ? ' ★' : ''}</b><small>${T('a_' + id)}</small></button>` }).join('')}</div>` : ''}
+    </div>` : ''}</section>`
+}
+
+function drawParts() {
+  const box = $('#parts')
+  if (!box) return
+  S.picker = null
+  box.innerHTML = GROUPS.map(partCard).join('')
+  dingbats(['curious'])
+  document.body.classList.toggle('sheeton', !!S.part && narrow())
+  const open = box.querySelector('.part.open')
+  if (open) {
+    if (open.querySelector('#mapel')) mountMap()
+    if (open.querySelector('#drawpv')) mountDrawing()
+  }
+  lightPart()
+}
+
 function drawEdit() {
-  if (S.tab !== 'edit') return drawTab()
+  if (S.tab !== 'edit') { document.body.classList.remove('sheeton'); return drawTab() }
   for (const [id] of SECTIONS) if (hasData(id)) S.open.add(id)
   S.open.add('look'); S.open.add('drawing'); S.open.add('msg')
-  const shown = SECTIONS.filter(([id]) => S.open.has(id))
-  const more = SECTIONS.filter(([id]) => !S.open.has(id))
-  app.innerHTML = tabs() + `<div class="ed"><div class="form" id="form"><p class="taphint">${ding('pencil', 'paper')}${T('tap')}</p>
-    ${shown.map(([id, ic, t, g], n) => `<details class="sec${g ? ' gsec' : ''}" data-sec="${id}"${n < 3 || id === 'map' ? ' open' : ''}><summary>${icon(ic)}${T(t)}${g ? `<span class="gpill">★ ${T('t_gold')}</span>` : ''}</summary><div class="in">${g && !isGold() ? goldLocked() : SEC[id]()}</div></details>`).join('')}
-    ${more.length ? `<div class="adds">${more.map(([id, ic, t, g]) => `<button data-add="${id}"${g ? ' class="g"' : ''}>${icon('plus')}${T(t)}${g ? ' ★' : ''}</button>`).join('')}</div>` : ''}
-    <div class="danger"><button id="del">${T('del')}</button></div></div>
-    <div class="pv" id="pv"><div class="url">${icon('globe')}sites.motdang.net/${esc(S.name)}</div><iframe id="frame" title="${T('preview')}"></iframe></div></div>
+  app.innerHTML = tabs() + `<div class="ed">
+    <div class="pv" id="pv"><div class="url">${icon('globe')}<span>sites.motdang.net/${esc(S.name)}</span></div><iframe id="frame" title="${T('preview')}"></iframe>
+      <p class="taphint">${ding('manicule', 'paper')}${T('tap')}</p></div>
+    <div class="form" id="form"><div id="parts"></div>
+      <div class="danger"><button id="del">${T('del')}</button></div></div></div>
     <div class="dock"><span class="state" id="state">${stateText()}</span>
-      <button class="go ghost pvbtn" id="pvbtn">${icon('globe')}${T('preview')}</button>
       <button class="go red" id="pub">${S.status === 'live' ? T('share') : T('publish')}</button></div>`
   bindTabs()
   bindEdit()
-  preview()
-  if (S.open.has('map') && $('[data-sec=map]')?.open) mountMap()
-  if ($('[data-sec=drawing]')?.open) mountDrawing()
+  drawParts()
+  preview(true)
 }
 
 const goldLocked = () => `<p class="glocked">${T('goldLock')}. <button class="linkbtn" data-tab="gold">${T('goldOpen')} →</button></p>`
@@ -814,12 +913,12 @@ function bindEdit() {
     const b = e.target.closest('button')
     if (!b) return
     if (b.dataset.tab) { e.preventDefault(); S.tab = b.dataset.tab; draw(); return }
+    if (b.dataset.pg !== undefined) { e.preventDefault(); if (b.dataset.pg && S.part !== b.dataset.pg) openPart(b.dataset.pg); else closePart(); return }
     if (b.dataset.add) {
-      e.preventDefault(); S.open.add(b.dataset.add)
+      e.preventDefault()
       if (b.dataset.add === 'event' && !S.d.event) S.d.event = starter('event').event
       if (b.dataset.add === 'hours') S.d.hours.on = true
-      drawEdit(); const sec = $(`[data-sec="${b.dataset.add}"]`); sec.open = true; sec.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      if (b.dataset.add === 'map') mountMap()
+      openPart(b.dataset.add)
       changed(); return
     }
     if (b.dataset.cover) { S.d.cover = b.dataset.cover; redrawSec('photos'); changed() }
@@ -880,10 +979,10 @@ function bindEdit() {
   }, true)
   form.addEventListener('change', (e) => { if (e.target.dataset.k === 'video') { S.d.video = e.target.value; changed() } })
   form.addEventListener('click', (e) => { const c = e.target.closest('.cp'); if (c) copy(c.dataset.copy) })
+  // a picture that will not load (a photo still waiting for its check) gives way to the part's drawing
+  form.addEventListener('error', (e) => { const th = e.target.tagName === 'IMG' && e.target.closest('.th[data-d]'); if (th) { th.classList.add('dgth'); th.innerHTML = ding(th.dataset.d, 'riso') } }, true)
   $('#del').onclick = del
   $('#pub').onclick = publish
-  $('#pvbtn').onclick = () => { $('#pv').classList.add('show'); document.body.classList.add('pvopen'); preview(true) }
-  $('#pv').addEventListener('click', (e) => { if (e.target.id === 'pv' || e.target.closest('.url')) { $('#pv').classList.remove('show'); document.body.classList.remove('pvopen') } })
 }
 
 function redrawSec(id) {
@@ -935,7 +1034,8 @@ const PART = [
   ['#where', 'map'], ['ol.spots', 'spots'], ['.lineqr', 'contact'], ['.card.links', 'links'], ['.contact', 'contact'], ['#message', 'msg'], ['#amulets', 'amulets'],
   ['.card', 'words'], ['footer', 'look'],
 ]
-const PART_CSS = `[data-part]{cursor:pointer}[data-part]:hover{outline:3px dashed #d7261e;outline-offset:3px}
+const PART_CSS = `[data-part]{cursor:pointer;transition:opacity .3s}[data-part]:hover{outline:3px dashed #d7261e;outline-offset:3px}
+.mk-on{outline:4px solid #ffb000!important;outline-offset:4px;border-radius:8px}body.mk-lit main.wrap>[data-part]:not(.mk-on){opacity:.45}
 [contenteditable]{cursor:text;outline:0}[contenteditable]:hover,[contenteditable]:focus{outline:3px solid #ffb000;outline-offset:4px;border-radius:6px}
 .mk-ghost{opacity:.55;font-style:italic}.mk-pic{position:absolute;left:12px;top:12px;z-index:5;padding:6px 12px;border-radius:99px;background:#1c1530e0;color:#fff;font:600 13px/1.2 system-ui,sans-serif;cursor:pointer}`
 
@@ -947,17 +1047,46 @@ function partOf(el) {
   return held ? held[1] : 'words'
 }
 
+// a part of the page (a section id) or a whole card (a group id): open its card, show it on the page
 function openPart(id) {
-  if (!SEC[id]) return
-  if (window.innerWidth < 980) { $('#pv')?.classList.remove('show'); document.body.classList.remove('pvopen') }
-  if (!S.open.has(id)) { S.open.add(id); drawEdit() }
-  const sec = $(`[data-sec="${id}"]`)
-  if (!sec) return
-  sec.open = true
-  if (id === 'map') mountMap()
-  if (id === 'drawing') mountDrawing()
-  sec.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  sec.classList.remove('flash'); void sec.offsetWidth; sec.classList.add('flash')
+  const g = groupOf(id)
+  if (SEC[id]) S.open.add(id)
+  S.part = g
+  // an empty menu opens on a blank line to type into
+  if (g === 'offer' && S.open.has('items') && !S.d.items.length) S.d.items.push({ n: '', p: '', note: '' })
+  drawParts()
+  const card = $(`[data-grp="${g}"]`)
+  if (!card) return
+  const sec = SEC[id] && card.querySelector(`[data-sec="${id}"]`)
+  if (narrow()) {
+    window.scrollTo(0, 0)
+    const body = card.querySelector('.pbody')
+    if (body && sec) body.scrollTop = sec.offsetTop - 70
+  } else (sec && id !== g ? sec : card).scrollIntoView({ behavior: 'smooth', block: 'start' })
+  const fl = sec || card
+  fl.classList.remove('flash'); void fl.offsetWidth; fl.classList.add('flash')
+}
+function closePart() {
+  const g = S.part
+  S.part = ''
+  drawParts()
+  if (!narrow() && g) $(`[data-grp="${g}"]`)?.scrollIntoView({ block: 'nearest' })
+}
+
+// the open part, lit on the page and scrolled into view
+function lightPart(scroll = true) {
+  const doc = $('#frame')?.contentDocument
+  if (!doc || !doc.body) return
+  const ids = S.part ? (GROUPS.find(([g]) => g === S.part)?.[1] || []) : []
+  // the first block of the part's first section that is on the page: the map before the hours
+  let first = null, rank = 99
+  doc.querySelectorAll('[data-part]').forEach((el) => {
+    const i = ids.indexOf(el.dataset.part)
+    el.classList.toggle('mk-on', i >= 0)
+    if (i >= 0 && i < rank) { first = el; rank = i }
+  })
+  doc.body.classList.toggle('mk-lit', !!first && S.part !== 'look')
+  if (scroll && first) first.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
 
 function wireFrame(f) {
@@ -1011,18 +1140,29 @@ function preview(now) {
   pvTimer = setTimeout(() => {
     const f = $('#frame')
     if (!f) return
-    if (window.innerWidth < 980 && !$('#pv').classList.contains('show') && !now) return
     if (S.inline) return
     const html = render({ name: S.name, look: S.look, lang: S.pageLang, kind: S.kind, d: S.d, views: S.views || 1234, status: 'live', tier: S.tier }, { preview: true, img: imgUrl, origin: location.origin, hotel: S.hotel })
     const y = f.contentWindow?.scrollY || 0
     f.srcdoc = html
-    f.onload = () => { try { f.contentWindow.scrollTo(0, y) } catch {} ; f.contentDocument?.querySelectorAll('a[href]').forEach((a) => a.setAttribute('target', '_blank')); try { wireFrame(f) } catch {} }
+    f.onload = () => { try { f.contentWindow.scrollTo(0, y) } catch {} ; f.contentDocument?.querySelectorAll('a[href]').forEach((a) => a.setAttribute('target', '_blank')); try { wireFrame(f); lightPart(false) } catch {} }
   }, now ? 0 : 260)
+}
+
+// the open card's picture and line follow what the maker types
+function refreshHead() {
+  const card = S.part && $(`[data-grp="${S.part}"]`)
+  if (!card) return
+  const [g, , d0] = GROUPS.find(([x]) => x === S.part)
+  const sm = summary(g), em = card.querySelector('.phead em'), th = card.querySelector('.phead .th')
+  card.classList.toggle('none', !sm)
+  if (em) em.innerHTML = sm ? `${icon('check')}${esc(sm)}` : T('sm_none')
+  if (th && !th.contains(document.activeElement)) { const t = document.createElement('div'); t.innerHTML = thumb(g, d0); if (t.firstChild.outerHTML !== th.outerHTML) th.replaceWith(t.firstChild) }
 }
 
 let saveTimer = 0
 function changed() {
   preview()
+  refreshHead()
   clearTimeout(saveTimer)
   saveTimer = setTimeout(save, 1400)
   store.set('d:' + S.token, { d: S.d, look: S.look, at: Date.now() })
@@ -1035,7 +1175,8 @@ async function save(extra = {}) {
   try {
     // a live page whose name, picture, avatar or look changed gets a new share card
     if (S.status === 'live' && !extra.publish && cardKey({ look: S.look, name: S.name, kind: S.kind, tier: S.tier }, S.d) !== S.cardKey) await makeCard().catch(() => {})
-    const r = await call('PUT', 'site', { d: S.d, look: S.look, lang: S.pageLang, kind: S.kind, ...extra })
+    const d = { ...S.d, items: S.d.items.filter((x) => x.n || x.p || x.note) }
+    const r = await call('PUT', 'site', { d, look: S.look, lang: S.pageLang, kind: S.kind, ...extra })
     S.status = r.status
     if (r.d) { S.d.credits = r.d.credits; S.d.video = r.d.video }
     remember()
@@ -1089,7 +1230,7 @@ async function addFiles(files) {
     S.busy--
     redrawSec('photos')
   }
-  if (S.photoGps && S.d.place.lat === null) { S.open.add('map'); drawEdit() }
+  if (S.photoGps && S.d.place.lat === null) { S.open.add('map'); drawParts() }
   changed()
 }
 
@@ -1332,15 +1473,43 @@ function replyHref(reach) {
   return null
 }
 
+// The other tabs each lead with what they are for, and show the page the way a reader meets it.
+function miniShell(id) {
+  return `<div class="mshell"><div class="url">${icon('globe')}<span>sites.motdang.net/${esc(S.name)}</span></div><iframe id="${id}" title="${T('preview')}" tabindex="-1"></iframe></div>`
+}
+function fillMini(id, { look, tier, anchor } = {}) {
+  const f = $('#' + id)
+  if (!f) return
+  const t = tier || S.tier
+  f.srcdoc = render({ name: S.name, look: look || S.look, lang: S.pageLang, kind: S.kind, d: S.d, views: S.views || 1234, status: 'live', tier: t }, { preview: true, gold: t === 'gold', img: imgUrl, origin: location.origin, hotel: S.hotel })
+  f.onload = () => {
+    try {
+      const doc = f.contentDocument
+      doc.addEventListener('click', (e) => { if (e.target.closest('a[href],button,form')) e.preventDefault() }, true)
+      const el = anchor && doc.querySelector(anchor)
+      if (el) f.contentWindow.scrollTo({ top: el.getBoundingClientRect().top + f.contentWindow.scrollY - 14, behavior: 'instant' })
+    } catch {}
+  }
+}
+
+function copiesBox() {
+  const st = S.notifyEmail ? (S.notifyOk ? `<p class="pinstate ok">${icon('check')}${esc(ui(S.lang, 'notifyOk').replace('{e}', S.notifyEmail))}</p>` : `<p class="pinstate">${icon('mail')}${T('notifyWait')} · ${esc(S.notifyEmail)}</p>`) : ''
+  return `<div class="copies"><b>${T('m_copies')}</b>${st}${S.notifyEmail ? `<button class="back" id="nmailoff">× ${T('notifyOff')}</button>`
+    : `<div class="row"><input id="nmail" type="email" autocomplete="email" placeholder="${T('email')}" aria-label="${T('notifyEmail')}" style="flex:1;min-width:180px"><button class="go ghost" id="nmailgo">${T('notifyGo')}</button></div>`}</div>`
+}
+
 async function drawMsgs() {
   const tb = $('#tb')
-  try {
-    const r = await call('GET', 'msgs')
-    const list = r.msgs
-    S.unread = list.filter((m) => m.status === 'new').length
-    const nav = app.querySelector('.tabs'); if (nav) { nav.outerHTML = tabs(); bindTabs() }
-    if (!list.length) { tb.innerHTML = `<div class="empty">${ding('mailbox', 'paper')}<p>${T('m_none')}</p></div>`; return }
-    tb.innerHTML = `${S.unread ? `<p style="text-align:right"><button class="go ghost" id="mall">${icon('check')}${T('m_all')}</button></p>` : ''}<div class="msgs">${list.map((m) => {
+  let list
+  try { list = (await call('GET', 'msgs')).msgs } catch { tb.innerHTML = `<p class="hint">${T('e_net')}</p>`; return }
+  S.unread = list.filter((m) => m.status === 'new').length
+  const nav = app.querySelector('.tabs'); if (nav) { nav.outerHTML = tabs(); bindTabs() }
+  // the messages first when there are any; then where copies go, and the box as a reader meets it
+  const head = `<section class="tabhead one"><div><h2 class="th2">${T('s_msg')}</h2><p class="why3">${T('m_why')}</p></div></section>`
+  const how = `<section class="tabhead later"><div>${S.d.msg ? copiesBox() : `<div class="copies off"><p>${T('m_off')}</p><button class="go" id="msgon">${T('m_on')}</button></div>`}</div>
+    <div class="minip"><p class="lbl">${T('m_pv')}</p>${miniShell('mini')}</div></section>`
+  const body = !list.length ? ''
+    : `${S.unread ? `<p style="text-align:right"><button class="go ghost small" id="mall">${icon('check')}${T('m_all')}</button></p>` : ''}<div class="msgs">${list.map((m) => {
       const rp = replyHref(m.reach)
       return `<article class="msg ${m.status}" data-id="${esc(m.id)}"><header><b>${esc(m.name || '—')}</b><span>${esc(when(m.at))}</span></header>
         ${m.status === 'held' ? `<p class="heldtag">${T('m_held')}</p>` : ''}<p class="body">${esc(m.body)}</p>${m.reach ? `<p class="reach">${esc(m.reach)}</p>` : ''}
@@ -1348,18 +1517,42 @@ async function drawMsgs() {
         <button class="go ghost small" data-act="${m.status === 'new' || m.status === 'held' ? 'read' : 'unread'}">${T(m.status === 'new' || m.status === 'held' ? 'm_read' : 'm_unread')}</button>
         <button class="go ghost small" data-act="gone">${T('m_del')}</button></footer></article>`
     }).join('')}</div>`
-    tb.onclick = async (e) => {
-      const b = e.target.closest('button'); if (!b) return
+  tb.innerHTML = head + (list.length ? body : `<p class="none2">${ding('mailbox', 'paper')}<span>${T('m_none')}</span></p>`) + how
+  fillMini('mini', { anchor: '#message' })
+  dingbats(['signals'])
+  tb.onclick = async (e) => {
+    const b = e.target.closest('button'); if (!b) return
+    if (b.id === 'nmailgo') return notifyOn().then(drawMsgs)
+    if (b.id === 'nmailoff') return notifyOff().then(drawMsgs)
+    if (b.id === 'msgon') { S.d.msg = true; await save(); return drawMsgs() }
+    try {
       if (b.id === 'mall') { await call('POST', 'msgs', { act: 'read', all: true }); return drawMsgs() }
       const id = b.closest('[data-id]')?.dataset.id
       if (b.dataset.act && id) { await call('POST', 'msgs', { act: b.dataset.act, id }); drawMsgs() }
-    }
-  } catch { tb.innerHTML = `<p class="hint">${T('e_net')}</p>` }
+    } catch { toast(ui(S.lang, 'e_net')) }
+  }
 }
 
 const TAP_WORD = { call: 'call', line: 'line', dir: 'dir', ride: 'ride', food: 'food', lineman: 'lineman', share: 'share', copy: 'copy', map: 'map', far: 'far', vcf: 'saveContact',
   ics: 'addCal', sign: 'sign', order: 'lineOrder', msg: 'msg', link: 'links', photo: 'photos', video: 'video', email: 'email', web: 'web', qr: 'qr', story: 'story' }
 const TAP_EXTRA = { shareline: 'LINE', sharefb: 'Facebook', sharex: 'X', sharewa: 'WhatsApp', sharetg: 'Telegram', social: 'Facebook · Instagram · TikTok', whatsapp: 'WhatsApp' }
+
+function shareBox() {
+  const url = `${location.origin}/${S.name}`
+  if (S.status === 'held') return `<div class="sharebox"><span class="sbd">${ding('hourglass', 'paper')}</span><p>${T('held')}</p></div>`
+  if (S.status !== 'live') return `<div class="sharebox"><span class="sbd">${ding('megaphone', 'paper')}</span><p>${T('st_notLive')}</p><button class="go red" id="sbpub">${T('publish')}</button></div>`
+  return `<div class="sharebox"><span class="sbd">${ding('megaphone', 'paper')}</span><p>${T('st_first')}</p>
+    <div class="sbrow"><a class="go line" href="${esc(lineShare((S.d.name || S.name) + ' ' + url))}" target="_blank" rel="noopener">${icon('chat')}LINE</a>
+      <button class="go" id="sbsh">${icon('share')}${T('share')}</button><button class="go ghost" id="sbcp">${T('copy')}</button>
+      <a class="go ghost" href="${esc(url)}/sign" target="_blank">${icon('print')}${T('sign')}</a></div>
+    <div class="sbqr">${qrSvg(url, { dark: '#000', light: '#fff', label: url })}<a href="${esc(url)}" target="_blank">${esc(url.replace(/^https?:\/\//, ''))}</a></div></div>`
+}
+function bindShare() {
+  const url = `${location.origin}/${S.name}`
+  const pub = $('#sbpub'); if (pub) pub.onclick = () => { S.tab = 'edit'; draw(); publish() }
+  const sh = $('#sbsh'); if (sh) sh.onclick = () => (navigator.share ? navigator.share({ title: S.d.name, url }).catch(() => {}) : copy(url))
+  const cp = $('#sbcp'); if (cp) cp.onclick = () => copy(url)
+}
 
 async function drawStats(days) {
   const tb = $('#tb')
@@ -1373,11 +1566,14 @@ async function drawStats(days) {
   const list = (rows, name) => rows.length ? `<ol class="hbars">${rows.map((x) => `<li><span class="lab">${esc(name(x.k))}</span><span class="bar"><i style="width:${Math.max(3, (x.n / rows[0].n) * 100)}%"></i></span><b>${nf.format(x.n)}</b></li>`).join('')}</ol>` : '<p class="hint">—</p>'
   const tile = (n, label, sub) => `<div class="tile"><b>${nf.format(n)}</b><span>${label}</span>${sub ? `<small>${sub}</small>` : ''}</div>`
   const hourMax = Math.max(1, ...r.hour)
-  const empty = !r.total.views && !r.total.machines
+  const empty = !r.total.views
   const step = Math.max(1, Math.ceil(r.days.length / 8))
-  tb.innerHTML = `${empty ? `<div class="empty">${ding('megaphone', 'paper')}<p>${T('st_empty')}</p></div>` : ''}
-    <div class="tiles">${tile(r.today.people, T('st_people'), T('st_today'))}${tile(r.week.people, T('st_people'), T('st_week'))}${tile(r.total.people, T('st_people'), r.days.length > 31 ? T('st_year') : T('st_month'))}
-      ${tile(r.total.views, T('st_views'), r.days.length > 31 ? T('st_year') : T('st_month'))}${tile(r.total.taps, T('st_taps'), r.days.length > 31 ? T('st_year') : T('st_month'))}</div>
+  const head = `<section class="tabhead one"><div><h2 class="th2">${T('t_stats')}</h2><p class="why3">${T('st_why')}</p></div></section>`
+  // nobody yet: no wall of zeros, the ways to send the page out instead
+  if (empty) { tb.innerHTML = head + shareBox(); bindShare(); dingbats(['signals']); return }
+  const span = r.days.length > 31 ? T('st_year') : T('st_month')
+  tb.innerHTML = `${head}<p class="headline">${esc(ui(S.lang, 'st_head').replace('{n}', nf.format(r.week.people)))} <span>${esc(ui(S.lang, 'st_headDay').replace('{n}', nf.format(r.today.people)))}</span></p>
+    <div class="tiles t3">${tile(r.total.people, T('st_people'), span)}${tile(r.total.views, T('st_views'), span)}${tile(r.total.taps, T('st_taps'), span)}</div>
     <section class="panel"><h3>${T('st_day')}</h3><div class="chart" id="chart" role="img" aria-label="${T('st_day')}">${r.days.map((d) => `<span class="col" data-tip="${esc(d.day)} · ${nf.format(d.people)} ${T('st_people')} · ${nf.format(d.views)} ${T('st_views')}"><i style="height:${(d.people / max) * 100}%"></i></span>`).join('')}</div>
       <div class="axis">${r.days.map((d, i) => `<span>${i % step === 0 ? esc(d.day.slice(5).replace('-', '/')) : ''}</span>`).join('')}</div><div class="tip" id="tip" hidden></div>
       ${isGold() ? `<p class="row" style="margin-top:12px"><button class="go ghost small" data-days="30">${T('st_month')}</button><button class="go ghost small" data-days="365">${T('st_year')}</button><button class="go ghost small" id="csv">${icon('download')}${T('st_csv')}</button></p>` : ''}</section>
@@ -1410,27 +1606,37 @@ async function drawGold() {
   let r = null
   const feats = ['g_f7', 'g_f8', 'g_f9', 'g_f1', 'g_f2', 'g_f3', 'g_f4', 'g_f5', 'g_f6']
   const fdings = ['key', 'megaphone', 'chat', 'crown', 'search', 'camera', 'compass', 'calendar', 'star']
-  const head = `<section class="goldhero">${LOOKS.gold.art}<h2>${T('g_lead')}</h2><ul>${feats.map((k, i) => `<li>${ding(fdings[i], 'paper')}<span>${T(k)}</span></li>`).join('')}</ul></section>`
+  // the maker's own page in Gold leaf first, then the price, then the list
+  const tryBtn = isGold() && S.look !== 'gold' ? `<button class="go big" id="trygold">${T('g_try')}</button>` : ''
+  const head = `<section class="goldtop"><div class="goldhero">${LOOKS.gold.art}<h2>${T('g_lead')}</h2><p class="gwhy">${T('g_why')}</p>${tryBtn}</div>
+    <div class="minip"><p class="lbl">${T('g_see')}</p>${miniShell('gmini')}</div></section>`
+  const list = `<section class="gfeats"><h3>${T('g_adds')}</h3><ul>${feats.map((k, i) => `<li>${ding(fdings[i], 'paper')}<span>${T(k)}</span></li>`).join('')}</ul></section>`
+  const after = () => {
+    fillMini('gmini', { look: 'gold', tier: 'gold' })
+    const tg = $('#trygold'); if (tg) tg.onclick = () => { S.look = 'gold'; S.d.accent = ''; changed(); S.tab = 'edit'; draw(); openPart('look') }
+  }
   const rooms = S.d.rooms.length > 0
   const want = S.payPlan || (rooms && (S.trial || S.plan === 'hotel') ? 'hotel' : 'gold')
   const needHotel = rooms && S.plan !== 'hotel'
   if (isGold() && !S.trial && !(needHotel && /^hotel/.test(S.payPlan || ''))) {
     tb.innerHTML = head + `<p class="goldon">★ ${esc(ui(S.lang, 'g_on').replace('{d}', S.goldUntil || ''))}</p>` +
-      (needHotel ? `<p style="text-align:center"><button class="go" id="tohotel">${esc(ui(S.lang, 'g_hotelGo').replace('{p}', new Intl.NumberFormat(S.lang).format(S.plans?.hotel?.baht || 555)))}</button></p>` : '') + domainBox()
+      (needHotel ? `<p style="text-align:center"><button class="go" id="tohotel">${esc(ui(S.lang, 'g_hotelGo').replace('{p}', new Intl.NumberFormat(S.lang).format(S.plans?.hotel?.baht || 555)))}</button></p>` : '') + domainBox() + list
+    after()
     dingbats(['signals', 'classic', 'curious'])
     bindDomain()
     const th = $('#tohotel'); if (th) th.onclick = () => { S.payPlan = 'hotel'; drawGold() }
     return
   }
   const pick = rooms && S.plans ? `<div class="field" style="text-align:center">${seg('payplan', want, [['gold', esc(ui(S.lang, 'g_planGold').replace('{p}', new Intl.NumberFormat(S.lang).format(S.plans.gold.baht)))], ['hotel', esc(ui(S.lang, 'g_planHotel').replace('{p}', new Intl.NumberFormat(S.lang).format(S.plans.hotel.baht)))], ...(S.plans.hotelyear ? [['hotelyear', esc(ui(S.lang, 'g_planHotelYear').replace('{p}', new Intl.NumberFormat(S.lang).format(S.plans.hotelyear.baht)))]] : [])])}</div>` : ''
-  try { r = await call('POST', 'gold', { plan: want }) } catch { tb.innerHTML = head + `<p class="hint">${T('e_net')}</p>`; return }
+  try { r = await call('POST', 'gold', { plan: want }) } catch { tb.innerHTML = head + `<p class="hint">${T('e_net')}</p>` + list; after(); return }
   if (r.tier === 'gold' && !S.trial) { S.tier = 'gold'; S.goldUntil = r.gold_until; return drawGold() }
   const tail = String(r.amount).split('.')[1] || '00'
   const nf = new Intl.NumberFormat(S.lang)
   tb.innerHTML = head + (S.trial ? `<p class="goldon">★ ${esc(ui(S.lang, 'g_trial').replace('{d}', S.goldUntil || ''))}</p>` : '') + pick + `<section class="goldpay"><p class="price">${esc(ui(S.lang, r.months === 1 ? 'g_priceMonth' : 'g_price').replace('{p}', nf.format(r.baht)))}</p>${r.hotel ? `<p class="hint">${T(r.months === 1 ? 'g_hotelWhy' : 'g_hotelYearWhy')}</p>` : ''}
     ${r.payload ? `<div class="ppqr">${qrSvg(r.payload, { dark: '#0e3d78', light: '#ffffff', label: 'PromptPay' })}<b>฿${esc(nf.format(Number(r.amount)))}</b><span>PromptPay</span></div>
       <p class="hint">${esc(ui(S.lang, 'g_scan').replace('{s}', tail))}</p>
-      <label class="pick goldslip">${icon('download')}${T('g_slip')}<input type="file" accept="image/*" id="slip"></label><p id="slipstate" class="pinstate"></p>` : `<p class="hint">${T('g_nopp')}</p>`}</section>` + (isGold() ? domainBox() : '')
+      <label class="pick goldslip">${icon('download')}${T('g_slip')}<input type="file" accept="image/*" id="slip"></label><p id="slipstate" class="pinstate"></p>` : `<p class="hint">${T('g_nopp')}</p>`}</section>` + list + (isGold() ? domainBox() : '')
+  after()
   dingbats(['signals', 'classic', 'curious'])
   bindDomain()
   tb.querySelectorAll('[data-seg="payplan"]').forEach((b) => (b.onclick = () => { S.payPlan = b.dataset.v; drawGold() }))
@@ -1489,6 +1695,8 @@ async function makeCard() {
   drawCard(c.getContext('2d'), { look: S.look, accent: S.d.accent, name: S.d.name || S.name, tagline: S.d.tagline, url: `${location.host}/${S.name}`, gold: isGold(),
     cover, drawing, avatar, round: S.d.avround, dings: S.d.dings, D: window.Dingbats || null })
   const blob = await new Promise((ok) => c.toBlob(ok, 'image/jpeg', 0.88))
+  if (S.cardUrl) URL.revokeObjectURL(S.cardUrl)
+  S.cardUrl = URL.createObjectURL(blob)
   const r = await upload(blob, null, 'card')
   S.d.card = r.id
   S.cardKey = cardKey({ look: S.look, name: S.name, kind: S.kind, tier: S.tier }, S.d)
@@ -1504,26 +1712,34 @@ async function publish() {
   } finally { pub.disabled = false }
 }
 
+// "Put it online": the page's card as people will see it in LINE, the ways to send it, and the key
 function done() {
+  const live = S.status === 'live'
   const url = `${location.origin}/${S.name}`
   const edit = `${location.origin}/make#t=${S.token}`
+  const card = S.cardUrl || (S.d.card ? `/img/${S.d.card}.jpg` : '')
   const box = document.createElement('div')
   box.className = 'sheet'
-  box.innerHTML = `<div class="box">${S.status === 'live' ? `<div class="confetti">${['party', 'sparkle', 'heart', 'star', 'lantern'].map((n) => ding(n, 'riso', 'loop')).join('')}</div>` : ''}<h2>${S.status === 'live' ? T('live') : S.status === 'held' ? T('held') : T('draft')}</h2>
-    <a class="link" href="${esc(url)}" target="_blank">${esc(url.replace(/^https?:\/\//, ''))}</a>
-    ${S.status === 'live' ? qrSvg(url, { dark: '#000', light: '#fff', label: url }) : ''}
-    <div class="grid2"><a class="go ink" href="${esc(url)}" target="_blank">${icon('globe')}${T('open')}</a>
+  box.innerHTML = `<div class="box donebox">${live ? `<div class="confetti">${['party', 'sparkle', 'heart', 'star', 'lantern'].map((n) => ding(n, 'riso', 'loop')).join('')}</div>` : ''}
+    <h2>${live ? T('live') : S.status === 'held' ? T('held') : T('draft')}</h2>
+    ${card ? `<figure class="dcard"><img src="${esc(card)}" alt=""><figcaption>${T('d_card')}</figcaption></figure>` : ''}
+    <div class="durl"><a href="${esc(url)}" target="_blank">${esc(url.replace(/^https?:\/\//, ''))}</a><button class="go ghost small" id="cpurl">${T('copy')}</button></div>
+    <div class="grid2"><a class="go line" href="${esc(lineShare((S.d.name || S.name) + ' ' + url))}" target="_blank" rel="noopener">${icon('chat')}LINE</a>
       <button class="go" id="sh">${icon('share')}${T('share')}</button>
-      <a class="go line" href="${esc(lineShare((S.d.name || S.name) + ' ' + url))}" target="_blank">${icon('chat')}LINE</a>
+      <a class="go ink" href="${esc(url)}" target="_blank">${icon('globe')}${T('open')}</a>
       <a class="go ghost" href="${esc(url)}/sign" target="_blank">${icon('print')}${T('sign')}</a></div>
-    <div class="key"><b>${T('editLink')}</b><br>${T('editHint')}<code>${esc(edit)}</code>
-      <div class="grid2"><a class="go line" href="${esc(lineShare(edit))}" target="_blank">${icon('chat')}${T('sendSelf')}</a><button class="go ghost" id="cpedit">${T('copy')}</button></div></div>
-    <p style="text-align:center"><button class="back" id="closesheet">${T('edit')}</button></p></div>`
+    ${live ? `<details class="dqr"><summary>${T('d_qr')}</summary>${qrSvg(url, { dark: '#000', light: '#fff', label: url })}</details>` : ''}
+    <div class="key"><span class="kd">${ding('key', 'paper')}</span><div><b>${T('d_key')}</b><p>${T('d_keyHint')}</p>
+      <div class="grid2"><a class="go line" href="${esc(lineShare(edit))}" target="_blank" rel="noopener">${icon('chat')}${T('sendSelf')}</a><button class="go ghost" id="cpedit">${T('copy')}</button></div>
+      <details><summary>${T('d_show')}</summary><code>${esc(edit)}</code></details></div></div>
+    <p class="dkeep"><button class="go ghost" id="closesheet">${T('d_keep')}</button></p></div>`
   document.body.appendChild(box)
-  if (S.status === 'live') dingbats(['faces', 'classic', 'lanna'])
+  dingbats(live ? ['faces', 'classic', 'lanna', 'signals', 'curious'] : ['signals', 'curious'])
+  const im = box.querySelector('.dcard img'); if (im) im.onerror = () => im.closest('figure').remove()
   box.querySelector('#closesheet').onclick = () => box.remove()
   box.addEventListener('click', (e) => { if (e.target === box) box.remove() })
   box.querySelector('#sh').onclick = () => (navigator.share ? navigator.share({ title: S.d.name, url }).catch(() => {}) : copy(url))
+  box.querySelector('#cpurl').onclick = () => copy(url)
   box.querySelector('#cpedit').onclick = () => copy(edit)
 }
 
@@ -1561,9 +1777,9 @@ async function boot() {
       Object.assign(S, { name: r.name, kind: r.kind, look: r.look, pageLang: r.lang, status: r.status, views: r.views, d: normalize(r.d), step: 'edit',
         tier: r.tier, goldUntil: r.gold_until || '', notifyEmail: r.notify_email, notifyOk: r.notify_ok, unread: r.unread,
         trial: !!r.trial, asks: r.asks || 0, domain: r.domain || '', domainState: r.domain_state || '', domains: !!r.domains, price: r.price || 3000,
-        plan: r.plan || 'gold', hotel: !!r.hotel, plans: r.plans || null })
+        plan: r.plan || 'gold', hotel: !!r.hotel, plans: r.plans || null, cardUrl: '' })
       S.d.event = S.d.event || undefined
-      S.open = new Set(DEFAULT_OPEN[S.kind])
+      S.open = new Set(DEFAULT_OPEN[S.kind]); S.part = ''
       if (h.get('tab')) S.tab = h.get('tab')
       remember()
     } catch (e) {
@@ -1598,5 +1814,6 @@ async function boot() {
   }
 }
 window.addEventListener('hashchange', boot)
-window.addEventListener('resize', () => preview())
+window.addEventListener('resize', () => { preview(); document.body.classList.toggle('sheeton', S.tab === 'edit' && !!S.part && narrow()) })
+window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && S.tab === 'edit' && S.part && !document.querySelector('.sheet')) closePart() })
 boot()

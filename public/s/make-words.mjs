@@ -2,6 +2,7 @@
 
 import { Z } from './make-words-more.mjs'
 import { Y } from './make-words-try.mjs'
+import { X } from './make-words-edit.mjs'
 
 export const UI_LANGS = { th: 'ไทย', en: 'English', my: 'မြန်မာ', zh: '中文' }
 
@@ -237,7 +238,7 @@ const V = {
   },
 }
 
-export function ui(lang, k) { return (U[lang] && U[lang][k]) || (V[lang] && V[lang][k]) || (Z[lang] && Z[lang][k]) || (Y[lang] && Y[lang][k]) || U.en[k] || V.en[k] || Z.en[k] || Y.en[k] || k }
+export function ui(lang, k) { return (U[lang] && U[lang][k]) || (V[lang] && V[lang][k]) || (Z[lang] && Z[lang][k]) || (Y[lang] && Y[lang][k]) || (X[lang] && X[lang][k]) || U.en[k] || V.en[k] || Z.en[k] || Y.en[k] || X.en[k] || k }
 
 /** The reader's language from Accept-Language, among the builder's four. */
 export function pickLang(header) {
