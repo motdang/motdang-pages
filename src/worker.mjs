@@ -28,6 +28,7 @@ import * as book from './book.mjs'
 import * as tr from './tr.mjs'
 import * as dom from './domain.mjs'
 import { tellBeer } from './line.mjs'
+import * as sellers from './sellers.mjs'
 import { readCalendars, monthly, trialNotes } from './cron.mjs'
 import { calIcs, roomIcs, addDays } from '../public/s/extras.mjs'
 import { guestPage } from './guest.mjs'
@@ -407,13 +408,14 @@ ${s ? `<p>ข้อความถึง ${escHtml(title)} จะส่งสำ
     const lookId = LOOK_IDS.includes(b.look) ? b.look : 'poster' // every new page starts in its Gold days
     const lang = PAGE_LANGS[b.lang] ? b.lang : 'th'
     const d = normalize(b.d || {})
+    const seller = await sellers.known(env, b.by)
     const token = rand(32)
     const id = rand(12)
     const now = new Date().toISOString()
     try {
       const until = new Date(Date.now() + TRIAL_DAYS * 864e5).toISOString().slice(0, 10)
-      await env.DB.prepare("INSERT INTO site (id, name, edit_hash, status, kind, look, lang, d, cc, lat, lng, sender, created, updated, tier, gold_until, trial) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,'gold',?,1)")
-        .bind(id, name, await sha(token), 'draft', kind, lookId, lang, JSON.stringify(d), d.place.cc || null, d.place.lat, d.place.lng, who.slice(0, 16), now, now, until).run()
+      await env.DB.prepare("INSERT INTO site (id, name, edit_hash, status, kind, look, lang, d, cc, lat, lng, sender, created, updated, tier, gold_until, trial, seller) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,'gold',?,1,?)")
+        .bind(id, name, await sha(token), 'draft', kind, lookId, lang, JSON.stringify(d), d.place.cc || null, d.place.lat, d.place.lng, who.slice(0, 16), now, now, until, seller).run()
     } catch (e) {
       if (/UNIQUE/i.test(String(e))) return J({ error: 'name', why: 'taken' }, 409)
       throw e
@@ -660,7 +662,10 @@ ${s ? `<p>ข้อความถึง ${escHtml(title)} จะส่งสำ
       const until = await gold.grant(env, s.id, pay.months || 12, pay.plan || undefined)
       await env.DB.prepare("UPDATE pay SET status='paid', slip=?, note=?, updated=? WHERE id=?").bind(key, 'slipok ' + r.ref, now, pay.id).run()
       await log(env, s.id, 'gold', 'slipok ' + r.ref)
-      ctx.waitUntil(gold.tellSales(env, { title: JSON.parse(s.d).name || s.name, url: `${origin}/${s.name}`, amount: pay.amount, months: pay.months || 12, plan: pay.plan, how: 'SlipOK' }).catch((e) => console.error(e)))
+      ctx.waitUntil((async () => {
+        const cut = await sellers.credit(env, { siteId: s.id, payId: pay.id, amount: pay.amount })
+        await gold.tellSales(env, { title: JSON.parse(s.d).name || s.name, url: `${origin}/${s.name}`, amount: pay.amount, months: pay.months || 12, plan: pay.plan, how: 'SlipOK', cut })
+      })().catch((e) => console.error(e)))
       return J({ ok: true, tier: 'gold', gold_until: until })
     }
     await env.DB.prepare("UPDATE pay SET status='slip', slip=?, note=?, updated=? WHERE id=?").bind(key, r.why, now, pay.id).run()
@@ -766,7 +771,8 @@ async function admin(request, env, rest, url) {
       if (p) {
         await gold.grant(env, p.site_id, p.months || 12, p.plan || undefined)
         await env.DB.prepare("UPDATE pay SET status='paid', note=COALESCE(note,'') || ' · by hand', updated=? WHERE id=?").bind(new Date().toISOString(), id).run()
-        await gold.tellSales(env, { title: JSON.parse(p.d || '{}').name || p.name, url: `${url.origin}/${p.name}`, amount: p.amount, months: p.months || 12, plan: p.plan, how: 'checked by hand' }).catch((e) => console.error(e))
+        const cut = await sellers.credit(env, { siteId: p.site_id, payId: id, amount: p.amount }).catch((e) => console.error(e))
+        await gold.tellSales(env, { title: JSON.parse(p.d || '{}').name || p.name, url: `${url.origin}/${p.name}`, amount: p.amount, months: p.months || 12, plan: p.plan, how: 'checked by hand', cut }).catch((e) => console.error(e))
       }
     }
     if (act === 'pay-no') await env.DB.prepare("UPDATE pay SET status='refused', updated=? WHERE id=?").bind(new Date().toISOString(), id).run()
@@ -820,6 +826,7 @@ async function tidy(env) {
   await job('translate', () => tr.catchUp(env, gold.isGold, normalize))
   await job('monthly', () => monthly(env, gold.isGold, HOME))
   await job('trial', () => trialNotes(env, HOME, (d) => gold.planOf(env, d)))
+  await job('sellers', () => sellers.monthEnd(env, (c) => gold.postSales(env, c)))
   await env.DB.prepare("UPDATE site SET trial = 0 WHERE trial = 1 AND gold_until < ?").bind(new Date().toISOString().slice(0, 10)).run()
   return done
 }
