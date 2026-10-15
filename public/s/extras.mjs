@@ -17,7 +17,7 @@ const uniqIds = (arr) => { const seen = new Set(); return arr.map((x, i) => { le
 
 export const MAP_STYLES = ['doodle', 'terrain', 'streets']
 export const MAP_NEAR = { near: 60000, mid: 34000, far: 14000 }
-export const MAX = { cal: 40, camps: 10, svc: 30, rooms: 20, lists: 60, spotsFree: 3, spotsGold: 20, itemPhotos: 10 }
+export const MAX = { cal: 40, camps: 10, svc: 30, rooms: 20, lists: 60, spotsFree: 3, spotsGold: 20, itemPhotos: 10, works: 60, worksFree: 6, quotes: 12 }
 export const DEALS = ['sale', 'rent']
 export const STATUSES = ['open', 'reserved', 'sold', 'rented']
 export const UNITS = ['m2', 'rai', 'sqw']
@@ -83,8 +83,32 @@ export function normalizeExtras(d, o) {
       lat: pin ? Math.round(lat * 1e6) / 1e6 : null, lng: pin ? Math.round(lng * 1e6) / 1e6 : null,
     }
   }).filter((x) => x.t).slice(0, MAX.lists))
+
+  // a portfolio (Nan 2026-10-15: "some of these businesses are going to want primarily their own portfolio page")
+  o.works = uniqIds((Array.isArray(d.works) ? d.works : []).map((x, i) => ({
+    id: idOf(x?.id, i), t: str(x?.t, 100), client: str(x?.client, 80), year: str(x?.year, 12), role: str(x?.role, 80),
+    tags: tagList(str(x?.tags, 120)),
+    note: str(x?.note, 2000), u: safeHttps(x?.u),
+    photos: (Array.isArray(x?.photos) ? x.photos : []).filter((p) => PHOTO_ID.test(p)).slice(0, 24),
+  })).filter((x) => x.t).slice(0, MAX.works))
+  o.quotes = (Array.isArray(d.quotes) ? d.quotes : []).map((x) => ({ q: str(x?.q, 400), who: str(x?.who, 80) })).filter((x) => x.q).slice(0, MAX.quotes)
   return o
 }
+
+/** Tags from a comma list: trimmed, the first spelling of each kept, six at most. */
+function tagList(s) {
+  const seen = new Map()
+  for (const t of s.split(/[,،、，·]+/).map((x) => x.trim()).filter(Boolean)) if (!seen.has(t.toLowerCase())) seen.set(t.toLowerCase(), t)
+  return [...seen.values()].slice(0, 6).join(', ')
+}
+
+/** An http or https address, else ''. */
+function safeHttps(u) {
+  try { const x = new URL(String(u || '').trim()); return x.protocol === 'https:' || x.protocol === 'http:' ? x.href.slice(0, 400) : '' } catch { return '' }
+}
+
+/** A work's tags as a list. */
+export const tagsOf = (x) => (x.tags ? x.tags.split(', ') : [])
 
 /** A hotel's own Agoda or Booking.com page, else ''. */
 function otaUrl(u, hosts) {

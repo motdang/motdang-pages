@@ -479,6 +479,16 @@
     }
   })
 
+  // ---- portfolio: by tag; ?tag= from a work's own page ----
+  var wf = $$('.wfilter button')
+  function byTag(t) {
+    wf.forEach(function (x) { x.classList.toggle('on', x.getAttribute('data-tag') === t) })
+    $$('.wgrid .wcard').forEach(function (c) { var tags = []; try { tags = JSON.parse(c.getAttribute('data-tags') || '[]') } catch (e) {} c.hidden = !!t && tags.indexOf(t) < 0 })
+  }
+  wf.forEach(function (b) { b.onclick = function () { byTag(b.getAttribute('data-tag')) } })
+  var askTag = new URLSearchParams(location.search).get('tag')
+  if (askTag && wf.some(function (b) { return b.getAttribute('data-tag') === askTag })) byTag(askTag)
+
   // ---- read in your own language, when the page has it ----
   if (pd.langs && pd.langs.length > 1 && !pd.hl && !pd.preview) {
     var want = (navigator.languages || [navigator.language || '']).map(function (x) { return String(x).slice(0, 2).toLowerCase() }).filter(function (x) { return pd.langs.indexOf(x) >= 0 })[0]

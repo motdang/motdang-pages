@@ -9,6 +9,7 @@ import { DINGBATS } from './db/names.mjs'
 import { PAGE_LANGS } from './words.mjs'
 import { ui, UI_LANGS } from './make-words.mjs'
 import { exifBlock, readExif } from './exif.mjs'
+import { openStudio, openMark } from './studio-ui.mjs'
 
 const $ = (s, el = document) => el.querySelector(s)
 const app = $('#app')
@@ -17,13 +18,13 @@ const store = {
   set(k, v) { try { localStorage.setItem('mdp:' + k, JSON.stringify(v)) } catch {} },
 }
 const icon = (id) => `<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><use href="/s/icons.svg#i-${id}"/></svg>`
-const KIND_ICON = { shop: 'shop', food: 'food', service: 'gear', stay: 'moon', homes: 'tag', me: 'me', event: 'party', group: 'people' }
+const KIND_ICON = { shop: 'shop', food: 'food', service: 'gear', work: 'star', stay: 'moon', homes: 'tag', me: 'me', event: 'party', group: 'people' }
 const TZ = (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone } catch { return 'Asia/Bangkok' } })()
 
 const S = {
   lang: store.get('lang', (() => { const l = (navigator.language || 'th').slice(0, 2); return UI_LANGS[l] ? l : 'th' })()),
   step: 'kind', kind: 'shop', name: '', addr: '', addrTouched: false, look: 'poster', token: '', status: 'draft', views: 0,
-  pageLang: '', d: null, open: new Set(), local: new Map(), photoGps: null, picker: null, busy: 0,
+  pageLang: '', d: null, open: new Set(), local: new Map(), big: new Map(), photoGps: null, picker: null, busy: 0,
   tab: 'edit', tier: 'gold', goldUntil: '', notifyEmail: '', notifyOk: false, unread: 0, // a page starts with 30 days of Gold
   trial: false, asks: 0, domain: '', domainState: '', domains: false, price: 3000, dbFam: '', dbQ: '',
   plan: 'gold', hotel: true, plans: null, payPlan: '',
@@ -39,7 +40,7 @@ function dingbats(fams) {
 }
 dingbats.loaded = new Set()
 dingbats(['signals', 'classic', 'kitchen', 'faces', 'lanna'])
-const KIND_DING = { shop: 'cart', food: 'noodles', service: 'gear', stay: 'key', homes: 'home', me: 'wave', event: 'party', group: 'crown' }
+const KIND_DING = { shop: 'cart', food: 'noodles', service: 'gear', work: 'nib', stay: 'key', homes: 'home', me: 'wave', event: 'party', group: 'crown' }
 const DB_FAMS = [...new Set(Object.values(DINGBATS))]
 const rid = () => Math.random().toString(36).slice(2, 8).padEnd(6, 'x')
 // the dingbats a maker can put beside the name: a handful from each family
@@ -54,14 +55,15 @@ const T = (k) => esc(ui(S.lang, k))
 const DEFAULT_OPEN = {
   shop: ['words', 'photos', 'contact', 'map', 'hours', 'items'],
   food: ['words', 'photos', 'items', 'order', 'map', 'hours', 'contact'],
-  service: ['words', 'photos', 'svc', 'items', 'contact', 'map'],
-  me: ['words', 'photos', 'links', 'contact'],
+  service: ['words', 'face', 'photos', 'svc', 'items', 'contact', 'map'],
+  work: ['words', 'face', 'works', 'photos', 'quotes', 'contact', 'links'],
+  me: ['words', 'face', 'photos', 'links', 'contact'],
   stay: ['words', 'photos', 'rooms', 'ota', 'map', 'contact'],
   homes: ['words', 'lists', 'photos', 'contact', 'map'],
   event: ['event', 'words', 'cal', 'photos', 'map', 'contact'],
   group: ['words', 'cal', 'photos', 'links', 'contact'],
 }
-const LOOK_FOR = { shop: 'poster', food: 'night', service: 'clean', stay: 'loom', homes: 'clean', me: 'y1997', event: 'stitch', group: 'loom' }
+const LOOK_FOR = { shop: 'poster', food: 'night', service: 'clean', work: 'clean', stay: 'loom', homes: 'clean', me: 'y1997', event: 'stitch', group: 'loom' }
 
 function guessCc() {
   const zone = { 'Asia/Bangkok': 'TH', 'Asia/Yangon': 'MM', 'Asia/Rangoon': 'MM', 'Asia/Vientiane': 'LA', 'Asia/Phnom_Penh': 'KH',
@@ -288,6 +290,7 @@ async function create(look, btn) {
   if (S.kind === 'event') S.d.event = starter('event').event
   if (S.kind === 'stay') S.d.rooms = [NEW_ROW.rooms()]
   if (S.kind === 'homes') S.d.lists = [NEW_ROW.lists()]
+  if (S.kind === 'work') S.d.works = [NEW_ROW.works()]
   S.pageLang = PAGE_LANGS[S.lang] ? S.lang : 'en'
   try {
     const r = await call('POST', 'sites', { name: S.addr, kind: S.kind, look, lang: S.pageLang, d: S.d, by: new URLSearchParams(location.search).get('by') || '' })
@@ -306,7 +309,7 @@ async function create(look, btn) {
 // ---- the editor ------------------------------------------------------------------------
 
 const SECTIONS = [
-  ['event', 'cal', 's_event'], ['words', 'note', 's_words'], ['drawing', 'sparkle', 's_drawing'], ['photos', 'camera', 's_photos'],
+  ['event', 'cal', 's_event'], ['words', 'note', 's_words'], ['face', 'me', 's_face'], ['works', 'star', 's_works'], ['drawing', 'sparkle', 's_drawing'], ['photos', 'camera', 's_photos'], ['quotes', 'chat', 's_quotes'],
   ['rooms', 'moon', 's_rooms', 'gold'], ['ota', 'globe', 's_ota', 'gold'], ['lists', 'tag', 's_lists', 'gold'], ['svc', 'clock', 's_svc', 'gold'], ['items', 'tag', 's_items'],
   ['cal', 'cal', 's_cal'], ['camps', 'party', 's_camps', 'gold'],
   ['order', 'basket', 's_order'], ['contact', 'phone', 's_contact'], ['map', 'pin', 's_map'], ['spots', 'compass', 's_spots'], ['hours', 'clock', 's_hours'],
@@ -317,7 +320,7 @@ function hasData(id) {
   const d = S.d
   return { event: !!d.event, words: true, drawing: true, photos: d.photos.length > 0, items: d.items.length > 0, order: !!(d.order.grabfood || d.order.lineman),
     contact: Object.values(d.contact).some(Boolean), map: d.place.lat !== null || !!d.place.addr, hours: d.hours.on, links: d.links.length > 0, msg: true, look: true,
-    video: !!d.video, spots: d.spots.length > 0, cal: d.cal.length > 0, ota: !!(d.ota.agoda || d.ota.booking), camps: d.camps.length > 0, svc: d.svc.length > 0, rooms: d.rooms.length > 0, lists: d.lists.length > 0 }[id]
+    video: !!d.video, spots: d.spots.length > 0, cal: d.cal.length > 0, ota: !!(d.ota.agoda || d.ota.booking), camps: d.camps.length > 0, svc: d.svc.length > 0, rooms: d.rooms.length > 0, lists: d.lists.length > 0, face: !!d.avatar, works: d.works.length > 0, quotes: d.quotes.length > 0 }[id]
 }
 
 function tabs() {
@@ -368,10 +371,12 @@ const SEC = {
   photos() {
     const max = isGold() ? MAX_PHOTOS.gold : MAX_PHOTOS.free
     return `<div class="photos">${S.d.photos.map((id) => `<div class="ph${id === S.d.cover ? ' cover' : ''}" data-ph="${id}"><img src="${esc(imgUrl(id, true))}" alt="">${id === S.d.cover ? `<span class="flag">${T('cover')}</span>` : ''}${S.d.credits?.[id] ? '<span class="pdf">PD</span>' : ''}
-      <div class="tools">${id !== S.d.cover ? `<button data-cover="${id}">${T('makeCover')}</button>` : ''}<button data-rm="${id}">${T('remove')}</button></div></div>`).join('')}
+      <div class="tools"><button data-mo="${id}">${T('st_make')}</button>${id !== S.d.cover ? `<button data-cover="${id}">${T('makeCover')}</button>` : ''}<button data-rm="${id}">${T('remove')}</button></div></div>`).join('')}
       ${Array.from({ length: S.busy }, () => '<div class="ph"><div class="busy">…</div></div>').join('')}</div>
       ${S.d.photos.length < max ? `<div class="row2"><label class="pick">${icon('camera')}${T('addPhotos')}<input type="file" accept="image/*" multiple id="files"></label>
-      <button class="pick pdpick" id="pdopen">${ding('sparkle', 'riso')}${T('pdBtn')}</button></div>` : ''}`
+      <button class="pick pdpick" id="pdopen">${ding('sparkle', 'riso')}${T('pdBtn')}</button>
+      <button class="pick pdpick" id="mkcover">${ding('pencil', 'riso')}${T('mk_coverBtn')}</button></div>
+      <p class="hint">${T('st_tip')}</p>` : ''}`
   },
   items() {
     const cur = S.d.currency || currencyFor(S.d.place.cc, S.pageLang)
@@ -566,6 +571,102 @@ const NEW_ROW = {
   svc: () => ({ id: rid(), n: '', p: '', note: '', mins: 60, cap: 1 }),
   rooms: () => ({ id: rid(), n: '', guests: 2, beds: '', p: '', p2: '', units: 1, min: 1, rates: [], note: '', photos: [], ical: [] }),
   lists: () => ({ id: rid(), t: '', deal: 'sale', status: 'open', p: '', area: '', unit: 'm2', beds: 0, baths: 0, kind: '', note: '', photos: [], lat: null, lng: null }),
+  works: () => ({ id: rid(), t: '', client: '', year: String(new Date().getFullYear()), role: '', tags: '', note: '', u: '', photos: [] }),
+  quotes: () => ({ q: '', who: '' }),
+}
+
+// ---- the parts added 2026-10-15: an avatar, a portfolio, the picture studio ---------------
+
+Object.assign(SEC, {
+  face() {
+    const a = S.d.avatar
+    return `<p class="hint">${T('face_hint')}</p><div class="avrow">${a ? `<img class="avpv${S.d.avround ? ' round' : ''}" src="${esc(imgUrl(a, true))}" alt="">` : `<span class="avpv none">${ding('smile', 'paper')}</span>`}
+      <div class="avbtns"><label class="pick">${icon('camera')}${T('f_photo')}<input type="file" accept="image/*" id="avfile"></label>
+      <button class="pick pdpick" id="avmake">${ding('sparkle', 'riso')}${T('f_make')}</button></div></div>
+      ${S.d.photos.length ? `<div class="field"><span>${T('f_mine')}</span><div class="pickph">${S.d.photos.map((id) => `<button type="button" data-avpick="${id}"><img src="${esc(imgUrl(id, true))}" alt=""></button>`).join('')}</div></div>` : ''}
+      ${a ? `<label class="check"><input type="checkbox" class="sw" id="avround" ${S.d.avround ? 'checked' : ''}>${T('f_round')}</label><button class="back" id="avrm">× ${T('remove')}</button>` : ''}`
+  },
+  works() {
+    const cap = isGold() ? MAX.works : MAX.worksFree
+    return `<p class="hint">${T('w_hint')}${isGold() ? '' : ' ' + T('w_free')}</p><div class="rows">${S.d.works.map((x, i) => `<div class="rowc${i >= cap ? ' over' : ''}">${rowX('works', i)}
+      <label class="field"><span>${T('w_title')}</span><input data-k="works.${i}.t" value="${val(x.t)}" maxlength="100"></label>
+      <div class="grid3f"><label class="mini"><span>${T('w_client')}</span><input data-k="works.${i}.client" value="${val(x.client)}" maxlength="80"></label>
+      <label class="mini"><span>${T('w_year')}</span><input data-k="works.${i}.year" value="${val(x.year)}" maxlength="12" inputmode="numeric"></label>
+      <label class="mini"><span>${T('w_role')}</span><input data-k="works.${i}.role" value="${val(x.role)}" maxlength="80"></label></div>
+      <label class="field"><span>${T('w_tags')}</span><input data-k="works.${i}.tags" value="${val(x.tags)}" maxlength="120"></label>
+      <label class="field"><span>${T('w_note')}</span><textarea data-k="works.${i}.note" maxlength="2000">${val(x.note)}</textarea></label>
+      <label class="field"><span>${T('w_link')}</span><input type="url" data-k="works.${i}.u" value="${val(x.u)}" placeholder="https://"></label>
+      <div class="field"><span>${T('w_photos')}</span>${photoPick(`works.${i}.photos`, x.photos) || `<small>${T('addPhotos')} ↓</small>`}</div>
+      ${S.status === 'live' && x.id && x.t ? `<a class="linkbtn" href="/${esc(S.name)}/w/${esc(x.id)}" target="_blank">${icon('globe')}${T('l_open')}</a>` : ''}</div>`).join('')}</div>
+      ${S.d.works.length < MAX.works ? `<button class="go ghost" data-addrow="works">${icon('plus')}${T('w_add')}</button>` : ''}`
+  },
+  quotes() {
+    return `<div class="rows">${S.d.quotes.map((x, i) => `<div class="rowc">${rowX('quotes', i)}
+      <label class="field"><span>${T('q_q')}</span><textarea data-k="quotes.${i}.q" maxlength="400" style="min-height:80px">${val(x.q)}</textarea></label>
+      <label class="field"><span>${T('q_who')}</span><input data-k="quotes.${i}.who" value="${val(x.who)}" maxlength="80"></label></div>`).join('')}</div>
+      ${S.d.quotes.length < MAX.quotes ? `<button class="go ghost" data-addrow="quotes">${icon('plus')}${T('q_add')}</button>` : ''}`
+  },
+})
+
+const accentNow = () => S.d.accent || LOOKS[S.look].accent
+
+/** A photo of the page as a bitmap: the copy this browser sent, else the server's. */
+async function bitmapOf(id) {
+  const blob = S.big.get(id) || await fetch(`/img/${id}.webp`).then((r) => (r.ok ? r.blob() : fetch(imgUrl(id, true)).then((x) => x.blob())))
+  return createImageBitmap(blob)
+}
+
+/** Shrink, upload, and hand back the new photo's id (not added to the gallery). */
+async function sendCanvas(canvas, max) {
+  const bmp = await createImageBitmap(canvas)
+  const big = await shrink(bmp, max, 0.9), small = await shrink(bmp, Math.min(max, 480), 0.86)
+  const r = await upload(big.blob, small.blob, 'photo', big.w, big.h)
+  S.local.set(r.id, URL.createObjectURL(small.blob))
+  S.big.set(r.id, big.blob)
+  return r.id
+}
+const sendFail = (e) => { toast(ui(S.lang, e.message === 'photo-refused' ? 'e_refused' : e.message === 'quota' ? 'e_quota' : 'e_net')); throw e }
+
+/** The studio on one of the page's photos; the new picture takes the old one's place. */
+async function makeOver(id) {
+  let bmp
+  try { bmp = await bitmapOf(id) } catch { toast(ui(S.lang, 'e_net')); return }
+  openStudio({ bitmap: bmp, mode: 'photo', accent: accentNow(), T, onUse: async (canvas) => {
+    const nid = await sendCanvas(canvas, 1600).catch(sendFail)
+    const swap = (x) => (x === id ? nid : x)
+    S.d.photos = S.d.photos.map(swap)
+    if (S.d.cover === id) S.d.cover = nid
+    for (const k of ['rooms', 'lists', 'works']) for (const x of S.d[k] || []) x.photos = x.photos.map(swap)
+    redrawSec('photos'); if (S.open.has('works')) redrawSec('works')
+    changed()
+  } })
+}
+
+async function avatarStudio(bmp) {
+  openStudio({ bitmap: bmp, mode: 'avatar', round: S.d.avround, accent: accentNow(), T, onUse: async (canvas) => {
+    S.d.avatar = await sendCanvas(canvas, 640).catch(sendFail)
+    redrawSec('face'); changed()
+  } })
+}
+async function avatarFrom(id) {
+  try { avatarStudio(await bitmapOf(id)) } catch { toast(ui(S.lang, 'e_net')) }
+}
+
+/** The mark maker: an avatar, or a cover for a page with no photo. */
+function markSheet(mode) {
+  openMark({ mode, name: S.d.name || S.name, tagline: S.d.tagline, accent: accentNow(), T, need: (f) => dingbats(f.filter(Boolean)), onUse: async (canvas, o) => {
+    if (mode === 'avatar') {
+      S.d.avatar = await sendCanvas(canvas, 640).catch(sendFail)
+      S.d.avround = o.shape === 'circle'
+      S.open.add('face'); redrawSec('face')
+    } else {
+      if (S.d.photos.length >= (isGold() ? MAX_PHOTOS.gold : MAX_PHOTOS.free)) { toast(ui(S.lang, 'e_full')); throw new Error('full') }
+      const nid = await sendCanvas(canvas, 1600).catch(sendFail)
+      S.d.photos.unshift(nid); S.d.cover = nid
+      redrawSec('photos')
+    }
+    changed()
+  } })
 }
 
 const CC = 'TH MM LA KH VN MY SG ID PH CN JP KR TW HK IN BD NP LK US CA MX GB IE FR DE ES PT IT NL BE CH AT SE NO DK FI PL CZ GR TR IL AE SA EG ZA NG KE AU NZ BR AR CL CO PE BT MN KZ UZ PK RU UA RO HU BG HR RS SI SK LT LV EE IS LU MT CY MA TN GH ET TZ UG FJ PG TL BN MO'.split(' ')
@@ -619,6 +720,8 @@ function bindEdit() {
   form.addEventListener('change', (e) => {
     const t = e.target
     if (t.id === 'files') addFiles([...t.files])
+    if (t.id === 'avfile' && t.files[0]) createImageBitmap(t.files[0], { imageOrientation: 'from-image' }).then((bmp) => avatarStudio(bmp)).catch(() => toast(ui(S.lang, 'e_net')))
+    if (t.id === 'avround') { S.d.avround = t.checked; changed() }
     if (t.id === 'plang') { S.pageLang = t.value; changed() }
     if (t.dataset.day !== undefined) { const i = +t.dataset.day; S.d.hours.week[i] = t.checked ? [[$(`[data-from="${i}"]`).value || '09:00', $(`[data-to="${i}"]`).value || '18:00']] : null; redrawSec('hours'); changed() }
     if (t.dataset.from !== undefined || t.dataset.to !== undefined) {
@@ -669,7 +772,7 @@ function bindEdit() {
     if (b.dataset.seg === 'stay.pay') redrawSec('rooms')
     if (b.dataset.pp) {
       const path = b.closest('.pickph').dataset.path, [k, i] = path.split('.'), item = S.d[k][+i]
-      if (item) { item.photos = item.photos.includes(b.dataset.pp) ? item.photos.filter((x) => x !== b.dataset.pp) : [...item.photos, b.dataset.pp].slice(0, MAX.itemPhotos); b.classList.toggle('on', item.photos.includes(b.dataset.pp)); changed() }
+      if (item) { item.photos = item.photos.includes(b.dataset.pp) ? item.photos.filter((x) => x !== b.dataset.pp) : [...item.photos, b.dataset.pp].slice(0, k === 'works' ? 24 : MAX.itemPhotos); b.classList.toggle('on', item.photos.includes(b.dataset.pp)); changed() }
     }
     if (b.dataset.lpingo) listingPin(+b.dataset.lpingo)
     if (b.dataset.lpinx) { const x = S.d.lists[+b.dataset.lpinx]; if (x) { x.lat = x.lng = null; redrawSec('lists'); changed() } }
@@ -680,6 +783,11 @@ function bindEdit() {
     if (b.id === 'pastego') pasteLink()
     if (b.id === 'clearpin') { S.d.place.lat = S.d.place.lng = null; S.d.place.snap = ''; redrawSec('map'); changed() }
     if (b.id === 'pdopen') pdSheet()
+    if (b.dataset.mo) makeOver(b.dataset.mo)
+    if (b.id === 'mkcover') markSheet('cover')
+    if (b.id === 'avmake') markSheet('avatar')
+    if (b.dataset.avpick) avatarFrom(b.dataset.avpick)
+    if (b.id === 'avrm') { S.d.avatar = ''; redrawSec('face'); changed() }
     if (b.id === 'nmailgo') notifyOn()
     if (b.id === 'nmailoff') notifyOff()
     if (b.id === 'spotadd') spotFromLink()
@@ -830,6 +938,7 @@ async function addBitmap(bmp, pd) {
   const small = await shrink(bmp, 480, 0.76)
   const r = await upload(big.blob, small.blob, 'photo', big.w, big.h, pd)
   S.local.set(r.id, URL.createObjectURL(small.blob))
+  S.big.set(r.id, big.blob)
   S.d.photos.push(r.id)
   if (r.credit) S.d.credits = { ...(S.d.credits || {}), [r.id]: r.credit }
   if (!S.d.cover) S.d.cover = r.id
@@ -838,11 +947,25 @@ async function addBitmap(bmp, pd) {
 
 // ---- the free picture library -------------------------------------------------------------
 
+// searches that bring back pictures worth a cover, by kind of page (the museum's paintings and prints among them)
+const PD_IDEAS = {
+  food: ['still life fruit', 'noodles', 'tea', 'market', 'rice field', 'botanical illustration'],
+  shop: ['textile pattern', 'ceramics', 'still life', 'woodblock print', 'flowers', 'market'],
+  service: ['botanical illustration', 'garden', 'hands', 'woodblock print', 'temple', 'mountains'],
+  work: ['architecture drawing', 'woodblock print', 'textile pattern', 'botanical illustration', 'map', 'abstract painting'],
+  stay: ['Chiang Mai', 'garden', 'mountains', 'temple', 'river', 'bedroom painting'],
+  homes: ['house', 'garden', 'architecture drawing', 'window', 'courtyard', 'rice field'],
+  me: ['flowers', 'birds', 'woodblock print', 'stars', 'ocean', 'butterflies'],
+  event: ['festival', 'lanterns', 'dance', 'music', 'fireworks', 'crowd'],
+  group: ['temple', 'forest', 'mountains', 'river', 'village', 'boats'],
+}
+
 function pdSheet() {
   const box = document.createElement('div')
   box.className = 'sheet pdsheet'
   box.innerHTML = `<div class="box"><h2>${ding('sparkle', 'riso')} ${T('pdTitle')}</h2><p class="hint">${T('pdHint')}</p>
     <form class="row" id="pdf"><input id="pdq" type="search" placeholder="${T('pdSearch')}" style="flex:1;min-width:180px" autocomplete="off"><button class="go">${icon('compass')}</button></form>
+    <div class="chips pdideas">${(PD_IDEAS[S.kind] || PD_IDEAS.shop).map((q) => `<button type="button" data-pdq="${esc(q)}">${esc(q)}</button>`).join('')}</div>
     <div class="pdgrid" id="pdg"></div><p style="text-align:center"><button class="back" id="pdclose">${T('back')}</button></p></div>`
   document.body.appendChild(box)
   const q = box.querySelector('#pdq'), grid = box.querySelector('#pdg')
@@ -850,6 +973,7 @@ function pdSheet() {
   q.focus()
   box.querySelector('#pdclose').onclick = () => box.remove()
   box.addEventListener('click', (e) => { if (e.target === box) box.remove() })
+  box.querySelectorAll('[data-pdq]').forEach((b) => (b.onclick = () => { q.value = b.dataset.pdq; box.querySelector('#pdf').requestSubmit() }))
   box.querySelector('#pdf').onsubmit = async (e) => {
     e.preventDefault()
     const term = q.value.trim()
