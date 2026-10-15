@@ -1,0 +1,52 @@
+The two pickers on sites.motdang.net/make ("It is for" and "Look"), 2026-10-15.
+Nan: "Level 1/10. Bring it up to 11." Then: "empathy map, gemba, plan, build."
+
+WHO MEETS THESE TWO ROWS
+(guesses from notes/empathy-map.md in mot-dang, not interviews)
+
+Pa's daughter, for the kaphrao shop. On a phone, in Thai, in a spare minute.
+  Thinks: what will this cost me, and which box is my shop.
+  Needs: to see her shop's page at once, and to know "Food" gets her a menu
+  and orders on LINE without reading anything.
+
+The guesthouse owner. Pays Agoda 15%.
+  Needs: "Hotel" to say rooms, bookings, a calendar, before she taps it.
+
+Hom, selling Gold at a table, his phone in the owner's hand.
+  Needs: the looks to sell themselves in one swipe. The owner picks a page
+  that looks like theirs, not a word like "Stitch".
+
+The massage therapist, the freelancer, the housekeeper: "Me" or "Service".
+  Needs: to see their own name on the page, in a look that fits them.
+
+GEMBA (walked live at 375 px in Thai and at 800 px in English)
+
+- Phone: 3 of 9 kinds show; 6 are off the right edge with no sign they exist.
+- Phone: 3 of 9 looks show; Gold leaf and Riso are never seen.
+- A look is "Aa" and a coloured line. The names are English in every
+  language. Nothing says what a look does to the page.
+- On a phone the look row sits below the preview, so a tap changes a page
+  that is off screen.
+- Hover draws the same red ring as "picked": Nan's screenshot shows two
+  kinds ringed.
+- No kind says what its page gets.
+- The page's colour can only be picked after the page is made.
+
+THE BUILD
+
+Kinds
+1. All nine on screen on a phone: a 3-column grid, no side scroll.
+2. Each tile carries its line (Menu · GrabFood · map).
+3. Under the grid, "Your page gets": the parts of that kind's page as
+   chips. Tap one and the phone scrolls to that part and lights it.
+4. Hover lifts a tile; only the picked tile has the red ring and tick.
+
+Looks
+5. Each look is a small copy of the page: the kind's picture, the name as
+   typed in that look's own type, its drawing, its colour, its button.
+   It retypes as the name is typed.
+6. All nine on screen. Each one's name and a few words in all four languages.
+7. Colour dots under the looks. The page takes the colour now, not later.
+8. Arrows on the phone (‹ Night market ›) and a swipe on the phone change
+   the look in place. On a computer, pointing at a look shows it on the phone.
+9. "Surprise me": a look and a colour at random.
