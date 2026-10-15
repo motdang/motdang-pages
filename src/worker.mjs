@@ -29,6 +29,7 @@ import * as tr from './tr.mjs'
 import * as dom from './domain.mjs'
 import { tellBeer } from './line.mjs'
 import * as sellers from './sellers.mjs'
+import * as slipq from './slipq.mjs'
 import { readCalendars, monthly, trialNotes } from './cron.mjs'
 import { calIcs, roomIcs, addDays } from '../public/s/extras.mjs'
 import { guestPage } from './guest.mjs'
@@ -104,6 +105,7 @@ async function route(request, env, ctx) {
   if (path === '/sitemap.xml') return sitemap(env, origin)
   if (path === '/favicon.ico') return asset(request, env, '/s/ant.svg')
   if (path === '/admin' || path.startsWith('/admin/')) return admin(request, env, path.slice(6), url)
+  if (path.startsWith('/q/')) return slipPage(request, env, path, url, origin)
 
   const pm = /^\/([a-z0-9-]{3,30})(\/sign|\/contact\.vcf|\/event\.ics|\/calendar\.ics|\/l\/[a-z0-9]{4,12}|\/room\/[a-z0-9]{4,12}\.ics)?\/?$/.exec(path)
   if (pm && m === 'GET') return page(request, env, ctx, pm[1], pm[2] || '', url, origin)
@@ -672,7 +674,7 @@ ${s ? `<p>ข้อความถึง ${escHtml(title)} จะส่งสำ
     await log(env, s.id, 'gold-slip', r.why)
     ctx.waitUntil((async () => {
       const title = JSON.parse(s.d).name || s.name
-      const how = await tellBeer(env, `สลิปทองรอดู · A Gold slip waits\n${title} · ฿${pay.amount}\n${origin}/${s.name}\n${origin}/admin`)
+      const how = await tellBeer(env, `สลิปทองรอดู · A Gold slip waits\n${title} · ฿${pay.amount}\nกดดูแล้วตอบ · Tap to check and answer:\n${await slipq.link(env, origin, pay.id, sha)}`)
       await log(env, s.id, 'slip-told', how)
     })().catch((e) => console.error(e)))
     return J({ ok: true, waiting: true })
@@ -766,20 +768,48 @@ async function admin(request, env, rest, url) {
     if (act === 'remove') await env.DB.prepare("UPDATE site SET status='removed' WHERE id=?").bind(id).run()
     if (act === 'photo-ok') await releasePhoto(env, id)
     if (act === 'gold') await gold.grant(env, id)
-    if (act === 'pay-ok') {
-      const p = await env.DB.prepare('SELECT pay.site_id, pay.months, pay.plan, pay.amount, site.name, site.d FROM pay JOIN site ON site.id = pay.site_id WHERE pay.id = ?').bind(id).first()
-      if (p) {
-        await gold.grant(env, p.site_id, p.months || 12, p.plan || undefined)
-        await env.DB.prepare("UPDATE pay SET status='paid', note=COALESCE(note,'') || ' · by hand', updated=? WHERE id=?").bind(new Date().toISOString(), id).run()
-        const cut = await sellers.credit(env, { siteId: p.site_id, payId: id, amount: p.amount }).catch((e) => console.error(e))
-        await gold.tellSales(env, { title: JSON.parse(p.d || '{}').name || p.name, url: `${url.origin}/${p.name}`, amount: p.amount, months: p.months || 12, plan: p.plan, how: 'checked by hand', cut }).catch((e) => console.error(e))
-      }
-    }
-    if (act === 'pay-no') await env.DB.prepare("UPDATE pay SET status='refused', updated=? WHERE id=?").bind(new Date().toISOString(), id).run()
+    if (act === 'pay-ok') await payOk(env, id, url.origin, 'checked by hand')
+    if (act === 'pay-no') await payNo(env, id)
     await log(env, id, 'admin-' + act, '')
     return Response.redirect(url.origin + '/admin', 303)
   }
   return html(await adminPage(env), 200)
+}
+
+/** A slip a person has looked at: paid. Only a payment still waiting moves. */
+async function payOk(env, id, origin, how) {
+  const p = await env.DB.prepare("SELECT pay.site_id, pay.months, pay.plan, pay.amount, site.name, site.d FROM pay JOIN site ON site.id = pay.site_id WHERE pay.id = ? AND pay.status IN ('open','slip')").bind(id).first()
+  if (!p) return false
+  await gold.grant(env, p.site_id, p.months || 12, p.plan || undefined)
+  await env.DB.prepare("UPDATE pay SET status='paid', note=COALESCE(note,'') || ?, updated=? WHERE id=?").bind(' · ' + how, new Date().toISOString(), id).run()
+  const cut = await sellers.credit(env, { siteId: p.site_id, payId: id, amount: p.amount }).catch((e) => console.error(e))
+  await gold.tellSales(env, { title: JSON.parse(p.d || '{}').name || p.name, url: `${origin}/${p.name}`, amount: p.amount, months: p.months || 12, plan: p.plan, how, cut }).catch((e) => console.error(e))
+  return true
+}
+async function payNo(env, id) {
+  await env.DB.prepare("UPDATE pay SET status='refused', updated=? WHERE id=? AND status IN ('open','slip')").bind(new Date().toISOString(), id).run()
+}
+
+/** /q/<link>: one waiting slip, answered without the admin password (slipq.mjs). */
+async function slipPage(request, env, path, url, origin) {
+  const q = await slipq.read(env, path, sha)
+  if (!q) return new Response('', { status: 404 })
+  if (q.expired) return html('<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width"><p style="font:18px system-ui;padding:20px">ลิงก์หมดอายุ ใช้ sites.motdang.net/admin<br>This link has expired; use sites.motdang.net/admin.</p>', 410)
+  const p = await env.DB.prepare('SELECT pay.*, site.name, site.d FROM pay JOIN site ON site.id = pay.site_id WHERE pay.id = ?').bind(q.payId).first()
+  if (!p) return new Response('', { status: 404 })
+  if (q.img) {
+    const o = p.slip && await env.MEDIA.get(p.slip)
+    return o ? new Response(o.body, { headers: { 'content-type': o.httpMetadata?.contentType || 'image/jpeg', 'cache-control': 'no-store' } }) : new Response('', { status: 404 })
+  }
+  if (request.method === 'POST' && sameOrigin(request, url)) {
+    const act = String((await request.formData()).get('act') || '')
+    if (act === 'ok') await payOk(env, p.id, origin, 'checked from LINE')
+    if (act === 'no') await payNo(env, p.id)
+    await log(env, p.site_id, 'slip-' + act, 'line link')
+    return Response.redirect(url.origin + path, 303)
+  }
+  const now = await env.DB.prepare('SELECT status, note FROM pay WHERE id = ?').bind(p.id).first()
+  return html(slipq.page({ title: JSON.parse(p.d || '{}').name || p.name, name: p.name, amount: p.amount, status: now.status, note: now.note }, url.origin + path, origin), 200)
 }
 
 async function releasePhoto(env, id) {
