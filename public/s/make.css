@@ -217,3 +217,23 @@ textarea{min-height:130px;resize:vertical;line-height:1.5}
 .dns{border-collapse:collapse;margin:8px 0;font-size:15px}.dns td{padding:6px 10px 6px 0;border-bottom:1px dashed var(--line)}.dns code,.cp{font:14px ui-monospace,Menlo,monospace;background:var(--cream);padding:2px 6px;border-radius:6px;overflow-wrap:anywhere;cursor:copy}
 .go.small{min-height:42px;padding:8px 16px;font-size:15px}
 .paidy{color:var(--green)}.paidn{color:#b45309}.msg.bk.hold{box-shadow:0 0 0 2px var(--line);opacity:.8}.msg.bk.gone{opacity:.5}
+/* 2026-10-15: the picture studio, the mark maker, the avatar, the portfolio */
+.ph .tools{flex-wrap:wrap}.ph .tools button{flex:1 1 40%;font-size:12px;padding:5px 3px}.ph .tools [data-mo]{flex-basis:100%;background:#1c1530;color:#fff}
+.studio .box,.marker .box{width:min(640px,100%)}
+.stage{position:relative;margin:10px 0;border-radius:14px;overflow:hidden;background:var(--line);touch-action:none}
+.stage canvas{display:block;width:100%;height:auto}.studio.av .stage{width:min(320px,80vw);margin:10px auto;cursor:grab}.studio.av .stage.round{border-radius:50%}
+.stage .wait{position:absolute;inset:auto 10px 10px auto;padding:4px 12px;border-radius:99px;background:rgba(0,0,0,.66);color:#fff;font-weight:800}
+.zoom{display:flex;align-items:center;gap:10px;margin:0 0 10px;font-weight:700}.zoom input{flex:1}
+.styles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:0 0 14px}
+.styles button{display:flex;flex-direction:column;gap:4px;padding:6px;border:0;border-radius:12px;background:var(--cream);color:var(--ink);font-weight:700;font-size:13px;cursor:pointer;box-shadow:inset 0 0 0 2px var(--line)}
+.styles button.on{background:#fff;box-shadow:0 0 0 3px var(--red)}.styles canvas{width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;background:var(--line)}
+.studio.av .styles canvas{border-radius:50%}
+.row.end{justify-content:flex-end;gap:10px}
+.mkpv{display:grid;place-items:center;margin:10px 0 14px;padding:14px;border-radius:14px;background:repeating-conic-gradient(#f2eadc 0 25%,#fff 0 50%) 0 0/20px 20px}
+.mkpv canvas{width:min(240px,60vw);height:auto}.marker.cover .mkpv canvas{width:100%;border-radius:8px}
+.mkpick{max-height:220px;overflow:auto}
+.avrow{display:flex;gap:14px;align-items:center;margin:6px 0 12px}.avpv{flex:none;width:96px;height:96px;object-fit:cover;border-radius:16px;background:var(--cream)}.avpv.round{border-radius:50%}
+.avpv.none{display:grid;place-items:center;font-size:48px;border:3px dashed var(--line)}.avbtns{flex:1;display:grid;gap:8px}.avbtns .pick{min-height:48px}
+.rowc.over{opacity:.55}
+.pdideas{margin:-4px 0 10px}
+.marker .seg{display:flex;flex-wrap:wrap;gap:6px;border-radius:0;box-shadow:none;overflow:visible}.marker .seg button,.marker .seg button+button{border-radius:99px;box-shadow:inset 0 0 0 2px var(--ink)}

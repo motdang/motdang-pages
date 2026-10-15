@@ -1,0 +1,99 @@
+SITES.MOTDANG.NET — EXPLAINER STORYBOARD
+2026-10-15 · 80 seconds · 9:16 (LINE, TikTok, Reels, Shorts), with a 16:9 cut for YouTube
+
+Each shot: time · what the screen shows · what happens · the words said (EN / TH) · the caption on screen.
+Screens are the real builder on a phone, recorded from sites.motdang.net/make.
+
+
+1   0:00–0:05   HOOK
+    Screen   A dark, blurry phone photo of a noodle stall fills the frame.
+    Action   A thumb taps it. The photo turns into a pen-and-ink drawing, line by line.
+    EN       "Bad photo?"
+    TH       "รูปไม่สวย?"
+    Caption  Bad photo → good page
+
+2   0:05–0:10   WHAT IT IS
+    Screen   "What is it for?": Shop, Food, Service, Portfolio, Hotel, Homes, Me, Event, Group.
+    Action   Thumb taps Portfolio.
+    EN       "Make your own page, on your phone, in five minutes."
+    TH       "ทำหน้าเว็บของคุณเอง บนมือถือ ในห้านาที"
+    Caption  sites.motdang.net
+
+3   0:10–0:15   NAME
+    Screen   Name: Lamyai Design Studio. The address fills itself: sites.motdang.net/lamyai-design-studio
+    EN       "Type your name. That's your address."
+    TH       "พิมพ์ชื่อ ได้ที่อยู่เว็บเลย"
+
+4   0:15–0:20   LOOK
+    Screen   The looks scroll past: Poster, Loom, Stitch, Night, 1997, Clean, Lanna, Gold, Riso.
+    Action   Thumb stops on Clean.
+    EN       "Pick a look."
+    TH       "เลือกแบบ"
+
+5   0:20–0:31   THE PICTURE STUDIO
+    Screen   Photos → add a dim café photo → Make over. Six squares: Fixed, Pen and ink, Watercolour,
+             Riso print, Gold lacquer, Comic.
+    Action   Tap Fixed (the photo brightens), then Watercolour, then Gold lacquer. Use this.
+    EN       "Any photo, fixed. Or drawn: pen, watercolour, riso, gold lacquer, comic."
+    TH       "รูปไหนก็แก้แสงได้ หรือวาดใหม่ เป็นลายเส้น สีน้ำ ริโซ่ ลายรดน้ำ หรือการ์ตูน"
+    Caption  Make over
+
+6   0:31–0:38   NO PHOTO AT ALL
+    Screen   "No photo? Make a cover." Colour gold, pattern Tiles, dingbat noodle bowl, type Chonburi.
+    Action   The cover builds itself as each part is tapped: Khao Soi Mae Fah.
+    EN       "No photo? Build a cover from parts."
+    TH       "ไม่มีรูป? ประกอบภาพปกเองได้"
+    Caption  267 dingbats · 6 patterns · 3 typefaces
+
+7   0:38–0:44   AVATAR
+    Screen   Avatar → Make one: stamp shape, navy, a pen nib, LD.
+             Then the other way: a selfie, dragged and zoomed in a circle, drawn in pen.
+    EN       "Your face, your logo, or one made here."
+    TH       "หน้าคุณ โลโก้ หรือทำใหม่ที่นี่"
+
+8   0:44–0:55   PORTFOLIO
+    Screen   Work: Market signs (Kad Luang, 2026, Signs · Wayfinding), Coffee labels (Suan Lahu).
+             Then the page: the work grid, the tag filter tapped to Signs, one project opened on its
+             own page with every photo and a "See the project" button; client words below.
+    EN       "Each project gets its own page. Clients filter by what they need."
+    TH       "ทุกผลงานมีหน้าของตัวเอง ลูกค้ากรองดูตามที่ต้องการ"
+    Caption  sites.motdang.net/lamyai-design-studio/w/…
+
+9   0:55–1:01   THE DRAWING
+    Screen   The page's drawn place, sketched in by a pen, lit by the sun where the pin stands.
+    Action   A tap turns it to evening, then night.
+    EN       "We draw your place, in today's light."
+    TH       "เราวาดร้านของคุณ ตามแสงแดดวันนี้"
+
+10  1:01–1:09   PEOPLE FIND YOU
+    Screen   LINE, Call, Directions, Grab buttons; the drawn map; the message form; Share with a QR and
+             a story picture.
+    EN       "LINE, Grab, the map, messages, a QR to share."
+    TH       "ไลน์ แกร็บ แผนที่ ข้อความ คิวอาร์ไว้แชร์"
+
+11  1:09–1:15   GOLD
+    Screen   The Gold tab: ฿3,000 a year. Gold leaf look, search engines, 120 photos and a video,
+             60 projects, bookings, rooms, listings, the page in 12 languages. Hotels: ฿555 a month.
+    EN       "Free to start. Gold: three thousand baht a year."
+    TH       "เริ่มฟรี ทองปีละสามพันบาท"
+    Caption  First 30 days Gold
+
+12  1:15–1:20   CLOSE
+    Screen   The finished page scrolls top to bottom. The address, large.
+    EN       "Make yours."
+    TH       "ทำของคุณเลย"
+    Caption  sites.motdang.net/make
+
+
+CUTS
+    15 s   shots 1, 5, 6, 12
+    30 s   shots 1, 2, 5, 6, 8, 12
+    80 s   all
+    Sales cut for Hom: the close reads sites.motdang.net/make?by=hom, so pages made from it count to Hom.
+
+TO RECORD
+    Builder on a phone-size screen (375×812), Thai and English passes.
+    Test photos: dim and blurry on purpose (a noodle stall at night, a café, a selfie).
+    Demo pages, made for the film and taken down after: Lamyai Design Studio (portfolio),
+    Khao Soi Mae Fah (food, cover from parts).
+    Tools on disk: motdang-demo-videos (scripted screen capture), reelkit (cuts, captions, hooks).

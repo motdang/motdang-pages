@@ -21,6 +21,8 @@ export function texts(d) {
   ;(d.svc || []).forEach((x, i) => { add(`svc.${i}.n`, x.n); add(`svc.${i}.note`, x.note) })
   ;(d.rooms || []).forEach((x, i) => { add(`rooms.${i}.n`, x.n); add(`rooms.${i}.beds`, x.beds); add(`rooms.${i}.note`, x.note) })
   ;(d.lists || []).forEach((x, i) => { add(`lists.${i}.t`, x.t); add(`lists.${i}.kind`, x.kind); add(`lists.${i}.note`, x.note) })
+  ;(d.works || []).forEach((x, i) => { add(`works.${i}.t`, x.t); add(`works.${i}.role`, x.role); add(`works.${i}.note`, x.note) })
+  ;(d.quotes || []).forEach((x, i) => { add(`quotes.${i}.q`, x.q) })
   return out
 }
 

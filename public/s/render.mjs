@@ -6,9 +6,9 @@
 import { word, PAGE_LANGS } from './words.mjs'
 import { encodeQr } from './qr.mjs'
 import { DINGBATS } from './db/names.mjs'
-import { normalizeExtras, upcoming, campsNow, utcOf, money, MAP_NEAR, MAX, UNIT_LABEL } from './extras.mjs'
+import { normalizeExtras, upcoming, campsNow, utcOf, money, MAP_NEAR, MAX, UNIT_LABEL, tagsOf } from './extras.mjs'
 
-export const KINDS = ['shop', 'food', 'service', 'stay', 'homes', 'me', 'event', 'group']
+export const KINDS = ['shop', 'food', 'service', 'work', 'stay', 'homes', 'me', 'event', 'group']
 export const LOOK_IDS = ['poster', 'loom', 'stitch', 'night', 'y1997', 'clean', 'lanna', 'gold', 'riso']
 export const GOLD_LOOKS = ['gold', 'riso']
 export const HOME = 'https://sites.motdang.net'
@@ -29,6 +29,8 @@ export const SCENES = {
     ['tours', 'ทัวร์', 'Tours'], ['training', 'สอนพิเศษ', 'Classes'], ['hotel', 'โรงแรม', 'Hotel'], ['guesthouse', 'เกสต์เฮาส์', 'Guesthouse'], ['hostel', 'โฮสเทล', 'Hostel']],
   stay: [['hotel', 'โรงแรม', 'Hotel'], ['guesthouse', 'เกสต์เฮาส์', 'Guesthouse'], ['hostel', 'โฮสเทล', 'Hostel'], ['lanna-house', 'บ้านล้านนา', 'Lanna house'], ['rooftop', 'ดาดฟ้า', 'Rooftop']],
   homes: [['agent', 'นายหน้า', 'Estate agent'], ['lanna-house', 'บ้านล้านนา', 'House'], ['alley', 'ซอย', 'Soi'], ['office', 'สำนักงาน', 'Office'], ['rooftop', 'ดาดฟ้า', 'Rooftop']],
+  work: [['studio', 'สตูดิโอ', 'Studio'], ['office', 'สำนักงาน', 'Office'], ['lanna-house', 'บ้านล้านนา', 'Lanna house'], ['rooftop', 'ดาดฟ้า', 'Rooftop'], ['alley', 'ซอย', 'Soi'],
+    ['crafts', 'งานฝีมือ', 'Crafts'], ['band', 'ดนตรี', 'Music'], ['robots', 'หุ่นยนต์', 'Robots']],
   me: [['lanna-house', 'บ้านล้านนา', 'Lanna house'], ['alley', 'ซอย', 'Soi'], ['rooftop', 'ดาดฟ้า', 'Rooftop'], ['studio', 'สตูดิโอ', 'Studio'], ['band', 'ดนตรี', 'Music'],
     ['dance', 'เต้น', 'Dance'], ['tuktuk', 'ตุ๊กตุ๊ก', 'Tuk-tuk'], ['robots', 'หุ่นยนต์', 'Robots']],
   event: [['social', 'ปาร์ตี้', 'Party'], ['market', 'ตลาด', 'Market'], ['band', 'ดนตรีสด', 'Live music'], ['feast', 'งานเลี้ยง', 'Feast'], ['yoga', 'โยคะ', 'Yoga'],
@@ -44,7 +46,7 @@ export const sceneOf = (kind, d) => (d.scene && SCENE_IDS.has(d.scene) ? d.scene
 // The dingbat beside each section's heading, and the look each page look draws them in.
 const HEAD_DING = { about: 'sparkle', menu: 'noodles', prices: 'coin', hours: 'clock', photos: 'camera', where: 'pin', line: 'chat', links: 'link',
   contact: 'telephone', msg: 'envelope', when: 'calendar', drawn: 'pencil', video: 'play', spots: 'compass', share: 'share',
-  cal: 'calendar', camp: 'megaphone', book: 'clock', rooms: 'key', lists: 'home' }
+  cal: 'calendar', camp: 'megaphone', book: 'clock', rooms: 'key', lists: 'home', works: 'nib', quotes: 'hedera' }
 const DING_LOOK = { poster: 'riso', loom: 'paper', stitch: 'paper', night: 'neon', y1997: 'neon', clean: 'ink', lanna: 'paper', gold: 'paper', riso: 'riso' }
 export const ACCENTS = ['#f04a00', '#ff2e88', '#ffb000', '#19a974', '#137a71', '#2563eb', '#7c3aed', '#111827']
 
@@ -99,6 +101,8 @@ export function normalize(d = {}) {
   o.currency = CURRENCY[d.currency] ? d.currency : ''
   o.cover = PHOTO_ID.test(d.cover || '') ? d.cover : ''
   o.card = PHOTO_ID.test(d.card || '') ? d.card : ''
+  o.avatar = PHOTO_ID.test(d.avatar || '') ? d.avatar : ''
+  o.avround = d.avround !== false
   o.photos = (Array.isArray(d.photos) ? d.photos : []).filter((p) => PHOTO_ID.test(p)).slice(0, MAX_PHOTOS.gold)
   o.scene = SCENE_IDS.has(d.scene) ? d.scene : ''
   o.drawing = d.drawing !== false
@@ -559,7 +563,15 @@ dialog.qrd{background:#fff;color:#000;padding:26px;text-align:center;width:min(9
 .mcal .g button{display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.05}.mcal .g button small{font-size:9px;font-weight:700;opacity:.75;margin-top:2px}.mcal .g button.few small{color:#c2410c;opacity:1}
 .mcal .g button:disabled{opacity:.32;cursor:default}#rooms>.facts{display:flex;gap:6px;align-items:center;color:var(--mute);margin:-4px 0 12px}.rin .night small{font-size:15px;color:var(--mute);font-weight:600}.mcal .g button.tk{text-decoration:line-through}.mcal .g button.in{background:var(--line)}.mcal .g button.end{background:var(--accent);color:var(--on-accent)}.rsum{margin:8px 0 12px;font-weight:700}
 .lfilter{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 14px}.lfilter button{padding:8px 15px;border-radius:99px;border:2px solid var(--line);background:var(--soft);color:var(--ink);font:700 15px var(--body);cursor:pointer}.lfilter button.on{background:var(--ink);color:var(--card);border-color:var(--ink)}
-.lgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:16px}.lcard{display:flex;flex-direction:column;gap:3px;color:var(--ink);text-decoration:none}
+.lgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:16px}
+.top .av{display:block;width:104px;height:104px;margin:0 0 14px;object-fit:cover;filter:drop-shadow(0 6px 14px rgba(0,0,0,.18))}.top .av.round{border-radius:50%;border:4px solid var(--card)}.top.gilt .av.round{border-color:#e9b43b}
+.wgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:18px}.wcard{display:flex;flex-direction:column;gap:2px;color:var(--ink);text-decoration:none}
+.wcard figure{position:relative;margin:0 0 8px;aspect-ratio:4/3;border-radius:calc(var(--r) + 2px);overflow:hidden;background:var(--line)}.wcard img{width:100%;height:100%;object-fit:cover;transition:transform .6s}.wcard:hover img{transform:scale(1.05)}
+.wcard .noimg{display:grid;place-items:center;height:100%;font-size:72px;background:repeating-linear-gradient(45deg,var(--line) 0 12px,var(--bg) 12px 24px)}.wcard .n{position:absolute;right:8px;bottom:8px;padding:2px 9px;border-radius:99px;background:rgba(0,0,0,.66);color:#fff;font:700 12px/1.5 var(--body)}
+.wcard b{font:800 19px/1.25 var(--display)}.wcard small{color:var(--mute);font-size:14px}
+.wshots{display:grid;gap:12px}.wshots button{display:block;padding:0;border:0;background:none;cursor:zoom-in}.wshots img{display:block;width:100%;height:auto;border-radius:calc(var(--r)/2)}
+.wtags{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0 0}.wtags a{padding:4px 12px;border-radius:99px;background:var(--soft);color:var(--ink);font:700 14px var(--body);text-decoration:none}
+.quotes figure{margin:0 0 18px;padding:0 0 0 18px;border-left:4px solid var(--accent)}.quotes blockquote{margin:0;font:500 19px/1.5 var(--body)}.quotes blockquote p{margin:0 0 6px}.quotes figcaption{color:var(--mute);font-weight:700}.lcard{display:flex;flex-direction:column;gap:3px;color:var(--ink);text-decoration:none}
 .lcard figure{position:relative;margin:0 0 6px;aspect-ratio:4/3;border-radius:calc(var(--r) + 2px);overflow:hidden;background:var(--line)}.lcard img{width:100%;height:100%;object-fit:cover;transition:transform .5s}.lcard:hover img{transform:scale(1.05)}.lcard .noimg{display:grid;place-items:center;height:100%;font-size:72px;background:repeating-linear-gradient(45deg,var(--line) 0 12px,var(--bg) 12px 24px)}
 .lcard .deal,.lhead .deal{position:absolute;left:8px;top:8px;padding:3px 10px;border-radius:99px;background:var(--accent);color:var(--on-accent);font:800 12px/1.4 var(--body);letter-spacing:.06em;text-transform:uppercase}.lhead .deal{position:static}
 .lcard .st{position:absolute;right:8px;top:8px;padding:3px 10px;border-radius:99px;background:#111;color:#fff;font:800 12px/1.4 var(--body);text-transform:uppercase}.lcard.gone figure{filter:grayscale(.75)}.lcard .pr{font:800 19px/1.2 var(--body);color:var(--acc-ink)}.lcard small{color:var(--mute);font-size:14px}
@@ -655,17 +667,18 @@ export function render(site, opt = {}) {
   const H2 = (k, label) => `<h2>${ding(HEAD_DING[k], dl)}${label}</h2>`
   const out = []
   const L = gold && opt.listing ? d.lists.find((x) => x.id === opt.listing) || null : null
+  const Wk = !L && opt.work ? d.works.find((x) => x.id === opt.work) || null : null
   const tz = d.hours.tz
   const sym = CURRENCY[cur] || ''
   const now = opt.now ? +opt.now : Date.now()
-  const title = L ? `${L.t} · ${name}` : name
-  const pageUrl = L ? `${url}/l/${L.id}` : url
+  const title = L ? `${L.t} · ${name}` : Wk ? `${Wk.t} · ${name}` : name
+  const pageUrl = L ? `${url}/l/${L.id}` : Wk ? `${url}/w/${Wk.id}` : url
   const langs = (opt.langs || []).filter((l) => PAGE_LANGS[l])
   const home = opt.home || site.lang
 
   // head
-  const desc = (L && L.note.slice(0, 160)) || d.tagline || d.about.slice(0, 160) || name
-  const card = L && L.photos[0] ? origin + img(L.photos[0]) : d.card ? `${origin}/img/${d.card}.jpg` : d.cover ? origin + img(d.cover) : `${origin}/s/card.jpg`
+  const desc = (L && L.note.slice(0, 160)) || (Wk && (Wk.note.slice(0, 160) || [Wk.client, Wk.year].filter(Boolean).join(' · '))) || d.tagline || d.about.slice(0, 160) || name
+  const card = L && L.photos[0] ? origin + img(L.photos[0]) : Wk && Wk.photos[0] ? origin + img(Wk.photos[0]) : d.card ? `${origin}/img/${d.card}.jpg` : d.cover ? origin + img(d.cover) : `${origin}/s/card.jpg`
   out.push(`<!doctype html><html lang="${lang}" data-look="${lookId}" translate="no" class="notranslate"><head><meta charset="utf-8"><meta name="google" content="notranslate">`,
     opt.nonce ? `<script nonce="${opt.nonce}">if(/[.]translate[.]goog$/.test(location.hostname))location.replace("https://"+location.hostname.slice(0,-15).replace(/--/g,"~").replace(/-/g,".").replace(/~/g,"-")+location.pathname+location.search.replace(/([?&])_x_tr_[^&]*/g,"$1").replace(/[?&]+$/,"").replace(/[?]&+/,"?")+location.hash)</script>` : '',
     `<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">`,
@@ -678,7 +691,7 @@ export function render(site, opt = {}) {
     langs.length > 1 && gold && site.status === 'live' ? langs.map((l) => `<link rel="alternate" hreflang="${l}" href="${esc(l === home ? pageUrl : pageUrl + '?hl=' + l)}">`).join('') : '',
     gold && site.status === 'live' && !opt.preview ? `<script type="application/ld+json">${ldJson(site, d, name, pageUrl, card, L, sym).replace(/</g, '\\u003c')}</script>` : '',
     `<meta name="theme-color" content="${/--bg:(#[0-9a-f]+)/i.exec(look.vars)?.[1] || '#ffffff'}">`,
-    `<link rel="icon" href="/s/ant.svg">`,
+    `<link rel="icon" href="${d.avatar ? esc(img(d.avatar, true)) : '/s/ant.svg'}">`,
     `<style>${faces(look.fonts)}:root{${look.vars};--accent:${accent};--on-accent:${onColor(accent)};--acc-ink:${accInk(look, accent)};--soft:color-mix(in srgb,var(--ink) 6%,var(--card))}${BASE_CSS}${look.css}</style></head><body>`)
 
   if (site.status === 'held' && !opt.preview) {
@@ -688,15 +701,17 @@ export function render(site, opt = {}) {
   }
 
   // top
-  const cov = L ? L.photos[0] || '' : d.cover
+  const cov = L ? L.photos[0] || '' : Wk ? Wk.photos[0] || '' : d.cover
   out.push(`<header class="top${cov ? ' has-cover' : ''}${gold ? ' gilt' : ''}">`)
   if (lookId === 'night') out.push('<div class="lights"></div>')
   if (cov) out.push(`<img src="${esc(img(cov))}" alt="" fetchpriority="high">${look.art}${d.credits[cov] ? `<figcaption>${creditLine(d.credits[cov])}</figcaption>` : ''}`)
   out.push(`<div class="t">${cov ? '' : look.art}`)
+  if (d.avatar && !L && !Wk) out.push(`<img class="av${d.avround ? ' round' : ''}" src="${esc(img(d.avatar, true))}" alt="" width="104" height="104">`)
   if (gold) out.push(`<span class="goldtag">${ding('crown', 'mono')}${W('gold')}</span><br>`)
-  out.push(`<h1>${esc(L ? L.t : name)}</h1>`)
+  out.push(`<h1>${esc(L ? L.t : Wk ? Wk.t : name)}</h1>`)
   if (lookId === 'poster') out.push('<span class="bar"></span>')
   if (L) out.push(`<p class="tag"><a href="/${esc(site.name)}#lists">${esc(name)}</a></p>`)
+  else if (Wk) out.push(`<p class="tag"><a href="/${esc(site.name)}#works">${esc(name)}</a></p>`)
   else if (d.tagline) out.push(`<p class="tag">${esc(d.tagline)}</p>`)
   if (d.dings.length) out.push(`<p class="dings">${d.dings.map((n) => ding(n, dl)).join('')}</p>`)
   out.push(`<span id="st">${badge(lang, st)}</span></div></header>`)
@@ -704,6 +719,7 @@ export function render(site, opt = {}) {
 
   out.push('<main class="wrap">')
   if (L) out.push(listingBody(L, { site, d, W, H2, img, sym, gold, opt, name }))
+  else if (Wk) out.push(workBody(Wk, { site, d, W, H2, img, gold }))
   else {
 
   // reach: the buttons a reader came for
@@ -767,6 +783,20 @@ export function render(site, opt = {}) {
   }
 
   if (d.about) out.push(`<section class="card rise">${H2('about', W('about'))}${paras(d.about)}</section>`)
+
+  // a portfolio: the work, filtered by tag, each its own page
+  const works = d.works.slice(0, gold ? MAX.works : MAX.worksFree)
+  if (works.length) {
+    const tags = [...new Set(works.flatMap(tagsOf))]
+    out.push(`<section class="card rise" id="works">${H2('works', W('works'))}`)
+    if (tags.length > 1) out.push(`<div class="lfilter wfilter" role="group"><button class="on" data-tag="">${W('all')}</button>${tags.map((t) => `<button data-tag="${esc(t)}">${esc(t)}</button>`).join('')}</div>`)
+    out.push(`<div class="wgrid">${works.map((x) => workCard(x, { site, img })).join('')}</div></section>`)
+  }
+  if (d.quotes.length) {
+    out.push(`<section class="card rise quotes">${H2('quotes', W('quotes'))}`)
+    for (const q of d.quotes) out.push(`<figure><blockquote>${paras(q.q)}</blockquote>${q.who ? `<figcaption>${esc(q.who)}</figcaption>` : ''}</figure>`)
+    out.push('</section>')
+  }
 
   if (d.items.length) {
     const oa = lineOa(c.line)
@@ -936,6 +966,31 @@ function otaBtn(k, u, W) {
 }
 
 /** One listing as a card in the grid: first photo, status, deal, price, facts. */
+function workCard(x, { site, img }) {
+  const sub = [x.client, x.year].filter(Boolean).join(' · ')
+  return `<a class="wcard" href="/${esc(site.name)}/w/${esc(x.id)}" data-tags="${esc(JSON.stringify(tagsOf(x)))}" data-t="work"><figure>` +
+    (x.photos[0] ? `<img src="${esc(img(x.photos[0], true))}" alt="" loading="lazy">` : `<span class="noimg">${ding('nib', 'paper')}</span>`) +
+    `${x.photos.length > 1 ? `<span class="n">${x.photos.length}</span>` : ''}</figure><b>${esc(x.t)}</b>${sub ? `<small>${esc(sub)}</small>` : ''}</a>`
+}
+
+/** A work's own page: the facts, every photo, the words, the link, the other work. */
+function workBody(x, { site, d, W, H2, img, gold }) {
+  const out = []
+  const facts = [['client', x.client], ['year', x.year], ['role', x.role]].filter(([, v]) => v)
+  out.push('<section class="card lfacts rise">')
+  if (facts.length) out.push(`<dl>${facts.map(([k, v]) => `<div><dt>${W('w_' + k)}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>`)
+  if (x.tags) out.push(`<p class="wtags">${tagsOf(x).map((t) => `<a href="/${esc(site.name)}?tag=${encodeURIComponent(t)}#works">${esc(t)}</a>`).join('')}</p>`)
+  if (x.u) out.push(`<div class="tools-row"><a class="btn" data-t="worklink" href="${esc(x.u)}" rel="ugc nofollow noopener">${icon('link')}${W('w_see')}</a></div>`)
+  out.push('</section>')
+  if (x.note) out.push(`<section class="card rise">${H2('about', W('about'))}${paras(x.note)}</section>`)
+  if (x.photos.length > 1) out.push(`<section class="card rise">${H2('photos', W('photos'))}<div class="wshots">${x.photos.map((p) => `<button data-t="photo" data-big="${esc(img(p))}"><img src="${esc(img(p))}" alt="" loading="lazy"></button>`).join('')}</div></section>`)
+  const others = d.works.slice(0, gold ? MAX.works : MAX.worksFree).filter((y) => y.id !== x.id).slice(0, 6)
+  if (others.length) out.push(`<section class="card rise">${H2('works', W('w_more'))}<div class="wgrid">${others.map((y) => workCard(y, { site, img })).join('')}</div>`,
+    `<div class="tools-row"><a class="btn ghost" href="/${esc(site.name)}#works">${icon('list')}${W('w_all')}</a></div></section>`)
+  if (d.msg) out.push(`<section class="card rise"><div class="tools-row"><a class="btn" href="/${esc(site.name)}#message">${icon('mail')}${W('w_ask')}</a></div></section>`)
+  return out.join('')
+}
+
 function listCard(x, { site, W, img, sym }) {
   const facts = [x.beds ? `${W('beds')} ${x.beds}` : '', x.baths ? `${W('baths')} ${x.baths}` : '', x.area ? `${esc(x.area)} ${UNIT_LABEL[x.unit]}` : ''].filter(Boolean).join(' · ')
   const pr = x.p ? (x.deal === 'rent' ? W('perMonth', { p: esc(money(x.p, sym)) }) : esc(money(x.p, sym))) : ''

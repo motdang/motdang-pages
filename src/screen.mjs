@@ -61,7 +61,7 @@ export function textOf(d) {
   return [d.name, d.tagline, d.about, d.place?.addr, d.hours?.note, c.line, c.facebook, c.instagram, c.tiktok, c.youtube, c.web,
     ...(d.items || []).flatMap((i) => [i.n, i.p, i.note]), ...(d.links || []).flatMap((l) => [l.t, l.u]),
     ...(d.cal || []).flatMap((x) => [x.t, x.note]), ...(d.camps || []).flatMap((x) => [x.t, x.note, x.code]), ...(d.svc || []).flatMap((x) => [x.n, x.note]),
-    ...(d.rooms || []).flatMap((x) => [x.n, x.beds, x.note]), ...(d.lists || []).flatMap((x) => [x.t, x.kind, x.note]), ...(d.spots || []).flatMap((x) => [x.n, x.note])]
+    ...(d.rooms || []).flatMap((x) => [x.n, x.beds, x.note]), ...(d.lists || []).flatMap((x) => [x.t, x.kind, x.note]), ...(d.spots || []).flatMap((x) => [x.n, x.note]), ...(d.works || []).flatMap((x) => [x.t, x.client, x.role, x.tags, x.note]), ...(d.quotes || []).flatMap((x) => [x.q, x.who])]
     .filter(Boolean).join('\n')
 }
 

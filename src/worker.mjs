@@ -7,7 +7,7 @@
 //   /feed.json            every live page as data, for motdang.net (search, place pages, maps)
 //   /api/…                the builder's and the pages' calls    /img/…  photos    /s/…  static files
 //   /admin                held and reported pages, Gold slips
-//   /name/calendar.ics    the page's calendar to follow    /name/l/<id>  a listing    /name/room/<id>.ics  a room's taken nights
+//   /name/calendar.ics    the page's calendar to follow    /name/l/<id>  a listing    /name/w/<id>  a portfolio project    /name/room/<id>.ics  a room's taken nights
 //   yourshop.com/         a Gold page at its own address (Cloudflare for SaaS, domain.mjs)
 //   /vendor/ /fonts/ /tiles/ /data/ /front/ /sites/doodle-map/   read from motdang.net, so a page asks one host
 //
@@ -61,7 +61,7 @@ async function route(request, env, ctx) {
   // a Gold page at its own address: the page's paths without its name
   const host = url.hostname.toLowerCase()
   if (!env.DEV_ORIGIN && !/(^|\.)motdang\.net$|^(localhost|127\.0\.0\.1)$|\.workers\.dev$/.test(host)) {
-    const sub = /^\/(sign|contact\.vcf|event\.ics|calendar\.ics|l\/[a-z0-9]{4,12}|room\/[a-z0-9]{4,12}\.ics)?\/?$/.exec(path)
+    const sub = /^\/(sign|contact\.vcf|event\.ics|calendar\.ics|l\/[a-z0-9]{4,12}|w\/[a-z0-9]{4,12}|room\/[a-z0-9]{4,12}\.ics)?\/?$/.exec(path)
     if (sub && m === 'GET') {
       const own = await env.DB.prepare('SELECT name, tier, gold_until FROM site WHERE domain = ? OR domain = ?').bind(host, host.replace(/^www\./, '')).first()
       if (!own || !gold.isGold(own)) return html(notFound(null, request), 404)
@@ -107,7 +107,7 @@ async function route(request, env, ctx) {
   if (path === '/admin' || path.startsWith('/admin/')) return admin(request, env, path.slice(6), url)
   if (path.startsWith('/q/')) return slipPage(request, env, path, url, origin)
 
-  const pm = /^\/([a-z0-9-]{3,30})(\/sign|\/contact\.vcf|\/event\.ics|\/calendar\.ics|\/l\/[a-z0-9]{4,12}|\/room\/[a-z0-9]{4,12}\.ics)?\/?$/.exec(path)
+  const pm = /^\/([a-z0-9-]{3,30})(\/sign|\/contact\.vcf|\/event\.ics|\/calendar\.ics|\/l\/[a-z0-9]{4,12}|\/w\/[a-z0-9]{4,12}|\/room\/[a-z0-9]{4,12}\.ics)?\/?$/.exec(path)
   if (pm && m === 'GET') return page(request, env, ctx, pm[1], pm[2] || '', url, origin)
   return html(notFound(null, request), 404)
 }
@@ -172,6 +172,11 @@ async function page(request, env, ctx, name, sub, url, origin, base) {
     const id = sub.slice(3)
     if (site.tier !== 'gold' || !normalize(site.d).lists.some((x) => x.id === id)) return html(notFound(null, request), 404)
     opt.listing = id
+  }
+  if (sub.startsWith('/w/')) {
+    const id = sub.slice(3)
+    if (!normalize(site.d).works.some((x) => x.id === id)) return html(notFound(null, request), 404)
+    opt.work = id
   }
   if (site.tier === 'gold' && s.status === 'live') {
     const d = normalize(site.d)
@@ -270,9 +275,10 @@ async function find(env, url, origin) {
 }
 
 async function sitemap(env, origin) {
-  const rows = (await env.DB.prepare("SELECT name, updated, tier, gold_until FROM site WHERE status='live'").all()).results.filter((r) => gold.isGold(r))
+  const rows = (await env.DB.prepare("SELECT name, updated, tier, gold_until, d FROM site WHERE status='live'").all()).results.filter((r) => gold.isGold(r))
+  const loc = (u, day) => `<url><loc>${u}</loc><lastmod>${day}</lastmod></url>`
   const body = `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>${origin}/</loc></url>` +
-    rows.map((r) => `<url><loc>${origin}/${r.name}</loc><lastmod>${r.updated.slice(0, 10)}</lastmod></url>`).join('') + '</urlset>'
+    rows.map((r) => { const day = r.updated.slice(0, 10); let works = []; try { works = normalize(JSON.parse(r.d)).works } catch {} return loc(`${origin}/${r.name}`, day) + works.map((x) => loc(`${origin}/${r.name}/w/${x.id}`, day)).join('') }).join('') + '</urlset>'
   return new Response(body, { headers: { 'content-type': 'application/xml', 'cache-control': 'public, max-age=3600' } })
 }
 
@@ -458,19 +464,20 @@ ${s ? `<p>ข้อความถึง ${escHtml(title)} จะส่งสำ
     }
     if (!isGold) d.photos = d.photos.slice(0, MAX_PHOTOS.free)
     // photos named in the page must be this page's own; credits come from the library, not the browser
-    const ids = [...new Set([d.cover, d.card, d.place.snap, ...d.photos].filter(Boolean))]
+    const ids = [...new Set([d.cover, d.card, d.avatar, d.place.snap, ...d.photos].filter(Boolean))]
     d.credits = {}
     if (ids.length) {
       const own = await env.DB.prepare(`SELECT id, credit FROM photo WHERE site_id = ? AND id IN (${ids.map(() => '?').join(',')})`).bind(s.id, ...ids).all()
       const ok = new Map(own.results.map((r) => [r.id, r.credit]))
       if (!ok.has(d.cover)) d.cover = ''
       if (!ok.has(d.card)) d.card = ''
+      if (!ok.has(d.avatar)) d.avatar = ''
       if (!ok.has(d.place.snap)) d.place.snap = ''
       d.photos = d.photos.filter((x) => ok.has(x))
       for (const [id, c] of ok) if (c) { try { d.credits[id] = JSON.parse(c) } catch {} }
     }
     const pool = new Set(d.photos)
-    for (const x of [...(d.rooms || []), ...(d.lists || [])]) if (Array.isArray(x.photos)) x.photos = x.photos.filter((id) => pool.has(id))
+    for (const x of [...(d.rooms || []), ...(d.lists || []), ...(d.works || [])]) if (Array.isArray(x.photos)) x.photos = x.photos.filter((id) => pool.has(id))
     const nd = normalize(d)
     let status = s.status, held = null
     const publish = b.publish === true || s.status !== 'draft'
