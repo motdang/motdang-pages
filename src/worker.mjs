@@ -657,9 +657,10 @@ ${s ? `<p>ข้อความถึง ${escHtml(title)} จะส่งสำ
     await env.MEDIA.put(key, await file.arrayBuffer(), { httpMetadata: { contentType: file.type || 'image/jpeg' }, customMetadata: { v: 'slip' } })
     const r = await gold.checkSlip(env, file, Number(pay.amount))
     if (r.ok) {
-      const until = await gold.grant(env, s.id, pay.months || 12)
+      const until = await gold.grant(env, s.id, pay.months || 12, pay.plan || undefined)
       await env.DB.prepare("UPDATE pay SET status='paid', slip=?, note=?, updated=? WHERE id=?").bind(key, 'slipok ' + r.ref, now, pay.id).run()
       await log(env, s.id, 'gold', 'slipok ' + r.ref)
+      ctx.waitUntil(gold.tellSales(env, { title: JSON.parse(s.d).name || s.name, url: `${origin}/${s.name}`, amount: pay.amount, months: pay.months || 12, plan: pay.plan, how: 'SlipOK' }).catch((e) => console.error(e)))
       return J({ ok: true, tier: 'gold', gold_until: until })
     }
     await env.DB.prepare("UPDATE pay SET status='slip', slip=?, note=?, updated=? WHERE id=?").bind(key, r.why, now, pay.id).run()
@@ -761,8 +762,12 @@ async function admin(request, env, rest, url) {
     if (act === 'photo-ok') await releasePhoto(env, id)
     if (act === 'gold') await gold.grant(env, id)
     if (act === 'pay-ok') {
-      const p = await env.DB.prepare('SELECT site_id, months FROM pay WHERE id = ?').bind(id).first()
-      if (p) { await gold.grant(env, p.site_id, p.months || 12); await env.DB.prepare("UPDATE pay SET status='paid', note=COALESCE(note,'') || ' · by hand', updated=? WHERE id=?").bind(new Date().toISOString(), id).run() }
+      const p = await env.DB.prepare('SELECT pay.site_id, pay.months, pay.plan, pay.amount, site.name, site.d FROM pay JOIN site ON site.id = pay.site_id WHERE pay.id = ?').bind(id).first()
+      if (p) {
+        await gold.grant(env, p.site_id, p.months || 12, p.plan || undefined)
+        await env.DB.prepare("UPDATE pay SET status='paid', note=COALESCE(note,'') || ' · by hand', updated=? WHERE id=?").bind(new Date().toISOString(), id).run()
+        await gold.tellSales(env, { title: JSON.parse(p.d || '{}').name || p.name, url: `${url.origin}/${p.name}`, amount: p.amount, months: p.months || 12, plan: p.plan, how: 'checked by hand' }).catch((e) => console.error(e))
+      }
     }
     if (act === 'pay-no') await env.DB.prepare("UPDATE pay SET status='refused', updated=? WHERE id=?").bind(new Date().toISOString(), id).run()
     await log(env, id, 'admin-' + act, '')

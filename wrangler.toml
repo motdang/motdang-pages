@@ -56,6 +56,7 @@ zone_name = "motdang.net"
 [vars]
 GOLD_THB = "3000"
 HOTEL_THB = "555" # a month, for a page that takes room bookings (Nan 2026-10-14)
+HOTEL_YEAR_THB = "5550" # the hotel year paid up front, twelve months for ten (2026-10-15)
 MAIL_FROM = "Mot Dang <pages@motdang.net>"
 
 # Secrets (npx wrangler secret put NAME), never in this file:
@@ -64,3 +65,4 @@ MAIL_FROM = "Mot Dang <pages@motdang.net>"
 #   RESEND_KEY      copies of readers' messages to makers who confirmed an email
 #   PROMPTPAY       the PromptPay id Gold is paid to
 #   SLIPOK_KEY, SLIPOK_BRANCH   the slip check; Gold slips wait at /admin without them
+#   DISCORD_SALES   webhook of the team's #minisites channel; each paid plan is posted there

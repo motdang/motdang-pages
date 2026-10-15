@@ -7,11 +7,13 @@ import { promptPayPayload } from './promptpay.mjs'
 
 export const GOLD_THB = 3000
 export const HOTEL_THB = 555 // a month, for a page that takes room bookings (Nan 2026-10-14: "555/month")
+export const HOTEL_YEAR_THB = 5550 // the hotel year paid up front: twelve months for the price of ten (2026-10-15)
 
-/** The two ways to pay: the Gold year (links to Agoda and Booking.com) and the hotel month (direct bookings). */
+/** The ways to pay: the Gold year (links to Agoda and Booking.com), the hotel month and the hotel year (direct bookings). */
 export const PLANS = (env) => ({
   gold: { plan: 'gold', baht: Number(env.GOLD_THB) || GOLD_THB, months: 12, hotel: false },
   hotel: { plan: 'hotel', baht: Number(env.HOTEL_THB) || HOTEL_THB, months: 1, hotel: true },
+  hotelyear: { plan: 'hotel', baht: Number(env.HOTEL_YEAR_THB) || HOTEL_YEAR_THB, months: 12, hotel: true },
 })
 /** The plan asked for, else the hotel month for a page with rooms and the Gold year for the rest. */
 export function planOf(env, d, want) {
@@ -34,7 +36,7 @@ export async function start(env, siteId, rand, plan = planOf(env, null)) {
     for (let i = 0; i < 99 && used.has(`${base}.${String(tail).padStart(2, '0')}`); i++) tail = (tail % 99) + 1
     amount = `${base}.${String(tail).padStart(2, '0')}`
     const now = new Date().toISOString()
-    await env.DB.prepare('INSERT INTO pay (id, site_id, amount, status, created, updated, months) VALUES (?,?,?,?,?,?,?)').bind(rand(12), siteId, amount, 'open', now, now, plan.months).run()
+    await env.DB.prepare('INSERT INTO pay (id, site_id, amount, status, created, updated, months, plan) VALUES (?,?,?,?,?,?,?,?)').bind(rand(12), siteId, amount, 'open', now, now, plan.months, plan.plan).run()
   }
   const satang = Math.round(Number(amount) * 100)
   const payload = env.PROMPTPAY ? promptPayPayload({ payeeId: env.PROMPTPAY, satang, merchantName: 'Mot Dang', ref: 'GOLD' }) : ''
@@ -58,14 +60,23 @@ export async function checkSlip(env, file, baht) {
 }
 
 /** Gold for `months` (a year unless said) from today, or past the current end. */
-export async function grant(env, siteId, months = 12) {
+export async function grant(env, siteId, months = 12, plan = months === 1 ? 'hotel' : 'gold') {
   const s = await env.DB.prepare('SELECT gold_until FROM site WHERE id = ?').bind(siteId).first()
   const from = s?.gold_until && s.gold_until > new Date().toISOString() ? new Date(s.gold_until) : new Date()
   from.setUTCMonth(from.getUTCMonth() + months)
   const until = from.toISOString().slice(0, 10)
-  await env.DB.prepare("UPDATE site SET tier='gold', gold_until=?, trial=0, plan=? WHERE id=?").bind(until, months === 1 ? 'hotel' : 'gold', siteId).run()
+  await env.DB.prepare("UPDATE site SET tier='gold', gold_until=?, trial=0, plan=? WHERE id=?").bind(until, plan, siteId).run()
   return until
 }
 
 /** Is the page Gold today? */
 export const isGold = (s) => s?.tier === 'gold' && (!s.gold_until || s.gold_until >= new Date().toISOString().slice(0, 10))
+
+/** A paid plan, posted to the team's sales channel when DISCORD_SALES is set. */
+export async function tellSales(env, { title, url, amount, months, plan, how }) {
+  if (!env.DISCORD_SALES) return 'off'
+  const what = plan === 'hotel' ? (months === 1 ? 'Hotel month' : 'Hotel year') : 'Gold year'
+  const r = await fetch(env.DISCORD_SALES, { method: 'POST', headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ username: 'motdang sales', content: `💰 **${what}** · ฿${amount} · ${title}\n${url} · ${how}`, allowed_mentions: { parse: [] } }) })
+  return r.ok ? 'sent' : 'discord ' + r.status
+}

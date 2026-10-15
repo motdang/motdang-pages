@@ -1130,7 +1130,7 @@ async function drawGold() {
   const rooms = S.d.rooms.length > 0
   const want = S.payPlan || (rooms && (S.trial || S.plan === 'hotel') ? 'hotel' : 'gold')
   const needHotel = rooms && S.plan !== 'hotel'
-  if (isGold() && !S.trial && !(needHotel && S.payPlan === 'hotel')) {
+  if (isGold() && !S.trial && !(needHotel && /^hotel/.test(S.payPlan || ''))) {
     tb.innerHTML = head + `<p class="goldon">★ ${esc(ui(S.lang, 'g_on').replace('{d}', S.goldUntil || ''))}</p>` +
       (needHotel ? `<p style="text-align:center"><button class="go" id="tohotel">${esc(ui(S.lang, 'g_hotelGo').replace('{p}', new Intl.NumberFormat(S.lang).format(S.plans?.hotel?.baht || 555)))}</button></p>` : '') + domainBox()
     dingbats(['signals', 'classic', 'curious'])
@@ -1138,12 +1138,12 @@ async function drawGold() {
     const th = $('#tohotel'); if (th) th.onclick = () => { S.payPlan = 'hotel'; drawGold() }
     return
   }
-  const pick = rooms && S.plans ? `<div class="field" style="text-align:center">${seg('payplan', want, [['gold', esc(ui(S.lang, 'g_planGold').replace('{p}', new Intl.NumberFormat(S.lang).format(S.plans.gold.baht)))], ['hotel', esc(ui(S.lang, 'g_planHotel').replace('{p}', new Intl.NumberFormat(S.lang).format(S.plans.hotel.baht)))]])}</div>` : ''
+  const pick = rooms && S.plans ? `<div class="field" style="text-align:center">${seg('payplan', want, [['gold', esc(ui(S.lang, 'g_planGold').replace('{p}', new Intl.NumberFormat(S.lang).format(S.plans.gold.baht)))], ['hotel', esc(ui(S.lang, 'g_planHotel').replace('{p}', new Intl.NumberFormat(S.lang).format(S.plans.hotel.baht)))], ...(S.plans.hotelyear ? [['hotelyear', esc(ui(S.lang, 'g_planHotelYear').replace('{p}', new Intl.NumberFormat(S.lang).format(S.plans.hotelyear.baht)))]] : [])])}</div>` : ''
   try { r = await call('POST', 'gold', { plan: want }) } catch { tb.innerHTML = head + `<p class="hint">${T('e_net')}</p>`; return }
   if (r.tier === 'gold' && !S.trial) { S.tier = 'gold'; S.goldUntil = r.gold_until; return drawGold() }
   const tail = String(r.amount).split('.')[1] || '00'
   const nf = new Intl.NumberFormat(S.lang)
-  tb.innerHTML = head + (S.trial ? `<p class="goldon">★ ${esc(ui(S.lang, 'g_trial').replace('{d}', S.goldUntil || ''))}</p>` : '') + pick + `<section class="goldpay"><p class="price">${esc(ui(S.lang, r.months === 1 ? 'g_priceMonth' : 'g_price').replace('{p}', nf.format(r.baht)))}</p>${r.hotel ? `<p class="hint">${T('g_hotelWhy')}</p>` : ''}
+  tb.innerHTML = head + (S.trial ? `<p class="goldon">★ ${esc(ui(S.lang, 'g_trial').replace('{d}', S.goldUntil || ''))}</p>` : '') + pick + `<section class="goldpay"><p class="price">${esc(ui(S.lang, r.months === 1 ? 'g_priceMonth' : 'g_price').replace('{p}', nf.format(r.baht)))}</p>${r.hotel ? `<p class="hint">${T(r.months === 1 ? 'g_hotelWhy' : 'g_hotelYearWhy')}</p>` : ''}
     ${r.payload ? `<div class="ppqr">${qrSvg(r.payload, { dark: '#0e3d78', light: '#ffffff', label: 'PromptPay' })}<b>฿${esc(nf.format(Number(r.amount)))}</b><span>PromptPay</span></div>
       <p class="hint">${esc(ui(S.lang, 'g_scan').replace('{s}', tail))}</p>
       <label class="pick goldslip">${icon('download')}${T('g_slip')}<input type="file" accept="image/*" id="slip"></label><p id="slipstate" class="pinstate"></p>` : `<p class="hint">${T('g_nopp')}</p>`}</section>` + (isGold() ? domainBox() : '')
@@ -1157,7 +1157,7 @@ async function drawGold() {
     const fd = new FormData(); fd.append('slip', f, 'slip.jpg')
     try {
       const res = await call('POST', 'gold/slip', fd, true)
-      if (res.tier === 'gold') { S.tier = 'gold'; S.goldUntil = res.gold_until; S.trial = false; S.plan = want; S.hotel = want === 'hotel'; S.payPlan = ''; toast(ui(S.lang, 'g_thanks')); drawGold() }
+      if (res.tier === 'gold') { S.tier = 'gold'; S.goldUntil = res.gold_until; S.trial = false; S.plan = want === 'gold' ? 'gold' : 'hotel'; S.hotel = want !== 'gold'; S.payPlan = ''; toast(ui(S.lang, 'g_thanks')); drawGold() }
       else { st.className = 'pinstate ok'; st.innerHTML = `${icon('check')}${T('g_wait')}` }
     } catch { st.textContent = ui(S.lang, 'e_net') }
   }
