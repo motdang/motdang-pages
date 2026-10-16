@@ -501,10 +501,16 @@ function price(p, cur) {
   return /^[\d.,\s–-]+$/.test(p) ? (CURRENCY[cur] || '') + p : p
 }
 
+/** A library title read as words: no camera file number in front ("DFC 4431 …", "IMG_2041 …"), no underscores. */
+export function tidyTitle(t) {
+  const s = String(t || '').replace(/_/g, ' ').replace(/^(?:dfc|dsc[fn]?|img|pxl|dji|gopr|mvimg|p|_?mg)\s*[-_ ]?\d{3,}[a-z]?\b[\s\-–—.,:]*/i, '').replace(/\s{2,}/g, ' ').trim()
+  return s ? s[0].toUpperCase() + s.slice(1) : String(t || '')
+}
+
 /** "Title — Creator · Public domain", linked to its source. */
 function creditLine(c) {
   if (!c) return ''
-  const t = esc(c.title || '')
+  const t = esc(tidyTitle(c.title))
   return `${c.src ? `<a href="${esc(c.src)}" rel="nofollow noopener">${t}</a>` : t}${c.by ? ' — ' + esc(c.by) : ''} · ${c.licenseUrl ? `<a href="${esc(c.licenseUrl)}" rel="nofollow noopener">${esc(c.license)}</a>` : esc(c.license)}`
 }
 
@@ -763,7 +769,7 @@ export function render(site, opt = {}) {
     out.push(`<section class="card rise">${H2('photos', W('photos'))}<div class="gallery">`)
     for (const p of gallery) {
       const cr = d.credits[p]
-      out.push(`<figure><button data-t="photo" data-big="${esc(img(p))}"${cr ? ` data-cap="${esc(creditLine(cr))}"` : ''}><img src="${esc(img(p, true))}" alt="${cr ? esc(cr.title) : ''}" loading="lazy"></button>${cr ? `<figcaption>${creditLine(cr)}</figcaption>` : ''}</figure>`)
+      out.push(`<figure><button data-t="photo" data-big="${esc(img(p))}"${cr ? ` data-cap="${esc(creditLine(cr))}"` : ''}><img src="${esc(img(p, true))}" alt="${cr ? esc(tidyTitle(cr.title)) : ''}" loading="lazy"></button>${cr ? `<figcaption>${creditLine(cr)}</figcaption>` : ''}</figure>`)
     }
     out.push('</div></section>')
   }
@@ -856,7 +862,7 @@ export function render(site, opt = {}) {
   const pd = {
     lang, name: site.name, title: name, tagline: d.tagline, url, accent, preview: !!opt.preview, gold, look: lookId, main: '',
     bg: /--bg:(#[0-9a-f]+)/i.exec(look.vars)?.[1], ink: /--ink:(#[0-9a-f]+)/i.exec(look.vars)?.[1], cover: d.cover ? img(d.cover) : '',
-    coverCredit: d.cover && d.credits[d.cover] ? `${d.credits[d.cover].title} — ${d.credits[d.cover].by} · ${d.credits[d.cover].license}` : '',
+    coverCredit: d.cover && d.credits[d.cover] ? `${tidyTitle(d.credits[d.cover].title)} — ${d.credits[d.cover].by} · ${d.credits[d.cover].license}` : '',
     north: hasPin && pl.lat > 17 && pl.lat < 20.6 && pl.lng > 97.3 && pl.lng < 101.8,
     fams: [...new Set(out.join('').match(/data-dingbat="([a-z0-9-]+)"/g)?.map((m) => DINGBATS[m.slice(14, -1)]).filter(Boolean) || [])],
     tz, sym, langs, hl: opt.hl || '', home, listing: L ? L.id : '', lnames: Object.fromEntries(langs.map((l) => [l, PAGE_LANGS[l]])),

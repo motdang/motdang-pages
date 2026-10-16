@@ -18,7 +18,7 @@ const W = {
     putOnline: 'ขึ้นออนไลน์เลย', s2ph: 'ชื่อร้านหรือชื่อคุณ',
     k_stay: 'ที่พัก',
     bk: "สตูดิโอรูป", b_path: "ซ้ายคือรูปจากมือถือ ขวาคือสีน้ำ", b_pai: "ทุ่งนาที่ปาย พิมพ์แบบริโซ่", b_wat: "วัดเชียงมั่น เป็นลายรดน้ำ", b_map: "เชียงใหม่ ปี 2433 ทุกหน้าเว็บมีแผนที่วาดมือ", picH: "รูปมืด กลายเป็นรูปสวย", picSub: "ทุกหน้าเว็บมีสตูดิโอรูป แตะเลือกแบบ รูปข้างล่างตั้งใจให้มืดและเบลอ", s_raw: "รูปเดิม", s_rawP: "มืดและเบลอ", s_fix: "แก้แสง", s_fixP: "แสงและสีกลับมา", s_ink: "ลายเส้นปากกา", s_inkP: "เส้นและแรเงา", s_wash: "สีน้ำ", s_washP: "สีซึมที่ขอบ", s_riso: "พิมพ์ริโซ่", s_risoP: "หมึกสองสี เป็นจุด", s_gold: "ลายรดน้ำ", s_goldP: "ทองบนพื้นดำ", s_pop: "การ์ตูน", s_popP: "สีจัด เส้นหนา", s_doodle: "วาดเล่น", s_doodleP: "สีสดใส เส้นเขียนมือ", s_mural: "ภาพฝาผนังวัด", s_muralP: "สีดินบนปูนเก่า", s_cyan: "พิมพ์เขียว", s_cyanP: "น้ำเงินเข้ม ภาพพิมพ์จากแดด", mkH: "ไม่มีรูปเลย?", mkP: "ประกอบภาพปกหรือรูปโปรไฟล์เอง: สี ลาย ไอคอนหนึ่งใน 267 แบบ และชื่อของคุณ", mkGo: "อีกแบบ", t_work: "พอร์ตผลงาน", t_workP: "ผลงานแต่ละชิ้นมีหน้าของตัวเอง กรองตามแท็ก พร้อมคำพูดจากลูกค้า", t_face: "รูปโปรไฟล์", t_faceP: "หน้าคุณ โลโก้ หรือประกอบเอง วางข้างชื่อ", f9: "สตูดิโอรูป รูปโปรไฟล์ พอร์ตผลงาน 6 ชิ้น", pics: "รูป",
-    stayH: 'โรงแรม เกสต์เฮาส์: รับจองเอง', staySub: 'ห้องพัก ปฏิทินคืนว่าง ปฏิทิน Airbnb · Booking.com · Agoda ตรงกันทุก 30 นาที แขกจ่ายเข้าพร้อมเพย์หรือลิงก์ของคุณ', calcNight: 'ราคาต่อคืน', calcNights: 'คืนที่ขายผ่านแอปต่อเดือน', calcOta: 'ค่าคอม 15%', calcFlat: 'ทองสำหรับโรงแรม', mo: 'ต่อเดือน', hotelPrice: 'โรงแรมที่รับจองห้อง: ฿{p} ต่อเดือน', calcKeep: 'เก็บไว้ได้ต่อปี', calcSrc: 'Agoda ราว 15% Booking.com 10–25% ส่วนใหญ่ราว 15%', stayGo: 'ทำหน้าเว็บโรงแรม', yr: 'ต่อปี',
+    stayH: 'โรงแรม เกสต์เฮาส์: รับจองเอง', staySub: 'ห้องพัก ปฏิทินคืนว่าง ปฏิทิน Airbnb · Booking.com · Agoda ตรงกันทุก 30 นาที แขกจ่ายเข้าพร้อมเพย์หรือลิงก์ของคุณ', calcNight: 'ราคาต่อคืน', calcNights: 'คืนที่ขายผ่านแอปต่อเดือน', calcOta: 'ค่าคอม 15%', calcFlat: 'ทองสำหรับโรงแรม', mo: 'ต่อเดือน', hotelPrice: 'โรงแรมที่รับจองห้อง: ฿{p} ต่อเดือน', calcKeep: 'เก็บไว้ได้ต่อปี', calcSrc: 'Agoda ราว 15% Booking.com 10–25% ส่วนใหญ่ราว 15%', stayGo: 'ทำหน้าเว็บโรงแรม', yr: 'ต่อปี', or: 'หรือ', free2: 'ฟรี 2 เดือน',
     make: 'ทำเว็บของฉัน', kicker: 'มดแดง · เว็บของคุณเอง', h1: 'ร้านของคุณ <em>วาดเสร็จ</em> ขึ้นเว็บในห้านาที',
     lead: 'คนหาร้านคุณจากมือถือ ให้เขาเจอหน้าที่สวย โทรได้ แอดไลน์ได้ เรียก Grab มาถึงหน้าร้าน แล้วคุณเห็นว่าใครมาบ้าง',
     tryLabel: 'พิมพ์ชื่อร้านของคุณ แล้วดูภาพวาด', tryGo: 'ทำเว็บนี้เลย', tryPh: 'ร้านของคุณ', tapSky: 'แตะภาพ: เช้า เย็น กลางคืน',
@@ -40,11 +40,11 @@ const W = {
     t_lang: 'สิบสองภาษา', t_langP: 'ป้ายบนหน้าเว็บเป็นภาษาที่คุณเลือก',
     t_pics: 'รูปฟรี มีเครดิต', t_picsP: 'รูปสาธารณสมบัติจาก Wikimedia Commons, Cleveland Museum of Art และ Openverse ใส่เครดิตให้ทุกรูป',
     looksH: 'เก้าแบบ เลือกที่ใช่', looksSub: 'แตะภาพวาดในแต่ละแบบ ขยับได้ทุกอัน',
-    tiersH: 'ฟรี หรือ ทอง', freeH: 'ฟรี', goldH: 'ทอง', makeFree: 'เริ่มฟรี', makeGold: 'เริ่มเลย ทองฟรี 30 วันแรก', perYear: 'ต่อปี',
+    tiersH: 'ฟรี หรือ ทอง', freeH: 'ฟรี', goldH: 'ทอง', makeFree: 'เริ่มฟรี', makeGold: 'เริ่มเลย ทองฟรี 30 วันแรก', perYear: 'ต่อปี', goldMore: 'และอีก {n} อย่าง',
     goldFine: 'จ่ายด้วยพร้อมเพย์ในตัวทำเว็บ ส่งสลิป แล้วเปิดทอง',
     f1: 'หน้าเว็บที่ sites.motdang.net/ชื่อคุณ', f2: 'ภาพวาดร้าน แผนที่วาดมือ รูปวาดขยับได้', f3: 'ไลน์ Grab โทร นำทาง สั่งอาหาร', f4: 'กล่องข้อความ และสำเนาทางอีเมล',
     f5: 'สถิติคนเข้าชม 30 วัน', f6: 'รูป 12 รูป รูปฟรีมีเครดิต', f7: 'แชร์ คิวอาร์ รูปสตอรี่ ป้าย A4', f8: 'ปฏิทิน แผนที่สามแบบ ดิงแบตทั้งคลัง',
-    liveH: '{n} เว็บออนไลน์แล้ว ใน {c} ประเทศ', allPages: 'ดูเว็บทั้งหมด', random: 'สุ่มเว็บ',
+    liveH: '{n} เว็บออนไลน์แล้ว ใน {c} ประเทศ', liveH1: '{n} เว็บออนไลน์แล้ว', liveFew: 'เว็บที่ออนไลน์แล้ว', allPages: 'ดูเว็บทั้งหมด', random: 'สุ่มเว็บ',
     howH: 'สามขั้น ห้านาที', step1: 'เลือกว่าทำเพื่ออะไร', step2: 'ตั้งชื่อ ได้ที่อยู่เว็บ', step3: 'เลือกแบบ กดขึ้นออนไลน์',
     t_sign: 'ป้ายพิมพ์ได้', t_signP: 'ป้าย A4 มีคิวอาร์หน้าเว็บ คิวอาร์ไลน์ เบอร์ และเวลาเปิด ติดหน้าร้านได้เลย', t_gold: 'ทอง', t_goldP: 'แบบลายคำทอง ขึ้น Google รูปมากขึ้น วิดีโอ และที่โปรดของคุณบนแผนที่',
     ex: 'ตัวอย่าง',
@@ -54,7 +54,7 @@ const W = {
     putOnline: 'Put it online', s2ph: 'Your shop or your name',
     k_stay: 'Guesthouse',
     bk: "Picture studio", b_path: "A phone photo on the left. Watercolour on the right.", b_pai: "Rice fields in Pai, printed in riso.", b_wat: "Wat Chiang Man, in gold lacquer.", b_map: "Chiang Mai in 1890. Every page gets a drawn map.", picH: "A dim photo becomes a good picture", picSub: "Every page has a picture studio. Tap a style. The photo below is dim and soft on purpose.", s_raw: "The photo", s_rawP: "dim and soft", s_fix: "Fixed", s_fixP: "light and colour put right", s_ink: "Pen and ink", s_inkP: "lines and hatching", s_wash: "Watercolour", s_washP: "washes that pool at the edges", s_riso: "Riso print", s_risoP: "two inks, in dots", s_gold: "Gold lacquer", s_goldP: "gold on black, as lai rot nam", s_pop: "Comic", s_popP: "loud colours, fat lines", s_doodle: "Doodle", s_doodleP: "bright flats, hand-drawn lines", s_mural: "Temple mural", s_muralP: "earth colours on old plaster", s_cyan: "Sun print", s_cyanP: "deep blue, as a print made by the sun", mkH: "No photo at all?", mkP: "Build a cover or an avatar from parts: a colour, a pattern, one of 267 dingbats, your name.", mkGo: "Another", t_work: "Portfolio", t_workP: "Your work, each project on its own page, filtered by tag, with what clients said.", t_face: "Avatar", t_faceP: "Your face, your logo, or one built from parts, beside your name.", f9: "Picture studio, an avatar, a portfolio of 6 projects", pics: "Pictures",
-    stayH: 'Hotels and guesthouses: take your own bookings', staySub: 'Rooms, a calendar of nights, Airbnb · Booking.com · Agoda calendars kept in step every 30 minutes, guests paying your PromptPay or your own link.', calcNight: 'Price a night', calcNights: 'Nights sold through apps a month', calcOta: 'Commission at 15%', calcFlat: 'Gold for hotels', mo: 'a month', hotelPrice: 'Hotels taking room bookings: ฿{p} a month', calcKeep: 'Kept in a year', calcSrc: 'Agoda about 15%; Booking.com 10–25%, most often about 15%.', stayGo: 'Make a hotel page', yr: 'a year',
+    stayH: 'Hotels and guesthouses: take your own bookings', staySub: 'Rooms, a calendar of nights, Airbnb · Booking.com · Agoda calendars kept in step every 30 minutes, guests paying your PromptPay or your own link.', calcNight: 'Price a night', calcNights: 'Nights sold through apps a month', calcOta: 'Commission at 15%', calcFlat: 'Gold for hotels', mo: 'a month', hotelPrice: 'Hotels taking room bookings: ฿{p} a month', calcKeep: 'Kept in a year', calcSrc: 'Agoda about 15%; Booking.com 10–25%, most often about 15%.', stayGo: 'Make a hotel page', yr: 'a year', or: 'or', free2: '2 months free',
     make: 'Make my page', kicker: 'Mot Dang · your own page', h1: 'Your shop, <em>drawn</em> and online in five minutes',
     lead: 'People look for you on their phones. Give them a page worth landing on: call, add you on LINE, send a Grab to your door, and you see who came.',
     tryLabel: 'Type your shop’s name and watch it drawn', tryGo: 'Make this page', tryPh: 'Your Shop', tapSky: 'Tap the drawing: morning, evening, night',
@@ -76,11 +76,11 @@ const W = {
     t_lang: 'Twelve languages', t_langP: 'The labels on your page, in the language you pick.',
     t_pics: 'Free pictures, credited', t_picsP: 'Public-domain pictures from Wikimedia Commons, the Cleveland Museum of Art and Openverse, each one credited.',
     looksH: 'Nine looks. Pick yours.', looksSub: 'Tap the drawing on each one; they all move.',
-    tiersH: 'Free, or Gold', freeH: 'Free', goldH: 'Gold', makeFree: 'Start free', makeGold: 'Start: the first 30 days are Gold', perYear: 'a year',
+    tiersH: 'Free, or Gold', freeH: 'Free', goldH: 'Gold', makeFree: 'Start free', makeGold: 'Start: the first 30 days are Gold', perYear: 'a year', goldMore: 'And {n} more',
     goldFine: 'Pay with PromptPay inside the page maker, send the slip, and Gold turns on.',
     f1: 'Your page at sites.motdang.net/yourname', f2: 'Your place drawn, a hand-drawn map, moving drawings', f3: 'LINE, Grab, call, directions, food orders', f4: 'Messages, with copies by email',
     f5: '30 days of traffic', f6: '12 photos, plus free credited pictures', f7: 'Share, QR, story picture, A4 sign', f8: 'A calendar, three map looks, the whole dingbat library',
-    liveH: '{n} pages online in {c} countries', allPages: 'See every page', random: 'A page at random',
+    liveH: '{n} pages online in {c} countries', liveH1: '{n} pages online', liveFew: 'Pages already online', allPages: 'See every page', random: 'A page at random',
     howH: 'Three steps, five minutes', step1: 'Pick what it is for', step2: 'Name it and get your address', step3: 'Pick a look and put it online',
     t_sign: 'A sign to print', t_signP: 'An A4 sign with your page’s QR, your LINE QR, phone and hours, for the counter or the door.', t_gold: 'Gold', t_goldP: 'Gold leaf looks, Google, more photos, a video, and your favourite places on your map.',
     ex: 'Example',
@@ -90,7 +90,7 @@ const W = {
     putOnline: 'အွန်လိုင်းတင်မယ်', s2ph: 'ဆိုင်အမည် သို့မဟုတ် သင့်အမည်',
     k_stay: 'တည်းခိုခန်း',
     bk: "ဓာတ်ပုံစတူဒီယို", b_path: "ဘယ်ဘက်မှာ ဖုန်းဓာတ်ပုံ။ ညာဘက်မှာ ရေဆေး။", b_pai: "ပိုင်မြို့က စပါးခင်းတွေ၊ ရီဆိုပုံနှိပ်နဲ့။", b_wat: "ရွှေယွန်းနဲ့ ဝပ်ချင်းမန်ဘုရား။", b_map: "၁၈၉၀ ခုနှစ်က ချင်းမိုင်။ စာမျက်နှာတိုင်းမှာ ရေးဆွဲထားတဲ့ မြေပုံပါတယ်။", picH: "မှုန်ဝါးတဲ့ဓာတ်ပုံက ပုံကောင်းတစ်ပုံ ဖြစ်လာတယ်", picSub: "စာမျက်နှာတိုင်းမှာ ဓာတ်ပုံစတူဒီယိုပါတယ်။ စတိုင်တစ်ခုကို နှိပ်ပါ။ အောက်ကဓာတ်ပုံက တမင်တကာ မှုန်ဝါးပျော့ပျောင်းထားတာပါ။", s_raw: "ဓာတ်ပုံ", s_rawP: "မှုန်ဝါးပြီး ပျော့ပျောင်းတယ်", s_fix: "ပြင်ထားပြီး", s_fixP: "အလင်းနဲ့ အရောင်ကို မှန်အောင်လုပ်ထားတယ်", s_ink: "မှင်နဲ့ ဘောပင်", s_inkP: "မျဉ်းကြောင်းတွေနဲ့ အရိပ်ခြယ်တာ", s_wash: "ရေဆေး", s_washP: "အနားတွေမှာ စုနေတဲ့ ရေဆေးခြယ်ချက်တွေ", s_riso: "ရီဆိုပုံနှိပ်", s_risoP: "မှင်နှစ်ရောင်၊ အစက်တွေနဲ့", s_gold: "ရွှေယွန်း", s_goldP: "အနက်ပေါ်မှာ ရွှေ၊ လာယ်ရော့နမ်လိုပဲ", s_pop: "ကာတွန်း", s_popP: "ကျယ်လောင်တဲ့အရောင်တွေ၊ မျဉ်းထူတွေ", s_doodle: "လက်ဆွဲပုံ", s_doodleP: "တောက်ပတဲ့အရောင်၊ လက်ဆွဲမျဉ်းတွေ", s_mural: "ဘုရားနံရံပန်းချီ", s_muralP: "ဟောင်းနွမ်းတဲ့ အင်္ဂတေပေါ်က မြေညိုအရောင်တွေ", s_cyan: "အပြာရောင်ပုံနှိပ်", s_cyanP: "နေရောင်နဲ့ ထုတ်တဲ့ အပြာရင့်ရောင်ပုံနှိပ်", mkH: "ဓာတ်ပုံ လုံးဝမရှိဘူးလား။", mkP: "အစိတ်အပိုင်းတွေကနေ ကာဗာ ဒါမှမဟုတ် ပရိုဖိုင်ပုံတစ်ခု ဆောက်ပါ။ အရောင်တစ်ရောင်၊ ပုံစံတစ်ခု၊ သင်္ကေတပုံ ၂၆၇ ခုထဲက တစ်ခု၊ နာမည်။", mkGo: "နောက်တစ်ခု", t_work: "လက်ရာစုစည်းမှု", t_workP: "ခင်ဗျားရဲ့အလုပ်တွေ၊ ပရောဂျက်တစ်ခုစီက သူ့စာမျက်နှာပေါ်မှာ၊ တဂ်နဲ့ စစ်ထုတ်ထားတယ်၊ ဖောက်သည်တွေပြောတာတွေပါတယ်။", t_face: "ပရိုဖိုင်ပုံ", t_faceP: "ခင်ဗျားရဲ့မျက်နှာ၊ လိုဂို၊ ဒါမှမဟုတ် အစိတ်အပိုင်းတွေကနေ ဆောက်ထားတဲ့ပုံ၊ နာမည်ဘေးမှာ။", f9: "ဓာတ်ပုံစတူဒီယို၊ ပရိုဖိုင်ပုံ၊ ပရောဂျက် ၆ ခုရဲ့ လက်ရာစုစည်းမှု", pics: "ဓာတ်ပုံတွေ",
-    stayH: 'ဟိုတယ်၊ တည်းခိုခန်း- ကိုယ်တိုင်ကြိုတင်မှာယူမှုလက်ခံ', staySub: 'အခန်းများ၊ ညများ၏ပြက္ခဒိန်၊ Airbnb · Booking.com · Agoda ပြက္ခဒိန်များ ၃၀ မိနစ်တိုင်း ညှိ၊ ဧည့်သည်များ သင့် PromptPay သို့ ပေးချေ။', calcNight: 'တစ်ညဈေး', calcNights: 'အက်ပ်မှ တစ်လရောင်းသည့်ည', calcOta: 'ကော်မရှင် 15%', calcFlat: 'ဟိုတယ်အတွက် ရွှေ', mo: 'တစ်လ', hotelPrice: 'အခန်းကြိုတင်မှာယူမှုလက်ခံသော ဟိုတယ်- တစ်လ ฿{p}', calcKeep: 'တစ်နှစ်တွင် ကျန်ရှိ', calcSrc: 'Agoda ~15%; Booking.com 10–25%, များသောအားဖြင့် ~15%', stayGo: 'ဟိုတယ်စာမျက်နှာလုပ်ရန်', yr: 'တစ်နှစ်',
+    stayH: 'ဟိုတယ်၊ တည်းခိုခန်း- ကိုယ်တိုင်ကြိုတင်မှာယူမှုလက်ခံ', staySub: 'အခန်းများ၊ ညများ၏ပြက္ခဒိန်၊ Airbnb · Booking.com · Agoda ပြက္ခဒိန်များ ၃၀ မိနစ်တိုင်း ညှိ၊ ဧည့်သည်များ သင့် PromptPay သို့ ပေးချေ။', calcNight: 'တစ်ညဈေး', calcNights: 'အက်ပ်မှ တစ်လရောင်းသည့်ည', calcOta: 'ကော်မရှင် 15%', calcFlat: 'ဟိုတယ်အတွက် ရွှေ', mo: 'တစ်လ', hotelPrice: 'အခန်းကြိုတင်မှာယူမှုလက်ခံသော ဟိုတယ်- တစ်လ ฿{p}', calcKeep: 'တစ်နှစ်တွင် ကျန်ရှိ', calcSrc: 'Agoda ~15%; Booking.com 10–25%, များသောအားဖြင့် ~15%', stayGo: 'ဟိုတယ်စာမျက်နှာလုပ်ရန်', yr: 'တစ်နှစ်', or: 'သို့မဟုတ်', free2: '၂ လ အခမဲ့',
     make: 'စာမျက်နှာလုပ်ရန်', kicker: 'Mot Dang · သင့်ကိုယ်ပိုင်စာမျက်နှာ', h1: 'သင့်ဆိုင်ကို <em>ပုံဆွဲ</em>ပြီး ငါးမိနစ်အတွင်း အွန်လိုင်းတင်ပါ',
     lead: 'လူတွေက ဖုန်းနဲ့ သင့်ကိုရှာကြတယ်။ ဖုန်းခေါ်၊ LINE ထည့်၊ Grab ခေါ်နိုင်ပြီး ဘယ်သူလာလဲ သင်မြင်ရမယ်။',
     tryLabel: 'သင့်ဆိုင်အမည်ရိုက်ပြီး ပုံဆွဲတာကြည့်ပါ', tryGo: 'ဒီစာမျက်နှာလုပ်ရန်', tryPh: 'သင့်ဆိုင်', tapSky: 'ပုံကိုနှိပ်ပါ- နံနက်၊ ညနေ၊ ည',
@@ -106,10 +106,10 @@ const W = {
     t_map: 'လက်ရေးမြေပုံ', t_mapP: 'မည်သည့်နိုင်ငံမဆို။', t_msg: 'စာများ', t_msgP: 'ဖောက်သည်များ သင့်ထံ စာရေးနိုင်သည်။', t_msg1: 'မနက်ဖြန် ဘယ်အချိန်ဖွင့်လဲ', t_msg2: 'မနက် ၉ နာရီ 🙏',
     t_stats: 'ဘယ်သူလာလဲ', t_statsP: 'တစ်ရက်လျှင်လူ၊ ဘယ်ကလာလဲ၊ ဘာနှိပ်လဲ။', t_share: 'နေရာတိုင်းမျှဝေ', t_shareP: 'LINE, Facebook, QR, စတိုရီပုံ, A4 ဆိုင်းဘုတ်။',
     t_lang: 'ဘာသာ ၁၂ မျိုး', t_langP: 'သင်ရွေးသောဘာသာဖြင့်။', t_pics: 'အခမဲ့ပုံများ', t_picsP: 'Public domain ပုံများ၊ ခရက်ဒစ်ပါ။',
-    looksH: 'ပုံစံ ကိုးမျိုး', looksSub: 'ပုံဆွဲကိုနှိပ်ပါ။', tiersH: 'အခမဲ့ သို့မဟုတ် ရွှေ', freeH: 'အခမဲ့', goldH: 'ရွှေ', makeFree: 'အခမဲ့စတင်ရန်', makeGold: 'စတင်ပြီး ရွှေသို့', perYear: 'တစ်နှစ်',
+    looksH: 'ပုံစံ ကိုးမျိုး', looksSub: 'ပုံဆွဲကိုနှိပ်ပါ။', tiersH: 'အခမဲ့ သို့မဟုတ် ရွှေ', freeH: 'အခမဲ့', goldH: 'ရွှေ', makeFree: 'အခမဲ့စတင်ရန်', makeGold: 'စတင်ပြီး ရွှေသို့', perYear: 'တစ်နှစ်', goldMore: 'နောက်ထပ် {n} ခု',
     goldFine: 'PromptPay ဖြင့်ပေးချေပြီး ပြေစာပို့ပါ။',
     f1: 'sites.motdang.net/သင့်အမည်', f2: 'ဆိုင်ပုံဆွဲ၊ လက်ရေးမြေပုံ', f3: 'LINE, Grab, ဖုန်း, လမ်းညွှန်', f4: 'စာများနှင့် အီးမေးလ်မိတ္တူ', f5: 'ရက် ၃၀ စာရင်း', f6: 'ဓာတ်ပုံ ၁၂ ပုံ', f7: 'မျှဝေ၊ QR၊ A4 ဆိုင်းဘုတ်',
-    liveH: 'နိုင်ငံ {c} ခုတွင် စာမျက်နှာ {n} ခု', allPages: 'စာမျက်နှာအားလုံး', random: 'ကျပန်း',
+    liveH: 'နိုင်ငံ {c} ခုတွင် စာမျက်နှာ {n} ခု', liveH1: 'စာမျက်နှာ {n} ခု အွန်လိုင်းတွင်', liveFew: 'အွန်လိုင်းရှိပြီးသော စာမျက်နှာများ', allPages: 'စာမျက်နှာအားလုံး', random: 'ကျပန်း',
         t_sign: 'ပရင့်ဆိုင်းဘုတ်', t_signP: 'QR နှင့် ဖွင့်ချိန်ပါသော A4 ဆိုင်းဘုတ်။', t_gold: 'ရွှေ', t_goldP: 'ရွှေပုံစံ၊ Google၊ ဓာတ်ပုံပိုများ၊ ဗီဒီယို။',
 howH: 'အဆင့်သုံးဆင့်', step1: 'ဘာအတွက်လဲ ရွေးပါ', step2: 'အမည်ပေးပါ', step3: 'ပုံစံရွေးပြီး အွန်လိုင်းတင်ပါ', ex: 'ဥပမာ',
   },
@@ -118,7 +118,7 @@ howH: 'အဆင့်သုံးဆင့်', step1: 'ဘာအတွက်�
     putOnline: '上线', s2ph: '店名或你的名字',
     k_stay: '民宿',
     bk: "图片工作室", b_path: "左边是手机照片，右边是水彩。", b_pai: "拜县的稻田，孔版印刷。", b_wat: "清曼寺，泰式金漆。", b_map: "1890 年的清迈。每个网页都有手绘地图。", picH: "暗照片，变成好图片", picSub: "每个网页都有图片工作室。点一个样式。下面这张照片是故意调暗、调模糊的。", s_raw: "原图", s_rawP: "又暗又糊", s_fix: "调光", s_fixP: "光线和颜色调好", s_ink: "钢笔线描", s_inkP: "线条和排线", s_wash: "水彩", s_washP: "颜色在边缘晕开", s_riso: "孔版印刷", s_risoP: "两种墨，网点", s_gold: "泰式金漆", s_goldP: "黑底描金", s_pop: "漫画", s_popP: "大色块，粗线条", s_doodle: "涂鸦", s_doodleP: "明亮色块，手绘线条", s_mural: "寺庙壁画", s_muralP: "旧灰泥上的泥土色", s_cyan: "蓝晒", s_cyanP: "深蓝色，像太阳晒出的印片", mkH: "一张照片都没有？", mkP: "用零件拼一个封面或头像：颜色、图案、267 个小图标之一，还有你的名字。", mkGo: "换一个", t_work: "作品集", t_workP: "每个项目都有自己的网页，按标签筛选，附客户评价。", t_face: "头像", t_faceP: "你的脸、你的标志，或用零件拼一个，放在名字旁边。", f9: "图片工作室、头像、6 个项目的作品集", pics: "图片",
-    stayH: '酒店、民宿：自己接预订', staySub: '客房、空房日历，每 30 分钟同步 Airbnb · Booking.com · Agoda 日历，客人付款到你的 PromptPay 或你自己的链接。', calcNight: '每晚价格', calcNights: '每月通过 App 卖出的晚数', calcOta: '15% 佣金', calcFlat: '酒店金卡', mo: '每月', hotelPrice: '接受客房预订的酒店：每月 ฿{p}', calcKeep: '一年多留下', calcSrc: 'Agoda 约 15%；Booking.com 10–25%，多数约 15%。', stayGo: '做酒店网页', yr: '每年',
+    stayH: '酒店、民宿：自己接预订', staySub: '客房、空房日历，每 30 分钟同步 Airbnb · Booking.com · Agoda 日历，客人付款到你的 PromptPay 或你自己的链接。', calcNight: '每晚价格', calcNights: '每月通过 App 卖出的晚数', calcOta: '15% 佣金', calcFlat: '酒店金卡', mo: '每月', hotelPrice: '接受客房预订的酒店：每月 ฿{p}', calcKeep: '一年多留下', calcSrc: 'Agoda 约 15%；Booking.com 10–25%，多数约 15%。', stayGo: '做酒店网页', yr: '每年', or: '或', free2: '免费 2 个月',
     make: '做我的网页', kicker: 'Mot Dang · 你自己的网页', h1: '你的店，<em>画好了</em>，五分钟上线',
     lead: '大家用手机找你。给他们一个值得停留的网页：打电话、加 LINE、叫 Grab 到店门口，还能看到谁来过。',
     tryLabel: '输入店名，看它被画出来', tryGo: '做这个网页', tryPh: '你的店', tapSky: '点一下画：早上、傍晚、夜里',
@@ -135,11 +135,11 @@ howH: 'အဆင့်သုံးဆင့်', step1: 'ဘာအတွက်�
     t_stats: '谁来过', t_statsP: '每天人数、从哪里来、点了什么，程序单独统计。', t_share: '到处分享', t_shareP: 'LINE、Facebook、WhatsApp、二维码、快拍图片、可打印 A4 店招。',
     t_lang: '十二种语言', t_langP: '网页上的标签用你选的语言。', t_pics: '免费图片，带署名', t_picsP: '来自 Wikimedia Commons、克利夫兰艺术博物馆和 Openverse 的公有领域图片，每张都署名。',
     looksH: '九种样式，选你喜欢的', looksSub: '点一下每个样式里的画，都会动。',
-    tiersH: '免费，或金卡', freeH: '免费', goldH: '金卡', makeFree: '免费开始', makeGold: '开始：前 30 天是金卡', perYear: '每年',
+    tiersH: '免费，或金卡', freeH: '免费', goldH: '金卡', makeFree: '免费开始', makeGold: '开始：前 30 天是金卡', perYear: '每年', goldMore: '还有 {n} 项',
     goldFine: '在网页工具里用 PromptPay 付款，发送凭证，金卡就开通。',
     f1: '你的网页：sites.motdang.net/你的名字', f2: '店的手绘、手绘地图、会动的小画', f3: 'LINE、Grab、电话、导航、点餐', f4: '留言，可抄送到邮箱',
     f5: '30 天访问数据', f6: '12 张照片，外加带署名的免费图片', f7: '分享、二维码、快拍图片、A4 店招', f8: '日历、三种地图样式、全部小图标',
-    liveH: '{c} 个国家，{n} 个网页已上线', allPages: '看所有网页', random: '随便看看',
+    liveH: '{c} 个国家，{n} 个网页已上线', liveH1: '{n} 个网页已上线', liveFew: '已上线的网页', allPages: '看所有网页', random: '随便看看',
     t_sign: '可打印的店招', t_signP: 'A4 店招，有网页二维码、LINE 二维码、电话和营业时间，贴在门口。', t_gold: '金卡', t_goldP: '金箔样式、上 Google、更多照片、视频，还有你的地图收藏。',
     howH: '三步，五分钟', step1: '选用途', step2: '起名字，拿到网址', step3: '选样式，上线', ex: '例子',
   },
@@ -295,13 +295,13 @@ function looks() {
 }
 
 // hotels: what 15% commission costs against the flat Gold year
-function calc(price) {
+function calc(price, month) {
   const nf = new Intl.NumberFormat(L), N = $('#cN'), M = $('#cM')
   if (!N) return
   const draw = () => {
     const n = +N.value, m = +M.value, ota = Math.round(n * m * 12 * 0.15), keep = Math.max(0, ota - price)
     $('#cvN').textContent = '฿' + nf.format(n); $('#cvM').textContent = nf.format(m)
-    $('#vOta').textContent = '฿' + nf.format(ota) + ' ' + w('yr'); $('#vFlat').textContent = '฿' + nf.format(price) + ' ' + w('yr') + ' · ฿' + nf.format(Math.round(price / 12)) + ' ' + w('mo')
+    $('#vOta').textContent = '฿' + nf.format(ota) + ' ' + w('yr'); $('#vFlat').textContent = '฿' + nf.format(price) + ' ' + w('yr') + ' (' + w('free2') + ') · ' + w('or') + ' ฿' + nf.format(month) + ' ' + w('mo')
     const top = Math.max(ota, price)
     $('#bOta').style.width = (ota / top) * 100 + '%'; $('#bFlat').style.width = Math.max(1.5, (price / top) * 100) + '%'
     $('#vKeep').textContent = '฿' + nf.format(keep)
@@ -310,10 +310,15 @@ function calc(price) {
   draw()
 }
 
-function tiers(price, hotel) {
-  calc((hotel || 555) * 12)
+function tiers(price, hotel, hotelYear) {
+  // the hotel year is twelve months for the price of ten (src/gold.mjs HOTEL_YEAR_THB)
+  calc(hotelYear || (hotel || 555) * 10, hotel || 555)
   $('#freeList').innerHTML = ['f1', 'f2', 'f3', 'f4', 'f5', 'f6', 'f7', 'f8', 'f9'].map((k, i) => `<li><i data-dingbat="${FREE_DING[i]}" data-look="ink"></i><span>${w(k)}</span></li>`).join('')
-  $('#goldList').innerHTML = GOLD[L].map((t, i) => `<li><i data-dingbat="${GOLD_DING[i]}" data-look="paper"></i><span>${t}</span></li>`).join('')
+  // the three that earn money first (bookings, Google, timed offers), then the rest folded away (2026-10-16)
+  const li = (i) => `<li><i data-dingbat="${GOLD_DING[i]}" data-look="paper"></i><span>${GOLD[L][i]}</span></li>`
+  const TOP = [0, 4, 1], LAST = GOLD[L].length - 1, REST = GOLD[L].map((_, i) => i).filter((i) => !TOP.includes(i) && i !== LAST)
+  $('#goldList').innerHTML = TOP.map(li).join('') + li(LAST) +
+    `<li class="more"><details><summary>${w('goldMore').replace('{n}', REST.length)}</summary><ul>${REST.map(li).join('')}</ul></details></li>`
   $('#goldPrice').innerHTML = `฿${new Intl.NumberFormat(L).format(price)} <small>${w('perYear')}</small><span class="hotelp">${w('hotelPrice').replace('{p}', new Intl.NumberFormat(L).format(hotel || 555))}</span>`
 }
 
@@ -386,7 +391,7 @@ async function cover() {
 function credits() {
   fetch('/s/home/credits.json').then((r) => r.json()).then((cr) => {
     document.querySelectorAll('[data-cr]').forEach((el) => { const c = cr[el.dataset.cr]; if (c) el.innerHTML = `${esc(c.title)} · ${esc(c.license)} · <a href="${esc(c.src)}" rel="noopener">Wikimedia Commons</a>` })
-    $('#credits').innerHTML = w('pics') + ': ' + Object.values(cr).map((c) => `<a href="${esc(c.src)}" rel="noopener">${esc(c.title)}</a> (${esc(c.license)})`).join(' · ')
+    $('#credits').innerHTML = w('pics') + ': ' + Object.entries(cr).filter(([k]) => document.querySelector(`[data-cr="${k}"]`)).map(([, c]) => `<a href="${esc(c.src)}" rel="noopener">${esc(c.title)}</a> (${esc(c.license)})`).join(' · ')
   }).catch(() => {})
 }
 
@@ -414,7 +419,9 @@ let COUNT = null
 function live() {
   if (!COUNT || COUNT.live < 3) { $('#live').hidden = true; return }
   $('#live').hidden = false
-  $('#liveH').textContent = w('liveH').replace('{n}', new Intl.NumberFormat(L).format(COUNT.live)).replace('{c}', new Intl.NumberFormat(L).format(COUNT.countries))
+  // a small count reads as "nobody uses this": name the number from 20 pages up, and countries from 2 up
+  const nf = new Intl.NumberFormat(L)
+  $('#liveH').textContent = COUNT.live < 20 ? w('liveFew') : w(COUNT.countries > 1 ? 'liveH' : 'liveH1').replace('{n}', nf.format(COUNT.live)).replace('{c}', nf.format(COUNT.countries))
   $('#latest').innerHTML = COUNT.latest.map((p) => {
     const Lk = LOOKS[lookOf(p.look)]
     const pic = p.card || p.cover ? `<img src="${p.card || p.cover}" alt="" loading="lazy">` : esc(p.title)
@@ -437,14 +444,22 @@ function words() {
 }
 
 function all() {
-  words(); chips(); phones(); toys(); looks(); tiers(COUNT?.price || 3000, COUNT?.hotel || 555); live(); studio(); cover(); credits(); steps()
+  words(); chips(); phones(); toys(); looks(); tiers(COUNT?.price || 3000, COUNT?.hotel || 555, COUNT?.hotelYear || 5550); live(); studio(); cover(); credits(); steps()
   paint(performance.now())
 }
 all()
 lanterns()
-new IntersectionObserver((es) => { $('#dock').classList.toggle('on', !es[0].isIntersecting) }).observe($('.hero'))
+// the docked button shows once the hero is gone, and steps aside while another "make" button is on screen,
+// so it never sits on top of a heading or a card's own button (2026-10-16)
+{
+  const seen = new Set()
+  const dock = () => $('#dock').classList.toggle('on', !seen.size)
+  const io = new IntersectionObserver((es) => { es.forEach((e) => (e.isIntersecting ? seen.add(e.target) : seen.delete(e.target))); dock() }, { rootMargin: '0px 0px -40px 0px' })
+  io.observe($('.hero'))
+  document.querySelectorAll('main a[href^="/make"], main .go, main button.go').forEach((el) => io.observe(el))
+}
 $('#mshuffle').onclick = () => { cvI++; cover() }
 $('#tn').addEventListener('change', () => cover())
 Promise.all([fetch('/s/home/examples.json').then((r) => r.json()).then((j) => { EXCR = j }).catch(() => {}), avatar()]).then(() => phones())
-fetch('/api/count').then((r) => r.json()).then((j) => { COUNT = j; tiers(j.price, j.hotel); live() }).catch(() => {})
+fetch('/api/count').then((r) => r.json()).then((j) => { COUNT = j; tiers(j.price, j.hotel, j.hotelYear); live() }).catch(() => {})
 dbs.catch(() => {})

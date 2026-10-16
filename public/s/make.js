@@ -680,7 +680,7 @@ function partCard([g, ids, ding0]) {
   }
   return `<section class="part${open ? ' open' : ''}${sm ? '' : ' none'}" data-grp="${g}">
     <button class="phead" data-pg="${g}" aria-expanded="${open}">${thumb(g, ding0)}<span class="pt"><b>${esc(groupTitle(g))}</b><small>${T('gw_' + g)}</small>
-      <em>${sm ? `${icon('check')}${esc(sm)}` : T('sm_none')}</em></span><span class="chev" aria-hidden="true"></span></button>
+      <em>${sm ? `${icon('check')}${esc(sm)}` : T(g === 'words' ? 'sm_words0' : 'sm_none')}</em></span><span class="chev" aria-hidden="true"></span></button>
     ${open ? `<div class="pbody"><div class="ptop"><b>${esc(groupTitle(g))}</b><button class="go small" data-pg="">${T('g_done')}</button></div>
       ${shown.map(sub).join('')}
       ${more.length ? `<div class="adds"><p>${T('g_more')}</p>${more.map((id) => { const [, , t, gold] = secRow(id); return `<button data-add="${id}"${gold ? ' class="g"' : ''}><b>+ ${T(t)}${gold ? ' ★' : ''}</b><small>${T('a_' + id)}</small></button>` }).join('')}</div>` : ''}
@@ -1450,7 +1450,7 @@ function refreshHead() {
   const [g, , d0] = GROUPS.find(([x]) => x === S.part)
   const sm = summary(g), em = card.querySelector('.phead em'), th = card.querySelector('.phead .th')
   card.classList.toggle('none', !sm)
-  if (em) em.innerHTML = sm ? `${icon('check')}${esc(sm)}` : T('sm_none')
+  if (em) em.innerHTML = sm ? `${icon('check')}${esc(sm)}` : T(g === 'words' ? 'sm_words0' : 'sm_none')
   if (th && !th.contains(document.activeElement)) { const t = document.createElement('div'); t.innerHTML = thumb(g, d0); if (t.firstChild.outerHTML !== th.outerHTML) th.replaceWith(t.firstChild) }
 }
 

@@ -4,7 +4,7 @@
 export const W = {
   en: {
     s_pay: 'Get paid', pay_why: 'Your PromptPay number puts a pay button on your page. Customers scan with their bank app and the money goes to your account.', pay_pp: 'PromptPay number (phone or ID card)', pay_price: 'Ticket price', pay_tips: 'Let people send a tip',
-    hk_shop: 'Prices · orders · PromptPay', hk_food: 'Menu · LINE orders · PromptPay', hk_service: 'Bookings · deposits', hk_work: 'Portfolio · hire me', hk_stay: 'Rooms booked direct', hk_homes: 'Listings · viewings', hk_me: 'Links · tips', hk_event: 'Tickets · calendar', hk_group: 'Members · dues',
+    hk_shop: 'Prices · orders · PromptPay', hk_food: 'Menu · LINE orders · PromptPay', hk_service: 'Bookings · deposits', hk_work: 'Portfolio · hire me', hk_stay: 'Rooms booked direct', hk_homes: 'Listings · viewings', hk_amulet: 'Amulets · photos · reserve on LINE', hk_me: 'Links · tips', hk_event: 'Tickets · calendar', hk_group: 'Members · dues',
     why_shop: 'People nearby see what you sell and your prices, order, and pay you by PromptPay.', why_food: 'Customers see your menu, order on LINE and pay you by PromptPay.', why_service: 'People book a time with you and pay a deposit by PromptPay.',
     why_work: 'Your best work in one place. Clients write to you or hire you from the page.', why_stay: 'Guests see your rooms, book direct with you and pay by PromptPay.', why_homes: 'Every home with photos, price and a map. Buyers ask for a viewing on LINE.',
     why_me: 'One page that is you: links, photos, a way to reach you, and tips by PromptPay.', why_event: 'When and where, in their calendar, with tickets paid by PromptPay.', why_group: 'Your group in one place: meetings, a way to join, and dues by PromptPay.',
@@ -19,7 +19,7 @@ export const W = {
   },
   th: {
     s_pay: 'รับเงิน', pay_why: 'ใส่เบอร์พร้อมเพย์ หน้าเว็บจะมีปุ่มจ่ายเงิน ลูกค้าสแกนด้วยแอปธนาคาร เงินเข้าบัญชีคุณ', pay_pp: 'เบอร์พร้อมเพย์ (เบอร์โทรหรือเลขบัตรประชาชน)', pay_price: 'ราคาบัตร', pay_tips: 'ให้คนส่งทิปได้',
-    hk_shop: 'ราคา · สั่งซื้อ · พร้อมเพย์', hk_food: 'เมนู · สั่งทางไลน์ · พร้อมเพย์', hk_service: 'รับจอง · มัดจำ', hk_work: 'ผลงาน · จ้างงาน', hk_stay: 'จองห้องตรงกับคุณ', hk_homes: 'ประกาศ · นัดดูบ้าน', hk_me: 'ลิงก์ · ทิป', hk_event: 'บัตร · ปฏิทิน', hk_group: 'สมาชิก · ค่าสมาชิก',
+    hk_shop: 'ราคา · สั่งซื้อ · พร้อมเพย์', hk_food: 'เมนู · สั่งทางไลน์ · พร้อมเพย์', hk_service: 'รับจอง · มัดจำ', hk_work: 'ผลงาน · จ้างงาน', hk_stay: 'จองห้องตรงกับคุณ', hk_homes: 'ประกาศ · นัดดูบ้าน', hk_amulet: 'พระเครื่อง · รูป · จองทางไลน์', hk_me: 'ลิงก์ · ทิป', hk_event: 'บัตร · ปฏิทิน', hk_group: 'สมาชิก · ค่าสมาชิก',
     why_shop: 'คนแถวนี้เห็นของที่คุณขายและราคา สั่งซื้อ และจ่ายคุณด้วยพร้อมเพย์', why_food: 'ลูกค้าดูเมนู สั่งทางไลน์ และจ่ายคุณด้วยพร้อมเพย์', why_service: 'ลูกค้าจองคิวกับคุณ และจ่ายมัดจำด้วยพร้อมเพย์',
     why_work: 'ผลงานที่ดีที่สุดของคุณอยู่ในที่เดียว ลูกค้าติดต่อหรือจ้างคุณจากหน้านี้ได้เลย', why_stay: 'แขกดูห้องพัก จองตรงกับคุณ และจ่ายด้วยพร้อมเพย์', why_homes: 'บ้านทุกหลังมีรูป ราคา และแผนที่ คนซื้อขอนัดดูทางไลน์',
     why_me: 'หน้าเดียวที่เป็นคุณ ลิงก์ รูป ช่องทางติดต่อ และรับทิปด้วยพร้อมเพย์', why_event: 'วันและที่ เข้าปฏิทินของเขา ซื้อบัตรด้วยพร้อมเพย์', why_group: 'กลุ่มของคุณในที่เดียว นัดพบ วิธีเข้าร่วม และค่าสมาชิกด้วยพร้อมเพย์',
@@ -34,7 +34,7 @@ export const W = {
   },
   my: {
     s_pay: 'ငွေလက်ခံ', pay_why: 'PromptPay နံပါတ်ထည့်ရင် စာမျက်နှာမှာ ငွေပေးခလုတ်ပါမယ်။ ဖောက်သည်က ဘဏ်အက်ပ်နဲ့ စကင်ဖတ်ပြီး ငွေက သင့်အကောင့်ထဲ ရောက်တယ်။', pay_pp: 'PromptPay နံပါတ် (ဖုန်း သို့မဟုတ် မှတ်ပုံတင်)', pay_price: 'လက်မှတ်ဈေး', pay_tips: 'မုန့်ဖိုးပေးခွင့်ပြု',
-    hk_shop: 'ဈေး · အော်ဒါ · PromptPay', hk_food: 'မီနူး · LINE အော်ဒါ · PromptPay', hk_service: 'ကြိုတင်မှာ · စရံ', hk_work: 'လက်ရာ · ငှား', hk_stay: 'အခန်း တိုက်ရိုက်မှာ', hk_homes: 'ကြော်ငြာ · လာကြည့်', hk_me: 'လင့်ခ် · မုန့်ဖိုး', hk_event: 'လက်မှတ် · ပြက္ခဒိန်', hk_group: 'အဖွဲ့ဝင် · အသင်းကြေး',
+    hk_shop: 'ဈေး · အော်ဒါ · PromptPay', hk_food: 'မီနူး · LINE အော်ဒါ · PromptPay', hk_service: 'ကြိုတင်မှာ · စရံ', hk_work: 'လက်ရာ · ငှား', hk_stay: 'အခန်း တိုက်ရိုက်မှာ', hk_homes: 'ကြော်ငြာ · လာကြည့်', hk_amulet: 'ဓာတ်ပုံ · LINE ဖြင့် ကြိုမှာ', hk_me: 'လင့်ခ် · မုန့်ဖိုး', hk_event: 'လက်မှတ် · ပြက္ခဒိန်', hk_group: 'အဖွဲ့ဝင် · အသင်းကြေး',
     why_shop: 'အနီးက လူတွေက သင်ရောင်းတာနဲ့ ဈေးကို မြင်ပြီး မှာကာ PromptPay နဲ့ ပေးတယ်။', why_food: 'ဖောက်သည်က မီနူးကြည့်၊ LINE မှာ မှာပြီး PromptPay နဲ့ ပေးတယ်။', why_service: 'လူတွေက သင့်ဆီ အချိန်ကြိုတင်မှာပြီး PromptPay နဲ့ စရံပေးတယ်။',
     why_work: 'သင့်အကောင်းဆုံး လက်ရာတွေ တစ်နေရာထဲမှာ။ ဖောက်သည်က စာမျက်နှာကနေ ဆက်သွယ်ငှားနိုင်တယ်။', why_stay: 'ဧည့်သည်က အခန်းကြည့်ပြီး သင့်ဆီ တိုက်ရိုက်မှာကာ PromptPay နဲ့ ပေးတယ်။', why_homes: 'အိမ်တိုင်းမှာ ဓာတ်ပုံ၊ ဈေး၊ မြေပုံ။ ဝယ်သူက LINE မှာ လာကြည့်ဖို့ မေးတယ်။',
     why_me: 'သင်ဖြစ်တဲ့ စာမျက်နှာတစ်ခု- လင့်ခ်၊ ဓာတ်ပုံ၊ ဆက်သွယ်ရန်နဲ့ PromptPay မုန့်ဖိုး။', why_event: 'ဘယ်နေ့ ဘယ်နေရာ၊ သူတို့ပြက္ခဒိန်ထဲ၊ PromptPay နဲ့ လက်မှတ်။', why_group: 'သင့်အဖွဲ့ တစ်နေရာထဲ- တွေ့ဆုံပွဲ၊ ဝင်ပုံ၊ PromptPay နဲ့ အသင်းကြေး။',
@@ -49,7 +49,7 @@ export const W = {
   },
   zh: {
     s_pay: '收款', pay_why: '填上 PromptPay 号码，网页就有付款按钮。顾客用银行 App 扫码，钱进你的账户。', pay_pp: 'PromptPay 号码（手机号或身份证号）', pay_price: '票价', pay_tips: '允许别人打赏',
-    hk_shop: '价格 · 下单 · PromptPay', hk_food: '菜单 · LINE 点餐 · PromptPay', hk_service: '预约 · 订金', hk_work: '作品集 · 雇我', hk_stay: '客人直接订房', hk_homes: '房源 · 预约看房', hk_me: '链接 · 打赏', hk_event: '门票 · 日历', hk_group: '会员 · 会费',
+    hk_shop: '价格 · 下单 · PromptPay', hk_food: '菜单 · LINE 点餐 · PromptPay', hk_service: '预约 · 订金', hk_work: '作品集 · 雇我', hk_stay: '客人直接订房', hk_homes: '房源 · 预约看房', hk_amulet: '佛牌 · 照片 · LINE 预订', hk_me: '链接 · 打赏', hk_event: '门票 · 日历', hk_group: '会员 · 会费',
     why_shop: '附近的人看到你卖什么、多少钱，下单，用 PromptPay 付给你。', why_food: '顾客看菜单，在 LINE 上点餐，用 PromptPay 付给你。', why_service: '顾客跟你预约时间，用 PromptPay 付订金。',
     why_work: '你最好的作品放在一处。客户从网页联系你或雇你。', why_stay: '客人看房间，直接跟你订，用 PromptPay 付款。', why_homes: '每套房都有照片、价格和地图。买家在 LINE 上约看房。',
     why_me: '一个代表你的网页：链接、照片、联系方式，还有 PromptPay 打赏。', why_event: '时间地点进他们的日历，用 PromptPay 买票。', why_group: '你的团体在一处：聚会、加入方式，用 PromptPay 交会费。',
