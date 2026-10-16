@@ -68,12 +68,13 @@ export function openAvatar({ name = '', accent = '', kind = 'me', T, onUse, lang
   box.setAttribute('aria-label', String(T?.('av_title') || A.en.av_title).replace(/&[a-z#0-9]+;/gi, ''))
   box.innerHTML = `<div class="box" tabindex="-1">
     <div class="avhead"><h2>${tr('av_title')}</h2><p class="hint">${tr('av_hint')}</p></div>
-    <div class="avprev"><div class="avstage" id="avstage" role="img" aria-label="${esc(name)}"></div>
-      <div class="avq"><button type="button" id="avshuf">${svgIcon(ICON_SHUFFLE)}<span>${tr('av_shuffle')}</span></button><button type="button" class="light" id="avundo" disabled>${svgIcon(ICON_UNDO)}<span>${tr('av_undo')}</span></button></div></div>
-    <div class="avbody" id="avbody">
-      <p class="avlab">${tr('av_start')}</p><div class="avpre" id="avpre">${presetsHtml}</div>
-      <div class="avtabs" role="tablist">${tabsHtml}</div>
-      <div id="avpanel" role="tabpanel"></div>
+    <div class="avmain">
+      <div class="avprev"><div class="avstage" id="avstage" role="img" aria-label="${esc(name)}"></div>
+        <div class="avq"><button type="button" id="avshuf">${svgIcon(ICON_SHUFFLE)}<span>${tr('av_shuffle')}</span></button><button type="button" class="light" id="avundo" disabled>${svgIcon(ICON_UNDO)}<span>${tr('av_undo')}</span></button></div></div>
+      <div class="avbody" id="avbody">
+        <div class="avstart"><p class="avlab">${tr('av_start')}</p><div class="avpre" id="avpre">${presetsHtml}</div></div>
+        <div class="avparts"><div class="avtabs" role="tablist">${tabsHtml}</div><div id="avpanel" role="tabpanel"></div></div>
+      </div>
     </div>
     <div class="avfoot"><button class="back" type="button" id="avno">${tr('back')}</button><button class="go red" type="button" id="avuse">${tr('av_use')}</button></div></div>`
   document.body.appendChild(box)
@@ -125,8 +126,8 @@ export function openAvatar({ name = '', accent = '', kind = 'me', T, onUse, lang
     panel.setAttribute('aria-labelledby', 'avtab-' + id)
     panel.innerHTML = panelHtml()
     refresh()
-    const bar = box.querySelector('.avtabs')
-    if (body.scrollTop > bar.offsetTop) body.scrollTop = bar.offsetTop
+    const parts = box.querySelector('.avparts'), top = parts.getBoundingClientRect().top - body.getBoundingClientRect().top + body.scrollTop
+    if (body.scrollTop > top) body.scrollTop = top
   }
 
   box.addEventListener('click', (e) => {

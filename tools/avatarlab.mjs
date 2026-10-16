@@ -91,11 +91,24 @@ const MCSS = `.mrow{display:flex;align-items:center;gap:4px;margin:0 0 4px}.mlab
 const mpage = (body, w) => page(`<style>${MCSS}</style>` + body, w)
 const ids = (key) => AV_PARTS[key].options.map((x) => x.id)
 
+/** The colour parts together: each swatch row, then the colour on a character. */
+function colourSheet() {
+  const use = { skin: {}, hairc: {}, outc: {}, hatc: { hat: 'cap' }, scarfc: { hair: 'hijab' }, bgc: { bg: 'solid' } }
+  const html = ['<h1>colours</h1><p class="note">Skin, hair, clothes, hat, scarf and background colours: every swatch, then each on a character.</p>']
+  for (const [key, part] of Object.entries(AV_PARTS)) {
+    if (part.type !== 'swatch') continue
+    html.push(`<h2>${esc(key)} (${part.options.length})</h2><div class="row">${part.options.map((o) => `<div class="cell" style="--w:78px"><div class="sw" style="background:${o.c};width:44px;height:44px;margin:0 auto"></div><span>${esc(o.id)}</span></div>`).join('')}</div>`)
+    html.push(`<div class="row">${part.options.map((o) => `<div class="cell" style="--w:78px">${avatarSvg({ ...BASES[key === 'skin' ? 0 : 2], ...use[key], [part.key]: o.id }, 78)}</div>`).join('')}</div>`)
+  }
+  return html.join('')
+}
+
 if (want('parts')) {
   for (const key of Object.keys(AV_PARTS)) {
-    if (ONLY.length && !ONLY.includes(key)) continue
+    if (AV_PARTS[key].type === 'swatch' || (ONLY.length && !ONLY.includes(key))) continue
     await shoot(page(partSheet(key), 1180), `avatar-part-${key}.png`)
   }
+  if (!ONLY.length || ONLY.includes('colours')) await shoot(page(colourSheet(), 1180), 'avatar-part-colours.png')
 }
 
 if (want('random')) {
@@ -122,7 +135,7 @@ if (want('combos')) {
 // ---- the editor sheet in Chrome, at the width of a phone ---------------------------------------------------------------
 
 const MIME = { '.html': 'text/html', '.mjs': 'text/javascript', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.json': 'application/json', '.woff2': 'font/woff2', '.webp': 'image/webp', '.png': 'image/png', '.jpg': 'image/jpeg' }
-const HARNESS = `<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/s/make.css"><link rel="stylesheet" href="/s/avatar.css"></head>
+const HARNESS = `<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="icon" href="data:,"><link rel="stylesheet" href="/s/make.css"><link rel="stylesheet" href="/s/avatar.css"></head>
 <body><header class="bar"><b class="brand">Mot Dang</b></header><div class="app"><h1 class="q">Your page</h1><p class="sub">The builder sits behind the sheet.</p></div>
 <script type="module">
 import { openAvatar } from '/s/avatar-ui.mjs'
@@ -159,32 +172,56 @@ if (want('editor')) {
     return { ctx, p, errs }
   }
   const shots = []
-  const phone = async (qs, tabs, tag) => {
-    const { ctx, p, errs } = await open(390, 844, qs)
-    for (const t of tabs) {
-      await p.click(`#avtab-${t}`)
-      await p.waitForTimeout(150)
-      const file = join(OUT, `.tmp-editor-${tag}-${t}.png`)
-      await p.screenshot({ path: file })
-      shots.push([file, `${tag} ${t}`])
-    }
+  /** One tab, scrolled to a section (or the top), shot as one frame of the phone sheet. */
+  const frame = async (p, tab, sec, tag, caption) => {
+    await p.click(`#avtab-${tab}`)
+    await p.waitForTimeout(120)
+    await p.evaluate((id) => {
+      const body = document.querySelector('#avbody'), bar = document.querySelector('.avtabs')
+      if (!id) { body.scrollTop = 0; return }
+      const s = document.querySelector(`[data-sec="${id}"]`)
+      body.scrollTop += s.getBoundingClientRect().top - body.getBoundingClientRect().top - bar.offsetHeight - 4
+    }, sec)
+    await p.waitForTimeout(120)
+    const file = join(OUT, `.tmp-editor-${tag}-${tab}-${sec || 'top'}.png`)
+    await p.screenshot({ path: file })
+    shots.push([file, caption])
+  }
+  {
+    const { ctx, p, errs } = await open(390, 844, 'lang=en&kind=food')
+    // the first five: the top of each tab; then the sections below the fold
+    for (const t of ['face', 'hair', 'clothes', 'extras', 'back']) await frame(p, t, null, 'en', `en ${t}`)
+    await frame(p, 'face', 'eyes', 'en', 'en face: eyes')
+    await frame(p, 'face', 'mouth', 'en', 'en face: mouth')
+    await frame(p, 'hair', 'hairc', 'en', 'en hair: colour')
+    await frame(p, 'clothes', 'outc', 'en', 'en clothes: colour')
+    await frame(p, 'extras', 'beard', 'en', 'en extras: beard')
+    await frame(p, 'extras', 'hat', 'en', 'en extras: hat')
+    await frame(p, 'back', 'frame', 'en', 'en background: frame')
     if (errs.length) console.log('EDITOR ERRORS', errs)
     await ctx.close()
   }
-  await phone('lang=en&kind=food', ['face', 'hair', 'clothes', 'extras', 'back'], 'en')
-  // scrolled: the lower part of the Extras tab, and the presets row
   {
     const { ctx, p } = await open(390, 844, 'lang=en&kind=food')
-    await p.click('#avtab-extras'); await p.waitForTimeout(100)
-    await p.evaluate(() => { const b = document.querySelector('#avbody'); b.scrollTop = b.scrollHeight })
-    await p.waitForTimeout(150)
-    const file = join(OUT, '.tmp-editor-en-extras-low.png')
-    await p.screenshot({ path: file }); shots.push([file, 'en extras, scrolled down'])
+    await p.click('#avtab-hair'); await p.click('[data-part="hair"][data-v="hijab"]'); await p.waitForTimeout(100)
+    await frame(p, 'hair', 'scarfc', 'en', 'en hair: hijab shows scarf colour')
     await ctx.close()
   }
-  await phone('lang=th&kind=shop&name=%E0%B8%A3%E0%B9%89%E0%B8%B2%E0%B8%99%E0%B8%9B%E0%B9%89%E0%B8%B2%E0%B8%99%E0%B8%B4%E0%B8%94', ['face', 'hair'], 'th')
-  await phone('lang=my&kind=stay', ['face'], 'my')
-  await phone('lang=zh&kind=service', ['clothes'], 'zh')
+  {
+    const { ctx, p } = await open(360, 740, 'lang=th&kind=shop&name=%E0%B8%A3%E0%B9%89%E0%B8%B2%E0%B8%99%E0%B8%9B%E0%B9%89%E0%B8%B2%E0%B8%99%E0%B8%B4%E0%B8%94')
+    for (const t of ['face', 'hair', 'extras']) await frame(p, t, null, 'th', `th 360 px ${t}`)
+    await ctx.close()
+  }
+  {
+    const { ctx, p } = await open(390, 844, 'lang=my&kind=stay')
+    await frame(p, 'face', null, 'my', 'my face')
+    await ctx.close()
+  }
+  {
+    const { ctx, p } = await open(390, 844, 'lang=zh&kind=service')
+    await frame(p, 'clothes', null, 'zh', 'zh clothes')
+    await ctx.close()
+  }
   // press Use: the canvas that goes back
   {
     const { ctx, p } = await open(390, 844, 'lang=en&kind=food')
@@ -216,3 +253,4 @@ if (want('editor')) {
 }
 
 if (browser) await browser.close()
+if (!args.includes('--no-optimize')) execFileSync('python3', [join(ROOT, 'tools/avatarlab-join.py'), '--optimize', OUT], { stdio: 'inherit' })

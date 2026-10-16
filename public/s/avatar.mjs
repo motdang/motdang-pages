@@ -156,7 +156,7 @@ function paint(o) {
   const hat = colourOf(CLOTH, o.hatc, 'red'), out = colourOf(CLOTH, o.outc, 'teal'), scarf = colourOf(CLOTH, o.scarfc, 'red')
   return {
     skin, skinD: mix(skin, '#6a2c12', 0.26), skinL: mix(skin, '#ffffff', 0.3), blush: mix(skin, '#e23d5a', 0.62),
-    hair: hc.c, hairD: mix(hc.c, '#000000', 0.34), hairL: mix(hc.c, '#ffffff', 0.32), brow: hc.brow,
+    hair: hc.c, hairL: mix(hc.c, '#ffffff', 0.32), brow: hc.brow,
     fade: mix(skin, hc.c, 0.6),
     hairS: lumOf(hc.c) < 0.07 ? mix(hc.c, '#ffffff', 0.22) : mix(hc.c, '#000000', 0.34),
     hat, hatD: mix(hat, '#000000', 0.3), hatL: mix(hat, '#ffffff', 0.38), scarf, scarfD: mix(scarf, '#000000', 0.3),
@@ -185,7 +185,6 @@ function earsSvg(o, c) {
   return shape(d, c.skin) + shape(mirror(d), c.skin) + line(inner, W2, c.skinD) + line(mirror(inner), W2, c.skinD)
 }
 
-
 function faceSvg(o, c) {
   const f = FACE[o.face]
   const clip = `${c.id}-face`
@@ -199,8 +198,7 @@ function faceSvg(o, c) {
 // ---- eyes: drawn about their own centre (0, 0), left eye at (79, 97); the right is the mirror -------------
 
 const EYE_ALMOND = 'M-9.5 -0.8C-6 -6.8 3.5 -7.2 9.4 2.4C4.4 7 -5.5 6.8 -9.5 -0.8Z'
-function eyeLocal(kind, c, side) {
-  const open = (r) => r
+function eyeLocal(kind, c) {
   switch (kind) {
     case 'dot':
       return `<circle r="4.9" fill="${INK}"/><circle cx="1.7" cy="-1.9" r="1.6" fill="#fff"/>`
@@ -236,7 +234,8 @@ function eyesSvg(o, c) {
   const kind = o.eyes
   const left = eyeLocal(kind === 'wink' ? 'happy' : kind, c)
   const right = eyeLocal(kind === 'wink' ? 'round' : kind, c)
-  return g(left, 'transform="translate(79 97)"') + g(right, 'transform="translate(121 97) scale(-1 1)"')
+  // a hair's difference between the two sides, so the face looks drawn rather than stamped
+  return g(left, 'transform="translate(79 97)"') + g(right, 'transform="translate(121 96.5) scale(-1 1)"')
 }
 
 // ---- brows, nose, mouth, cheeks ------------------------------------------------------------------------
@@ -251,7 +250,7 @@ const BROWS = {
 function browsSvg(o, c) {
   const [d, w] = BROWS[o.brows] || BROWS.soft
   const one = line(d, w, c.brow)
-  return g(one, 'transform="translate(79 83)"') + g(one, 'transform="translate(121 83) scale(-1 1)"')
+  return g(one, 'transform="translate(79 83)"') + g(one, 'transform="translate(121 82.2) scale(-1 1) rotate(2.5)"')
 }
 
 function noseSvg(o, c) {
@@ -278,22 +277,19 @@ function mouthLocal(kind, c) {
     case 'lips':
       return shape('M-13.4 -0.8C-9 -5.4 -3.4 -6.6 0 -3.6C3.4 -6.6 9 -5.4 13.4 -0.8C6 1.4 -6 1.4 -13.4 -0.8Z', LIP, 2.4) +
         shape('M-13.4 -0.8C-6 1.6 6 1.6 13.4 -0.8C9.6 9.6 -9.6 9.6 -13.4 -0.8Z', mix(LIP, '#ffffff', 0.12), 2.4) +
-        fill('M-4.6 4C-1.4 5.6 1.4 5.6 4.6 4', 'none') + line('M-4.2 4.6C-1.2 6 1.2 6 4.2 4.6', 1.3, '#ffffff', ' opacity=".7"')
+        line('M-4.2 4.6C-1.2 6 1.2 6 4.2 4.6', 1.3, '#ffffff', ' opacity=".7"')
     default: return ''
   }
 }
 function mouthSvg(o, c) {
   const dy = o.beard === 'moustache' || o.beard === 'goatee' || o.beard === 'beard' ? 2.4 : 0
-  return g(mouthLocal(o.mouth, c), `transform="translate(100 ${124 + dy})"`)
+  return g(mouthLocal(o.mouth, c), `transform="translate(100 ${124 + dy}) rotate(-1.4)"`)
 }
 
 function cheeksSvg(o, c) {
   if (o.cheeks !== 'on') return ''
-  const e = '<ellipse cx="71" cy="113" rx="9.5" ry="5.8"/>'
-  return g(e + mirror2(e), `fill="${c.blush}" opacity=".6"`)
+  return g('<ellipse cx="71" cy="113" rx="9.5" ry="5.8"/><ellipse cx="129" cy="113" rx="9.5" ry="5.8"/>', `fill="${c.blush}" opacity=".6"`)
 }
-const mirror2 = (e) => e.replace(/cx="([\d.]+)"/, (m, v) => `cx="${200 - v}"`)
-
 
 // ---- hair: { back, mid, front } --------------------------------------------------------------------------------
 // back: behind the body. mid: over the outfit, behind the head and ears. front: over the face.
@@ -343,23 +339,23 @@ const HAIR = {
     return { back: shape(back, c.hair), front: shape(d, c.hair) + strands('M118 38C126 44 132 52 134 62M88 38C80 44 74 52 72 62', c) + shine('M82 44C90 38 102 37 112 39', c) }
   },
   pixie: (c) => {
-    const base = shape(capD(34, 64), c.hair)
-    const fringe = 'M62 64C80 50 112 50 140 70C140 76 138 80 136 84C124 80 114 72 106 70C92 68 76 74 66 84C60 78 58 70 62 64Z'
-    return { front: base + shape(fringe, c.hair) + strands('M80 56C96 54 116 58 130 70M72 66C84 62 98 62 110 66', c) + shine('M84 42C92 38 102 37 110 39', c) }
+    const base = shape(sym('M100 36C128 36 148 52 147 84L146 98L141.5 96C141.5 88 140 82 136 76C128 68 116 64 100 64'), c.hair)
+    const fringe = 'M64 66C82 50 112 50 140 72L137 86L129 78L125 90L117 77L109 86L101 74C90 70 76 72 68 80C62 76 60 70 64 66Z'
+    return { front: base + shape(fringe, c.hair) + strands('M80 56C96 52 116 56 130 68M72 66C84 62 98 62 108 68', c) + shine('M84 44C92 39 102 38 110 40', c) }
   },
   medium: (c) => {
     const back = 'M100 34C142 34 160 62 158 106C157 124 160 140 168 150C162 162 146 160 138 152L62 152C54 160 38 162 32 150C40 140 43 124 42 106C40 62 58 34 100 34Z'
     const lock = 'M64 98C56 114 50 130 40 148C42 160 58 162 66 152C66 136 70 120 76 112Z'
     const d = sym('M100 36C128 36 150 54 149 90L148 104L142 98C141 84 136 72 126 66C118 61 108 60 100 60')
     return { back: shape(back, c.hair), mid: shape(lock, c.hair) + shape(mirror(lock), c.hair) + strands('M56 116C52 128 48 138 46 148', c) + strands(mirror('M56 116C52 128 48 138 46 148'), c),
-      front: shape(d, c.hair) + line('M100 37L100 60', W2, c.hairS) + strands('M112 40C122 46 130 56 134 68M88 40C78 46 70 56 66 68', c) + shine('M82 46C90 40 100 38 108 40', c) }
+      front: shape(d, c.hair) + line('M100 37L100 60', W2, c.hairS) + strands('M112 40C122 46 130 56 134 68M88 40C78 46 70 56 66 68', c) + shine('M79 49C84 44 90 41 95 40', c) }
   },
   long: (c) => {
     const back = 'M100 34C142 34 164 66 162 112C161 140 168 170 176 206L24 206C32 170 39 140 38 112C36 66 58 34 100 34Z'
     const lock = 'M64 98C54 124 46 152 42 192C48 206 66 206 72 198C68 172 70 142 78 116Z'
     const d = sym('M100 36C128 36 150 54 149 90L148 104L142 98C141 84 136 72 126 66C118 61 108 60 100 60')
     return { back: shape(back, c.hair), mid: shape(lock, c.hair) + shape(mirror(lock), c.hair) + strands('M56 124C52 142 50 162 50 184', c) + strands(mirror('M56 124C52 142 50 162 50 184'), c),
-      front: shape(d, c.hair) + line('M100 37L100 60', W2, c.hairS) + strands('M112 40C122 46 130 56 134 68M88 40C78 46 70 56 66 68', c) + shine('M82 46C90 40 100 38 108 40', c) }
+      front: shape(d, c.hair) + line('M100 37L100 60', W2, c.hairS) + strands('M112 40C122 46 130 56 134 68M88 40C78 46 70 56 66 68', c) + shine('M79 49C84 44 90 41 95 40', c) }
   },
   wavy: (c) => {
     const back = 'M100 34C142 34 164 66 162 112C160 130 168 150 164 168C172 180 168 194 176 206L24 206C32 194 28 180 36 168C32 150 40 130 38 112C36 66 58 34 100 34Z'
@@ -367,23 +363,23 @@ const HAIR = {
     const d = sym('M100 36C128 36 150 54 149 90L148 104L142 98C141 84 136 72 126 66C118 61 108 60 100 60')
     const wave = 'M54 128C48 138 58 146 50 158C44 168 54 176 48 190'
     return { back: shape(back, c.hair), mid: shape(lock, c.hair) + shape(mirror(lock), c.hair) + strands(wave, c) + strands(mirror(wave), c),
-      front: shape(d, c.hair) + line('M100 37L100 60', W2, c.hairS) + strands('M114 40C124 48 130 58 132 70M86 40C76 48 70 58 68 70', c) + shine('M82 46C90 40 100 38 108 40', c) }
+      front: shape(d, c.hair) + line('M100 37L100 60', W2, c.hairS) + strands('M114 40C124 48 130 58 132 70M86 40C76 48 70 58 68 70', c) + shine('M79 49C84 44 90 41 95 40', c) }
   },
   ponytail: (c) => {
     const tail = 'M98 42C122 12 172 24 168 86C166 112 160 130 150 150C142 130 148 108 146 88C144 66 126 54 98 52Z'
     const d = sym('M100 38C128 38 149 54 148 86L147.5 97L141.5 94C141 80 134 66 121 61C113 58 106 57 100 57')
     return { back: shape(tail, c.hair) + strands('M148 70C152 92 150 112 150 132M132 40C146 42 156 56 158 74', c),
-      front: shape(d, c.hair) + line('M100 39L100 57', W2, c.hairS) + shine('M82 48C90 42 100 40 108 42', c) + band('M111 40C118 36 128 38 133 45', 4.4, c.tie) }
+      front: shape(d, c.hair) + line('M100 39L100 57', W2, c.hairS) + shine('M79 51C84 46 90 43 95 42', c) + band('M111 40C118 36 128 38 133 45', 4.4, c.tie) }
   },
   bun: (c) => {
     const d = sym('M100 38C128 38 149 54 148 86L147.5 97L141.5 94C141 80 134 66 121 61C113 58 106 57 100 57')
     return { front: shape('M100 28m-15 0a15 15 0 1 0 30 0a15 15 0 1 0 -30 0', c.hair) + strands('M92 22C97 19 105 19 110 23M91 31C97 28 106 28 110 32', c) +
-      shape(d, c.hair) + line('M100 39L100 57', W2, c.hairS) + shine('M82 48C90 42 100 40 108 42', c) + band('M89 41C96 46 104 46 111 41', 4, c.tie) }
+      shape(d, c.hair) + line('M100 39L100 57', W2, c.hairS) + shine('M79 51C84 46 90 43 95 42', c) + band('M89 41C96 46 104 46 111 41', 4, c.tie) }
   },
   lowbun: (c) => {
     const d = sym('M100 38C128 38 149 54 148 86L147.5 97L141.5 94C141 80 134 66 121 61C113 58 106 57 100 57')
-    return { back: shape('M153 126m-18 0a18 18 0 1 0 36 0a18 18 0 1 0 -36 0', c.hair) + strands('M142 118C149 112 160 113 166 120M141 132C148 128 160 128 167 134M153 110C158 114 160 122 158 130', c) + band('M146 110C151 118 151 134 146 142', 4, c.tie),
-      front: shape(d, c.hair) + line('M100 39L100 57', W2, c.hairS) + shine('M82 48C90 42 100 40 108 42', c) }
+    return { back: shape('M153 126m-18 0a18 18 0 1 0 36 0a18 18 0 1 0 -36 0', c.hair) + strands('M142 118C149 112 160 113 166 120M141 132C148 128 160 128 167 134M153 110C158 114 160 122 158 130', c) + line('M143 112L168 134', 5.2, INK) + line('M143 112L168 134', 2.6, '#f2c14e') + `<circle cx="169" cy="135" r="3.6" fill="#f2c14e" stroke="${INK}" stroke-width="1.8"/>`,
+      front: shape(d, c.hair) + line('M100 39L100 57', W2, c.hairS) + shine('M79 51C84 46 90 43 95 42', c) }
   },
   topknot: (c) => {
     const fade = sym('M100 42C127 42 147 58 146 88L145.5 96L141.5 93C141 80 134 70 124 64C116 60 108 60 100 60')
@@ -397,12 +393,12 @@ const HAIR = {
   },
   braid: (c) => {
     const d = sym('M100 38C128 38 149 54 148 86L147.5 97L141.5 94C141 80 134 66 121 61C113 58 106 57 100 57')
-    return { mid: plait(54, 104, 50, 176, 8, 8, 9.5, c.hair) + band('M43 177C47 182 54 183 58 178', 4, c.tie), front: shape(d, c.hair) + line('M100 39L100 57', W2, c.hairS) + shine('M82 48C90 42 100 40 108 42', c) }
+    return { mid: plait(54, 104, 50, 176, 8, 8, 9.5, c.hair) + band('M43 177C47 182 54 183 58 178', 4, c.tie), front: shape(d, c.hair) + line('M100 39L100 57', W2, c.hairS) + shine('M79 51C84 46 90 43 95 42', c) }
   },
   braids: (c) => {
     const d = sym('M100 38C128 38 149 54 148 86L147.5 97L141.5 94C141 80 134 66 121 61C113 58 106 57 100 57')
     const mk = (x0, x1) => plait(x0, 104, x1, 176, 8, 8, 9.5, c.hair) + band(`M${x1 - 7} 177C${x1 - 3} 182 ${x1 + 4} 183 ${x1 + 8} 178`, 4, c.tie)
-    return { mid: mk(54, 50) + mk(146, 150), front: shape(d, c.hair) + line('M100 39L100 57', W2, c.hairS) + shine('M82 48C90 42 100 40 108 42', c) }
+    return { mid: mk(54, 50) + mk(146, 150), front: shape(d, c.hair) + line('M100 39L100 57', W2, c.hairS) + shine('M79 51C84 46 90 43 95 42', c) }
   },
   curly: (c) => {
     const cap = shape(capD(38, 64), c.hair)
@@ -552,6 +548,7 @@ const OUTFIT = {
 // ---- hats: art over the head, and keep: where hair may show (hair never rises through a hat) ---------------------------
 
 const STRAW = '#e2b75a', STRAW_D = '#b68a30'
+const FACE_EAR_MAX = 42.5 // the widest ear, for the headphones
 
 const HAT = {
   cap: {
@@ -591,16 +588,17 @@ const HAT = {
     },
   },
   wrap: {
-    keep: 'M0 200L0 84L54 84C60 74 140 74 146 84L200 84L200 200Z',
-    art: (c) => shape('M52 82C48 48 68 20 100 20C132 20 152 48 148 82C130 66 70 66 52 82Z', c.hat) + line('M54 72C80 54 122 52 146 70M56 58C82 40 120 38 144 54M68 40C88 28 114 28 134 38', 2.2, c.hatD, ' opacity=".8"') + line('M60 78C84 62 120 62 142 76', 2.2, c.hatL, ' opacity=".8"') +
-      shape('M136 62C150 62 158 74 156 88C150 84 144 80 138 78Z', c.hat) + line('M142 68C148 72 150 78 150 84', 1.6, c.hatD),
+    keep: 'M0 200L0 86L48 86C54 74 146 74 152 86L200 86L200 200Z',
+    art: (c) => shape('M58 54C62 32 80 22 100 22C120 22 138 32 142 54C130 46 116 42 100 42C84 42 70 46 58 54Z', c.hat) +
+      shape('M52 70C54 50 74 40 100 40C126 40 146 50 148 70C136 62 120 58 100 58C80 58 64 62 52 70Z', c.hatL) +
+      shape('M48 86C46 72 66 62 100 62C134 62 154 72 152 86C140 77 122 73 100 73C78 73 60 77 48 86Z', c.hat) +
+      line('M70 50C84 38 108 34 130 40M64 66C80 56 112 52 138 58', 1.8, c.hatD, ' opacity=".6"') +
+      shape('M136 62C150 56 164 68 160 86C152 82 146 80 139 76Z', c.hat) + line('M144 66C152 70 154 78 152 82', 1.6, c.hatD, ' opacity=".7"'),
   },
   band: {
     art: (c) => shape('M56 68C72 61 128 61 144 68L145 80C130 72 70 72 55 80Z', c.hat) + line('M62 72C80 66 120 66 138 72', 1.6, c.hatL, ' opacity=".8"'),
   },
 }
-const FACE_EAR_MAX = 42.5
-
 // ---- glasses, facial hair, earrings, a flower ---------------------------------------------------------------------------
 
 const eyeBoth = (inner) => g(inner, 'transform="translate(79 97)"') + g(inner, 'transform="translate(121 97) scale(-1 1)"')
@@ -631,8 +629,8 @@ function beardSvg(o, c) {
   const must = shape(mous, col, 2.8) + line(both('M110 112C113 113 116 115 118 117'), 1.2, mix(col, '#ffffff', 0.35), ' opacity=".7"')
   if (k === 'moustache') return { under: '', over: must }
   if (k === 'goatee') return { under: shape('M91 133C93 129 107 129 109 133C111 141 105 148 100 148C95 148 89 141 91 133Z', col, 2.8), over: must }
-  const full = sym('M100 113C108 112 120 111.4 130 107C136 104 139 101 141 97L143 100C144 118 140 132 128 144C120 152 110 156 100 156')
-  return { under: `<path d="${full}M86 126a14 8.4 0 1 0 28 0a14 8.4 0 1 0 -28 0" fill="${col}" fill-rule="evenodd" stroke="${INK}" stroke-width="3" stroke-linejoin="round"/>` + line(both('M130 112C134 120 132 130 126 138M122 140C118 146 112 150 106 152M134 124C138 130 136 138 132 142'), 1.7, mix(col, '#ffffff', 0.34), ' opacity=".55"'), over: must }
+  const full = sym('M100 113C106 113 114 114 120 119C128 117 136 110 141 99L143 101C144 118 140 132 128 144C120 152 110 156 100 156')
+  return { under: `<path d="${full}M84 126.4a16 9.6 0 1 0 32 0a16 9.6 0 1 0 -32 0" fill="${col}" fill-rule="evenodd" stroke="${INK}" stroke-width="3" stroke-linejoin="round"/>` + line(both('M130 112C134 120 132 130 126 138M122 140C118 146 112 150 106 152M134 124C138 130 136 138 132 142'), 1.7, mix(col, '#ffffff', 0.34), ' opacity=".55"'), over: must }
 }
 
 const METAL = '#f4b92b'
@@ -743,7 +741,6 @@ export function avatarSvg(o0, size = 200, opt = {}) {
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${view.join(' ')}" width="${size}" height="${size}"><defs>${c.defs.join('')}</defs>${scene}</svg>`
 }
 
-
 const NONE = ['None', 'ไม่มี', 'မရှိ', '无']
 const N = (id = 'none') => O(id, ...NONE)
 
@@ -794,7 +791,7 @@ export const AV_PARTS = {
   outfit: P('outfit', 'clothes', 'tile', ['Clothes', 'เสื้อผ้า', 'အဝတ်အစား', '衣服'], [
     O('tee', 'T-shirt', 'เสื้อยืด', 'တီရှပ်', 'T恤'), O('collar', 'Shirt', 'เสื้อเชิ้ต', 'ရှပ်အင်္ကျီ', '衬衫'), O('chef', 'Chef jacket', 'ชุดเชฟ', 'စားဖိုမှူးအင်္ကျီ', '厨师服'),
     O('apron', 'Apron', 'ผ้ากันเปื้อน', 'အက်ပရွန်', '围裙'), O('hoodie', 'Hoodie', 'เสื้อฮู้ด', 'ဟူဒီ', '连帽衫'), O('blouse', 'Blouse', 'เสื้อสตรี', 'အမျိုးသမီးအင်္ကျီ', '女式上衣'),
-    O('akha', 'Embroidered', 'เสื้อปักลาย', 'ပန်းထိုးအင်္ကျီ', '刺绣上衣'), O('morhom', 'Mor hom indigo', 'เสื้อหม้อห้อม', 'မော်ဟွမ်အင်္ကျီ', '靛蓝土布衣'), O('suit', 'Suit', 'สูท', 'ဝတ်စုံ', '西装'),
+    O('akha', 'Akha-style top', 'เสื้อปักลายอาข่า', 'အာခါပုံစံ ပန်းထိုးအင်္ကျီ', '阿卡风格刺绣上衣'), O('morhom', 'Mor hom indigo', 'เสื้อหม้อห้อม', 'မော်ဟွမ်အင်္ကျီ', '靛蓝土布衣'), O('suit', 'Suit', 'สูท', 'ဝတ်စုံ', '西装'),
     O('sports', 'Sports top', 'เสื้อกีฬา', 'အားကစားအင်္ကျီ', '运动衫'), O('wrap', 'Wrap tunic', 'เสื้อผูกข้าง', 'ဘေးချည်အင်္ကျီ', '交领上衣'), O('sweater', 'Sweater', 'สเวตเตอร์', 'ဆွယ်တာ', '毛衣'),
     O('overalls', 'Overalls', 'เอี๊ยม', 'ရှေ့ခံဘောင်းဘီ', '背带裤'),
   ], { view: [10, 66, 180, 180], space: 'frame', over: { hat: 'none', flower: 'none' } }),
@@ -978,7 +975,7 @@ export const AV_PRESETS = {
     PR('breakfast', 'Breakfast host', 'คนทำอาหารเช้า', 'မနက်စာပြင်သူ', '早餐师傅', { skin: 's5', face: 'oval', hair: 'scarf', hairc: 'black', brows: 'soft', eyes: 'happy', mouth: 'smile', scarfc: 'mustard', outfit: 'apron', outc: 'lime' }),
   ],
   homes: [
-    PR('agent', 'Estate agent', 'นายหน้าอสังหาริมทรัพย์', 'အိမ်ခြံမြေပွဲစား', '房产经纪', { skin: 's3', face: 'oval', hair: 'sidepart', hairc: 'black', brows: 'soft', eyes: 'almond', mouth: 'smile', cheeks: 'off', outfit: 'suit', outc: 'indigo' }),
+    PR('agent', 'Estate agent', 'นายหน้าอสังหาฯ', 'အိမ်ခြံမြေပွဲစား', '房产经纪', { skin: 's3', face: 'oval', hair: 'sidepart', hairc: 'black', brows: 'soft', eyes: 'almond', mouth: 'smile', cheeks: 'off', outfit: 'suit', outc: 'indigo' }),
     PR('agentw', 'Property agent', 'ตัวแทนขายบ้าน', 'အိမ်ရောင်းအကျိုးဆောင်', '置业顾问', { skin: 's4', face: 'round', hair: 'bob', hairc: 'espresso', brows: 'arched', eyes: 'lashes', mouth: 'smile', ears: 'studs', outfit: 'suit', outc: 'black' }),
     PR('builder', 'Builder', 'ผู้รับเหมา', 'ဆောက်လုပ်ရေးသမား', '建筑承包商', { skin: 's6', face: 'square', hair: 'short', hairc: 'black', brows: 'bold', eyes: 'round', mouth: 'grin', beard: 'stubble', hat: 'cap', hatc: 'mustard', outfit: 'collar', outc: 'khaki' }),
     PR('landlady', 'Landlady', 'เจ้าของบ้านเช่า', 'အိမ်ငှားပိုင်ရှင်', '房东太太', { skin: 's4', face: 'round', hair: 'bun', hairc: 'grey', brows: 'soft', eyes: 'calm', mouth: 'smile', glasses: 'round', ears: 'studs', outfit: 'blouse', outc: 'teal' }),

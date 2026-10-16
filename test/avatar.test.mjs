@@ -60,7 +60,17 @@ test('every option of every part draws, on three different characters', () => {
   }
 })
 
-test('two avatars on one page never share an id, so inline drawings do not borrow each other’s clips', () => {
+test('every option has its own drawing: none falls back to another’s', () => {
+  for (const [id, p] of Object.entries(AV_PARTS)) {
+    if (p.type !== 'tile') continue
+    const drawn = p.options.map((x) => avatarTile({ ...AV_DEFAULT, hair: 'bob', face: 'round' }, id, x.id, 64).replace(/ id="[^"]+"/g, '').replace(/#av[a-z0-9]+-[a-z]+/g, ''))
+    assert.equal(new Set(drawn).size, p.options.length, `${id}: two options draw the same`)
+  }
+  assert.equal(new Set(AV_PARTS.hairc.options.map((x) => x.c)).size, AV_PARTS.hairc.options.length)
+  assert.equal(new Set(AV_PARTS.skin.options.map((x) => x.c)).size, AV_PARTS.skin.options.length)
+})
+
+test('two different avatars on one page take different ids, so inline drawings keep their own clips', () => {
   const a = avatarSvg({ ...AV_DEFAULT, hair: 'curly', hat: 'cap' }, 80), b = avatarSvg({ ...AV_DEFAULT, hair: 'afro', hat: 'bucket' }, 80)
   const ids = (s) => [...s.matchAll(/ id="([^"]+)"/g)].map((m) => m[1])
   assert.ok(ids(a).every((i) => !ids(b).includes(i)))
