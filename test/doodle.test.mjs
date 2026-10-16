@@ -24,8 +24,12 @@ test('words: royal, sacred, sexual, brand, drugs, violence, political, minors ar
     '泰国国王和王后的画像': 'royal',
     'a cartoon of the Thai king with a funny face': 'royal',
     'a funny cartoon Buddha statue wearing sunglasses': 'sacred',
-    'พระสงฆ์กำลังสูบบุหรี่และถือเบียร์': 'sacred',
-    'a smiling monk holding a phone selfie': 'sacred',
+    'พระสงฆ์กำลังสูบบุหรี่และถือเบียร์': 'monk',
+    'a smiling monk holding a phone selfie': 'monk',
+    'Luang Por Toh smiling on a cloud': 'monk',
+    'หลวงปู่ทวดเหยียบน้ำทะเลจืด': 'monk',
+    'Kruba Srivichai walking up the mountain': 'monk',
+    'a monk drinking beer at a bar': 'monk',
     'a naked woman lying on the beach': 'sexual',
     'ผู้หญิงเปลือยในห้องน้ำ': 'sexual',
     'the Nike swoosh logo on a pair of running shoes': 'brand',
@@ -51,7 +55,10 @@ test('words: ordinary things that look like a ban are drawn', () => {
     'โป๊ะเรือริมแม่น้ำ', 'a bleeding heart flower in a pot', 'Thai king prawn curry', 'monk fruit tea and a buddha bowl salad', 'a boy in a red shirt kicking a football',
     'a cooking demonstration with a big wok', 'ไม้ม็อบถูพื้นและถังน้ำ', 'a bar with whisky bottles and a pretty bartender', 'a unisex hair salon chair',
     'an Essex-style tea room', 'a puma and a sprite in a forest', 'a candidate for the job shaking hands', 'a craft beer and a plate of sai ua', 'a cannabis leaf for our dispensary',
-    'a bowl of khao soi with steam shaped like a heart', 'a red ant mascot waving a flag']
+    'a bowl of khao soi with steam shaped like a heart', 'a red ant mascot waving a flag',
+    // Nan 2026-10-16: monks shown with respect are drawn; a named monk or a slight is not
+    'a smiling little novice monk for the Thai letter ณ', 'monks on their morning alms round in Chiang Mai', 'monks releasing lanterns at Yi Peng',
+    'พระสงฆ์ปล่อยโคมยี่เป็ง', 'สามเณรน้อยยิ้มแย้ม', 'พระบิณฑบาตตอนเช้า', 'a Songkran blessing from monks at the temple']
   for (const text of ok) assert.equal(blocked(text), '', text)
   assert.equal(fold('N4KED'), 'naked')
 })

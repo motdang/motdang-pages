@@ -19,7 +19,7 @@ export const Q = {
     dd_usedAdd: 'In your photos', dd_again: 'Draw again', dd_done: 'Done',
     // what it will not draw, and why a doodle did not come
     dd_no_royal: "This can't be drawn: the Thai royal family.",
-    dd_no_sacred: "This can't be drawn: Buddha images or monks. A temple roof, lanterns or lotus flowers work.",
+    dd_no_sacred: "This can't be drawn: Buddha images or statues. A temple roof, lanterns or lotus flowers work.", dd_no_monk: "This can't be drawn: a named monk, or a monk shown without respect. Monks on an alms round or at a festival, or a little novice, can be drawn.",
     dd_no_minor: "This can't be drawn: children in a picture like that.", dd_no_sexual: "This can't be drawn: nudity or sexual pictures.",
     dd_no_violence: "This can't be drawn: blood, injury or violence.", dd_no_hate: "This can't be drawn: a picture that mocks or hurts a group of people.",
     dd_no_drugs: "This can't be drawn: illegal drugs.",
@@ -70,7 +70,7 @@ export const Q = {
     dd_pickHint: 'แตะรูปที่ชอบเพื่อใช้ ยังไม่ถูกใจ วาดใหม่ได้', dd_cover: 'ใช้เป็นภาพปก', dd_add: 'เพิ่มในรูปของฉัน', dd_usedCover: 'เป็นภาพปกแล้ว',
     dd_usedAdd: 'อยู่ในรูปของคุณแล้ว', dd_again: 'วาดใหม่', dd_done: 'เสร็จ',
     // what it will not draw, and why a doodle did not come
-    dd_no_royal: 'วาดไม่ได้: พระมหากษัตริย์และพระบรมวงศานุวงศ์', dd_no_sacred: 'วาดไม่ได้: พระพุทธรูปหรือพระสงฆ์ วาดหลังคาวัด โคมไฟ หรือดอกบัวได้',
+    dd_no_royal: 'วาดไม่ได้: พระมหากษัตริย์และพระบรมวงศานุวงศ์', dd_no_sacred: 'วาดไม่ได้: พระพุทธรูป วาดหลังคาวัด โคมไฟ หรือดอกบัวได้', dd_no_monk: 'วาดไม่ได้: พระที่ระบุชื่อ หรือภาพพระที่ไม่เหมาะสม วาดพระบิณฑบาต พระในงานบุญหรืองานประเพณี หรือสามเณรได้',
     dd_no_minor: 'วาดไม่ได้: เด็กในภาพแบบนั้น', dd_no_sexual: 'วาดไม่ได้: ภาพเปลือยหรือภาพทางเพศ',
     dd_no_violence: 'วาดไม่ได้: เลือด บาดแผล หรือความรุนแรง', dd_no_hate: 'วาดไม่ได้: ภาพที่ล้อเลียนหรือทำร้ายคนกลุ่มใดกลุ่มหนึ่ง',
     dd_no_drugs: 'วาดไม่ได้: ยาเสพติด', dd_no_brand: 'วาดไม่ได้: ชื่อแบรนด์ โลโก้ หรือตัวการ์ตูนของบริษัท ลองอธิบายด้วยคำของคุณเอง',
@@ -118,7 +118,7 @@ export const Q = {
     dd_usedAdd: 'ဓာတ်ပုံတွေထဲ ရောက်သွားပါပြီ', dd_again: 'ပြန်ဆွဲမယ်', dd_done: 'ပြီးပါပြီ',
     // what it will not draw, and why a doodle did not come
     dd_no_royal: 'ထိုင်းဘုရင်မင်းမြတ်နှင့် တော်ဝင်မိသားစုကို မဆွဲပေးပါဘူး။',
-    dd_no_sacred: 'ဗုဒ္ဓဆင်းတုတော်တွေ၊ ရဟန်းတော်တွေကို မဆွဲပေးပါဘူး။ ဘုရားကျောင်းခေါင်မိုး၊ မီးအိမ်၊ ကြာပန်းတွေဆိုရင်တော့ ရပါတယ်။',
+    dd_no_sacred: 'ဗုဒ္ဓဆင်းတုတော်တွေကို မဆွဲပေးပါဘူး။ ဘုရားကျောင်းခေါင်မိုး၊ မီးအိမ်၊ ကြာပန်းတွေဆိုရင်တော့ ရပါတယ်။', dd_no_monk: 'နာမည်ပါတဲ့ ရဟန်းတော်ကို၊ မလေးမစားပုံကို မဆွဲပေးပါဘူး။ ဆွမ်းခံကြွတာ၊ ပွဲတော်မှာ ရဟန်းတော်တွေ၊ ကိုရင်လေးဆိုရင်တော့ ရပါတယ်။',
     dd_no_minor: 'အဲဒီလိုပုံမျိုးမှာ ကလေးတွေကို မဆွဲပေးပါဘူး။', dd_no_sexual: 'အဝတ်မပါတဲ့ပုံတွေ၊ လိင်ပိုင်းဆိုင်ရာပုံတွေကို မဆွဲပေးပါဘူး။',
     dd_no_violence: 'သွေး၊ ဒဏ်ရာ၊ အကြမ်းဖက်မှုတွေကို မဆွဲပေးပါဘူး။', dd_no_hate: 'လူတစ်စုကို လှောင်ပြောင်တဲ့ပုံ၊ နာကျင်စေတဲ့ပုံတွေ မဆွဲပေးပါဘူး။',
     dd_no_drugs: 'တရားမဝင်မူးယစ်ဆေးဝါးတွေကို မဆွဲပေးပါဘူး။',
@@ -170,7 +170,7 @@ export const Q = {
     dd_pick: '选一张', dd_pickHint: '点一张来用。不满意可以重画。', dd_cover: '用作封面', dd_add: '加入我的照片', dd_usedCover: '已成为封面', dd_usedAdd: '已在你的照片里', dd_again: '重画',
     dd_done: '完成',
     // what it will not draw, and why a doodle did not come
-    dd_no_royal: '这个不能画：泰国国王和王室成员。', dd_no_sacred: '这个不能画：佛像和僧人。寺庙屋顶、灯笼、莲花可以画。', dd_no_minor: '这个不能画：这样的儿童画面。', dd_no_sexual: '这个不能画：裸体或色情画面。',
+    dd_no_royal: '这个不能画：泰国国王和王室成员。', dd_no_sacred: '这个不能画：佛像。寺庙屋顶、灯笼、莲花可以画。', dd_no_monk: '这个不能画：有名有姓的僧人，或不敬的僧人画面。清晨托钵、节庆中的僧人或小沙弥可以画。', dd_no_minor: '这个不能画：这样的儿童画面。', dd_no_sexual: '这个不能画：裸体或色情画面。',
     dd_no_violence: '这个不能画：血、伤口或暴力。', dd_no_hate: '这个不能画：嘲笑或伤害某一群人的画面。', dd_no_drugs: '这个不能画：毒品。', dd_no_brand: '这个不能画：品牌名称、标志或公司卡通形象。请用自己的话描述。',
     dd_no_political: '这个不能画：政治内容，比如政党、候选人、选举或抗议。', dd_no_person: '这个不能画：有名有姓的人。请改为描述一个人，比如一位微笑的厨师。', dd_no_other: '这个画不了。换个说法试试。',
     dd_no_picture: '画出来的图不能用。换个说法试试。这次不算。',

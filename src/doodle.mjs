@@ -148,11 +148,12 @@ export function paint(ai, prompt, { w, h, image }) {
   })
 }
 
-const SEE = 'You check a drawing for a web page. Answer only with JSON: {"text": true|false, "royal": true|false, "sacred": true|false}. ' +
+const SEE = 'You check a drawing for a web page. Answer only with JSON: {"text": true|false, "royal": true|false, "sacred": true|false, "monk": true|false}. ' +
   'text = any letters, numbers, words, signs with writing or logos are visible, even if garbled or decorative. ' +
-  'royal = a portrait or likeness of the Thai king, queen or a member of the royal family. sacred = a Buddha image or statue, or a monk.'
+  'royal = a portrait or likeness of the Thai king, queen or a member of the royal family. sacred = a Buddha image or statue. ' +
+  'monk = a monk, novice or nun shown without respect: drinking, smoking, romantic, fighting or mocked. A monk shown with respect is false.'
 
-/** { text, royal, sacred } for a picture; throws when the model does not answer. */
+/** { text, royal, sacred, monk } for a picture; throws when the model does not answer. */
 export async function see(ai, bytes, kind) {
   const out = await timed(ai.run(MODEL.see, {
     messages: [{ role: 'user', content: [{ type: 'text', text: SEE }, { type: 'image_url', image_url: { url: dataUrl(bytes, kind) } }] }],
@@ -160,7 +161,7 @@ export async function see(ai, bytes, kind) {
   }), 25000)
   const r = jsonOf(answerOf(out))
   if (!r || typeof r.text !== 'boolean') throw new Error('see-unreadable')
-  return { text: r.text, royal: !!r.royal, sacred: !!r.sacred }
+  return { text: r.text, royal: !!r.royal, sacred: !!r.sacred, monk: !!r.monk }
 }
 
 /** A WebP at `width` wide through the Images binding, or null without one. */
@@ -178,7 +179,7 @@ async function shrink(env, bytes, width, quality) {
 
 /**
  * One option: draw, then look. { pic } or { drop: why }. Lettering draws it again once (the model writes gibberish now and then);
- * a picture of a royal, a Buddha image, a monk, nudity or gore is dropped.
+ * a picture of a royal, a Buddha image, a monk shown without respect, nudity or gore is dropped.
  */
 async function option(env, job) {
   let last = 'busy'
@@ -191,7 +192,7 @@ async function option(env, job) {
     const [seen, saw] = await Promise.all([look(env.AI, eye.bytes, eye.kind), see(env.AI, eye.bytes, eye.kind).catch((e) => { console.error('doodle see', String(e?.message || e)); return null })])
     if (seen.verdict === 'refuse') return { drop: 'picture' }
     if (seen.verdict !== 'ok' || !saw) { last = 'busy'; continue }
-    if (saw.royal || saw.sacred) return { drop: 'picture' }
+    if (saw.royal || saw.sacred || saw.monk) return { drop: 'picture' }
     if (saw.text) { last = 'text'; continue }
     return { pic: { big: big || raw, small }, model: made.model }
   }
@@ -264,10 +265,11 @@ export async function doodleRoute(request, env, ctx, url) {
     if (photo) {
       const saw = await see(env.AI, photo.bytes, photo.kind).catch(() => null)
       if (!saw) { await giveBack(); return fail(503, 'busy', 'check') }
-      if (saw.royal || saw.sacred) {
+      if (saw.royal || saw.sacred || saw.monk) {
         await giveBack(); await turned(env, s.id)
-        await note(env, s.id, 'doodle-no', `${saw.royal ? 'royal' : 'sacred'} photo ${from}`)
-        return fail(422, 'refused', saw.royal ? 'royal' : 'sacred')
+        const why = saw.royal ? 'royal' : saw.sacred ? 'sacred' : 'monk'
+        await note(env, s.id, 'doodle-no', `${why} photo ${from}`)
+        return fail(422, 'refused', why)
       }
     }
 
