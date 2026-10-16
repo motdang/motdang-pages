@@ -15,7 +15,8 @@
 // motdang.net/~… (the first address, 2026-10-12) answers with a redirect here.
 // The edit link is the sign-in: a long random token, stored only as its hash.
 
-import { render, normalize, vcard, ics, sign, KINDS, LOOK_IDS, GOLD_LOOKS, MAX_PHOTOS, sceneOf, HOME } from '../public/s/render.mjs'
+import { promptPayPayload } from './promptpay.mjs'
+import { render, qrSvg, normalize, vcard, ics, sign, KINDS, LOOK_IDS, GOLD_LOOKS, MAX_PHOTOS, sceneOf, HOME } from '../public/s/render.mjs'
 import { PAGE_LANGS } from '../public/s/words.mjs'
 import { nameProblem, screen } from './screen.mjs'
 import { clean, look, typeOf, MAX_BIG, MAX_SMALL } from './photo.mjs'
@@ -32,11 +33,12 @@ import { tellBeer } from './line.mjs'
 import * as sellers from './sellers.mjs'
 import * as slipq from './slipq.mjs'
 import * as sell from './sell.mjs'
+import * as deals from './deals.mjs'
 import { readCalendars, monthly, trialNotes } from './cron.mjs'
 import { calIcs, roomIcs, addDays } from '../public/s/extras.mjs'
 import { guestPage } from './guest.mjs'
 
-const QUOTA = { site: 3, photo: 200, save: 400, report: 20, msg: 12, pd: 200, notify: 3, slip: 10, book: 10, domain: 6, join: 3 }
+const QUOTA = { site: 3, photo: 200, save: 400, report: 20, msg: 12, pd: 200, notify: 3, slip: 10, book: 10, domain: 6, lister: 3, deal: 40, terms: 10, join: 3 }
 const TRIAL_DAYS = 30 // Nan 2026-10-14: a new page is Gold for its first 30 days
 const MAIN = 'https://motdang.net'
 const PASS = /^\/(vendor|fonts|tiles|data|front)\/|^\/sites\/doodle-map\//
@@ -110,6 +112,10 @@ async function route(request, env, ctx) {
   if (path.startsWith('/q/')) return slipPage(request, env, path, url, origin)
   if (path === '/sell' || path.startsWith('/sell/') || path.startsWith('/h/') || path.startsWith('/p/')) {
     const r = await sell.route(request, env, path, url, origin, sellDeps(env, ctx))
+    if (r) return r
+  }
+  if (/^\/(lister|me|t|f|ya|yo)(\/|$)/.test(path)) {
+    const r = await deals.route(request, env, path, url, origin, { html, sha, rand, sameOrigin, take, sender, log, slipLink: (id) => slipq.link(env, origin, id, sha) })
     if (r) return r
   }
 
@@ -324,6 +330,16 @@ async function api(request, env, ctx, p, url, origin) {
   }
 
   // bookings: free times, taken nights, an ask, a booked time's calendar file
+  // a PromptPay QR for a page, with the amount in it (any page whose maker gave a PromptPay number)
+  if (p === 'pay' && m === 'GET') {
+    const s = await env.DB.prepare("SELECT name, d FROM site WHERE name = ? AND status != 'held'").bind(String(url.searchParams.get('n') || '')).first()
+    const a = Math.round(Number(url.searchParams.get('a')) * 100) / 100
+    if (!s || !(a >= 1 && a <= 999999)) return J({ error: 'not-found' }, 404)
+    const d = normalize(JSON.parse(s.d))
+    if (!d.pay.pp) return J({ error: 'not-found' }, 404)
+    const payload = promptPayPayload({ payeeId: d.pay.pp, satang: Math.round(a * 100), merchantName: (d.name || s.name).replace(/[^\x20-\x7e]/g, '').slice(0, 25) || 'Mot Dang', ref: 'MD' })
+    return J({ amount: a, qr: qrSvg(payload, { dark: '#0e1f3d', light: '#ffffff', label: 'PromptPay' }) }, 200, { 'cache-control': 'no-store' })
+  }
   if ((p === 'slots' || p === 'nights') && m === 'GET') {
     const s = await env.DB.prepare("SELECT * FROM site WHERE name = ? AND status = 'live'").bind(String(url.searchParams.get('n') || '')).first()
     if (!s || !gold.isGold(s)) return J({ error: 'not-found' }, 404)
@@ -671,7 +687,7 @@ ${s ? `<p>ข้อความถึง ${escHtml(title)} จะส่งสำ
   if (p === 'gold/slip' && m === 'POST') {
     const who = await sender(request, env)
     if (!(await take(env, who, 'slip'))) return J({ error: 'quota' }, 429)
-    const pay = await env.DB.prepare("SELECT * FROM pay WHERE site_id = ? AND status IN ('open','slip') ORDER BY created DESC LIMIT 1").bind(s.id).first()
+    const pay = await env.DB.prepare("SELECT * FROM pay WHERE site_id = ? AND status IN ('open','slip') AND COALESCE(plan, '') != 'fee' ORDER BY created DESC LIMIT 1").bind(s.id).first()
     if (!pay) return J({ error: 'no-payment' }, 400)
     const form = await request.formData()
     const file = form.get('slip')
@@ -790,7 +806,7 @@ async function admin(request, env, rest, url) {
     if (act === 'gold') await gold.grant(env, id)
     if (act === 'pay-ok') await payOk(env, id, url.origin, 'checked by hand')
     if (act === 'pay-no') await payNo(env, id)
-    if (act === 'seller-on' || act === 'seller-off') await env.DB.prepare('UPDATE seller SET status = ? WHERE id = ?').bind(act.slice(7), id).run()
+    if (act === 'seller-on' || act === 'seller-off') await env.DB.prepare('UPDATE seller SET status = ? WHERE id = ?').bind(act === 'seller-on' ? 'ok' : 'no', id).run()
     if (act === 'payout-paid') await sell.payoutPaid(env, id)
     await log(env, id, 'admin-' + act, '')
     return Response.redirect(url.origin + '/admin', 303)
@@ -814,6 +830,11 @@ async function postTo(hook, username, content) {
 async function payOk(env, id, origin, how) {
   const p = await env.DB.prepare("SELECT pay.site_id, pay.months, pay.plan, pay.amount, site.name, site.d FROM pay JOIN site ON site.id = pay.site_id WHERE pay.id = ? AND pay.status IN ('open','slip')").bind(id).first()
   if (!p) return false
+  if (p.plan === 'fee') { // a deal's fee: no Gold to grant; the lister's share goes out (deals.mjs)
+    await env.DB.prepare("UPDATE pay SET status='paid', note=COALESCE(note,'') || ?, updated=? WHERE id=?").bind(' · ' + how, new Date().toISOString(), id).run()
+    await deals.paid(env, id, origin, how, sha).catch((e) => console.error(e))
+    return true
+  }
   await gold.grant(env, p.site_id, p.months || 12, p.plan || undefined)
   await env.DB.prepare("UPDATE pay SET status='paid', note=COALESCE(note,'') || ?, updated=? WHERE id=?").bind(' · ' + how, new Date().toISOString(), id).run()
   const cut = await sellers.credit(env, { siteId: p.site_id, payId: id, amount: p.amount }).catch((e) => console.error(e))
@@ -843,7 +864,7 @@ async function slipPage(request, env, path, url, origin) {
     return Response.redirect(url.origin + path, 303)
   }
   const now = await env.DB.prepare('SELECT status, note FROM pay WHERE id = ?').bind(p.id).first()
-  return html(slipq.page({ title: JSON.parse(p.d || '{}').name || p.name, name: p.name, amount: p.amount, status: now.status, note: now.note }, url.origin + path, origin), 200)
+  return html(slipq.page({ title: JSON.parse(p.d || '{}').name || p.name, name: p.name, amount: p.amount, status: now.status, note: now.note, fee: p.plan === 'fee' }, url.origin + path, origin), 200)
 }
 
 async function releasePhoto(env, id) {
@@ -883,7 +904,7 @@ async function tidy(env) {
   const day = (n) => new Date(Date.now() - n * 864e5).toISOString().slice(0, 10)
   await env.DB.prepare('DELETE FROM quota WHERE day < ?').bind(day(3)).run()
   await env.DB.prepare('DELETE FROM seen WHERE day < ?').bind(day(2)).run()
-  await env.DB.prepare("DELETE FROM pay WHERE status = 'open' AND created < ?").bind(new Date(Date.now() - 14 * 864e5).toISOString()).run()
+  await env.DB.prepare("DELETE FROM pay WHERE status = 'open' AND COALESCE(plan, '') != 'fee' AND created < ?").bind(new Date(Date.now() - 14 * 864e5).toISOString()).run()
   // 2026-10-14: room calendars, translations, the monthly note, the trial's end note
   const job = async (name, f) => { try { done[name] = await f() } catch (e) { done[name] = 'error: ' + String(e?.message || e).slice(0, 300); console.error(name, e?.stack || e) } }
   await job('calendars', () => readCalendars(env, gold.isGold, normalize))
@@ -891,6 +912,7 @@ async function tidy(env) {
   await job('monthly', () => monthly(env, gold.isGold, HOME))
   await job('trial', () => trialNotes(env, HOME, (d) => gold.planOf(env, d)))
   await job('sellers', () => sellers.monthEnd(env, (c) => gold.postSales(env, c), (id) => sell.beerLink(env, sha, HOME, 'p', id, 60), (t) => tellBeer(env, t)))
+  await job('deals', () => deals.monthly(env, (c) => gold.postSales(env, c)))
   await env.DB.prepare("UPDATE site SET trial = 0 WHERE trial = 1 AND gold_until < ?").bind(new Date().toISOString().slice(0, 10)).run()
   return done
 }

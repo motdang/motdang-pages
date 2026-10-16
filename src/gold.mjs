@@ -27,7 +27,7 @@ export const slipOn = (env) => !!(env.SLIPOK_KEY && env.SLIPOK_BRANCH)
 
 /** A fresh amount for one page: ฿3,000.01 – ฿3,000.99, unused among open payments. */
 export async function start(env, siteId, rand, plan = planOf(env, null)) {
-  const open = await env.DB.prepare("SELECT id, amount FROM pay WHERE site_id = ? AND status IN ('open','slip') ORDER BY created DESC LIMIT 1").bind(siteId).first()
+  const open = await env.DB.prepare("SELECT id, amount FROM pay WHERE site_id = ? AND status IN ('open','slip') AND COALESCE(plan, '') != 'fee' ORDER BY created DESC LIMIT 1").bind(siteId).first()
   const base = plan.baht
   let amount = open?.amount
   if (!amount || Math.floor(Number(amount)) !== base) {

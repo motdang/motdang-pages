@@ -3,11 +3,7 @@
 -- attracting/recruiting more Homs. They help us get paid, and we pay them automagically."
 -- /sell takes sign-ups; Beer says yes from a link; each seller gets a kit page; the 1st
 -- of the month writes a payout per seller with a PromptPay QR for Beer (sellers.mjs, sell.mjs).
-ALTER TABLE seller ADD COLUMN status TEXT NOT NULL DEFAULT 'on'; -- new · on · off
-ALTER TABLE seller ADD COLUMN phone TEXT;
-ALTER TABLE seller ADD COLUMN line TEXT;
-ALTER TABLE seller ADD COLUMN promptpay TEXT;
-ALTER TABLE seller ADD COLUMN area TEXT;
+-- status, phone, LINE, PromptPay and area came with 0010 (listers, deals.mjs).
 ALTER TABLE seller ADD COLUMN langs TEXT;
 ALTER TABLE seller ADD COLUMN lang TEXT;     -- the kit's language: en · th · my
 ALTER TABLE seller ADD COLUMN via TEXT;      -- the seller who brought them

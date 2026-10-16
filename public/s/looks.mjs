@@ -100,8 +100,9 @@ export const LOOKS = {
       .btn{border-radius:3px;text-transform:uppercase;letter-spacing:.05em;font-family:var(--display);font-stretch:condensed;font-weight:800;font-size:19px;box-shadow:4px 4px 0 #000}
       .btn.dark{background:var(--ink);color:#16121f}.btn.ghost{box-shadow:inset 0 0 0 2px currentColor,4px 4px 0 #000}
       .menu .p{font:800 27px/1 var(--display);font-stretch:condensed;color:var(--acc-ink)}
+      .tshare{border:0;border-radius:3px;background:var(--accent);color:var(--on-accent);box-shadow:3px 3px 0 #000;-webkit-backdrop-filter:none;backdrop-filter:none}
       .calz .dt{border-radius:3px}`,
-    art: `<svg viewBox="0 0 120 120" class="art sun" aria-hidden="true"><g class="spin">${Array.from({ length: 12 }, (_, i) => `<rect x="57" y="4" width="6" height="22" rx="3" fill="var(--accent)" transform="rotate(${i * 30} 60 60)"/>`).join('')}</g><circle cx="60" cy="60" r="24" fill="#ffb000"/><circle cx="52" cy="56" r="3" fill="#1c1530"/><circle cx="68" cy="56" r="3" fill="#1c1530"/><path d="M50 66q10 9 20 0" stroke="#1c1530" stroke-width="3" fill="none" stroke-linecap="round"/></svg>`,
+    art: '',
   },
 
   // Warp and Weft: a woven band, the photo weaving itself open, a serif on dark wood
@@ -130,13 +131,14 @@ export const LOOKS = {
       .top .bar{display:block;width:150px;height:9px;margin:18px 0 0;background:repeating-linear-gradient(90deg,#b97a1c 0 8px,#3aa197 8px 16px,#c24a82 16px 24px,#f6ead5 24px 26px);border-radius:2px}
       .badge,.badge.open{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1px #8a6635;border-radius:4px}
       .badge.open{color:#9fe7bd;box-shadow:inset 0 0 0 1px #2f7a52}
-      .top .pf .art{display:none}
+
       .card{position:relative;overflow:hidden;padding-top:36px;border:1px solid #5a4126}
       .card::before{content:"";position:absolute;left:0;right:0;top:0;height:12px;background:${enc(woven(['GGRRTTGGRRTT', 'GRRTTGGRRTTG', 'RRTTGGRRTTGG'], LOOM_C, 4))} 0 0/48px 12px repeat-x}
       .card h2{font:italic 700 27px/1.1 var(--display);color:var(--acc-ink);letter-spacing:0;text-transform:none}
       .menu .p{font:700 22px/1 var(--display);color:var(--acc-ink)}
-      .btn.dark{background:var(--ink);color:#1f150e}`,
-    art: `<svg viewBox="0 0 120 120" class="art loom" aria-hidden="true"><g class="warp">${Array.from({ length: 9 }, (_, i) => `<rect x="${14 + i * 11}" y="10" width="5" height="100" rx="2" fill="${['#e0a83e', '#3aa197', '#c24a82'][i % 3]}"/>`).join('')}</g><g class="weft">${Array.from({ length: 6 }, (_, i) => `<rect x="8" y="${18 + i * 16}" width="104" height="7" rx="3" fill="#2a1a12" opacity=".82"/>`).join('')}</g><path class="shuttle" d="M10 60q50-16 100 0q-50 16-100 0z" fill="#fffaf1" stroke="#2a1a12" stroke-width="2"/></svg>`,
+      .btn.dark{background:var(--ink);color:#1f150e}
+      .tshare{top:52px;border-color:#8a6635;background:#1f150ecc;color:#e0a83e}`,
+    art: '',
     deco: () => ({
       back: '<div class="band" aria-hidden="true"></div>',
       ph: `<span class="warp"></span><span class="weft">${Array.from({ length: 12 }, (_, i) => `<i style="--i:${i}"></i>`).join('')}</span>`,
@@ -158,11 +160,11 @@ export const LOOKS = {
       .top .ph{border-radius:24px}.top .ph>img{position:absolute;height:100%}
       .sew{position:absolute;inset:11px;z-index:2;width:calc(100% - 22px);height:calc(100% - 22px);overflow:visible;pointer-events:none}
       .sew .draw{stroke-dasharray:1000;stroke-dashoffset:1000;animation:sew 2.4s .4s ease-in-out forwards}@keyframes sew{to{stroke-dashoffset:0}}
-      .top .pf .art{top:-30px;right:-14px;width:96px;height:96px;transform:rotate(8deg);animation:bobble 3s ease-in-out infinite}
+      
       .top .cr{top:14px;bottom:auto;left:18px;right:auto;max-width:62%}
       .top .t{display:flex;flex-direction:column;align-items:flex-start;padding:0 20px 24px;margin-top:-30px;z-index:4}
       .top.gilt:not(.has-cover)>.t{margin-top:0;padding-top:58px}.top:not(.has-cover)>.t{margin-top:0;padding-top:24px}
-      .top h1{order:1}.kick{order:2;margin:20px 0 0}.top .tag{order:3}.dings{order:4}#st{order:5}
+      .top h1{order:1}.kick{order:2;margin:20px 0 0}.top .tag{order:3}.dings{order:4}#st{order:5}.top .cta{order:6}
       .top.go h1{animation:pop2 .6s cubic-bezier(.2,1.6,.4,1) both}@keyframes pop2{0%{transform:rotate(-4deg) scale(.7)}100%{transform:rotate(1.6deg) scale(1)}}
       .top h1{display:inline-block;max-width:100%;padding:10px 20px 14px;background:#ffd400;color:#1b1f5e;border-radius:18px;transform:rotate(1.6deg);box-shadow:7px 7px 0 #ff2e88;outline:2px dashed #1b1f5e66;outline-offset:-8px;
         font-size:min(clamp(36px,10.5cqi,72px),calc((100cqi - 80px) / (var(--lw,8) * var(--em))));line-height:1.12;animation:pop .7s .3s cubic-bezier(.2,1.6,.4,1) both}
@@ -181,8 +183,9 @@ export const LOOKS = {
       .btn{border-radius:99px;border:3px solid #1b1f5e;box-shadow:4px 4px 0 #1b1f5e;font-weight:700}
       .btn.dark{background:#ffd400;color:#1b1f5e}
       .menu .p{font:800 22px/1 var(--body);color:#e0156d}
-      .foot{color:#fff}.foot a{color:#ffd400}.share,.credits{color:var(--ink)}`,
-    art: `<svg viewBox="0 0 120 120" class="art cat" aria-hidden="true"><path d="M24 44 30 12l22 20h16l22-20 6 32" fill="#ffd400" stroke="#1b1f5e" stroke-width="4" stroke-linejoin="round"/><ellipse cx="60" cy="66" rx="40" ry="34" fill="#ffd400" stroke="#1b1f5e" stroke-width="4"/><g class="eyes"><circle cx="45" cy="62" r="6" fill="#1b1f5e"/><circle cx="75" cy="62" r="6" fill="#1b1f5e"/></g><path d="M52 78q8 6 16 0" stroke="#1b1f5e" stroke-width="4" fill="none" stroke-linecap="round"/><circle cx="34" cy="76" r="6" fill="#ff8fb8"/><circle cx="86" cy="76" r="6" fill="#ff8fb8"/><g class="hearts" fill="#ff2e88"><path d="M98 20c-4-6 4-10 6-4 2-6 10-2 6 4l-6 6z"/></g></svg>`,
+      .foot{color:#fff}.foot a{color:#ffd400}.share,.credits{color:var(--ink)}
+      .tshare{top:46px;background:#fff;color:#1b1f5e;border:3px solid #1b1f5e;box-shadow:3px 3px 0 #ff2e88;-webkit-backdrop-filter:none;backdrop-filter:none}`,
+    art: '',
     deco: () => ({
       back: '<div class="ribbon" aria-hidden="true"></div>',
       ph: '<svg class="sew" aria-hidden="true"><defs><mask id="sewm"><rect class="draw" x="0" y="0" width="100%" height="100%" rx="14" pathLength="1000" fill="none" stroke="#fff" stroke-width="8"/></mask></defs><rect x="0" y="0" width="100%" height="100%" rx="14" fill="none" stroke="#fff" stroke-width="3" stroke-dasharray="9 7" stroke-linecap="round" mask="url(#sewm)"/></svg>',
@@ -223,13 +226,13 @@ export const LOOKS = {
       .badge.open{border-color:#5dffb0;color:#d9ffe9;box-shadow:0 0 16px #19ff9a99,inset 0 0 10px #19ff9a44;animation:hum 3s ease-in-out infinite}
       @keyframes hum{50%{box-shadow:0 0 26px #19ff9acc,inset 0 0 14px #19ff9a66}}
       .top .cr{bottom:8px;left:12px;right:12px;text-align:center}
-      .art{display:none}
-      .card{background:linear-gradient(180deg,#161b45,#10143a);border:1px solid var(--line);box-shadow:0 0 0 1px #ff4fa31f,0 16px 44px #0009}
+            .card{background:linear-gradient(180deg,#161b45,#10143a);border:1px solid var(--line);box-shadow:0 0 0 1px #ff4fa31f,0 16px 44px #0009}
       .card h2{color:#ff9bd0;text-shadow:0 0 14px #ff4fa3aa}
       .menu .p{color:#ffd76a;text-shadow:0 0 10px #ffb00066}
       .btn{border-radius:14px;box-shadow:0 0 22px color-mix(in srgb,var(--accent) 55%,transparent)}
-      .btn.line,.btn.grab{box-shadow:none}.btn.dark{background:#fdf6ff;color:#0b0d26;box-shadow:0 0 18px #ffffff44}`,
-    art: `<svg viewBox="0 0 120 120" class="art lanterns" aria-hidden="true">${[[30, 52, '#ff4fa3'], [62, 36, '#ffd76a'], [92, 58, '#7df9ff']].map(([x, y, c], i) => `<g class="l l${i}"><path d="M${x} ${y - 30}v12" stroke="#c4c1e4" stroke-width="1.5"/><ellipse cx="${x}" cy="${y}" rx="14" ry="18" fill="${c}"/><path d="M${x - 14} ${y}h28M${x} ${y - 18}v36" stroke="#0d1030" stroke-width="1.5" opacity=".4"/></g>`).join('')}</svg>`,
+      .btn.line,.btn.grab{box-shadow:none}.btn.dark{background:#fdf6ff;color:#0b0d26;box-shadow:0 0 18px #ffffff44}
+      .tshare{top:auto;bottom:auto;top:58px;border:2px solid #ff6fb8;color:#ffd0ea;background:#0b0d26aa;box-shadow:0 0 12px #ff4fa388}`,
+    art: '',
     deco: () => {
       const strand = (y0, sag, n, cols) => {
         let s = `<g><path d="M0 ${y0} Q 50 ${y0 + sag} 100 ${y0}" stroke="#2b2433" stroke-width="1.2" fill="none" vector-effect="non-scaling-stroke"/>`
@@ -268,9 +271,7 @@ export const LOOKS = {
       .top.go h1 .w{animation:sweep 1.2s ease-in-out}@keyframes sweep{from{background-position:120% 0}to{background-position:-20% 0}}.top.go .fin{animation:finin 0s forwards,shine .4s 4 alternate}
       .fin{position:absolute;z-index:4;width:34px;height:48px;pointer-events:none;transform-origin:50% 100%}
       .fin.a{left:50%;top:-44px;margin-left:-17px}.fin.l{left:-20px;top:calc(26% - 40px);transform:rotate(-38deg)}.fin.r{right:-20px;top:calc(26% - 40px);transform:rotate(38deg)}
-      .top .pf .art{display:none}
-      .t .art{float:none;display:block;margin:0 auto 8px;width:64px;height:64px}
-      .top .cr{bottom:8px;right:10px}
+            .top .cr{bottom:8px;right:10px}
       .top .t{padding:26px 20px 34px}
       .kick{color:#f3c552}
       .top h1 .w{background:linear-gradient(100deg,#b5832a 0%,#f8dd8e 24%,#fff6d5 31%,#d9a441 47%,#f3c552 63%,#9c6a1c 100%);background-size:240% 100%;-webkit-background-clip:text;background-clip:text;color:#f3c552;-webkit-text-fill-color:transparent;animation:leaf 6s ease-in-out infinite}
@@ -283,8 +284,9 @@ export const LOOKS = {
       .kranok{height:28px;background:${enc('<svg xmlns="http://www.w3.org/2000/svg" width="40" height="28"><path d="M20 26C10 22 8 12 14 6c0 6 4 8 6 8 2 0 6-2 6-8 6 6 4 16-6 20z" fill="#e2b03a"/><path d="M20 22c-4-2-5-6-3-9 1 3 2 4 3 4s2-1 3-4c2 3 1 7-3 9z" fill="#4a0c12"/></svg>')} center/40px 28px repeat-x;margin:20px 0}
       .btn{background:linear-gradient(180deg,#f8dd8e,#d9a441);color:#3b0a0d;border-radius:6px}.btn.dark{background:#2a0508;color:#f3c552;box-shadow:inset 0 0 0 1px #e2b03a}
       .menu .p{color:#8a1a1f;font:400 22px/1 var(--display)}
-      .foot{color:#fff3dc}.foot a{color:#ffd77a}.share,.credits{color:var(--ink)}`,
-    art: `<svg viewBox="0 0 120 120" class="art flame" aria-hidden="true"><g class="f"><path d="M60 112C30 100 22 66 40 40c0 18 10 26 20 26s20-8 20-26c18 26 10 60-20 72z" fill="#e2b03a"/><path d="M60 98c-14-6-18-22-10-34 2 10 6 14 10 14s8-4 10-14c8 12 4 28-10 34z" fill="#5c0f14"/><path d="M60 64c-6-10-6-24 0-40 6 16 6 30 0 40z" fill="#ffd77a"/></g></svg>`,
+      .foot{color:#fff3dc}.foot a{color:#ffd77a}.share,.credits{color:var(--ink)}
+      .tshare{border:1px solid #e2b03a;background:#2a0508cc;color:#f3c552}`,
+    art: '',
     deco: () => {
       const fin = (c) => `<svg class="fin ${c}" viewBox="0 0 34 48" aria-hidden="true"><path d="M17 47C6 42 3 30 9 20c0 8 4 11 8 11s8-3 8-11c6 10 3 22-8 27z" fill="#e2b03a"/><path d="M17 31C12 25 12 13 17 1c5 12 5 24 0 30z" fill="#ffd77a"/><path d="M17 42c-5-3-6-9-3-13 1 4 2 5 3 5s2-1 3-5c3 4 2 10-3 13z" fill="#4a0c12"/></svg>`
       return {
@@ -312,12 +314,12 @@ export const LOOKS = {
       .top .tag{color:#4b5563}
       .badge,.badge.open{margin-top:14px;padding:0;background:none;color:#4b5563;font-weight:500;font-size:16px}
       .badge .dot{background:#9ca3af}.badge.open{color:#047857}.badge.open .dot{background:#10b981}
-      .art{display:none}
-      .wrap>.card,.wrap>section.card{margin:0;padding:28px 2px;border-radius:0;background:none;border-top:1px solid var(--line)}
+            .wrap>.card,.wrap>section.card{margin:0;padding:28px 2px;border-radius:0;background:none;border-top:1px solid var(--line)}
       .card.mapcard{padding:0}.card.mapcard>h2{padding:28px 2px 0}.card.mapcard>.in{padding:0 2px 28px}
       .card h2{color:#6b7280;font-size:12.5px;letter-spacing:.16em}
       .reach{margin-bottom:26px}.btn{border-radius:14px}.reach .btn:first-child{background:#111827;color:#fff}
-      .menu .p{color:#111827}`,
+      .menu .p{color:#111827}
+      .tshare{border:0;background:#fff;color:#111827;box-shadow:0 2px 10px rgba(17,24,39,.18)}`,
     art: '',
   },
 
@@ -338,8 +340,7 @@ export const LOOKS = {
       .top .pf::before,.top .pf::after{animation:arch 1.6s .1s cubic-bezier(.3,.7,.2,1) both}@keyframes arch{from{clip-path:inset(100% 0 0 0)}to{clip-path:inset(0)}}
       .top .ph{animation:fadein 1.2s .3s ease both}@keyframes fadein{from{opacity:0}}
       .top h1{animation:deco 1.5s .5s cubic-bezier(.2,.8,.2,1) both}.top h1.th{animation:wordup 1s .5s cubic-bezier(.2,.8,.2,1) both}@keyframes deco{from{opacity:0;letter-spacing:.55em}}
-      .top .pf .art{top:auto;bottom:-34px;right:50%;margin-right:-34px;width:68px;height:68px}
-      .t .art{float:none;display:block;margin:0 auto 6px;width:76px;height:76px}
+      
       .flakes i{position:absolute;top:-24px;z-index:3;width:var(--s);height:calc(var(--s) * .8);background:linear-gradient(135deg,#fff6d5,#e7b84a 45%,#8e5f17);clip-path:polygon(10% 30%,60% 0,100% 40%,70% 100%,20% 85%);
         animation:fall var(--d) linear infinite;animation-delay:var(--w);opacity:.9;pointer-events:none}
       .top.go .flakes i{animation-duration:3.5s}.top.go h1 .w{animation:sweep2 1.1s ease-in-out}@keyframes sweep2{from{background-position:130% 0}to{background-position:-30% 0}}
@@ -359,8 +360,9 @@ export const LOOKS = {
       .btn{background:linear-gradient(180deg,#f8dd8e,#c9952f);color:#1a1205;border-radius:2px;letter-spacing:.1em;text-transform:uppercase;font-size:15px}
       .btn.dark{background:transparent;color:#e7b84a;box-shadow:inset 0 0 0 1px #e7b84a}
       .menu .p{color:#e7b84a}
+      .tshare{border:1px solid #e7b84a;background:#0c0a07cc;color:#e7b84a}
       .goldrule{height:30px;margin:24px 0;background:${enc('<svg xmlns="http://www.w3.org/2000/svg" width="60" height="30"><path d="M30 6l6 9-6 9-6-9z" fill="none" stroke="#e7b84a" stroke-width="1.2"/><path d="M0 15h22M38 15h22" stroke="#e7b84a" stroke-width="1"/></svg>')} center/60px 30px repeat-x}`,
-    art: `<svg viewBox="0 0 120 120" class="art leaf" aria-hidden="true"><defs><linearGradient id="gl" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff2c2"/><stop offset=".45" stop-color="#e2ac44"/><stop offset="1" stop-color="#8e5f17"/></linearGradient></defs><g class="lotus">${[-60, -30, 0, 30, 60].map((r) => `<path d="M60 96C44 76 46 46 60 22 74 46 76 76 60 96z" fill="url(#gl)" stroke="#0c0a07" stroke-width="2" transform="rotate(${r} 60 96)"/>`).join('')}<circle cx="60" cy="96" r="7" fill="#fff2c2" stroke="#0c0a07" stroke-width="2"/></g><g class="glints" fill="#fff6d5">${[[22, 24, 3], [96, 18, 2.5], [104, 70, 3], [16, 70, 2]].map(([x, y, r]) => `<path d="M${x} ${y - r * 3}L${x + r} ${y}L${x} ${y + r * 3}L${x - r} ${y}z"/>`).join('')}</g></svg>`,
+    art: '',
     deco: () => {
       const fl = Array.from({ length: 14 }, (_, i) => {
         const r = (n) => ((Math.sin(i * 12.9898 + n * 78.233) * 43758.5453) % 1 + 1) % 1
@@ -389,8 +391,9 @@ export const HERO_CSS = `.top{position:relative;overflow:hidden;color:var(--ink)
 .top.gilt:not(.has-cover)>.t{padding-top:62px}
 .seal{position:absolute;left:12px;top:12px;z-index:7;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle at 34% 30%,#fff6d5,#f3c552 42%,#9c6a1c);box-shadow:0 2px 8px rgba(0,0,0,.45),inset 0 0 0 2px #fff4;color:#3a2604}
 .seal svg{width:19px;height:19px}
-.art{position:absolute;right:12px;top:12px;width:84px;height:84px;z-index:5;cursor:pointer;-webkit-tap-highlight-color:transparent;filter:drop-shadow(0 2px 6px rgba(0,0,0,.35))}
-.t .art{position:relative;right:auto;top:auto;float:right;margin:0 0 0 12px;filter:none}
+.tshare{position:absolute;right:12px;top:12px;z-index:8;display:grid;place-items:center;width:44px;height:44px;padding:0;border:1px solid rgba(255,255,255,.4);border-radius:50%;background:rgba(10,8,20,.42);color:#fff;cursor:pointer;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);transition:transform .15s}
+.tshare:active{transform:scale(.9)}.tshare .i{width:21px;height:21px}
+.top:not(.has-cover) .tshare{background:transparent;color:inherit;border-color:currentColor}
 @keyframes drift{to{transform:scale(1.08) translate(-1%,-1%)}}
 @keyframes grow{from{transform:scaleX(0)}}
 @keyframes wordup{from{opacity:0;transform:translateY(16px)}}

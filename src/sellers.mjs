@@ -24,7 +24,7 @@ const nf = (n) => new Intl.NumberFormat('en').format(n)
 export async function known(env, by) {
   const id = String(by || '').toLowerCase()
   if (!/^[a-z0-9-]{2,24}$/.test(id)) return null
-  return (await env.DB.prepare("SELECT id FROM seller WHERE id = ? AND status = 'on'").bind(id).first())?.id || null
+  return (await env.DB.prepare("SELECT id FROM seller WHERE id = ? AND status = 'ok'").bind(id).first())?.id || null
 }
 
 /** A seller's code from their name: hom, noi, noi-2 … */
@@ -49,7 +49,7 @@ export async function credit(env, { siteId, payId, amount }) {
     .bind(payId, s.id, siteId, baht, s.rate, cut, bkkMonth(), now).run()
   // the seller who brought this one: once, at their first sale
   let bonus = null
-  const via = s.via && await env.DB.prepare("SELECT id, name FROM seller WHERE id = ? AND status = 'on'").bind(s.via).first()
+  const via = s.via && await env.DB.prepare("SELECT id, name FROM seller WHERE id = ? AND status = 'ok'").bind(s.via).first()
   if (via) {
     const r = await env.DB.prepare('INSERT OR IGNORE INTO earn (pay_id, seller, site_id, baht, rate, cut, month, at) VALUES (?,?,?,0,0,?,?,?)')
       .bind('via:' + s.id, via.id, siteId, BONUS, bkkMonth(), now).run()
@@ -61,9 +61,9 @@ export async function credit(env, { siteId, payId, amount }) {
 /** This month so far, and the payouts, for a seller's kit. */
 export async function standing(env, s) {
   const month = bkkMonth()
-  const t = await env.DB.prepare('SELECT SUM(baht > 0) AS n, COALESCE(SUM(baht),0) AS sales, COALESCE(SUM(cut),0) AS owed FROM earn WHERE seller = ? AND month = ?').bind(s.id, month).first()
+  const t = await env.DB.prepare("SELECT COALESCE(SUM(baht > 0),0) AS n, COALESCE(SUM(baht),0) AS sales, COALESCE(SUM(cut),0) AS owed FROM earn WHERE seller = ? AND month = ? AND kind = 'plan'").bind(s.id, month).first()
   const pays = (await env.DB.prepare('SELECT month, baht, status FROM payout WHERE seller = ? ORDER BY month DESC LIMIT 12').bind(s.id).all()).results
-  const brought = (await env.DB.prepare("SELECT name FROM seller WHERE via = ? AND status = 'on'").bind(s.id).all()).results.map((r) => r.name)
+  const brought = (await env.DB.prepare("SELECT name FROM seller WHERE via = ? AND status = 'ok'").bind(s.id).all()).results.map((r) => r.name)
   return { month, n: t?.n || 0, sales: t?.sales || 0, owed: t?.owed || 0, pays, brought }
 }
 
@@ -81,11 +81,12 @@ export async function monthEnd(env, post, payLink = async () => '', tell = async
   if (bkk.getUTCDate() !== 1 || bkk.getUTCHours() < 8) return 0
   const month = bkk.toISOString().slice(0, 7)
   const prev = bkkMonth(Date.now() - 2 * 864e5)
-  const rows = (await env.DB.prepare("SELECT * FROM seller WHERE status = 'on' AND (closed IS NULL OR closed < ?)").bind(month).all()).results
+  // a lister who has made no page and sold no plan gets no statement (deals.mjs has its own)
+  const rows = (await env.DB.prepare("SELECT * FROM seller WHERE status = 'ok' AND (closed IS NULL OR closed < ?) AND (created <= '2026-10-15' OR id IN (SELECT seller FROM site WHERE seller IS NOT NULL) OR id IN (SELECT seller FROM earn WHERE kind = 'plan'))").bind(month).all()).results
   const toBeer = []
   for (const s of rows) {
     await env.DB.prepare('UPDATE seller SET closed = ? WHERE id = ?').bind(month, s.id).run()
-    const t = await env.DB.prepare('SELECT COALESCE(SUM(baht > 0),0) AS n, COALESCE(SUM(baht),0) AS sales, COALESCE(SUM(cut),0) AS owed FROM earn WHERE seller = ? AND month = ?').bind(s.id, prev).first()
+    const t = await env.DB.prepare("SELECT COALESCE(SUM(baht > 0),0) AS n, COALESCE(SUM(baht),0) AS sales, COALESCE(SUM(cut),0) AS owed FROM earn WHERE seller = ? AND month = ? AND kind = 'plan'").bind(s.id, prev).first()
     // a seller who started mid-month is held to the part of the month they had
     const days = new Date(Date.UTC(+prev.slice(0, 4), +prev.slice(5, 7), 0)).getUTCDate()
     const had = s.created.slice(0, 7) === prev ? days - Number(s.created.slice(8, 10)) + 1 : days

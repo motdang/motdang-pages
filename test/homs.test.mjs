@@ -23,10 +23,10 @@ test('a new seller, brought by Hom, sells; Hom gets the bonus once; the 1st pays
   const env = { DB: d1(), SESSION_SECRET: 's' }
   const id = await freeId(env, 'Noi Test')
   assert.equal(id, 'noi-test')
-  await env.DB.prepare("INSERT INTO seller (id, name, rate, target, created, status, promptpay, via, key) VALUES (?, 'Noi', 20, 30000, '2026-10-16', 'new', '0812345678', 'hom', 'k1')").bind(id).run()
+  await env.DB.prepare("INSERT INTO seller (id, name, rate, target, created, status, promptpay, via, key) VALUES (?, 'Noi', 20, 30000, '2026-10-16', 'pending', '0812345678', 'hom', 'k1')").bind(id).run()
   assert.equal(await freeId(env, 'Noi Test'), 'noi-test-2')
   assert.equal(await known(env, id), null) // not selling until Beer says yes
-  await env.DB.prepare("UPDATE seller SET status = 'on' WHERE id = ?").bind(id).run()
+  await env.DB.prepare("UPDATE seller SET status = 'ok' WHERE id = ?").bind(id).run()
   assert.equal(await known(env, id), id)
   await env.DB.prepare("INSERT INTO site (id, name, edit_hash, status, kind, look, lang, d, created, updated, seller) VALUES ('s1', 'shop', 'x', 'live', 'shop', 'gold', 'th', '{}', '2026-10-16', '2026-10-16', ?)").bind(id).run()
   const a = await credit(env, { siteId: 's1', payId: 'p1', amount: '5550.37' })

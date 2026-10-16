@@ -10,12 +10,14 @@
 import { qrSvg } from '../public/s/render.mjs'
 import { promptPayPayload, normalisePayee } from './promptpay.mjs'
 import { LADDER, START, BONUS, freeId, standing } from './sellers.mjs'
+import { SPLIT_LADDER } from './deals.mjs'
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c])
 const nf = (n) => new Intl.NumberFormat('en').format(n)
 const LANGS = { en: 'English', th: 'ไทย', my: 'မြန်မာ' }
 const EXAMPLE = 'motdang-net'
 const BEER_DAYS = 30
+const feeStart = () => SPLIT_LADDER[2] // a lister's first share of each deal fee (deals.mjs; read late, the two import each other)
 
 // ---- words --------------------------------------------------------------------------
 
@@ -23,14 +25,17 @@ const W = {
   en: {
     title: 'Sell for Mot Dang', h1: (r) => `Sell pages to shops. Keep ${r}%.`,
     lead: 'Shops and hotels in Chiang Mai buy a year of their own page on Mot Dang. You show them, they pay by PromptPay, and your share is paid on the 1st of the month.',
-    work: 'The work', price: 'Price', you: 'You get', example: 'Example to show',
+    work: 'The work', price: 'Price', you: 'You get', example: 'Example to show', feeL: 'of each deal fee',
+    list: ['Listings', 'homes, land, shops for rent or sale; handyman, maid, gardener, plumber, electrician, mover'], payFee: 'Listings: your share of each fee is sent the day the owner pays.',
+    listH: 'Listings', listN: (r) => `Homes and home help: make the page with the owner, send the terms, record the deal. ${r}% of each fee.`, board: 'Your listings board',
+    kitNow: 'Your kit. Keep this link; it opens once Beer says yes.', toSelf: 'Send to yourself on LINE',
     gold: ['Gold year', 'any shop, café, clinic, service'], hotel: ['Hotel year', 'hotels, guesthouses, hostels: guests book rooms on the page'],
     pay: 'Pay',
     ladder: (r, t, l) => `Start at ${r}%. Each month the share moves one step on ${l}: sell 80% of ฿${t} or more, one step up; under 60%, one step down.`,
     paid: 'Paid on the 1st, to your PromptPay.', bring: (b) => `Bring a seller: ฿${b} when they sell their first plan.`,
     money: 'Customers pay only through the QR on their own page. No cash.',
     need: 'You need', needs: 'A phone, LINE, a PromptPay number, and time to walk into shops. Thai, Burmese or English.',
-    steps: 'Steps', s: ['Sign up below.', 'Beer sends you your kit on LINE: your QR, an example page, what to say.', 'Visit shops. They scan your QR, make their page with you in about 5 minutes, and pay.', 'Each sale shows on your kit page as it happens.'],
+    steps: 'Steps', s: ['Sign up below.', 'Keep your kit link. Once Beer says yes it opens: your QR, an example page, what to say.', 'Visit shops. They scan your QR, make their page with you in about 5 minutes, and pay.', 'Each sale shows on your kit page as it happens.'],
     signup: 'Sign up', f: { name: 'Name', phone: 'Phone', line: 'LINE ID', pp: 'PromptPay (phone or ID card number)', area: 'Where you can go', langs: 'Languages you speak', via: 'Who sent you', send: 'Send' },
     thanks: (n) => `Thank you, ${n}. Beer will message you on LINE.`, bad: 'Name, phone and PromptPay, please.', badpp: 'PromptPay: a 10-digit phone or a 13-digit ID card number.',
     kit: (n) => `${n} · your kit`, month: 'This month', plans: 'Plans', sales: 'Sales', share: 'Share', get: 'You get', target: 'Target',
@@ -38,19 +43,22 @@ const W = {
     say: 'What to say', how: 'At the shop',
     k: ['Hotels and guesthouses first: the bigger sale.', 'Show the example page on your phone.', 'They scan your QR and make the page with you: name, kind, photos, LINE, map pin.', 'They send the edit link to themselves on LINE. It is the only key.', 'Tap Gold, pick the year, pay the exact amount in the bank app, upload the slip.', 'Not today? The page stays, Gold free for 30 days. Go back on day 25; a later sale is still yours.'],
     bringH: 'Bring a seller', bringN: (b) => `฿${b} when they sell their first plan. Send them this link:`, lineSend: 'Send on LINE', brought: 'Brought',
-    pays: 'Payouts', isPaid: 'paid', isDue: 'due', ask: 'Questions: Beer on LINE · Discord #sales', waiting: 'Beer has your sign-up. Your kit opens here once she says yes.',
+    pays: 'Payouts', isPaid: 'paid', isDue: 'due', ask: 'Questions: Beer on LINE · Discord #sales', waiting: 'Beer has your sign-up. Your kit opens here once Beer says yes.',
   },
   th: {
     title: 'ขายกับมดแดง', h1: (r) => `ขายหน้าเว็บให้ร้านค้า รับ ${r}%`,
     lead: 'ร้านค้าและโรงแรมในเชียงใหม่ซื้อหน้าเว็บของตัวเองบนมดแดงเป็นรายปี คุณไปเสนอ ร้านจ่ายผ่านพร้อมเพย์ ส่วนแบ่งของคุณจ่ายทุกวันที่ 1 ของเดือน',
-    work: 'งาน', price: 'ราคา', you: 'คุณได้', example: 'ตัวอย่างให้ร้านดู',
+    work: 'งาน', price: 'ราคา', you: 'คุณได้', example: 'ตัวอย่างให้ร้านดู', feeL: 'ของค่าธรรมเนียมแต่ละดีล',
+    list: ['ลงประกาศ', 'บ้าน ที่ดิน ร้าน ให้เช่าหรือขาย · ช่างซ่อม แม่บ้าน คนสวน ช่างประปา ช่างไฟ ขนย้าย'], payFee: 'ลงประกาศ: ส่วนแบ่งค่าธรรมเนียมโอนให้วันที่เจ้าของจ่าย',
+    listH: 'ลงประกาศ', listN: (r) => `บ้านและงานบ้าน: ทำหน้ากับเจ้าของ ส่งเงื่อนไข บันทึกดีล ได้ ${r}% ของค่าธรรมเนียม`, board: 'บอร์ดลงประกาศของคุณ',
+    kitNow: 'ชุดของคุณ เก็บลิงก์นี้ไว้ จะเปิดใช้เมื่อเบียร์ตอบรับ', toSelf: 'ส่งให้ตัวเองทาง LINE',
     gold: ['ทองรายปี', 'ร้าน คาเฟ่ คลินิก งานบริการ ทุกแบบ'], hotel: ['โรงแรมรายปี', 'โรงแรม เกสต์เฮาส์ โฮสเทล แขกจองห้องบนหน้าเว็บ'],
     pay: 'ค่าตอบแทน',
     ladder: (r, t, l) => `เริ่มที่ ${r}% ทุกเดือนส่วนแบ่งขยับหนึ่งขั้นบน ${l}: ขายได้ 80% ของ ฿${t} ขึ้นไป ขึ้นหนึ่งขั้น ต่ำกว่า 60% ลงหนึ่งขั้น`,
     paid: 'จ่ายทุกวันที่ 1 เข้าพร้อมเพย์ของคุณ', bring: (b) => `ชวนคนขายมาเพิ่ม: รับ ฿${b} เมื่อเขาขายได้ครั้งแรก`,
     money: 'ลูกค้าจ่ายผ่าน QR บนหน้าเว็บของเขาเท่านั้น ไม่รับเงินสด',
     need: 'สิ่งที่ต้องมี', needs: 'มือถือ LINE เบอร์พร้อมเพย์ และเวลาเดินเข้าร้าน พูดไทย พม่า หรืออังกฤษ',
-    steps: 'ขั้นตอน', s: ['สมัครด้านล่าง', 'เบียร์ส่งชุดของคุณทาง LINE: QR ของคุณ หน้าตัวอย่าง และคำพูดที่ใช้', 'ไปตามร้าน ร้านสแกน QR ของคุณ ทำหน้าเว็บด้วยกันประมาณ 5 นาที แล้วจ่าย', 'ยอดขายแต่ละครั้งขึ้นในหน้าชุดของคุณทันที'],
+    steps: 'ขั้นตอน', s: ['สมัครด้านล่าง', 'เก็บลิงก์ชุดของคุณไว้ เบียร์ตอบรับแล้วจะเปิดใช้: QR ของคุณ หน้าตัวอย่าง คำพูดที่ใช้', 'ไปตามร้าน ร้านสแกน QR ของคุณ ทำหน้าเว็บด้วยกันประมาณ 5 นาที แล้วจ่าย', 'ยอดขายแต่ละครั้งขึ้นในหน้าชุดของคุณทันที'],
     signup: 'สมัคร', f: { name: 'ชื่อ', phone: 'เบอร์โทร', line: 'LINE ID', pp: 'พร้อมเพย์ (เบอร์โทรหรือเลขบัตรประชาชน)', area: 'พื้นที่ที่ไปได้', langs: 'ภาษาที่พูดได้', via: 'ใครแนะนำมา', send: 'ส่ง' },
     thanks: (n) => `ขอบคุณ ${n} เบียร์จะทักไปทาง LINE`, bad: 'กรอกชื่อ เบอร์โทร และพร้อมเพย์', badpp: 'พร้อมเพย์: เบอร์โทร 10 หลัก หรือเลขบัตร 13 หลัก',
     kit: (n) => `${n} · ชุดของคุณ`, month: 'เดือนนี้', plans: 'แผนที่ขาย', sales: 'ยอดขาย', share: 'ส่วนแบ่ง', get: 'คุณได้', target: 'เป้า',
@@ -63,14 +71,17 @@ const W = {
   my: {
     title: 'Mot Dang အတွက် ရောင်းပါ', h1: (r) => `ဆိုင်များကို စာမျက်နှာ ရောင်းပါ။ ${r}% ရယူပါ။`,
     lead: 'ချင်းမိုင်ရှိ ဆိုင်များနှင့် ဟိုတယ်များသည် Mot Dang ပေါ်တွင် ကိုယ်ပိုင်စာမျက်နှာကို တစ်နှစ်စာ ဝယ်ကြသည်။ သင်က ပြသပါ၊ သူတို့က PromptPay ဖြင့် ပေးချေပါ၊ သင့်ဝေစုကို လဆန်း ၁ ရက်နေ့ ပေးပါသည်။',
-    work: 'အလုပ်', price: 'ဈေး', you: 'သင်ရမည်', example: 'ပြရန် နမူနာ',
+    work: 'အလုပ်', price: 'ဈေး', you: 'သင်ရမည်', example: 'ပြရန် နမူနာ', feeL: 'အပေးအယူတိုင်း၏ ကြေး',
+    list: ['ကြော်ငြာတင်ခြင်း', 'အိမ်၊ မြေ၊ ဆိုင် အငှား သို့မဟုတ် အရောင်း · ပြုပြင်သူ၊ အိမ်အကူ၊ ဥယျာဉ်မှူး၊ ပိုက်ပြင်သူ၊ လျှပ်စစ်ပြင်သူ၊ ပစ္စည်းသယ်ပို့သူ'], payFee: 'ကြော်ငြာ: ပိုင်ရှင် ပေးချေသည့်နေ့တွင် ကြေး၏ သင့်ဝေစုကို ပို့သည်။',
+    listH: 'ကြော်ငြာ', listN: (r) => `အိမ်နှင့် အိမ်အကူ: ပိုင်ရှင်နှင့်အတူ စာမျက်နှာ ပြုလုပ်၊ စည်းကမ်းပို့၊ အပေးအယူ မှတ်ပါ။ ကြေး၏ ${r}%။`, board: 'သင့်ကြော်ငြာဘုတ်',
+    kitNow: 'သင့်ကိရိယာ။ ဤလင့်ခ်ကို သိမ်းထားပါ၊ Beer လက်ခံပြီးနောက် ပွင့်မည်။', toSelf: 'ကိုယ့်ထံ LINE ဖြင့် ပို့ရန်',
     gold: ['ရွှေ တစ်နှစ်', 'ဆိုင်၊ ကော်ဖီဆိုင်၊ ဆေးခန်း၊ ဝန်ဆောင်မှု မည်သည့်ဆိုင်မဆို'], hotel: ['ဟိုတယ် တစ်နှစ်', 'ဟိုတယ်၊ တည်းခိုခန်း၊ ဟော်စတယ် · ဧည့်သည်များ စာမျက်နှာပေါ်တွင် အခန်းမှာနိုင်'],
     pay: 'လစာ',
     ladder: (r, t, l) => `${r}% မှ စတင်သည်။ လစဉ် ဝေစုသည် ${l} ပေါ်တွင် တစ်ဆင့် ရွေ့သည်: ฿${t} ၏ 80% နှင့်အထက် ရောင်းလျှင် တစ်ဆင့်တက်၊ 60% အောက် တစ်ဆင့်ဆင်း။`,
     paid: 'လဆန်း ၁ ရက်နေ့ သင့် PromptPay သို့ ပေးသည်။', bring: (b) => `ရောင်းသူ တစ်ဦး ခေါ်လာပါ: သူ ပထမဆုံး ရောင်းရသောအခါ ฿${b}။`,
     money: 'ဖောက်သည်များ သူတို့စာမျက်နှာရှိ QR မှသာ ပေးချေသည်။ ငွေသား မယူရ။',
     need: 'လိုအပ်သည်', needs: 'ဖုန်း၊ LINE၊ PromptPay နံပါတ်နှင့် ဆိုင်များသို့ သွားရန် အချိန်။ ထိုင်း၊ မြန်မာ သို့မဟုတ် အင်္ဂလိပ်။',
-    steps: 'အဆင့်များ', s: ['အောက်တွင် စာရင်းသွင်းပါ။', 'Beer က LINE ဖြင့် သင့်ကိရိယာကို ပို့မည်: သင့် QR၊ နမူနာစာမျက်နှာ၊ ပြောရမည့်စကား။', 'ဆိုင်များသို့ သွားပါ။ သူတို့က သင့် QR ကို စကင်ဖတ်၊ သင်နှင့်အတူ ၅ မိနစ်ခန့်ဖြင့် စာမျက်နှာ ပြုလုပ်ပြီး ပေးချေသည်။', 'ရောင်းချမှုတိုင်း သင့်ကိရိယာစာမျက်နှာတွင် ချက်ချင်း ပေါ်သည်။'],
+    steps: 'အဆင့်များ', s: ['အောက်တွင် စာရင်းသွင်းပါ။', 'သင့်ကိရိယာလင့်ခ်ကို သိမ်းထားပါ။ Beer လက်ခံပြီးနောက် ပွင့်မည်: သင့် QR၊ နမူနာစာမျက်နှာ၊ ပြောရမည့်စကား။', 'ဆိုင်များသို့ သွားပါ။ သူတို့က သင့် QR ကို စကင်ဖတ်၊ သင်နှင့်အတူ ၅ မိနစ်ခန့်ဖြင့် စာမျက်နှာ ပြုလုပ်ပြီး ပေးချေသည်။', 'ရောင်းချမှုတိုင်း သင့်ကိရိယာစာမျက်နှာတွင် ချက်ချင်း ပေါ်သည်။'],
     signup: 'စာရင်းသွင်းရန်', f: { name: 'နာမည်', phone: 'ဖုန်း', line: 'LINE ID', pp: 'PromptPay (ဖုန်း သို့မဟုတ် မှတ်ပုံတင်နံပါတ်)', area: 'သွားနိုင်သောနေရာ', langs: 'ပြောနိုင်သောဘာသာစကား', via: 'ဘယ်သူ ညွှန်းလိုက်သလဲ', send: 'ပို့ပါ' },
     thanks: (n) => `ကျေးဇူးတင်ပါသည် ${n}။ Beer က LINE ဖြင့် ဆက်သွယ်ပါမည်။`, bad: 'နာမည်၊ ဖုန်းနှင့် PromptPay ဖြည့်ပါ။', badpp: 'PromptPay: ဖုန်း ၁၀ လုံး သို့မဟုတ် မှတ်ပုံတင် ၁၃ လုံး',
     kit: (n) => `${n} · သင့်ကိရိယာ`, month: 'ဤလ', plans: 'ရောင်းရ', sales: 'ရောင်းအား', share: 'ဝေစု', get: 'သင်ရမည်', target: 'ပစ်မှတ်',
@@ -160,6 +171,11 @@ async function readKit(env, sha, path) {
   return s && s.key && m[2] === (await sig(env, sha, 'kit', s.id, s.key)) ? s : null
 }
 
+/** The listings board (deals.mjs /me/<token>) of a seller who came in through /sell. */
+async function boardToken(env, sha, s) {
+  return (await sha(`${env.SESSION_SECRET || 'dev'}|board|${s.id}|${s.key}`)).slice(0, 24)
+}
+
 const PP = (v) => { try { normalisePayee(v); return String(v).replace(/\D/g, '') } catch { return null } }
 const lineShare = (text) => `https://line.me/R/share?text=${encodeURIComponent(text)}`
 const randKey = () => [...crypto.getRandomValues(new Uint8Array(10))].map((x) => x.toString(16).padStart(2, '0')).join('')
@@ -189,7 +205,7 @@ async function signupPage(env, url, request, origin, d, { lang = langOf(url, req
   const p = d.plans
   const share = (b) => nf(Math.round((b * START.rate) / 100))
   const by = String(form.via || url.searchParams.get('by') || '').toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 24)
-  const via = by && await env.DB.prepare("SELECT id, name FROM seller WHERE id = ? AND status = 'on'").bind(by).first()
+  const via = by && await env.DB.prepare("SELECT id, name FROM seller WHERE id = ? AND status = 'ok'").bind(by).first()
   const href = (k) => `/sell?l=${k}${via ? '&by=' + via.id : ''}`
   const f = (k, name, type = 'text', extra = '') => `<label>${w.f[k]}<input name="${name}" type="${type}" value="${esc(form[name] || '')}" ${extra}></label>`
   const title = `${w.title} · ${W.th.title}`
@@ -199,9 +215,10 @@ async function signupPage(env, url, request, origin, d, { lang = langOf(url, req
 <h2>${w.work}</h2><div class="work">
 <div class="job"><b>${w.gold[0]}</b><small>${w.gold[1]}</small><div class="n"><s>${w.price} ฿${nf(p.gold)}</s>${w.you} <strong>฿${share(p.gold)}</strong></div></div>
 <div class="job"><b>${w.hotel[0]}</b><small>${w.hotel[1]}</small><div class="n"><s>${w.price} ฿${nf(p.hotel)}</s>${w.you} <strong>฿${share(p.hotel)}</strong></div></div>
+<div class="job"><b>${w.list[0]}</b><small>${w.list[1]}</small><div class="n"><s>${w.feeL}</s>${w.you} <strong>${feeStart()}%</strong></div></div>
 </div><p class="hint">${w.example}: <a href="${origin}/${EXAMPLE}">sites.motdang.net/${EXAMPLE}</a></p>
 <h2>${w.pay}</h2><div class="ladder">${LADDER.map((r) => `<span${r === START.rate ? ' class="on"' : ''}>${r}%</span>`).join('')}</div>
-<ul><li>${esc(w.ladder(START.rate, nf(START.target), LADDER.join(' · ')))}</li><li>${w.paid}</li><li>${esc(w.bring(BONUS))}</li><li>${w.money}</li></ul>
+<ul><li>${esc(w.ladder(START.rate, nf(START.target), LADDER.join(' · ')))}</li><li>${w.paid}</li><li>${w.payFee}</li><li>${esc(w.bring(BONUS))}</li><li>${w.money}</li></ul>
 <h2>${w.need}</h2><p>${w.needs}</p>
 <h2>${w.steps}</h2><ol>${w.s.map((x) => `<li>${x}</li>`).join('')}</ol>
 <h2 id="join">${w.signup}</h2>${err ? `<p class="err">${esc(err)}</p>` : ''}
@@ -221,23 +238,24 @@ async function join(request, env, url, origin, d) {
   const pp = PP(form.promptpay)
   if (!pp) return signupPage(env, url, request, origin, d, { lang, err: w.badpp, form })
   if (!(await d.take(env, await d.sender(request, env), 'join'))) return shell(lang, w.title, `<p class="ok">${esc(w.thanks(form.name))}</p>`)
-  const via = form.via && await env.DB.prepare("SELECT id, name FROM seller WHERE id = ? AND status = 'on'").bind(form.via.toLowerCase()).first()
+  const via = form.via && await env.DB.prepare("SELECT id, name FROM seller WHERE id = ? AND status = 'ok'").bind(form.via.toLowerCase()).first()
   const id = await freeId(env, form.name)
   const auto = env.SELLER_AUTO === '1'
   const now = new Date().toISOString()
-  await env.DB.prepare('INSERT INTO seller (id, name, rate, target, created, status, phone, line, promptpay, area, langs, lang, via, key) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)')
-    .bind(id, form.name.slice(0, 60), START.rate, START.target, now.slice(0, 10), auto ? 'on' : 'new', form.phone, form.line || null, pp, form.area || null, form.langs || null, lang, via?.id || null, randKey()).run()
+  const key = randKey()
+  await env.DB.prepare('INSERT INTO seller (id, name, rate, target, created, status, phone, line, promptpay, area, langs, lang, via, key, board_hash) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)')
+    .bind(id, form.name.slice(0, 60), START.rate, START.target, now.slice(0, 10), auto ? 'ok' : 'pending', form.phone, form.line || null, pp, form.area || null, form.langs || null, lang, via?.id || null, key,
+      await d.sha(await boardToken(env, d.sha, { id, key }))).run()
   const link = await beerLink(env, d.sha, origin, 'h', id)
   const who = `${form.name} · ${form.phone}${form.line ? ' · LINE ' + form.line : ''}${form.area ? '\n' + form.area : ''}${form.langs ? ' · ' + form.langs : ''}${via ? '\nvia ' + via.name : ''}`
   d.ctx.waitUntil(Promise.all([
     d.postPeople(`🙋 **New seller** · ${who}\n${auto ? 'Selling now' : 'Beer: yes or no'} → ${link}`),
     d.tellBeer(`คนขายใหม่ · New seller\n${who}\n${link}`),
   ]).catch((e) => console.error(e)))
-  if (auto) {
-    const s = await env.DB.prepare('SELECT * FROM seller WHERE id = ?').bind(id).first()
-    return shell(lang, w.title, `<p class="ok">${esc(w.thanks(form.name))}</p><p><a class="btn" href="${esc(await kitLink(env, d.sha, origin, s))}">${esc(w.kit(form.name))}</a></p>`)
-  }
-  return shell(lang, w.title, `<header class="top">${ANT}<h1>${esc(w.thanks(form.name))}</h1></header>`)
+  const kit = await kitLink(env, d.sha, origin, { id, key })
+  return shell(lang, w.title, `<header class="top">${ANT}<h1>${esc(w.thanks(form.name))}</h1></header>
+<h2>${esc(w.kit(form.name))}</h2><p>${auto ? '' : esc(w.kitNow)}</p><p class="mono"><a href="${esc(kit)}">${esc(kit)}</a></p>
+<a class="btn line" href="${esc(lineShare(`${W.th.kit(form.name)} · ${W.en.kit(form.name)}\n${kit}`))}">${w.toSelf}</a>`)
 }
 
 // ---- the kit ------------------------------------------------------------------------------
@@ -245,8 +263,12 @@ async function join(request, env, url, origin, d) {
 async function kitPage(env, s, url, request, origin, d, nonce) {
   const lang = langOf(url, request, url.searchParams.get('l') ? null : s.lang)
   const w = W[lang]
-  if (s.status !== 'on') return shell(lang, w.kit(s.name), `<header class="top">${ANT}<h1>${esc(w.kit(s.name))}</h1><p>${esc(w.waiting)}</p></header>`)
+  if (s.status !== 'ok') return shell(lang, w.kit(s.name), `<header class="top">${ANT}<h1>${esc(w.kit(s.name))}</h1><p>${esc(w.waiting)}</p></header>`)
   const st = await standing(env, s)
+  // the listings board: one made for a seller who has none; a lister's own board link stays theirs
+  const bt = await boardToken(env, d.sha, s)
+  if (!s.board_hash) { await env.DB.prepare('UPDATE seller SET board_hash = ? WHERE id = ? AND board_hash IS NULL').bind(await d.sha(bt), s.id).run(); s.board_hash = await d.sha(bt) }
+  const board = s.board_hash === (await d.sha(bt)) ? `${origin}/me/${bt}` : ''
   const make = `${origin}/make?by=${s.id}`
   const recruit = `${origin}/sell?by=${s.id}`
   const p = d.plans
@@ -259,6 +281,7 @@ async function kitPage(env, s, url, request, origin, d, nonce) {
 <p class="hint">${w.example}: <a href="${origin}/${EXAMPLE}">sites.motdang.net/${EXAMPLE}</a></p>
 <h2>${w.how}</h2><ol>${w.k.map((x) => `<li>${x}</li>`).join('')}</ol>
 <h2>${w.say}</h2><div class="say" lang="th">${sayLines.map((x) => `<p>${esc(x)}</p>`).join('')}</div>
+<h2>${w.listH}</h2><p>${esc(w.listN(s.deal_rate || feeStart()))}</p>${board ? `<a class="btn" href="${esc(board)}">${w.board}</a>` : ''}
 <h2>${w.bringH}</h2><p>${esc(w.bringN(BONUS))}</p><p class="mono">${esc(recruit.replace(/^https?:\/\//, ''))}</p>
 <a class="btn line" href="${esc(lineShare(`${W.th.h1(START.rate)} · ${W.en.h1(START.rate)}\n${recruit}`))}">${w.lineSend}</a>
 ${st.brought.length ? `<p class="hint">${w.brought}: ${st.brought.map(esc).join(', ')}</p>` : ''}
@@ -277,8 +300,8 @@ async function beerSignup(request, env, path, url, origin, d) {
   if (q.expired) return expired(d)
   if (request.method === 'POST' && sameOrigin(request, url)) {
     const act = String((await request.formData()).get('act') || '')
-    if (act === 'ok') await setSeller(env, q.id, 'on')
-    if (act === 'no' || act === 'off') await setSeller(env, q.id, 'off')
+    if (act === 'ok') await setSeller(env, q.id, 'ok')
+    if (act === 'no' || act === 'off') await setSeller(env, q.id, 'no')
     return Response.redirect(url.origin + path, 303)
   }
   const s = await env.DB.prepare('SELECT * FROM seller WHERE id = ?').bind(q.id).first()
@@ -289,8 +312,8 @@ async function beerSignup(request, env, path, url, origin, d) {
   const body = `<style>${BEER_CSS}</style><h1>${esc(s.name)}</h1>
 <table><tr><td>โทร · Phone</td><td><a href="tel:${esc(s.phone)}">${esc(s.phone)}</a></td></tr><tr><td>LINE</td><td>${esc(s.line || '—')}</td></tr><tr><td>PromptPay</td><td>${esc(s.promptpay || '—')}</td></tr>
 <tr><td>พื้นที่ · Area</td><td>${esc(s.area || '—')}</td></tr><tr><td>ภาษา · Languages</td><td>${esc(s.langs || '—')}</td></tr><tr><td>แนะนำโดย · Via</td><td>${esc(via?.name || '—')}</td></tr><tr><td>สมัคร · Signed up</td><td>${esc(s.created)}</td></tr></table>
-${s.status === 'new' ? `<p>ให้ขายในนามมดแดงไหม · Can ${esc(s.name)} sell for Mot Dang?</p><form method="post" class="row"><button name="act" value="ok">✓ ได้ · Yes</button><button class="no" name="act" value="no">✕ ไม่ · No</button></form>`
-    : s.status === 'on' ? `<p class="ok">✓ ขายได้แล้ว · Selling. ${s.rate}%</p><p>ส่งชุดนี้ให้ ${esc(s.name)} ทาง LINE · Send ${esc(s.name)} their kit on LINE:</p><p class="mono">${esc(kit)}</p>
+${s.status === 'pending' ? `<p>ให้ขายในนามมดแดงไหม · Can ${esc(s.name)} sell for Mot Dang?</p><form method="post" class="row"><button name="act" value="ok">✓ ได้ · Yes</button><button class="no" name="act" value="no">✕ ไม่ · No</button></form>`
+    : s.status === 'ok' ? `<p class="ok">✓ ขายได้แล้ว · Selling. ${s.rate}%</p><p>ส่งชุดนี้ให้ ${esc(s.name)} ทาง LINE · Send ${esc(s.name)} their kit on LINE:</p><p class="mono">${esc(kit)}</p>
 <a class="btn line" href="${esc(lineShare(hello))}">ส่งทาง LINE · Send on LINE</a><form method="post" style="margin-top:28px;border:0;padding:0;background:none"><button class="no" name="act" value="off">หยุด · Stop</button></form>`
     : '<p class="ok">✕ ไม่ได้ขาย · Not selling.</p>'}`
   return d.html(shell('th', s.name, body), 200)
@@ -338,7 +361,7 @@ function sameOrigin(request, url) {
 
 /** For /admin: every seller, and the payouts still due. */
 export async function adminRows(env, sha, origin) {
-  const ss = (await env.DB.prepare("SELECT * FROM seller ORDER BY status = 'new' DESC, status = 'on' DESC, created DESC").all()).results
+  const ss = (await env.DB.prepare("SELECT * FROM seller ORDER BY status = 'new' DESC, status = 'ok' DESC, created DESC").all()).results
   const due = (await env.DB.prepare("SELECT payout.*, seller.name FROM payout JOIN seller ON seller.id = payout.seller WHERE payout.status = 'due' ORDER BY month").all()).results
   return {
     sellers: await Promise.all(ss.map(async (s) => ({ ...s, kit: s.key ? await kitLink(env, sha, origin, s) : '', beer: await beerLink(env, sha, origin, 'h', s.id) }))),
