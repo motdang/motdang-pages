@@ -11,7 +11,7 @@ export function squash(s) {
 }
 
 // Names a reader could take for someone official, or for this site's own pages.
-const RESERVED = new Set(['make', 'edit', 'api', 's', 'img', 'admin', 'random', 'ring', 'new', 'help', 'about', 'login', 'all', 'map', 'feed',
+const RESERVED = new Set(['make', 'lister', 'edit', 'api', 's', 'img', 'admin', 'random', 'ring', 'new', 'help', 'about', 'login', 'all', 'map', 'feed',
   'robots', 'sitemap', 'data', 'front', 'sites', 'gold', 'pages', 'home', 'index', 'search', 'find', 'favicon', 'card', 'example', 'examples',
   'signin', 'signup', 'account', 'settings', 'static', 'assets', 'www', 'mail', 'tiles', 'fonts', 'vendor', 'motdang',
   'mot-dang', 'nan', 'beer', 'hongdam', 'wichaa', 'official', 'support', 'security', 'police', 'gov', 'government',

@@ -31,11 +31,12 @@ import * as dom from './domain.mjs'
 import { tellBeer } from './line.mjs'
 import * as sellers from './sellers.mjs'
 import * as slipq from './slipq.mjs'
+import * as deals from './deals.mjs'
 import { readCalendars, monthly, trialNotes } from './cron.mjs'
 import { calIcs, roomIcs, addDays } from '../public/s/extras.mjs'
 import { guestPage } from './guest.mjs'
 
-const QUOTA = { site: 3, photo: 200, save: 400, report: 20, msg: 12, pd: 200, notify: 3, slip: 10, book: 10, domain: 6 }
+const QUOTA = { site: 3, photo: 200, save: 400, report: 20, msg: 12, pd: 200, notify: 3, slip: 10, book: 10, domain: 6, lister: 3, deal: 40, terms: 10 }
 const TRIAL_DAYS = 30 // Nan 2026-10-14: a new page is Gold for its first 30 days
 const MAIN = 'https://motdang.net'
 const PASS = /^\/(vendor|fonts|tiles|data|front)\/|^\/sites\/doodle-map\//
@@ -107,6 +108,10 @@ async function route(request, env, ctx) {
   if (path === '/favicon.ico') return asset(request, env, '/s/ant.svg')
   if (path === '/admin' || path.startsWith('/admin/')) return admin(request, env, path.slice(6), url)
   if (path.startsWith('/q/')) return slipPage(request, env, path, url, origin)
+  if (/^\/(lister|me|t|f|ya|yo)(\/|$)/.test(path)) {
+    const r = await deals.route(request, env, path, url, origin, { html, sha, rand, sameOrigin, take, sender, log, slipLink: (id) => slipq.link(env, origin, id, sha) })
+    if (r) return r
+  }
 
   const pm = /^\/([a-z0-9-]{3,30})(\/sign|\/contact\.vcf|\/event\.ics|\/calendar\.ics|\/l\/[a-z0-9]{4,12}|\/w\/[a-z0-9]{4,12}|\/room\/[a-z0-9]{4,12}\.ics)?\/?$/.exec(path)
   if (pm && m === 'GET') return page(request, env, ctx, pm[1], pm[2] || '', url, origin)
@@ -676,7 +681,7 @@ ${s ? `<p>ข้อความถึง ${escHtml(title)} จะส่งสำ
   if (p === 'gold/slip' && m === 'POST') {
     const who = await sender(request, env)
     if (!(await take(env, who, 'slip'))) return J({ error: 'quota' }, 429)
-    const pay = await env.DB.prepare("SELECT * FROM pay WHERE site_id = ? AND status IN ('open','slip') ORDER BY created DESC LIMIT 1").bind(s.id).first()
+    const pay = await env.DB.prepare("SELECT * FROM pay WHERE site_id = ? AND status IN ('open','slip') AND COALESCE(plan, '') != 'fee' ORDER BY created DESC LIMIT 1").bind(s.id).first()
     if (!pay) return J({ error: 'no-payment' }, 400)
     const form = await request.formData()
     const file = form.get('slip')
@@ -805,6 +810,11 @@ async function admin(request, env, rest, url) {
 async function payOk(env, id, origin, how) {
   const p = await env.DB.prepare("SELECT pay.site_id, pay.months, pay.plan, pay.amount, site.name, site.d FROM pay JOIN site ON site.id = pay.site_id WHERE pay.id = ? AND pay.status IN ('open','slip')").bind(id).first()
   if (!p) return false
+  if (p.plan === 'fee') { // a deal's fee: no Gold to grant; the lister's share goes out (deals.mjs)
+    await env.DB.prepare("UPDATE pay SET status='paid', note=COALESCE(note,'') || ?, updated=? WHERE id=?").bind(' · ' + how, new Date().toISOString(), id).run()
+    await deals.paid(env, id, origin, how, sha).catch((e) => console.error(e))
+    return true
+  }
   await gold.grant(env, p.site_id, p.months || 12, p.plan || undefined)
   await env.DB.prepare("UPDATE pay SET status='paid', note=COALESCE(note,'') || ?, updated=? WHERE id=?").bind(' · ' + how, new Date().toISOString(), id).run()
   const cut = await sellers.credit(env, { siteId: p.site_id, payId: id, amount: p.amount }).catch((e) => console.error(e))
@@ -834,7 +844,7 @@ async function slipPage(request, env, path, url, origin) {
     return Response.redirect(url.origin + path, 303)
   }
   const now = await env.DB.prepare('SELECT status, note FROM pay WHERE id = ?').bind(p.id).first()
-  return html(slipq.page({ title: JSON.parse(p.d || '{}').name || p.name, name: p.name, amount: p.amount, status: now.status, note: now.note }, url.origin + path, origin), 200)
+  return html(slipq.page({ title: JSON.parse(p.d || '{}').name || p.name, name: p.name, amount: p.amount, status: now.status, note: now.note, fee: p.plan === 'fee' }, url.origin + path, origin), 200)
 }
 
 async function releasePhoto(env, id) {
@@ -874,7 +884,7 @@ async function tidy(env) {
   const day = (n) => new Date(Date.now() - n * 864e5).toISOString().slice(0, 10)
   await env.DB.prepare('DELETE FROM quota WHERE day < ?').bind(day(3)).run()
   await env.DB.prepare('DELETE FROM seen WHERE day < ?').bind(day(2)).run()
-  await env.DB.prepare("DELETE FROM pay WHERE status = 'open' AND created < ?").bind(new Date(Date.now() - 14 * 864e5).toISOString()).run()
+  await env.DB.prepare("DELETE FROM pay WHERE status = 'open' AND COALESCE(plan, '') != 'fee' AND created < ?").bind(new Date(Date.now() - 14 * 864e5).toISOString()).run()
   // 2026-10-14: room calendars, translations, the monthly note, the trial's end note
   const job = async (name, f) => { try { done[name] = await f() } catch (e) { done[name] = 'error: ' + String(e?.message || e).slice(0, 300); console.error(name, e?.stack || e) } }
   await job('calendars', () => readCalendars(env, gold.isGold, normalize))
@@ -882,6 +892,7 @@ async function tidy(env) {
   await job('monthly', () => monthly(env, gold.isGold, HOME))
   await job('trial', () => trialNotes(env, HOME, (d) => gold.planOf(env, d)))
   await job('sellers', () => sellers.monthEnd(env, (c) => gold.postSales(env, c)))
+  await job('deals', () => deals.monthly(env, (c) => gold.postSales(env, c)))
   await env.DB.prepare("UPDATE site SET trial = 0 WHERE trial = 1 AND gold_until < ?").bind(new Date().toISOString().slice(0, 10)).run()
   return done
 }
