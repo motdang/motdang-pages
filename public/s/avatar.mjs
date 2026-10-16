@@ -421,12 +421,16 @@ const HAIR = {
     return { front: fill(fade, c.fade) + g(line(dots, 1.7, c.hairS, ' opacity=".85"'), `clip-path="url(#${clip})"`) + line(both('M145.5 98L146 88C147 57 127 41 100 41'), W1) +
       shape(crest, c.hair) + strands('M100 26L100 52M110 30C111 38 112 46 111 54M90 30C89 38 88 46 89 54M119 38C121 46 120 54 118 60M81 38C79 46 80 54 82 60', c) + shine('M92 40C96 34 102 30 108 29', c) }
   },
-  hijab: (c) => {
+  hijab: (c, o) => {
     const col = c.scarf, colD = c.scarfD
-    const outer = 'M100 28C142 28 164 62 162 108C161 126 158 138 164 152C170 166 184 182 192 208L8 208C16 182 30 166 36 152C42 138 39 126 38 108C36 62 58 28 100 28Z'
+    // under a hat the scarf fits close to the face, so nothing of it shows above the brim
+    const under = ['cap', 'chef', 'beanie', 'wrap', 'bucket', 'ngob'].includes(o.hat)
+    const outer = under
+      ? 'M100 58C130 58 150 78 150 106C150 124 148 136 157 150C166 164 182 182 190 208L10 208C18 182 34 164 43 150C52 136 50 124 50 106C50 78 70 58 100 58Z'
+      : 'M100 28C142 28 164 62 162 108C161 126 158 138 164 152C170 166 184 182 192 208L8 208C16 182 30 166 36 152C42 138 39 126 38 108C36 62 58 28 100 28Z'
     const hole = 'M100 62C121 62 137 76 137 99C137 119 124 135 100 137C76 135 63 119 63 99C63 76 79 62 100 62Z'
     return { front: `<path d="${outer}${hole}" fill="${col}" fill-rule="evenodd"/>` + line(outer, W1) + line(hole, W1) +
-      line('M60 66C50 80 46 98 46 114M140 66C150 80 154 98 154 114', W2, colD) + line('M66 160C74 176 78 190 78 208M134 160C126 176 122 190 122 208M100 146C100 166 100 188 100 208', W2, colD, ' opacity=".8"') +
+      (under ? '' : line('M60 66C50 80 46 98 46 114M140 66C150 80 154 98 154 114', W2, colD)) + line('M66 160C74 176 78 190 78 208M134 160C126 176 122 190 122 208M100 146C100 166 100 188 100 208', W2, colD, ' opacity=".8"') +
       `<circle cx="100" cy="150" r="3.6" fill="#f2c14e" stroke="${INK}" stroke-width="1.6"/>` }
   },
   scarf: (c) => {
@@ -783,7 +787,7 @@ export const AV_PARTS = {
     O('bun', 'High bun', 'มวยผมสูง', 'ဆံထုံးမြင့်', '丸子头'), O('lowbun', 'Low bun', 'มวยผมต่ำ', 'ဆံထုံးနိမ့်', '低发髻'), O('topknot', 'Top knot', 'มวยกลางศีรษะ', 'ထိပ်ဆံထုံး', '头顶发髻'),
     O('braid', 'Braid', 'ผมเปีย', 'ဆံကျစ်', '单辫'), O('braids', 'Two braids', 'ผมเปียคู่', 'ဆံကျစ်နှစ်ချောင်း', '双辫'), O('curly', 'Curly', 'ผมหยิก', 'ဆံပင်ကောက်', '卷发'),
     O('afro', 'Afro', 'ผมแอฟโฟร', 'ဆံပင်ဖောင်း', '蓬松卷发'), O('undercut', 'Undercut', 'ทรงอันเดอร์คัท', 'ဘေးတိုထိပ်မြင့်', '两侧短发'), O('hijab', 'Hijab', 'ฮิญาบ', 'ဟီဂျပ်', '希贾布'),
-    O('scarf', 'Tied scarf', 'ผ้าผูกผม', 'ခေါင်းစည်းပဝါ', '系头巾'),
+    O('scarf', 'Headscarf', 'ผ้าผูกผม', 'ခေါင်းစည်းပဝါ', '头巾'),
   ], { view: [16, 6, 168, 168], over: { hat: 'none', flower: 'none' } }),
   hairc: P('hairc', 'hair', 'swatch', ['Hair colour', 'สีผม', 'ဆံပင်အရောင်', '发色'], HAIRC),
   scarfc: P('scarfc', 'hair', 'swatch', ['Scarf colour', 'สีผ้า', 'ပဝါအရောင်', '头巾颜色'], CLOTH, { when: (o) => o.hair === 'hijab' || o.hair === 'scarf' }),
