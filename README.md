@@ -10,7 +10,8 @@ sites.motdang.net — anyone makes their own page on Mot Dang, from a phone, in 
 | `/all` · `/random` | every live page (Gold first) · one at random |
 | `/map?pin=lat,lng&pn=name&embed=1` | a page's drawn map: motdang.net's doodle-map engine on the world tiles, base href motdang.net |
 | `/feed.json` · `/api/find?q=` | live pages as data for motdang.net (search, place pages, maps) |
-| `/admin` | held and reported pages, held photos, Gold slips (Basic auth, `ADMIN_KEY`) |
+| `/admin` | held and reported pages, held photos, Gold slips, page checks (Basic auth, `ADMIN_KEY`) |
+| `/x/<link>` | a translator's page check: the maker's words beside the machine's, a fix per line (`src/trcheck.mjs`) |
 | `motdang.net/~…` | the first address (2026-10-12): 301 to the same page here |
 
 One Cloudflare Worker (custom domain `sites.motdang.net`, route `motdang.net/~*`), D1 `motdang-pages`, R2 `motdang-pages`, Workers AI.
@@ -21,6 +22,7 @@ Picture studio (2026-10-15): `public/s/studio.mjs` turns any photo into a fixed 
 Doodle anything (2026-10-16): `public/s/doodle-ui.mjs` is a sheet where a maker says what to draw, or picks one of the page's photos, in one of six styles (pen, crayon, watercolour, Lanna mural, cute sticker, night neon) and chooses one of two doodles for the cover or the photos. `src/doodle.mjs` (`POST /api/doodle`) reads the words through `src/doodle-guard.mjs` (a word list, Llama Guard, and a model that reads the meaning and writes an English brief), draws with FLUX.2 klein in the house style, looks at each picture again (`photo.mjs look`, then lettering, royals, Buddha images and monks) and keeps the chosen one as a photo with the credit `{from:'doodle', style, prompt}`. Free pages ask for 5 doodles a day, Gold pages and the 30-day trial 30. The 1024 px and 480 px WebP copies come from the `IMAGES` binding. `tools/doodlelab/` runs every style with every kind.
 Portfolio (kind `work`): projects with client, year, role, tags, words, a link and photos, each at `/name/w/<id>`; client words; an avatar beside the name on any page. Free pages show 6 projects, Gold 60.
 Traffic: `src/stats.mjs` counts visits, people (a salted hash a day), machines apart, referrers, countries, devices, hours and button taps per page.
+Page checks (2026-10-16): a gig made at /admin or `POST /admin/gig?json=1` (name, lang, who) gives a signed link, 30 days. A save writes `tr_fix`, keyed by the maker's words, which wins over the cron's `tr` row and outlives it; a line whose words changed shows its old fix, flagged. Each save posts to #people-team; the `gig` row (posted, taken) is read into Paid in Art's data/gigs.tsv.
 Messages: `src/msg.mjs`; a copy goes by Resend to an address the maker confirmed (25 a page a day, 90 in all).
 Gold: `src/gold.mjs`, ฿3,000 a year by PromptPay with a satang tail; SlipOK checks the slip when its keys are set, otherwise the slip waits at /admin.
 The edit link is the sign-in: a random token, stored as its SHA-256. A page goes live when `src/screen.mjs` (rules, then Llama Guard) passes it; photos pass `src/photo.mjs` (vision model).
