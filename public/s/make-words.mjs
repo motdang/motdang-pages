@@ -5,6 +5,7 @@ import { Y } from './make-words-try.mjs'
 import { X } from './make-words-edit.mjs'
 import { W } from './make-words-pick.mjs'
 import { A } from './make-words-avatar.mjs'
+import { G } from './make-words-logo.mjs'
 
 export const UI_LANGS = { th: 'ไทย', en: 'English', my: 'မြန်မာ', zh: '中文' }
 
@@ -240,7 +241,14 @@ const V = {
   },
 }
 
-export function ui(lang, k) { return (U[lang] && U[lang][k]) || (V[lang] && V[lang][k]) || (Z[lang] && Z[lang][k]) || (Y[lang] && Y[lang][k]) || (X[lang] && X[lang][k]) || (W[lang] && W[lang][k]) || (A[lang] && A[lang][k]) || U.en[k] || V.en[k] || Z.en[k] || Y.en[k] || X.en[k] || W.en[k] || A.en[k] || k }
+// each table in turn in the maker's language, then each in English (the tables: words for the steps, the
+// editor, the pickers, the avatar maker, the logo maker)
+const TABLES = [U, V, Z, Y, X, W, A, G]
+export function ui(lang, k) {
+  for (const t of TABLES) if (t[lang] && t[lang][k]) return t[lang][k]
+  for (const t of TABLES) if (t.en[k]) return t.en[k]
+  return k
+}
 
 /** The reader's language from Accept-Language, among the builder's four. */
 export function pickLang(header) {

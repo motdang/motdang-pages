@@ -9,7 +9,7 @@ import { DINGBATS } from './db/names.mjs'
 import { PAGE_LANGS } from './words.mjs'
 import { ui, UI_LANGS } from './make-words.mjs'
 import { exifBlock, readExif } from './exif.mjs'
-import { openStudio, openMark } from './studio-ui.mjs'
+import { openStudio } from './studio-ui.mjs'
 import { openAvatar } from './avatar-ui.mjs'
 import { drawCard, cardKey, CARD } from './card.mjs'
 import { loadFaces } from './mark.mjs'
@@ -1039,15 +1039,18 @@ function avatarDraw() {
   } })
 }
 
-function markSheet(mode) {
-  openMark({ mode, name: S.d.name || S.name, tagline: S.d.tagline, accent: accentNow(), T, need: (f) => dingbats(f.filter(Boolean)), onUse: async (canvas, o) => {
+// the logo maker: designs from the page's name, kind and look, then words, icon, letters, colour, layout and
+// mock-ups (logo-ui.mjs, loaded when first opened); the avatar gets the square, a cover gets the wide one
+async function markSheet(mode) {
+  const { openLogo } = await import('./logo-ui.mjs')
+  openLogo({ name: S.d.name || S.name, tagline: S.d.tagline, kind: S.kind, accent: accentNow(), look: S.look, T, need: (f) => dingbats(f.filter(Boolean)), onUse: async (canvas, { cover, design }) => {
     if (mode === 'avatar') {
       S.d.avatar = await sendCanvas(canvas, 640).catch(sendFail)
-      S.d.avround = o.shape === 'circle'
+      S.d.avround = ['badge', 'poster'].includes(design.layout)
       S.open.add('face'); redrawSec('face')
     } else {
       if (S.d.photos.length >= (isGold() ? MAX_PHOTOS.gold : MAX_PHOTOS.free)) { toast(ui(S.lang, 'e_full')); throw new Error('full') }
-      const nid = await sendCanvas(canvas, 1600).catch(sendFail)
+      const nid = await sendCanvas(cover, 1600).catch(sendFail)
       S.d.photos.unshift(nid); S.d.cover = nid
       redrawSec('photos')
     }
