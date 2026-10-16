@@ -75,7 +75,7 @@ export const isGold = (s) => s?.tier === 'gold' && (!s.gold_until || s.gold_unti
 /** A paid plan, posted to the team's sales channel when DISCORD_SALES is set. */
 export async function tellSales(env, { title, url, amount, months, plan, how, cut }) {
   const what = plan === 'hotel' ? (months === 1 ? 'Hotel month' : 'Hotel year') : 'Gold year'
-  const by = cut ? `\n${cut.name} +฿${cut.cut} (${cut.rate}%)` : ''
+  const by = (cut ? `\n${cut.name} +฿${cut.cut} (${cut.rate}%)` : '') + (cut?.bonus ? `\n${cut.bonus.name} +฿${cut.bonus.cut} (brought ${cut.bonus.for}, first sale)` : '')
   return postSales(env, `💰 **${what}** · ฿${amount} · ${title}\n${url} · ${how}${by}`)
 }
 /** One message to the team's sales channel. */

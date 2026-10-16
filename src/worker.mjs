@@ -6,7 +6,8 @@
 //   /map                  a page's drawn map (motdang.net's doodle-map engine)
 //   /feed.json            every live page as data, for motdang.net (search, place pages, maps)
 //   /api/…                the builder's and the pages' calls    /img/…  photos    /s/…  static files
-//   /admin                held and reported pages, Gold slips
+//   /admin                held and reported pages, Gold slips, sellers
+//   /sell                 sell pages for Mot Dang: the work, the pay, the sign-up; /sell/<id>.<tok> a seller's kit (sell.mjs)
 //   /name/calendar.ics    the page's calendar to follow    /name/l/<id>  a listing    /name/w/<id>  a portfolio project    /name/room/<id>.ics  a room's taken nights
 //   yourshop.com/         a Gold page at its own address (Cloudflare for SaaS, domain.mjs)
 //   /vendor/ /fonts/ /tiles/ /data/ /front/ /sites/doodle-map/   read from motdang.net, so a page asks one host
@@ -30,11 +31,12 @@ import * as dom from './domain.mjs'
 import { tellBeer } from './line.mjs'
 import * as sellers from './sellers.mjs'
 import * as slipq from './slipq.mjs'
+import * as sell from './sell.mjs'
 import { readCalendars, monthly, trialNotes } from './cron.mjs'
 import { calIcs, roomIcs, addDays } from '../public/s/extras.mjs'
 import { guestPage } from './guest.mjs'
 
-const QUOTA = { site: 3, photo: 200, save: 400, report: 20, msg: 12, pd: 200, notify: 3, slip: 10, book: 10, domain: 6 }
+const QUOTA = { site: 3, photo: 200, save: 400, report: 20, msg: 12, pd: 200, notify: 3, slip: 10, book: 10, domain: 6, join: 3 }
 const TRIAL_DAYS = 30 // Nan 2026-10-14: a new page is Gold for its first 30 days
 const MAIN = 'https://motdang.net'
 const PASS = /^\/(vendor|fonts|tiles|data|front)\/|^\/sites\/doodle-map\//
@@ -106,6 +108,10 @@ async function route(request, env, ctx) {
   if (path === '/favicon.ico') return asset(request, env, '/s/ant.svg')
   if (path === '/admin' || path.startsWith('/admin/')) return admin(request, env, path.slice(6), url)
   if (path.startsWith('/q/')) return slipPage(request, env, path, url, origin)
+  if (path === '/sell' || path.startsWith('/sell/') || path.startsWith('/h/') || path.startsWith('/p/')) {
+    const r = await sell.route(request, env, path, url, origin, sellDeps(env, ctx))
+    if (r) return r
+  }
 
   const pm = /^\/([a-z0-9-]{3,30})(\/sign|\/contact\.vcf|\/event\.ics|\/calendar\.ics|\/l\/[a-z0-9]{4,12}|\/w\/[a-z0-9]{4,12}|\/room\/[a-z0-9]{4,12}\.ics)?\/?$/.exec(path)
   if (pm && m === 'GET') return page(request, env, ctx, pm[1], pm[2] || '', url, origin)
@@ -784,10 +790,24 @@ async function admin(request, env, rest, url) {
     if (act === 'gold') await gold.grant(env, id)
     if (act === 'pay-ok') await payOk(env, id, url.origin, 'checked by hand')
     if (act === 'pay-no') await payNo(env, id)
+    if (act === 'seller-on' || act === 'seller-off') await env.DB.prepare('UPDATE seller SET status = ? WHERE id = ?').bind(act.slice(7), id).run()
+    if (act === 'payout-paid') await sell.payoutPaid(env, id)
     await log(env, id, 'admin-' + act, '')
     return Response.redirect(url.origin + '/admin', 303)
   }
-  return html(await adminPage(env), 200)
+  return html(await adminPage(env, await sell.adminRows(env, sha, homeOf(url, env))), 200)
+}
+
+/** What sell.mjs needs from here. */
+const sellDeps = (env, ctx) => ({
+  html, sha, take, sender, ctx, tellBeer: (t) => tellBeer(env, t),
+  plans: { gold: gold.PLANS(env).gold.baht, hotel: gold.PLANS(env).hotelyear.baht },
+  postPeople: (c) => postTo(env.DISCORD_PEOPLE, 'motdang people', c),
+})
+async function postTo(hook, username, content) {
+  if (!hook) return 'off'
+  const r = await fetch(hook, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ username, content, allowed_mentions: { parse: [] } }) })
+  return r.ok ? 'sent' : 'discord ' + r.status
 }
 
 /** A slip a person has looked at: paid. Only a payment still waiting moves. */
@@ -870,7 +890,7 @@ async function tidy(env) {
   await job('translate', () => tr.catchUp(env, gold.isGold, normalize))
   await job('monthly', () => monthly(env, gold.isGold, HOME))
   await job('trial', () => trialNotes(env, HOME, (d) => gold.planOf(env, d)))
-  await job('sellers', () => sellers.monthEnd(env, (c) => gold.postSales(env, c)))
+  await job('sellers', () => sellers.monthEnd(env, (c) => gold.postSales(env, c), (id) => sell.beerLink(env, sha, HOME, 'p', id, 60), (t) => tellBeer(env, t)))
   await env.DB.prepare("UPDATE site SET trial = 0 WHERE trial = 1 AND gold_until < ?").bind(new Date().toISOString().slice(0, 10)).run()
   return done
 }
