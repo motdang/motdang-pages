@@ -112,7 +112,7 @@ export async function paid(env, payId, origin, how, rand) {
 
 function shell(title, body, desc) {
   return `<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${esc(title)}</title>${desc ? `<meta name="description" content="${esc(desc)}"><meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(desc)}">` : '<meta name="robots" content="noindex">'}
+<title>${esc(title)}</title>${desc ? `<meta name="description" content="${esc(desc)}"><meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(desc)}"><meta property="og:image" content="https://sites.motdang.net/s/founders-card.jpg"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:image:alt" content="Founding members of motdang"><meta name="twitter:card" content="summary_large_image">` : '<meta name="robots" content="noindex">'}
 <style>body{margin:0;font:17px/1.45 system-ui,sans-serif;background:#fff8e7;color:#1c1530}main{max-width:560px;margin:0 auto;padding:18px 16px 48px}
 h1{font-size:26px;margin:0 0 6px;line-height:1.2}h2{font-size:19px;margin:26px 0 8px}.amt{font-size:34px;font-weight:800;margin:6px 0}.hint{font-size:15px;color:#4a4458}
 .card{background:#fff;border:2px solid #1c1530;border-radius:14px;padding:14px;margin:10px 0}.row{display:flex;gap:10px;flex-wrap:wrap}
