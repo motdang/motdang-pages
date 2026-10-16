@@ -7,6 +7,7 @@
 //   /feed.json            every live page as data, for motdang.net (search, place pages, maps)
 //   /api/…                the builder's and the pages' calls    /img/…  photos    /s/…  static files
 //   /admin                held and reported pages, Gold slips, sellers
+//   /x/<link>             a translator's page check: the maker's words beside the machine's (trcheck.mjs)
 //   /sell                 sell pages for Mot Dang: the work, the pay, the sign-up; /sell/<id>.<tok> a seller's kit (sell.mjs)
 //   /name/calendar.ics    the page's calendar to follow    /name/l/<id>  a listing    /name/w/<id>  a portfolio project    /name/room/<id>.ics  a room's taken nights
 //   yourshop.com/         a Gold page at its own address (Cloudflare for SaaS, domain.mjs)
@@ -32,6 +33,7 @@ import * as dom from './domain.mjs'
 import { tellBeer } from './line.mjs'
 import * as sellers from './sellers.mjs'
 import * as slipq from './slipq.mjs'
+import * as trcheck from './trcheck.mjs'
 import * as sell from './sell.mjs'
 import * as deals from './deals.mjs'
 import { readCalendars, monthly, trialNotes } from './cron.mjs'
@@ -111,6 +113,7 @@ async function route(request, env, ctx) {
   if (path === '/favicon.ico') return asset(request, env, '/s/ant.svg')
   if (path === '/admin' || path.startsWith('/admin/')) return admin(request, env, path.slice(6), url)
   if (path.startsWith('/q/')) return slipPage(request, env, path, url, origin)
+  if (path.startsWith('/x/')) return trcheck.route(request, env, path, url, origin, { html, sha, sameOrigin, normalize, log, postPeople: (c) => postTo(env.DISCORD_PEOPLE, 'motdang people', c) })
   if (path === '/sell' || path.startsWith('/sell/') || path.startsWith('/h/') || path.startsWith('/p/')) {
     const r = await sell.route(request, env, path, url, origin, sellDeps(env, ctx))
     if (r) return r
@@ -798,6 +801,12 @@ async function admin(request, env, rest, url) {
     return o ? new Response(o.body, { headers: { 'content-type': o.httpMetadata?.contentType || 'image/jpeg', 'cache-control': 'no-store' } }) : new Response('', { status: 404 })
   }
   if (request.method === 'POST' && rest === '/run' && sameOrigin(request, url)) return J(await tidy(env))
+  if (request.method === 'POST' && rest === '/gig' && sameOrigin(request, url)) { // a page check to send out on LINE
+    const f = await request.formData()
+    const r = await trcheck.mint(env, homeOf(url, env), { name: f.get('name'), lang: f.get('lang'), who: f.get('who') }, { sha, rand })
+    if (url.searchParams.has('json')) return J(r, r.error ? 400 : 200)
+    return r.error ? html(`<p style="font:18px system-ui;padding:20px">${escHtml(r.error)} · <a href="/admin">back</a></p>`, 400) : Response.redirect(url.origin + '/admin#gigs', 303)
+  }
   if (request.method === 'POST' && rest === '/act' && sameOrigin(request, url)) {
     const f = await request.formData()
     const id = String(f.get('id') || ''), act = String(f.get('act') || '')
@@ -813,7 +822,9 @@ async function admin(request, env, rest, url) {
     await log(env, id, 'admin-' + act, '')
     return Response.redirect(url.origin + '/admin', 303)
   }
-  return html(await adminPage(env, await sell.adminRows(env, sha, homeOf(url, env))), 200)
+  const gigs = (await env.DB.prepare('SELECT gig.id, gig.lang, gig.who, gig.posted, gig.taken, gig.n, gig.changed, site.name FROM gig JOIN site ON site.id = gig.site_id ORDER BY gig.posted DESC, gig.rowid DESC LIMIT 40').all()).results
+  for (const g of gigs) g.link = await trcheck.link(env, homeOf(url, env), g.id, sha)
+  return html(await adminPage(env, { ...(await sell.adminRows(env, sha, homeOf(url, env))), gigs }), 200)
 }
 
 /** What sell.mjs needs from here. */
