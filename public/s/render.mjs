@@ -111,7 +111,7 @@ export function normalize(d = {}) {
   o.dings = [...new Set((Array.isArray(d.dings) ? d.dings : []).filter((n) => typeof n === 'string' && DINGBATS[n]))].slice(0, 6)
   o.credits = {}
   for (const [id, c] of Object.entries(d.credits && typeof d.credits === 'object' ? d.credits : {})) {
-    if (!PHOTO_ID.test(id) || !c || typeof c !== 'object') continue
+    if (!PHOTO_ID.test(id) || !c || typeof c !== 'object' || c.from === 'doodle') continue // a doodle is the maker's own picture: no credit line, no PD badge
     o.credits[id] = { title: str(c.title, 120), by: str(c.by, 120), src: safeUrl(c.src), license: str(c.license, 40), licenseUrl: safeUrl(c.licenseUrl), from: str(c.from, 20) }
   }
   o.video = videoUrl(d.video)
