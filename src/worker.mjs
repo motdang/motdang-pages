@@ -9,7 +9,7 @@
 //   /admin                held and reported pages, Gold slips, sellers
 //   /x/<link>             a translator's page check: the maker's words beside the machine's (trcheck.mjs)
 //   /sell                 sell pages for Mot Dang: the work, the pay, the sign-up; /sell/<id>.<tok> a seller's kit (sell.mjs)
-//   /name/calendar.ics    the page's calendar to follow    /name/l/<id>  a listing    /name/w/<id>  a portfolio project    /name/room/<id>.ics  a room's taken nights
+//   /name/calendar.ics    the page's calendar to follow    /name/l/<id>  a listing    /name/w/<id>  a portfolio project    /name/a/<id>  an amulet    /name/room/<id>.ics  a room's taken nights
 //   yourshop.com/         a Gold page at its own address (Cloudflare for SaaS, domain.mjs)
 //   /vendor/ /fonts/ /tiles/ /data/ /front/ /sites/doodle-map/   read from motdang.net, so a page asks one host
 //
@@ -17,7 +17,8 @@
 // The edit link is the sign-in: a long random token, stored only as its hash.
 
 import { promptPayPayload } from './promptpay.mjs'
-import { render, qrSvg, normalize, vcard, ics, sign, KINDS, LOOK_IDS, GOLD_LOOKS, MAX_PHOTOS, sceneOf, HOME } from '../public/s/render.mjs'
+import { render, qrSvg, normalize, vcard, ics, sign, KINDS, LOOK_IDS, GOLD_LOOKS, MAX_PHOTOS, photoMax, sceneOf, HOME } from '../public/s/render.mjs'
+import { AM_MAX } from '../public/s/amulet.mjs'
 import { PAGE_LANGS } from '../public/s/words.mjs'
 import { nameProblem, screen } from './screen.mjs'
 import { clean, look, typeOf, MAX_BIG, MAX_SMALL } from './photo.mjs'
@@ -69,7 +70,7 @@ async function route(request, env, ctx) {
   // a Gold page at its own address: the page's paths without its name
   const host = url.hostname.toLowerCase()
   if (!env.DEV_ORIGIN && !/(^|\.)motdang\.net$|^(localhost|127\.0\.0\.1)$|\.workers\.dev$/.test(host)) {
-    const sub = /^\/(sign|contact\.vcf|event\.ics|calendar\.ics|l\/[a-z0-9]{4,12}|w\/[a-z0-9]{4,12}|room\/[a-z0-9]{4,12}\.ics)?\/?$/.exec(path)
+    const sub = /^\/(sign|contact\.vcf|event\.ics|calendar\.ics|l\/[a-z0-9]{4,12}|w\/[a-z0-9]{4,12}|a\/[a-z0-9]{4,12}|room\/[a-z0-9]{4,12}\.ics)?\/?$/.exec(path)
     if (sub && m === 'GET') {
       const own = await env.DB.prepare('SELECT name, tier, gold_until FROM site WHERE domain = ? OR domain = ?').bind(host, host.replace(/^www\./, '')).first()
       if (!own || !gold.isGold(own)) return html(notFound(null, request), 404)
@@ -128,7 +129,7 @@ async function route(request, env, ctx) {
     if (r) return r
   }
 
-  const pm = /^\/([a-z0-9-]{3,30})(\/sign|\/contact\.vcf|\/event\.ics|\/calendar\.ics|\/l\/[a-z0-9]{4,12}|\/w\/[a-z0-9]{4,12}|\/room\/[a-z0-9]{4,12}\.ics)?\/?$/.exec(path)
+  const pm = /^\/([a-z0-9-]{3,30})(\/sign|\/contact\.vcf|\/event\.ics|\/calendar\.ics|\/l\/[a-z0-9]{4,12}|\/w\/[a-z0-9]{4,12}|\/a\/[a-z0-9]{4,12}|\/room\/[a-z0-9]{4,12}\.ics)?\/?$/.exec(path)
   if (pm && m === 'GET') return page(request, env, ctx, pm[1], pm[2] || '', url, origin)
   return html(notFound(null, request), 404)
 }
@@ -199,6 +200,11 @@ async function page(request, env, ctx, name, sub, url, origin, base) {
     if (!normalize(site.d).works.some((x) => x.id === id)) return html(notFound(null, request), 404)
     opt.work = id
   }
+  if (sub.startsWith('/a/')) {
+    const id = sub.slice(3)
+    if (!normalize(site.d).amulets.slice(0, site.tier === 'gold' ? AM_MAX.gold : AM_MAX.free).some((x) => x.id === id)) return html(notFound(null, request), 404)
+    opt.amulet = id
+  }
   if (site.tier === 'gold' && s.status === 'live') {
     const d = normalize(site.d)
     opt.langs = await tr.langsOf(env, s, d)
@@ -216,8 +222,9 @@ const CSP_PAGE = (nonce) => `default-src 'self'; img-src 'self' data: blob: http
   `frame-src 'self' https://www.youtube-nocookie.com https://player.vimeo.com; frame-ancestors 'self'; base-uri 'none'; form-action 'self'`
 const CSP_MAP = (nonce) => `default-src 'self'; img-src 'self' data: blob: https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://motdang.net; font-src 'self' https://fonts.gstatic.com https://motdang.net; ` +
   `script-src 'self' 'nonce-${nonce}' https://motdang.net; connect-src 'self' https://motdang.net https://mot-dang-claims.nanobotco.workers.dev; worker-src 'self' blob:; frame-ancestors 'self'; base-uri https://motdang.net`
+// the builder frames Amulet Camera's cutting page (nanobotco.github.io/amulet-camera/cut.html): the model and its library load there, never here
 const CSP_TOOL = `default-src 'self'; img-src 'self' data: blob: https:; style-src 'self' 'unsafe-inline' https://motdang.net; font-src 'self'; script-src 'self' https://motdang.net https://static.cloudflareinsights.com; ` +
-  `connect-src 'self' https://motdang.net https://cloudflareinsights.com; worker-src 'self' blob:; child-src 'self' blob:; frame-src 'self' https://www.youtube-nocookie.com https://player.vimeo.com; frame-ancestors 'self'; base-uri 'none'; form-action 'self'`
+  `connect-src 'self' https://motdang.net https://cloudflareinsights.com; worker-src 'self' blob:; child-src 'self' blob:; frame-src 'self' https://www.youtube-nocookie.com https://player.vimeo.com https://nanobotco.github.io; frame-ancestors 'self'; base-uri 'none'; form-action 'self'`
 
 function html(body, status = 200, { nonce, cache, map } = {}) {
   return new Response(body, {
@@ -263,7 +270,7 @@ function asData(r, origin) {
     cc: d.place.cc || null, lat: d.place.lat, lng: d.place.lng, addr: d.place.addr, hours: d.hours.on ? { on: true, always: d.hours.always, tz: d.hours.tz, week: d.hours.week } : null,
     phone: d.contact.phone, line: d.contact.line, web: d.contact.web, facebook: d.contact.facebook, instagram: d.contact.instagram,
     items: d.items, currency: d.currency, cover: d.cover ? im(d.cover) : '',
-    photos: d.photos.slice(0, g ? MAX_PHOTOS.gold : MAX_PHOTOS.free).map((id) => ({ url: im(id), small: im(id, true), credit: d.credits[id] || null })),
+    photos: d.photos.slice(0, photoMax(r.kind, g)).map((id) => ({ url: im(id), small: im(id, true), credit: d.credits[id] || null })),
     event: d.event, scene: d.drawing ? sceneOf(r.kind, d) : '', published: r.published, updated: r.updated,
     rooms: g ? d.rooms.map((x) => ({ n: x.n, p: x.p, guests: x.guests, units: x.units })) : [], book: g && d.rooms.length && gold.isHotel(r) ? `${origin}/${r.name}#rooms` : '', ota: g ? d.ota : null,
   }
@@ -299,7 +306,7 @@ async function sitemap(env, origin) {
   const rows = (await env.DB.prepare("SELECT name, updated, tier, gold_until, d FROM site WHERE status='live'").all()).results.filter((r) => gold.isGold(r))
   const loc = (u, day) => `<url><loc>${u}</loc><lastmod>${day}</lastmod></url>`
   const body = `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>${origin}/</loc></url>` +
-    rows.map((r) => { const day = r.updated.slice(0, 10); let works = []; try { works = normalize(JSON.parse(r.d)).works } catch {} return loc(`${origin}/${r.name}`, day) + works.map((x) => loc(`${origin}/${r.name}/w/${x.id}`, day)).join('') }).join('') + '</urlset>'
+    rows.map((r) => { const day = r.updated.slice(0, 10); let works = [], ams = []; try { const n = normalize(JSON.parse(r.d)); works = n.works; ams = n.amulets } catch {} return loc(`${origin}/${r.name}`, day) + works.map((x) => loc(`${origin}/${r.name}/w/${x.id}`, day)).join('') + ams.map((x) => loc(`${origin}/${r.name}/a/${x.id}`, day)).join('') }).join('') + '</urlset>'
   return new Response(body, { headers: { 'content-type': 'application/xml', 'cache-control': 'public, max-age=3600' } })
 }
 
@@ -494,7 +501,7 @@ ${s ? `<p>ข้อความถึง ${escHtml(title)} จะส่งสำ
       const why = nameProblem(name)
       if (why) return J({ error: 'name', why }, 400)
     }
-    if (!isGold) d.photos = d.photos.slice(0, MAX_PHOTOS.free)
+    d.photos = d.photos.slice(0, photoMax(kind, isGold))
     // photos named in the page must be this page's own; credits come from the library, not the browser
     const ids = [...new Set([d.cover, d.card, d.avatar, d.place.snap, ...d.photos].filter(Boolean))]
     d.credits = {}
@@ -509,7 +516,7 @@ ${s ? `<p>ข้อความถึง ${escHtml(title)} จะส่งสำ
       for (const [id, c] of ok) if (c) { try { d.credits[id] = JSON.parse(c) } catch {} }
     }
     const pool = new Set(d.photos)
-    for (const x of [...(d.rooms || []), ...(d.lists || []), ...(d.works || [])]) if (Array.isArray(x.photos)) x.photos = x.photos.filter((id) => pool.has(id))
+    for (const x of [...(d.rooms || []), ...(d.lists || []), ...(d.works || []), ...(d.amulets || [])]) if (Array.isArray(x.photos)) x.photos = x.photos.filter((id) => pool.has(id))
     const nd = normalize(d)
     let status = s.status, held = null
     const publish = b.publish === true || s.status !== 'draft'
@@ -551,7 +558,7 @@ ${s ? `<p>ข้อความถึง ${escHtml(title)} จะส่งสำ
     const who = await sender(request, env)
     if (!(await take(env, who, 'photo'))) return J({ error: 'quota' }, 429)
     const have = await env.DB.prepare('SELECT COUNT(*) AS n FROM photo WHERE site_id = ?').bind(s.id).first()
-    if ((have?.n || 0) >= (isGold ? MAX_PHOTOS.gold : MAX_PHOTOS.free) * 2 + 10) return J({ error: 'too-many' }, 400)
+    if ((have?.n || 0) >= photoMax(s.kind, isGold) * 2 + 10) return J({ error: 'too-many' }, 400)
     const form = await request.formData()
     const role = ['photo', 'map', 'card'].includes(form.get('role')) ? form.get('role') : 'photo'
     const big = clean(await form.get('big')?.arrayBuffer?.() ?? new ArrayBuffer(0), MAX_BIG)

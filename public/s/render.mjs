@@ -7,14 +7,17 @@ import { word, PAGE_LANGS } from './words.mjs'
 import { encodeQr } from './qr.mjs'
 import { DINGBATS } from './db/names.mjs'
 import { normalizeExtras, upcoming, campsNow, utcOf, money, MAP_NEAR, MAX, UNIT_LABEL, tagsOf } from './extras.mjs'
+import { normalizeAmulets, amuletSection, amuletBody, amuletLd, amuletDesc, AM_CSS, AM_MAX } from './amulet.mjs'
 import { LOOKS, LOOK_IDS, GOLD_LOOKS, LOOK_ALIAS, lookOf, HERO_CSS, F_THAI } from './looks.mjs'
 
 export { LOOKS, LOOK_IDS, GOLD_LOOKS, LOOK_ALIAS, lookOf }
 
-export const KINDS = ['shop', 'food', 'service', 'work', 'stay', 'homes', 'me', 'event', 'group']
+export const KINDS = ['shop', 'food', 'service', 'work', 'amulet', 'stay', 'homes', 'me', 'event', 'group']
 export const HOME = 'https://sites.motdang.net'
 export const MAIN = 'https://motdang.net'
-export const MAX_PHOTOS = { free: 12, gold: 120 }
+export const MAX_PHOTOS = { free: 12, gold: 120, amulet: 360 }
+// a Gold amulet page holds 360 (her word 2026-10-16: 120 amulets, front, back and a close-up)
+export const photoMax = (kind, gold) => (!gold ? MAX_PHOTOS.free : kind === 'amulet' ? MAX_PHOTOS.amulet : MAX_PHOTOS.gold)
 
 // The auto-doodler's scenes a page can draw itself as (motdang.net/front/doodler*.js),
 // by kind, with words for the builder. The first is each kind's own.
@@ -32,6 +35,7 @@ export const SCENES = {
   homes: [['agent', 'นายหน้า', 'Estate agent'], ['lanna-house', 'บ้านล้านนา', 'House'], ['alley', 'ซอย', 'Soi'], ['office', 'สำนักงาน', 'Office'], ['rooftop', 'ดาดฟ้า', 'Rooftop']],
   work: [['studio', 'สตูดิโอ', 'Studio'], ['office', 'สำนักงาน', 'Office'], ['lanna-house', 'บ้านล้านนา', 'Lanna house'], ['rooftop', 'ดาดฟ้า', 'Rooftop'], ['alley', 'ซอย', 'Soi'],
     ['crafts', 'งานฝีมือ', 'Crafts'], ['band', 'ดนตรี', 'Music'], ['robots', 'หุ่นยนต์', 'Robots']],
+  amulet: [['wat', 'วัด', 'Wat'], ['market', 'ตลาด', 'Market'], ['secondhand', 'ของเก่า', 'Antiques'], ['crafts', 'งานฝีมือ', 'Crafts'], ['alley', 'ซอย', 'Soi']],
   me: [['lanna-house', 'บ้านล้านนา', 'Lanna house'], ['alley', 'ซอย', 'Soi'], ['rooftop', 'ดาดฟ้า', 'Rooftop'], ['studio', 'สตูดิโอ', 'Studio'], ['band', 'ดนตรี', 'Music'],
     ['dance', 'เต้น', 'Dance'], ['tuktuk', 'ตุ๊กตุ๊ก', 'Tuk-tuk'], ['robots', 'หุ่นยนต์', 'Robots']],
   event: [['social', 'ปาร์ตี้', 'Party'], ['market', 'ตลาด', 'Market'], ['band', 'ดนตรีสด', 'Live music'], ['feast', 'งานเลี้ยง', 'Feast'], ['yoga', 'โยคะ', 'Yoga'],
@@ -49,7 +53,7 @@ export const sceneOf = (kind, d) => (d.scene && SCENE_IDS.has(d.scene) ? d.scene
 // The dingbat beside each section's heading, and the look each page look draws them in.
 const HEAD_DING = { pay: 'coin', about: 'sparkle', menu: 'noodles', prices: 'coin', hours: 'clock', photos: 'camera', where: 'pin', line: 'chat', links: 'link',
   contact: 'telephone', msg: 'envelope', when: 'calendar', drawn: 'pencil', video: 'play', spots: 'compass', share: 'share',
-  cal: 'calendar', camp: 'megaphone', book: 'clock', rooms: 'key', lists: 'home', works: 'nib', quotes: 'hedera' }
+  cal: 'calendar', camp: 'megaphone', book: 'clock', rooms: 'key', lists: 'home', works: 'nib', quotes: 'hedera', amulets: 'lotus', amterms: 'bell' }
 const DING_LOOK = { poster: 'riso', loom: 'paper', stitch: 'paper', night: 'neon', clean: 'ink', lanna: 'paper', gold: 'paper' }
 export const ACCENTS = ['#f04a00', '#ff2e88', '#ffb000', '#19a974', '#137a71', '#2563eb', '#7c3aed', '#111827']
 
@@ -107,7 +111,7 @@ export function normalize(d = {}) {
   o.card = PHOTO_ID.test(d.card || '') ? d.card : ''
   o.avatar = PHOTO_ID.test(d.avatar || '') ? d.avatar : ''
   o.avround = d.avround !== false
-  o.photos = (Array.isArray(d.photos) ? d.photos : []).filter((p) => PHOTO_ID.test(p)).slice(0, MAX_PHOTOS.gold)
+  o.photos = (Array.isArray(d.photos) ? d.photos : []).filter((p) => PHOTO_ID.test(p)).slice(0, MAX_PHOTOS.amulet)
   o.scene = SCENE_IDS.has(d.scene) ? d.scene : ''
   o.drawing = d.drawing !== false
   const pay = d.pay || {}, ppn = String(pay.pp || '').replace(/\D/g, '')
@@ -166,7 +170,7 @@ export function normalize(d = {}) {
   o.event = LOCAL_DT.test(e.start || '')
     ? { start: e.start, end: LOCAL_DT.test(e.end || '') && e.end > e.start ? e.end : '', tz: validTz(e.tz) }
     : null
-  return normalizeExtras(d, o)
+  return normalizeAmulets(d, normalizeExtras(d, o))
 }
 
 /** A YouTube or Vimeo address as { kind, id }, else null. */
@@ -543,22 +547,24 @@ export function render(site, opt = {}) {
   const c = d.contact
   const line = lineHref(c.line)
   const grabOk = hasPin && (GRAB_CC[pl.cc] || (!pl.cc && lang === 'th'))
-  const photos = d.photos.slice(0, gold ? MAX_PHOTOS.gold : MAX_PHOTOS.free)
+  const photos = d.photos.slice(0, photoMax(site.kind, gold))
   const H2 = (k, label) => `<h2>${ding(HEAD_DING[k], dl)}${label}</h2>`
   const out = []
   const L = gold && opt.listing ? d.lists.find((x) => x.id === opt.listing) || null : null
   const Wk = !L && opt.work ? d.works.find((x) => x.id === opt.work) || null : null
+  const ams = d.amulets.slice(0, gold ? AM_MAX.gold : AM_MAX.free)
+  const Am = !L && !Wk && opt.amulet ? ams.find((x) => x.id === opt.amulet) || null : null
   const tz = d.hours.tz
   const sym = CURRENCY[cur] || ''
   const now = opt.now ? +opt.now : Date.now()
-  const title = L ? `${L.t} · ${name}` : Wk ? `${Wk.t} · ${name}` : name
-  const pageUrl = L ? `${url}/l/${L.id}` : Wk ? `${url}/w/${Wk.id}` : url
+  const title = L ? `${L.t} · ${name}` : Wk ? `${Wk.t} · ${name}` : Am ? `${Am.t} · ${name}` : name
+  const pageUrl = L ? `${url}/l/${L.id}` : Wk ? `${url}/w/${Wk.id}` : Am ? `${url}/a/${Am.id}` : url
   const langs = (opt.langs || []).filter((l) => PAGE_LANGS[l])
   const home = opt.home || site.lang
 
   // head
-  const desc = (L && L.note.slice(0, 160)) || (Wk && (Wk.note.slice(0, 160) || [Wk.client, Wk.year].filter(Boolean).join(' · '))) || d.tagline || d.about.slice(0, 160) || name
-  const card = L && L.photos[0] ? origin + img(L.photos[0]) : Wk && Wk.photos[0] ? origin + img(Wk.photos[0]) : d.card ? `${origin}/img/${d.card}.jpg` : d.cover ? origin + img(d.cover) : `${origin}/s/card.jpg`
+  const desc = (L && L.note.slice(0, 160)) || (Wk && (Wk.note.slice(0, 160) || [Wk.client, Wk.year].filter(Boolean).join(' · '))) || (Am && amuletDesc(Am, lang)) || d.tagline || d.about.slice(0, 160) || name
+  const card = L && L.photos[0] ? origin + img(L.photos[0]) : Wk && Wk.photos[0] ? origin + img(Wk.photos[0]) : Am && Am.photos[0] ? origin + img(Am.photos[0]) : d.card ? `${origin}/img/${d.card}.jpg` : d.cover ? origin + img(d.cover) : `${origin}/s/card.jpg`
   out.push(`<!doctype html><html lang="${lang}" data-look="${lookId}" translate="no" class="notranslate"><head><meta charset="utf-8"><meta name="google" content="notranslate">`,
     opt.nonce ? `<script nonce="${opt.nonce}">if(/[.]translate[.]goog$/.test(location.hostname))location.replace("https://"+location.hostname.slice(0,-15).replace(/--/g,"~").replace(/-/g,".").replace(/~/g,"-")+location.pathname+location.search.replace(/([?&])_x_tr_[^&]*/g,"$1").replace(/[?&]+$/,"").replace(/[?]&+/,"?")+location.hash)</script>` : '',
     `<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">`,
@@ -569,10 +575,10 @@ export function render(site, opt = {}) {
     `<meta name="twitter:card" content="summary_large_image"><meta name="twitter:image" content="${esc(card)}">`,
     `<meta name="robots" content="${gold && site.status === 'live' ? 'index,follow,notranslate' : 'noindex,notranslate'}"><link rel="canonical" href="${esc(opt.hl ? pageUrl + '?hl=' + opt.hl : pageUrl)}">`,
     langs.length > 1 && gold && site.status === 'live' ? langs.map((l) => `<link rel="alternate" hreflang="${l}" href="${esc(l === home ? pageUrl : pageUrl + '?hl=' + l)}">`).join('') : '',
-    gold && site.status === 'live' && !opt.preview ? `<script type="application/ld+json">${ldJson(site, d, name, pageUrl, card, L, sym).replace(/</g, '\\u003c')}</script>` : '',
+    gold && site.status === 'live' && !opt.preview ? `<script type="application/ld+json">${(Am ? JSON.stringify(amuletLd(Am, pageUrl, card, cur)) : ldJson(site, d, name, pageUrl, card, L, sym)).replace(/</g, '\\u003c')}</script>` : '',
     `<meta name="theme-color" content="${/--bg:(#[0-9a-f]+)/i.exec(look.vars)?.[1] || '#ffffff'}">`,
     `<link rel="icon" href="${d.avatar ? esc(img(d.avatar, true)) : '/s/ant.svg'}">`,
-    `<style>${faces(look.fonts)}:root{${look.vars};--accent:${accent};--on-accent:${onColor(accent)};--acc-ink:${accInk(look, accent)};--soft:color-mix(in srgb,var(--ink) 6%,var(--card))}${BASE_CSS}${HERO_CSS}${look.css}</style></head><body>`)
+    `<style>${faces(look.fonts)}:root{${look.vars};--accent:${accent};--on-accent:${onColor(accent)};--acc-ink:${accInk(look, accent)};--soft:color-mix(in srgb,var(--ink) 6%,var(--card))}${BASE_CSS}${HERO_CSS}${ams.length ? AM_CSS : ''}${look.css}</style></head><body>`)
 
   if (site.status === 'held' && !opt.preview) {
     out.push(`<main class="wrap"><section class="card checking"><h1 style="font:700 28px var(--display)">${esc(name)}</h1><p>${W('checking')}</p></section></main>`,
@@ -583,16 +589,17 @@ export function render(site, opt = {}) {
   // top: each look lays it out its own way (looks.mjs); the photo box holds still while the page slides over it
   const cov = L ? L.photos[0] || '' : Wk ? Wk.photos[0] || '' : d.cover
   const deco = look.deco ? look.deco({ gold, open: !!(st && (st.open || st.always)) }) : {}
-  const h1 = L ? L.t : Wk ? Wk.t : name
+  const h1 = L ? L.t : Wk ? Wk.t : Am ? Am.t : name
   out.push(`<header class="top${cov ? ' has-cover' : ''}${gold ? ' gilt' : ''}">`, deco.back || '')
   if (cov) out.push(`<div class="pf"><div class="ph"><img src="${esc(img(cov))}" alt="" fetchpriority="high"${cov === d.cover && d.coverPos ? ` style="object-position:${d.coverPos[0] * 100}% ${d.coverPos[1] * 100}%;--fy:${d.coverPos[1]}"` : ''}>${deco.ph || ''}</div>${deco.frame || ''}${d.credits[cov] ? `<p class="cr">${creditLine(d.credits[cov])}</p>` : ''}</div>`)
   out.push(deco.front || '', '<div class="t">')
-  const kick = !L && !Wk ? kicker(d) : ''
+  const kick = !L && !Wk && !Am ? kicker(d) : ''
   if (kick) out.push(`<p class="kick">${esc(kick)}</p>`)
-  if (d.avatar && !L && !Wk) out.push(`<img class="av${d.avround ? ' round' : ''}" src="${esc(img(d.avatar, true))}" alt="" width="104" height="104">`)
+  if (d.avatar && !L && !Wk && !Am) out.push(`<img class="av${d.avround ? ' round' : ''}" src="${esc(img(d.avatar, true))}" alt="" width="104" height="104">`)
   out.push(`<h1 style="--lw:${longestWord(h1)}"${/[\u0E00-\u0E7F]/.test(h1) ? ' class="th"' : ''}>${wordsOf(h1)}</h1><span class="bar"></span>`)
   if (L) out.push(`<p class="tag"><a href="/${esc(site.name)}#lists">${esc(name)}</a></p>`)
   else if (Wk) out.push(`<p class="tag"><a href="/${esc(site.name)}#works">${esc(name)}</a></p>`)
+  else if (Am) out.push(`<p class="tag"><a href="/${esc(site.name)}#amulets">${esc(name)}</a></p>`)
   else if (d.tagline) out.push(`<p class="tag">${esc(d.tagline)}</p>`)
   if (d.dings.length) out.push(`<p class="dings">${d.dings.map((n) => ding(n, dl)).join('')}</p>`)
   out.push(`<span id="st">${badge(lang, st)}</span>`)
@@ -608,6 +615,7 @@ export function render(site, opt = {}) {
   out.push('<main class="wrap">')
   if (L) out.push(listingBody(L, { site, d, W, H2, img, sym, gold, opt, name }))
   else if (Wk) out.push(workBody(Wk, { site, d, W, H2, img, gold }))
+  else if (Am) out.push(amuletBody(Am, { site, d, lang, esc, H2, img, icon, paras, sym, ding, line, oa: lineOa(c.line), url: pageUrl, list: ams, W, tel: telHref }))
   else {
 
   // reach: the buttons a reader came for
@@ -671,6 +679,9 @@ export function render(site, opt = {}) {
   }
 
   if (d.about) out.push(`<section class="card rise">${H2('about', W('about'))}${paras(d.about)}</section>`)
+
+  // an amulet seller's amulets, each its own page
+  if (ams.length) out.push(amuletSection(ams, { site, lang, esc, H2, img, sym, ding }))
 
   // a portfolio: the work, filtered by tag, each its own page
   const works = d.works.slice(0, gold ? MAX.works : MAX.worksFree)

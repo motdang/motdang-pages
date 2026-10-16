@@ -3,7 +3,7 @@
 // own; "Put it online" is the only button that matters. Beside the page:
 // its messages, its traffic, and Gold.
 
-import { render, normalize, LOOKS, LOOK_IDS, GOLD_LOOKS, lookOf, KINDS, ACCENTS, CURRENCY, SCENES, DPROPS, MAX_PHOTOS, osmHours, currencyFor, qrSvg, lineShare, esc } from './render.mjs'
+import { render, normalize, LOOKS, LOOK_IDS, GOLD_LOOKS, lookOf, KINDS, ACCENTS, CURRENCY, SCENES, DPROPS, MAX_PHOTOS, photoMax, osmHours, currencyFor, qrSvg, lineShare, esc } from './render.mjs'
 import { MAX, UNIT_LABEL } from './extras.mjs'
 import { DINGBATS } from './db/names.mjs'
 import { PAGE_LANGS } from './words.mjs'
@@ -12,6 +12,9 @@ import { exifBlock, readExif } from './exif.mjs'
 import { openStudio } from './studio-ui.mjs'
 import { openAvatar } from './avatar-ui.mjs'
 import { openDoodle } from './doodle-ui.mjs'
+import { amuletsSec, amToggle, amUi, newAmulet } from './make-amulet.mjs'
+import { amcamInit, amcamTake, amcamClick, amLens, amPost } from './make-amcam.mjs'
+import { AM_MAX } from './amulet.mjs'
 import { drawCard, cardKey, CARD } from './card.mjs'
 import { loadFaces } from './mark.mjs'
 
@@ -22,7 +25,7 @@ const store = {
   set(k, v) { try { localStorage.setItem('mdp:' + k, JSON.stringify(v)) } catch {} },
 }
 const icon = (id) => `<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><use href="/s/icons.svg#i-${id}"/></svg>`
-const KIND_ICON = { shop: 'shop', food: 'food', service: 'gear', work: 'star', stay: 'moon', homes: 'tag', me: 'me', event: 'party', group: 'people' }
+const KIND_ICON = { shop: 'shop', food: 'food', service: 'gear', work: 'star', amulet: 'flower', stay: 'moon', homes: 'tag', me: 'me', event: 'party', group: 'people' }
 const TZ = (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone } catch { return 'Asia/Bangkok' } })()
 
 const S = {
@@ -44,7 +47,7 @@ function dingbats(fams) {
 }
 dingbats.loaded = new Set()
 dingbats(['signals', 'classic', 'kitchen', 'faces', 'lanna'])
-const KIND_DING = { shop: 'cart', food: 'noodles', service: 'gear', work: 'nib', stay: 'key', homes: 'home', me: 'wave', event: 'party', group: 'crown' }
+const KIND_DING = { shop: 'cart', food: 'noodles', service: 'gear', work: 'nib', amulet: 'lotus', stay: 'key', homes: 'home', me: 'wave', event: 'party', group: 'crown' }
 const DB_FAMS = [...new Set(Object.values(DINGBATS))]
 const rid = () => Math.random().toString(36).slice(2, 8).padEnd(6, 'x')
 // the dingbats a maker can put beside the name: a handful from each family
@@ -61,13 +64,14 @@ const DEFAULT_OPEN = {
   food: ['pay', 'words', 'photos', 'items', 'order', 'map', 'hours', 'contact'],
   service: ['pay', 'words', 'face', 'photos', 'svc', 'items', 'contact', 'map'],
   work: ['pay', 'words', 'face', 'works', 'photos', 'quotes', 'contact', 'links'],
+  amulet: ['amulets', 'pay', 'words', 'face', 'contact', 'photos', 'map', 'hours'],
   me: ['pay', 'words', 'face', 'photos', 'links', 'contact'],
   stay: ['pay', 'words', 'photos', 'rooms', 'ota', 'map', 'contact'],
   homes: ['pay', 'words', 'lists', 'photos', 'contact', 'map'],
   event: ['pay', 'event', 'words', 'cal', 'photos', 'map', 'contact'],
   group: ['pay', 'words', 'cal', 'photos', 'links', 'contact'],
 }
-const LOOK_FOR = { shop: 'poster', food: 'night', service: 'loom', work: 'clean', stay: 'lanna', homes: 'clean', me: 'stitch', event: 'poster', group: 'stitch' }
+const LOOK_FOR = { shop: 'poster', food: 'night', service: 'loom', work: 'clean', amulet: 'lanna', stay: 'lanna', homes: 'clean', me: 'stitch', event: 'poster', group: 'stitch' }
 
 function guessCc() {
   const zone = { 'Asia/Bangkok': 'TH', 'Asia/Yangon': 'MM', 'Asia/Rangoon': 'MM', 'Asia/Vientiane': 'LA', 'Asia/Phnom_Penh': 'KH',
@@ -554,12 +558,14 @@ async function create(look, btn) {
   if (S.kind === 'stay') S.d.rooms = [NEW_ROW.rooms()]
   if (S.kind === 'homes') S.d.lists = [NEW_ROW.lists()]
   if (S.kind === 'work') S.d.works = [NEW_ROW.works()]
+  if (S.kind === 'amulet') S.d.amulets = [NEW_ROW.amulets()]
   S.pageLang = PAGE_LANGS[S.lang] ? S.lang : 'en'
   try {
     const r = await call('POST', 'sites', { name: S.addr, kind: S.kind, look, lang: S.pageLang, d: S.d, by: new URLSearchParams(location.search).get('by') || '' })
     S.token = r.token; S.name = r.name; S.status = r.status; S.tier = r.tier || 'gold'; S.goldUntil = r.gold_until || ''; S.trial = !!r.trial; S.hotel = !!r.trial
     history.replaceState(null, '', '/make#t=' + S.token)
     remember()
+    camStart()
     S.open = new Set(DEFAULT_OPEN[S.kind]); S.part = ''
     S.step = 'edit'
     draw()
@@ -573,7 +579,7 @@ async function create(look, btn) {
 // ---- the editor ------------------------------------------------------------------------
 
 const SECTIONS = [
-  ['pay', 'coin', 's_pay'], ['event', 'cal', 's_event'], ['words', 'note', 's_words'], ['face', 'me', 's_face'], ['works', 'star', 's_works'], ['drawing', 'sparkle', 's_drawing'], ['photos', 'camera', 's_photos'], ['quotes', 'chat', 's_quotes'],
+  ['pay', 'coin', 's_pay'], ['event', 'cal', 's_event'], ['words', 'note', 's_words'], ['face', 'me', 's_face'], ['works', 'star', 's_works'], ['amulets', 'flower', 's_amulets'], ['drawing', 'sparkle', 's_drawing'], ['photos', 'camera', 's_photos'], ['quotes', 'chat', 's_quotes'],
   ['rooms', 'moon', 's_rooms', 'gold'], ['ota', 'globe', 's_ota', 'gold'], ['lists', 'tag', 's_lists', 'gold'], ['svc', 'clock', 's_svc', 'gold'], ['items', 'tag', 's_items'],
   ['cal', 'cal', 's_cal'], ['camps', 'party', 's_camps', 'gold'],
   ['order', 'basket', 's_order'], ['contact', 'phone', 's_contact'], ['map', 'pin', 's_map'], ['spots', 'compass', 's_spots'], ['hours', 'clock', 's_hours'],
@@ -584,7 +590,7 @@ function hasData(id) {
   const d = S.d
   return { event: !!d.event, words: true, drawing: true, photos: d.photos.length > 0, items: d.items.length > 0, order: !!(d.order.grabfood || d.order.lineman),
     contact: Object.values(d.contact).some(Boolean), map: d.place.lat !== null || !!d.place.addr, hours: d.hours.on, links: d.links.length > 0, msg: true, look: true,
-    video: !!d.video, spots: d.spots.length > 0, cal: d.cal.length > 0, ota: !!(d.ota.agoda || d.ota.booking), camps: d.camps.length > 0, svc: d.svc.length > 0, rooms: d.rooms.length > 0, lists: d.lists.length > 0, face: !!d.avatar, works: d.works.length > 0, quotes: d.quotes.length > 0 }[id]
+    video: !!d.video, spots: d.spots.length > 0, cal: d.cal.length > 0, ota: !!(d.ota.agoda || d.ota.booking), camps: d.camps.length > 0, svc: d.svc.length > 0, rooms: d.rooms.length > 0, lists: d.lists.length > 0, face: !!d.avatar, works: d.works.length > 0, amulets: d.amulets.length > 0, quotes: d.quotes.length > 0 }[id]
 }
 
 function tabs() {
@@ -600,7 +606,7 @@ function tabs() {
 const GROUPS = [
   ['words', ['event', 'words'], 'pencil'],
   ['pics', ['photos', 'drawing', 'face', 'video'], 'camera'],
-  ['offer', ['pay', 'items', 'works', 'amulets', 'svc', 'rooms', 'lists', 'ota', 'cal', 'camps', 'quotes'], 'cart'],
+  ['offer', ['amulets', 'pay', 'items', 'works', 'svc', 'rooms', 'lists', 'ota', 'cal', 'camps', 'quotes'], 'cart'],
   ['reach', ['contact', 'order', 'msg', 'links'], 'telephone'],
   ['where', ['map', 'hours', 'spots'], 'compass'],
   ['look', ['look'], 'sparkle'],
@@ -746,7 +752,7 @@ const SEC = {
       `<label class="check"><input type="checkbox" class="sw" data-k="pay.tips" ${p.tips ? 'checked' : ''}>${T('pay_tips')}</label>`
   },
   photos() {
-    const max = isGold() ? MAX_PHOTOS.gold : MAX_PHOTOS.free
+    const max = photoMax(S.kind, isGold())
     return `<div class="photos">${S.d.photos.map((id) => `<div class="ph${id === S.d.cover ? ' cover' : ''}" data-ph="${id}"><img src="${esc(imgUrl(id, true))}" alt="">${id === S.d.cover ? `<span class="flag">${T('cover')}</span>` : ''}${S.d.credits?.[id] ? '<span class="pdf">PD</span>' : ''}
       <div class="tools"><button data-mo="${id}">${T('st_make')}</button><button data-dd="${id}">${T('dd_fromBtn')}</button>${id !== S.d.cover ? `<button data-cover="${id}">${T('makeCover')}</button>` : ''}<button data-rm="${id}">${T('remove')}</button></div></div>`).join('')}
       ${Array.from({ length: S.busy }, () => '<div class="ph"><div class="busy">…</div></div>').join('')}</div>
@@ -951,11 +957,13 @@ const NEW_ROW = {
   lists: () => ({ id: rid(), t: '', deal: 'sale', status: 'open', p: '', area: '', unit: 'm2', beds: 0, baths: 0, kind: '', note: '', photos: [], lat: null, lng: null }),
   works: () => ({ id: rid(), t: '', client: '', year: String(new Date().getFullYear()), role: '', tags: '', note: '', u: '', photos: [] }),
   quotes: () => ({ q: '', who: '' }),
+  amulets: () => newAmulet(rid),
 }
 
 // ---- the parts added 2026-10-15: an avatar, a portfolio, the picture studio ---------------
 
 Object.assign(SEC, {
+  amulets() { return amuletsSec({ S, val, esc, icon, imgUrl, photoPick, rowX, seg, isGold, lang: S.lang }) },
   face() {
     const a = S.d.avatar
     return `<p class="hint">${T('face_hint')}</p><div class="avrow">${a ? `<img class="avpv${S.d.avround ? ' round' : ''}" src="${esc(imgUrl(a, true))}" alt="">` : `<span class="avpv none">${ding('smile', 'paper')}</span>`}
@@ -1015,8 +1023,8 @@ async function makeOver(id) {
     const swap = (x) => (x === id ? nid : x)
     S.d.photos = S.d.photos.map(swap)
     if (S.d.cover === id) S.d.cover = nid
-    for (const k of ['rooms', 'lists', 'works']) for (const x of S.d[k] || []) x.photos = x.photos.map(swap)
-    redrawSec('photos'); if (S.open.has('works')) redrawSec('works')
+    for (const k of ['rooms', 'lists', 'works', 'amulets']) for (const x of S.d[k] || []) x.photos = x.photos.map(swap)
+    redrawSec('photos'); if (S.open.has('works')) redrawSec('works'); if (S.open.has('amulets')) redrawSec('amulets')
     changed()
   } })
 }
@@ -1026,7 +1034,7 @@ function doodleSheet(from = '') {
   openDoodle({ name: S.name, kind: S.kind, T, call, from, imgUrl, photos: S.d.photos.filter((x) => x !== KPIC_ID),
     onUse: async (id, { as }) => {
       const have = S.d.photos.includes(id)
-      if (!have && S.d.photos.length >= (isGold() ? MAX_PHOTOS.gold : MAX_PHOTOS.free)) { toast(ui(S.lang, 'e_full')); throw new Error('full') }
+      if (!have && S.d.photos.length >= (photoMax(S.kind, isGold()))) { toast(ui(S.lang, 'e_full')); throw new Error('full') }
       if (!have) S.d.photos[as === 'cover' ? 'unshift' : 'push'](id)
       if (as === 'cover') S.d.cover = id
       redrawSec('photos'); changed()
@@ -1063,7 +1071,7 @@ async function markSheet(mode) {
       S.d.avround = ['badge', 'poster'].includes(design.layout)
       S.open.add('face'); redrawSec('face')
     } else {
-      if (S.d.photos.length >= (isGold() ? MAX_PHOTOS.gold : MAX_PHOTOS.free)) { toast(ui(S.lang, 'e_full')); throw new Error('full') }
+      if (S.d.photos.length >= (photoMax(S.kind, isGold()))) { toast(ui(S.lang, 'e_full')); throw new Error('full') }
       const nid = await sendCanvas(cover, 1600).catch(sendFail)
       S.d.photos.unshift(nid); S.d.cover = nid
       redrawSec('photos')
@@ -1098,6 +1106,7 @@ function bindTabs() {
 
 function bindEdit() {
   const form = $('#form')
+  form.addEventListener('toggle', amToggle, true)
   form.addEventListener('input', (e) => {
     const k = e.target.dataset.k
     if (!k) return
@@ -1123,6 +1132,8 @@ function bindEdit() {
   form.addEventListener('change', (e) => {
     const t = e.target
     if (t.id === 'files') addFiles([...t.files])
+    if (t.dataset.amfile !== undefined) amFiles(+t.dataset.amfile, [...t.files])
+    if (t.dataset.amcam !== undefined) { camStart(); amcamTake([...t.files]); t.value = '' }
     if (t.id === 'avfile' && t.files[0]) createImageBitmap(t.files[0], { imageOrientation: 'from-image' }).then((bmp) => avatarStudio(bmp)).catch(() => toast(ui(S.lang, 'e_net')))
     if (t.id === 'avround') { S.d.avround = t.checked; changed() }
     if (t.id === 'plang') { S.pageLang = t.value; changed() }
@@ -1136,6 +1147,8 @@ function bindEdit() {
   form.addEventListener('click', (e) => {
     const b = e.target.closest('button')
     if (!b) return
+    if (amcamClick(b)) { e.preventDefault(); return }
+    if (b.dataset.amlens !== undefined || b.dataset.ampost !== undefined) { e.preventDefault(); amAct(b); return }
     if (b.dataset.tab) { e.preventDefault(); S.tab = b.dataset.tab; draw(); return }
     if (b.dataset.pg !== undefined) { e.preventDefault(); if (b.dataset.pg && S.part !== b.dataset.pg) openPart(b.dataset.pg); else closePart(); return }
     if (b.dataset.add) {
@@ -1173,9 +1186,11 @@ function bindEdit() {
     if (b.dataset.addrate) { const r = S.d.rooms[+b.dataset.addrate]; r.rates = r.rates || []; r.rates.push({ from: '', to: '', p: '' }); redrawSec('rooms') }
     if (b.dataset.rmrate) { const [i, k] = b.dataset.rmrate.split('.').map(Number); S.d.rooms[i].rates.splice(k, 1); redrawSec('rooms'); changed() }
     if (b.dataset.seg === 'stay.pay') redrawSec('rooms')
+    if (b.dataset.seg?.startsWith('amulets.')) redrawSec('amulets')
+    if (b.dataset.amrm) { const [i, k] = b.dataset.amrm.split('.').map(Number); S.d.amulets[i]?.photos.splice(k, 1); redrawSec('amulets'); changed() }
     if (b.dataset.pp) {
       const path = b.closest('.pickph').dataset.path, [k, i] = path.split('.'), item = S.d[k][+i]
-      if (item) { item.photos = item.photos.includes(b.dataset.pp) ? item.photos.filter((x) => x !== b.dataset.pp) : [...item.photos, b.dataset.pp].slice(0, k === 'works' ? 24 : MAX.itemPhotos); b.classList.toggle('on', item.photos.includes(b.dataset.pp)); changed() }
+      if (item) { item.photos = item.photos.includes(b.dataset.pp) ? item.photos.filter((x) => x !== b.dataset.pp) : [...item.photos, b.dataset.pp].slice(0, k === 'works' ? 24 : k === 'amulets' ? AM_MAX.photos : MAX.itemPhotos); b.classList.toggle('on', item.photos.includes(b.dataset.pp)); changed() }
     }
     if (b.dataset.lpingo) listingPin(+b.dataset.lpingo)
     if (b.dataset.lpinx) { const x = S.d.lists[+b.dataset.lpinx]; if (x) { x.lat = x.lng = null; redrawSec('lists'); changed() } }
@@ -1226,6 +1241,8 @@ function redrawSec(id) {
   sec.innerHTML = g && !isGold() ? goldLocked() : SEC[id]()
   if (id === 'map') { S.picker = null; mountMap() }
   if (id === 'drawing') { drawCv = null; mountDrawing() }
+  // the amulets pick from the page's photos: show new ones there too, unless the maker is typing in it
+  if (id === 'photos' && S.d.amulets?.length && !$('[data-sec="amulets"]')?.contains(document.activeElement)) redrawSec('amulets')
   if (sec.querySelector('iframe[data-th]')) fillThumbs(sec)
 }
 
@@ -1491,7 +1508,7 @@ async function upload(blob, small, role, w, h, pd) {
 }
 
 async function addFiles(files) {
-  const max = isGold() ? MAX_PHOTOS.gold : MAX_PHOTOS.free
+  const max = photoMax(S.kind, isGold())
   files = files.slice(0, max - S.d.photos.length)
   S.busy += files.length
   redrawSec('photos')
@@ -1510,6 +1527,56 @@ async function addFiles(files) {
   }
   if (S.photoGps && S.d.place.lat === null) { S.open.add('map'); drawParts() }
   changed()
+}
+
+/** Photos taken for one amulet: they join the page's photos and that amulet's, in the order taken. */
+async function amFiles(i, files) {
+  const before = new Set(S.d.photos)
+  await addFiles(files)
+  const x = S.d.amulets[i]
+  if (!x) return
+  x.photos = [...x.photos, ...S.d.photos.filter((id) => !before.has(id))].slice(0, AM_MAX.photos)
+  redrawSec('amulets'); changed()
+}
+
+// ---- the amulet camera (make-amcam.mjs): each photo a new amulet at the top -------------------
+
+let camOn = false
+function camStart() {
+  if (camOn || S.kind !== 'amulet' || !S.token) return
+  camOn = true
+  amcamInit({
+    page: () => S.token,
+    A: (k) => amUi(S.lang, k),
+    toast,
+    send: async (blob) => {
+      if (S.d.photos.length >= photoMax(S.kind, isGold())) throw new Error('full')
+      return (await addBitmap(await createImageBitmap(blob))).id
+    },
+    made: (id) => {
+      S.d.amulets = S.d.amulets.filter((a) => a.t || a.photos.length) // the empty starter row goes
+      const x = newAmulet(rid)
+      x.t = `${amUi(S.lang, 'auto_t')} ${S.d.amulets.length + 1}`
+      x.photos = [id]
+      S.d.amulets = [x, ...S.d.amulets].slice(0, AM_MAX.gold)
+      if (S.open.has('amulets')) redrawSec('amulets')
+      changed()
+    },
+  })
+}
+
+/** Search (Google Lens) or Post (Facebook groups) on an amulet's front photo. */
+async function amAct(b) {
+  const lens = b.dataset.amlens !== undefined
+  const x = S.d.amulets[+(lens ? b.dataset.amlens : b.dataset.ampost)], id = x?.photos[0]
+  if (!id) return
+  const name = (x.t || 'amulet').slice(0, 60)
+  if (lens) return amLens(`${location.origin}/img/${id}.webp`, S.big.get(id), name)
+  const price = /^\d[\d,.]*$/.test(x.p) ? '฿' + x.p : x.p
+  const link = S.status === 'live' ? `${location.origin}/${S.name}/a/${x.id}` : ''
+  const caption = [[x.t, price].filter(Boolean).join(' · '), amUi(S.lang, 'post_tail'), link, '#พระเครื่อง #thaiamulet'].filter(Boolean).join('\n')
+  const blob = S.big.get(id) || await fetch(imgUrl(id)).then((r) => (r.ok ? r.blob() : null)).catch(() => null)
+  amPost(blob, name, caption, () => toast(amUi(S.lang, 'post_done')))
 }
 
 async function addBitmap(bmp, pd) {
@@ -1531,6 +1598,7 @@ const PD_IDEAS = {
   food: ['still life fruit', 'noodles', 'tea', 'market', 'rice field', 'botanical illustration'],
   shop: ['textile pattern', 'ceramics', 'still life', 'woodblock print', 'flowers', 'market'],
   service: ['botanical illustration', 'garden', 'hands', 'woodblock print', 'temple', 'mountains'],
+  amulet: ['Buddha', 'lotus', 'temple', 'gold leaf', 'Thai manuscript', 'woodblock print'],
   work: ['architecture drawing', 'woodblock print', 'textile pattern', 'botanical illustration', 'map', 'abstract painting'],
   stay: ['Chiang Mai', 'garden', 'mountains', 'temple', 'river', 'bedroom painting'],
   homes: ['house', 'garden', 'architecture drawing', 'window', 'courtyard', 'rice field'],
@@ -1569,7 +1637,7 @@ function pdSheet() {
 }
 
 async function pdTake(x, b, box) {
-  if (S.d.photos.length >= (isGold() ? MAX_PHOTOS.gold : MAX_PHOTOS.free)) return
+  if (S.d.photos.length >= (photoMax(S.kind, isGold()))) return
   b.disabled = true
   b.classList.add('busy')
   b.querySelector('span').innerHTML = T('pdBusy')
@@ -1813,7 +1881,7 @@ async function drawMsgs() {
 
 const TAP_WORD = { call: 'call', line: 'line', dir: 'dir', ride: 'ride', food: 'food', lineman: 'lineman', share: 'share', copy: 'copy', map: 'map', far: 'far', vcf: 'saveContact',
   ics: 'addCal', sign: 'sign', order: 'lineOrder', msg: 'msg', link: 'links', photo: 'photos', video: 'video', email: 'email', web: 'web', qr: 'qr', story: 'story' }
-const TAP_EXTRA = { shareline: 'LINE', sharefb: 'Facebook', sharex: 'X', sharewa: 'WhatsApp', sharetg: 'Telegram', social: 'Facebook · Instagram · TikTok', whatsapp: 'WhatsApp' }
+const TAP_EXTRA = { get amulet() { return amUi(S.lang, 'tap_amulet') }, get reserve() { return amUi(S.lang, 'tap_reserve') }, shareline: 'LINE', sharefb: 'Facebook', sharex: 'X', sharewa: 'WhatsApp', sharetg: 'Telegram', social: 'Facebook · Instagram · TikTok', whatsapp: 'WhatsApp' }
 
 function shareBox() {
   const url = `${location.origin}/${S.name}`
@@ -2060,6 +2128,7 @@ async function boot() {
       S.open = new Set(DEFAULT_OPEN[S.kind]); S.part = ''
       if (h.get('tab')) S.tab = h.get('tab')
       remember()
+      camStart()
     } catch (e) {
       S.token = ''
       history.replaceState(null, '', '/make')

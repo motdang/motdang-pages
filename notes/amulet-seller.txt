@@ -1,0 +1,59 @@
+AMULET SELLER PAGES — sites.motdang.net (built 2026-10-15; published 2026-10-16 with the amulet camera)
+
+Your words, 2026-10-15: "amulet sellers could actually be a big customer. they're not well served by websites."
+
+BUILT
+
+A new kind in the builder: ร้านพระเครื่อง / Amulet seller / 佛牌店.
+Each amulet: name, temple, monk or maker, year (BE or CE; Thai readers see พ.ศ., others see both eras), kind (tablet, coin, cast figure, takrut, locket, yant cloth, charm, altar Buddha), material (15 from amulet-essentials), mould, size, condition (สวยแชมป์ to หัก), frame, certificate, price or none ("สอบถามราคา"), status, notes, up to 12 photos.
+Status words follow web-pra: พร้อมเช่า, จองแล้ว, เช่าแล้ว, พระโชว์. Price and the reserve button hide on เช่าแล้ว and พระโชว์.
+Each amulet has its own page, /name/a/<id>: front and back side by side, tap to zoom, the facts, the price, the seller's own guarantee and delivery words, the other amulets, a message form.
+LINE reserve: with a LINE Official Account (@id) the button opens LINE with "สนใจเช่าบูชา <name> <link>" written. With a personal LINE id it copies that message, then opens LINE.
+The page: a grid two across on a phone, filters for available and for each kind.
+The builder on a phone: one fold per amulet, a Take photos button that puts photos straight into that amulet (front first), Fix (the picture studio) on each photo, a tap to change status.
+Search engines and link previews: each amulet page has its own title, description and picture (the front photo), and is in the sitemap on Gold pages.
+Labels in Thai, English and Chinese; English fills the other nine page languages.
+Tests: test/amulet.test.mjs (7). All 43 pass.
+Demo, local only: http://127.0.0.1:8790/tonpho-amulets-demo with five amulets from CC0 photos on Wikimedia Commons.
+Phone screenshots: notes/screens/amulet-grid-phone.jpg, amulet-page-phone.jpg, amulet-builder-phone.jpg.
+
+HOW SELLERS SELL NOW (public sources)
+
+Facebook groups and pages carry most of the trade; the largest group had 164,462 members (thaipublica, 2018). Thairath (June 2026) adds live streams and shopping apps, and lists the scams: a genuine photo then a fake sent, fake pages copying known dealers, payment to an account that is not the seller's.
+web-pra.com shops: free for 30 amulets for 6 months; ฿2,000 a year for 150, ฿3,000 for 300, ฿4,000 for 500, ฿5,000 for 1,000, ฿7,000 for 2,000. Its rule: every listing guaranteed genuine for life.
+Prices run from ฿39 on Lazada to millions; a web-pra shop sampled sat at ฿300–1,200.
+
+YOUR ANSWERS, 2026-10-16
+
+"This should be a feature available in the Gold level sites, and I want to demo it at the amulet market."
+1. Counts: Free 6, Gold 120, as built.
+2. Price: the same Gold, ฿3,000 a year.
+3. Photos: 360 on a Gold amulet page (120 amulets with front, back and a close-up); other Gold pages stay at 120.
+4. Publishing: live for Thursday's market.
+
+THE AMULET CAMERA (Gold, 2026-10-16)
+
+At the top of the amulets in the builder: Amulet camera, and Or pick photos. Each photo becomes a new amulet at the
+top of the page, named "พระองค์ที่ 7" until the seller names it, its front photo cut out and laid on white.
+The photo is kept in the phone's browser (IndexedDB) the moment it is taken and let go only once it is on the page;
+a crash, a closed tab or no signal loses nothing, and reopening the builder finishes it.
+The cutting runs in a frame from Amulet Camera (nanobotco.github.io/amulet-camera/cut.html): ISNet in the phone's
+browser, about 45 MB the first time. The builder's own security rules allow that frame and nothing else of it.
+Each amulet with a photo has Search (Google Lens on its front photo, once the photo has passed its check) and
+Post (the share sheet with the photo; the caption with its name, price and page link is copied for a Facebook group).
+Free pages see one line: Gold, the amulet camera. Every new page is Gold for its first 30 days.
+Tested 2026-10-16 headless at phone size: two photos became two amulets in 47 s (the first cut includes the model
+download); a photo whose tab was closed mid-way came back and finished. Code: public/s/make-amcam.mjs.
+
+FORKS — ANSWERED 2026-10-16 (kept for the record)
+
+1. Free and Gold amulet counts. Built: Free 6, Gold 120, copied from the portfolio's 6 and 60. (a) keep; (b) Free 30, matching web-pra's free tier, cost: fewer reasons to pay; (c) amulets Gold only, like home listings, cost: no free way in for a stall. Worst case of (a): a stall with 40 amulets sees 6 and leaves. Before publishing.
+2. Price for amulet sellers. Built: the same Gold ฿3,000 a year. (a) keep; (b) an amulet plan on a Shoup ladder against web-pra's ฿2,000–7,000; (c) free for the 11 Kamthieng amulet stalls for a season. Before publishing.
+3. Photos. A page holds 12 photos free, 120 Gold, shared by all its amulets, so Gold fits 60 amulets with front and back. (a) keep; (b) raise the photo cap on amulet pages, cost: storage and photo checks. Before publishing.
+4. Publishing. Nothing is live or merged. It sits on the local branch amulet-seller. Your word ships it.
+
+NEXT, IF WANTED
+
+A designed share card per amulet: front and back on a 1200 × 630 card. Today the front photo is the card, and Facebook crops a tall photo.
+Labels in the other nine languages; the Burmese kind name wants a native reader.
+The Kamthieng stall pages could link to the builder with ?by=.

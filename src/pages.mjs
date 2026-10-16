@@ -4,7 +4,7 @@ import { esc, LOOKS, KINDS, lookOf } from '../public/s/render.mjs'
 import { ui, pickLang, UI_LANGS } from '../public/s/make-words.mjs'
 
 const icon = (id) => `<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><use href="/s/icons.svg#i-${id}"/></svg>`
-const KIND_ICON = { shop: 'shop', food: 'food', service: 'gear', work: 'star', stay: 'moon', homes: 'tag', me: 'me', event: 'party', group: 'people' }
+const KIND_ICON = { shop: 'shop', food: 'food', service: 'gear', work: 'star', amulet: 'flower', stay: 'moon', homes: 'tag', me: 'me', event: 'party', group: 'people' }
 
 const CSS = `*{box-sizing:border-box}body{margin:0;background:#fff7ec;color:#1c1530;font:400 18px/1.5 system-ui,-apple-system,"Segoe UI","Prompt","Noto Sans Thai",sans-serif}
 a{color:inherit}.i{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;flex:none}
