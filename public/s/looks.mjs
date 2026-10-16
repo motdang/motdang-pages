@@ -118,7 +118,6 @@ export const LOOKS = {
       @keyframes picks{to{-webkit-mask-size:100% 100%;mask-size:100% 100%}}@keyframes bandslide{to{background-position:-240px 0}}
       .top .pf{margin:18px 16px 0;height:min(50vh,440px);min-height:250px;box-shadow:0 0 0 1px #8a6635,0 0 0 7px #1f150e,0 0 0 8px #8a6635,0 26px 40px -16px #000}
       .top .ph>img{filter:sepia(.18) saturate(1.08) contrast(1.04)}
-      .ph .warp{position:absolute;inset:0;z-index:1;pointer-events:none;opacity:.5;background:repeating-linear-gradient(90deg,rgba(255,240,210,.07) 0 1px,transparent 1px 3px),repeating-linear-gradient(0deg,rgba(40,20,0,.07) 0 1px,transparent 1px 3px)}
       .ph .weft{position:absolute;inset:0;z-index:2;display:grid;grid-template-rows:repeat(12,1fr);pointer-events:none}
       .ph .weft i{display:block;background:repeating-linear-gradient(90deg,#b97a1c 0 3px,#7e5113 3px 5px,#d6a04a 5px 7px);animation:open .85s cubic-bezier(.7,0,.25,1) both;animation-delay:calc(var(--i) * 50ms + .25s)}
       .ph .weft i:nth-child(odd){--dx:-101%}.ph .weft i:nth-child(even){--dx:101%;background:repeating-linear-gradient(90deg,#3aa197 0 3px,#1f6e66 3px 5px,#e0a83e 5px 7px)}
@@ -141,7 +140,7 @@ export const LOOKS = {
     art: '',
     deco: () => ({
       back: '<div class="band" aria-hidden="true"></div>',
-      ph: `<span class="warp"></span><span class="weft">${Array.from({ length: 12 }, (_, i) => `<i style="--i:${i}"></i>`).join('')}</span>`,
+      ph: `<span class="weft">${Array.from({ length: 12 }, (_, i) => `<i style="--i:${i}"></i>`).join('')}</span>`,
     }),
   },
 

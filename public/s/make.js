@@ -10,6 +10,7 @@ import { PAGE_LANGS } from './words.mjs'
 import { ui, UI_LANGS } from './make-words.mjs'
 import { exifBlock, readExif } from './exif.mjs'
 import { openStudio, openMark } from './studio-ui.mjs'
+import { openAvatar } from './avatar-ui.mjs'
 import { drawCard, cardKey, CARD } from './card.mjs'
 import { loadFaces } from './mark.mjs'
 
@@ -197,6 +198,11 @@ let KPIC = {}
 const kpicReady = fetch('/s/kinds/kinds.json').then((r) => r.json()).then((j) => { KPIC = j }).catch(() => {})
 const KPIC_ID = 'kindpic000000'
 const kpicUrl = (kind, small) => `/s/kinds/${kind}${small ? '-s' : ''}.webp`
+let EX = {}
+const exReady = fetch('/s/ex/ex.json').then((r) => (r.ok ? r.json() : {})).then((j) => { EX = j || {} }).catch(() => {})
+const exOf = (kind, look) => EX[kind]?.[look] || null
+const exUrl = (kind, look, small) => (exOf(kind, look) ? `/s/ex/${kind}-${look}${small ? '-s' : ''}.webp` : kpicUrl(kind, small))
+const exCredit = (kind, look) => { const e = exOf(kind, look), k = KPIC[kind]; return e ? { title: e.title, by: e.by, src: e.src, license: e.license, licenseUrl: e.licenseUrl, from: 'commons' } : k ? { title: k.title, by: 'Wikimedia Commons', src: k.src, license: k.license, from: 'commons' } : null }
 
 // On the first screen the phone shows each kind's own parts filled in with examples, so a hotel shows
 // rooms and a noodle shop a menu; the box above it says they are examples. The new page starts empty.
@@ -235,9 +241,10 @@ function examples(kind, lang) {
   return x
 }
 
-function tryData() {
+function tryData(look = S.look) {
   const d = normalize(applyPrefill({ ...starter(S.kind), ...examples(S.kind, S.pageLangTry || 'en'), name: S.name.trim() || ui(S.lang, 'yourName'), accent: S.accent || '' }))
-  if (KPIC[S.kind]) { d.cover = KPIC_ID; d.photos = [KPIC_ID]; d.credits = { [KPIC_ID]: { title: KPIC[S.kind].title, by: 'Wikimedia Commons', src: KPIC[S.kind].src, license: KPIC[S.kind].license, from: 'commons' } } }
+  const cr = exCredit(S.kind, look)
+  if (cr) { d.cover = KPIC_ID; d.photos = [KPIC_ID]; d.credits = { [KPIC_ID]: cr }; d.coverPos = exOf(S.kind, look)?.focus || null }
   return d
 }
 
@@ -275,13 +282,13 @@ function lookTile(id) {
 // Each look tile is the page itself in that look, the top of it, drawn by the same render() and
 // scaled down: what the maker picks is what the page will be.
 const THUMB_W = 390, THUMB_H = 660
-function thumbData() { return S.step === 'edit' && S.d ? { ...S.d, name: S.d.name || S.name } : tryData() }
+function thumbData(look) { return S.step === 'edit' && S.d ? { ...S.d, name: S.d.name || S.name } : tryData(look) }
 function fillThumbs(root = app) {
-  const d = thumbData()
   root.querySelectorAll('iframe[data-th]').forEach((f) => {
     const id = f.dataset.th
+    const d = thumbData(id)
     const html = render({ name: S.addr || S.name || 'your-page', look: id, lang: (S.step === 'edit' ? S.pageLang : S.pageLangTry) || 'en', kind: S.kind, d, views: 1234, status: 'live', tier: 'gold' },
-      { preview: true, thumb: true, gold: true, hotel: true, origin: location.origin, img: (x, small) => (x === KPIC_ID ? kpicUrl(S.kind, small) : imgUrl(x, small)) })
+      { preview: true, thumb: true, gold: true, hotel: true, origin: location.origin, img: (x, small) => (x === KPIC_ID ? exUrl(S.kind, id, small) : imgUrl(x, small)) })
     if (f.dataset.html !== html) { f.dataset.html = html; f.srcdoc = html }
   })
   sizeThumbs(root)
@@ -420,7 +427,7 @@ function drawTry() {
   app.querySelectorAll('.mine a').forEach((a) => (a.onclick = (e) => { e.preventDefault(); history.replaceState(null, '', a.getAttribute('href')); boot() }))
   S.pageLangTry = pageLang
   if (S.addr) check()
-  kpicReady.then(() => { tryPreview(0); fillThumbs() })
+  Promise.all([kpicReady, exReady]).then(() => { tryPreview(0); fillThumbs() })
 }
 
 let tryTimer = 0
@@ -430,8 +437,9 @@ function tryPreview(ms) {
     const f = $('#tryframe')
     if (!f) return
     const y = f.contentWindow?.scrollY || 0
-    f.srcdoc = render({ name: S.addr || 'your-page', look: S.peek || S.look, lang: S.pageLangTry || 'en', kind: S.kind, d: tryData(), views: 1234, status: 'live', tier: 'gold' },
-      { preview: true, gold: true, hotel: true, origin: location.origin, img: (id, small) => (id === KPIC_ID ? kpicUrl(S.kind, small) : imgUrl(id, small)) })
+    const lk = S.peek || S.look
+    f.srcdoc = render({ name: S.addr || 'your-page', look: lk, lang: S.pageLangTry || 'en', kind: S.kind, d: tryData(lk), views: 1234, status: 'live', tier: 'gold' },
+      { preview: true, gold: true, hotel: true, origin: location.origin, img: (id, small) => (id === KPIC_ID ? exUrl(S.kind, lk, small) : imgUrl(id, small)) })
     f.onload = () => {
       try {
         f.contentWindow.scrollTo(0, y)
@@ -527,8 +535,10 @@ async function starterPic(kind) {
   S.busy++
   redrawSec('photos')
   try {
-    const bmp = await createImageBitmap(await (await fetch(kpicUrl(kind))).blob())
-    await addBitmap(bmp, KPIC[kind].pd)
+    const e = exOf(kind, S.look)
+    const bmp = await createImageBitmap(await (await fetch(e ? exUrl(kind, S.look) : kpicUrl(kind))).blob())
+    await addBitmap(bmp, e ? e.pd : KPIC[kind].pd)
+    if (e?.focus) S.d.coverPos = e.focus
     changed()
   } catch {}
   S.busy--
@@ -552,7 +562,7 @@ async function create(look, btn) {
     S.open = new Set(DEFAULT_OPEN[S.kind]); S.part = ''
     S.step = 'edit'
     draw()
-    if (KPIC[S.kind]) starterPic(S.kind)
+    if (KPIC[S.kind] || exOf(S.kind, S.look)) starterPic(S.kind)
   } catch (e) {
     toast(ui(S.lang, e.message === 'quota' ? 'e_quota' : e.message === 'name' ? 'e_name' : 'e_net'))
     if (e.message === 'name') { S.step = 'name'; draw() }
@@ -948,7 +958,8 @@ Object.assign(SEC, {
     const a = S.d.avatar
     return `<p class="hint">${T('face_hint')}</p><div class="avrow">${a ? `<img class="avpv${S.d.avround ? ' round' : ''}" src="${esc(imgUrl(a, true))}" alt="">` : `<span class="avpv none">${ding('smile', 'paper')}</span>`}
       <div class="avbtns"><label class="pick">${icon('camera')}${T('f_photo')}<input type="file" accept="image/*" id="avfile"></label>
-      <button class="pick pdpick" id="avmake">${ding('sparkle', 'riso')}${T('f_make')}</button></div></div>
+      <button class="pick pdpick" id="avmake">${ding('sparkle', 'riso')}${T('f_make')}</button>
+      <button class="pick pdpick" id="avdraw">${ding('smile', 'riso')}${T('av_open')}</button></div></div>
       ${S.d.photos.length ? `<div class="field"><span>${T('f_mine')}</span><div class="pickph">${S.d.photos.map((id) => `<button type="button" data-avpick="${id}"><img src="${esc(imgUrl(id, true))}" alt=""></button>`).join('')}</div></div>` : ''}
       ${a ? `<label class="check"><input type="checkbox" class="sw" id="avround" ${S.d.avround ? 'checked' : ''}>${T('f_round')}</label><button class="back" id="avrm">× ${T('remove')}</button>` : ''}`
   },
@@ -1019,6 +1030,15 @@ async function avatarFrom(id) {
 }
 
 /** The mark maker: an avatar, or a cover for a page with no photo. */
+// a drawn character for the avatar, picked from the kind's people and changed part by part (avatar-ui.mjs)
+function avatarDraw() {
+  openAvatar({ name: S.d.name || S.name, accent: accentNow(), kind: S.kind, T, onUse: async (canvas, o) => {
+    S.d.avatar = await sendCanvas(canvas, 640).catch(sendFail)
+    S.d.avround = o.frame === 'circle'
+    S.open.add('face'); redrawSec('face'); changed()
+  } })
+}
+
 function markSheet(mode) {
   openMark({ mode, name: S.d.name || S.name, tagline: S.d.tagline, accent: accentNow(), T, need: (f) => dingbats(f.filter(Boolean)), onUse: async (canvas, o) => {
     if (mode === 'avatar') {
@@ -1159,6 +1179,7 @@ function bindEdit() {
     if (b.dataset.mo) makeOver(b.dataset.mo)
     if (b.id === 'mkcover') markSheet('cover')
     if (b.id === 'avmake') markSheet('avatar')
+    if (b.id === 'avdraw') avatarDraw()
     if (b.dataset.avpick) avatarFrom(b.dataset.avpick)
     if (b.id === 'avrm') { S.d.avatar = ''; redrawSec('face'); changed() }
     if (b.id === 'nmailgo') notifyOn()
@@ -1354,7 +1375,8 @@ function wireFrame(f) {
   inline(tag, 'tagline', 140)
   // the kind's picture, until the maker's own goes on
   const cov = S.d.cover && S.d.credits?.[S.d.cover]
-  if (cov && KPIC[S.kind] && (cov.src === KPIC[S.kind].src || cov.title === KPIC[S.kind].title) && doc.querySelector('header.top')) {
+  const sample = cov && ((KPIC[S.kind] && (cov.src === KPIC[S.kind].src || cov.title === KPIC[S.kind].title)) || Object.values(EX[S.kind] || {}).some((e) => e.src === cov.src || e.title === cov.title))
+  if (sample && doc.querySelector('header.top')) {
     const b = doc.createElement('span'); b.className = 'mk-pic'; b.textContent = ui(S.lang, 'yourPic'); b.dataset.part = 'photos'
     doc.querySelector('header.top').appendChild(b)
   }

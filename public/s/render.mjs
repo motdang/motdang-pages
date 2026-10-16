@@ -103,6 +103,7 @@ export function normalize(d = {}) {
   o.counter = !!d.counter
   o.currency = CURRENCY[d.currency] ? d.currency : ''
   o.cover = PHOTO_ID.test(d.cover || '') ? d.cover : ''
+  o.coverPos = Array.isArray(d.coverPos) && d.coverPos.length === 2 && d.coverPos.every((v) => typeof v === 'number' && v >= 0 && v <= 1) ? d.coverPos.map((v) => Math.round(v * 100) / 100) : null
   o.card = PHOTO_ID.test(d.card || '') ? d.card : ''
   o.avatar = PHOTO_ID.test(d.avatar || '') ? d.avatar : ''
   o.avround = d.avround !== false
@@ -584,7 +585,7 @@ export function render(site, opt = {}) {
   const deco = look.deco ? look.deco({ gold, open: !!(st && (st.open || st.always)) }) : {}
   const h1 = L ? L.t : Wk ? Wk.t : name
   out.push(`<header class="top${cov ? ' has-cover' : ''}${gold ? ' gilt' : ''}">`, deco.back || '')
-  if (cov) out.push(`<div class="pf"><div class="ph"><img src="${esc(img(cov))}" alt="" fetchpriority="high">${deco.ph || ''}</div>${deco.frame || ''}${d.credits[cov] ? `<p class="cr">${creditLine(d.credits[cov])}</p>` : ''}</div>`)
+  if (cov) out.push(`<div class="pf"><div class="ph"><img src="${esc(img(cov))}" alt="" fetchpriority="high"${cov === d.cover && d.coverPos ? ` style="object-position:${d.coverPos[0] * 100}% ${d.coverPos[1] * 100}%"` : ''}>${deco.ph || ''}</div>${deco.frame || ''}${d.credits[cov] ? `<p class="cr">${creditLine(d.credits[cov])}</p>` : ''}</div>`)
   out.push(deco.front || '', '<div class="t">')
   const kick = !L && !Wk ? kicker(d) : ''
   if (kick) out.push(`<p class="kick">${esc(kick)}</p>`)
