@@ -35,8 +35,8 @@ const W = {
     paid: 'Paid on the 1st, to your PromptPay.', bring: (b) => `Bring a seller: ฿${b} when they sell their first plan.`,
     money: 'Customers pay only through the QR on their own page. No cash.',
     need: 'You need', needs: 'A phone, LINE, a PromptPay number, and time to walk into shops. Thai, Burmese or English.',
-    steps: 'Steps', s: ['Sign up below.', 'Keep your kit link. Once Beer says yes it opens: your QR, an example page, what to say.', 'Visit shops. They scan your QR, make their page with you in about 5 minutes, and pay.', 'Each sale shows on your kit page as it happens.'],
-    signup: 'Sign up', f: { name: 'Name', phone: 'Phone', line: 'LINE ID', pp: 'PromptPay (phone or ID card number)', area: 'Where you can go', langs: 'Languages you speak', via: 'Who sent you', send: 'Send' },
+    steps: 'Steps', s: ['Sign up.', 'Keep your kit link. Once Beer says yes it opens: your QR, an example page, what to say.', 'Visit shops. They scan your QR, make their page with you in about 5 minutes, and pay.', 'Each sale shows on your kit page as it happens.'],
+    more: 'More (optional)', signup: 'Sign up', f: { name: 'Name', phone: 'Phone', line: 'LINE ID', pp: 'PromptPay (phone or ID card number)', area: 'Where you can go', langs: 'Languages you speak', via: 'Who sent you', send: 'Send' },
     thanks: (n) => `Thank you, ${n}. Beer will message you on LINE.`, bad: 'Name, phone and PromptPay, please.', badpp: 'PromptPay: a 10-digit phone or a 13-digit ID card number.',
     kit: (n) => `${n} · your kit`, month: 'This month', plans: 'Plans', sales: 'Sales', share: 'Share', get: 'You get', target: 'Target',
     qr: 'Your QR', qrnote: 'Shops scan this with the phone camera. It opens the page maker with your name on it.', save: 'Save picture',
@@ -58,8 +58,8 @@ const W = {
     paid: 'จ่ายทุกวันที่ 1 เข้าพร้อมเพย์ของคุณ', bring: (b) => `ชวนคนขายมาเพิ่ม: รับ ฿${b} เมื่อเขาขายได้ครั้งแรก`,
     money: 'ลูกค้าจ่ายผ่าน QR บนหน้าเว็บของเขาเท่านั้น ไม่รับเงินสด',
     need: 'สิ่งที่ต้องมี', needs: 'มือถือ LINE เบอร์พร้อมเพย์ และเวลาเดินเข้าร้าน พูดไทย พม่า หรืออังกฤษ',
-    steps: 'ขั้นตอน', s: ['สมัครด้านล่าง', 'เก็บลิงก์ชุดของคุณไว้ เบียร์ตอบรับแล้วจะเปิดใช้: QR ของคุณ หน้าตัวอย่าง คำพูดที่ใช้', 'ไปตามร้าน ร้านสแกน QR ของคุณ ทำหน้าเว็บด้วยกันประมาณ 5 นาที แล้วจ่าย', 'ยอดขายแต่ละครั้งขึ้นในหน้าชุดของคุณทันที'],
-    signup: 'สมัคร', f: { name: 'ชื่อ', phone: 'เบอร์โทร', line: 'LINE ID', pp: 'พร้อมเพย์ (เบอร์โทรหรือเลขบัตรประชาชน)', area: 'พื้นที่ที่ไปได้', langs: 'ภาษาที่พูดได้', via: 'ใครแนะนำมา', send: 'ส่ง' },
+    steps: 'ขั้นตอน', s: ['สมัคร', 'เก็บลิงก์ชุดของคุณไว้ เบียร์ตอบรับแล้วจะเปิดใช้: QR ของคุณ หน้าตัวอย่าง คำพูดที่ใช้', 'ไปตามร้าน ร้านสแกน QR ของคุณ ทำหน้าเว็บด้วยกันประมาณ 5 นาที แล้วจ่าย', 'ยอดขายแต่ละครั้งขึ้นในหน้าชุดของคุณทันที'],
+    more: 'เพิ่มเติม (ไม่บังคับ)', signup: 'สมัคร', f: { name: 'ชื่อ', phone: 'เบอร์โทร', line: 'LINE ID', pp: 'พร้อมเพย์ (เบอร์โทรหรือเลขบัตรประชาชน)', area: 'พื้นที่ที่ไปได้', langs: 'ภาษาที่พูดได้', via: 'ใครแนะนำมา', send: 'ส่ง' },
     thanks: (n) => `ขอบคุณ ${n} เบียร์จะทักไปทาง LINE`, bad: 'กรอกชื่อ เบอร์โทร และพร้อมเพย์', badpp: 'พร้อมเพย์: เบอร์โทร 10 หลัก หรือเลขบัตร 13 หลัก',
     kit: (n) => `${n} · ชุดของคุณ`, month: 'เดือนนี้', plans: 'แผนที่ขาย', sales: 'ยอดขาย', share: 'ส่วนแบ่ง', get: 'คุณได้', target: 'เป้า',
     qr: 'QR ของคุณ', qrnote: 'ร้านสแกนด้วยกล้องมือถือ เปิดหน้าทำเว็บที่มีชื่อคุณ', save: 'บันทึกรูป',
@@ -81,8 +81,8 @@ const W = {
     paid: 'လဆန်း ၁ ရက်နေ့ သင့် PromptPay သို့ ပေးသည်။', bring: (b) => `ရောင်းသူ တစ်ဦး ခေါ်လာပါ: သူ ပထမဆုံး ရောင်းရသောအခါ ฿${b}။`,
     money: 'ဖောက်သည်များ သူတို့စာမျက်နှာရှိ QR မှသာ ပေးချေသည်။ ငွေသား မယူရ။',
     need: 'လိုအပ်သည်', needs: 'ဖုန်း၊ LINE၊ PromptPay နံပါတ်နှင့် ဆိုင်များသို့ သွားရန် အချိန်။ ထိုင်း၊ မြန်မာ သို့မဟုတ် အင်္ဂလိပ်။',
-    steps: 'အဆင့်များ', s: ['အောက်တွင် စာရင်းသွင်းပါ။', 'သင့်ကိရိယာလင့်ခ်ကို သိမ်းထားပါ။ Beer လက်ခံပြီးနောက် ပွင့်မည်: သင့် QR၊ နမူနာစာမျက်နှာ၊ ပြောရမည့်စကား။', 'ဆိုင်များသို့ သွားပါ။ သူတို့က သင့် QR ကို စကင်ဖတ်၊ သင်နှင့်အတူ ၅ မိနစ်ခန့်ဖြင့် စာမျက်နှာ ပြုလုပ်ပြီး ပေးချေသည်။', 'ရောင်းချမှုတိုင်း သင့်ကိရိယာစာမျက်နှာတွင် ချက်ချင်း ပေါ်သည်။'],
-    signup: 'စာရင်းသွင်းရန်', f: { name: 'နာမည်', phone: 'ဖုန်း', line: 'LINE ID', pp: 'PromptPay (ဖုန်း သို့မဟုတ် မှတ်ပုံတင်နံပါတ်)', area: 'သွားနိုင်သောနေရာ', langs: 'ပြောနိုင်သောဘာသာစကား', via: 'ဘယ်သူ ညွှန်းလိုက်သလဲ', send: 'ပို့ပါ' },
+    steps: 'အဆင့်များ', s: ['စာရင်းသွင်းပါ။', 'သင့်ကိရိယာလင့်ခ်ကို သိမ်းထားပါ။ Beer လက်ခံပြီးနောက် ပွင့်မည်: သင့် QR၊ နမူနာစာမျက်နှာ၊ ပြောရမည့်စကား။', 'ဆိုင်များသို့ သွားပါ။ သူတို့က သင့် QR ကို စကင်ဖတ်၊ သင်နှင့်အတူ ၅ မိနစ်ခန့်ဖြင့် စာမျက်နှာ ပြုလုပ်ပြီး ပေးချေသည်။', 'ရောင်းချမှုတိုင်း သင့်ကိရိယာစာမျက်နှာတွင် ချက်ချင်း ပေါ်သည်။'],
+    more: 'နောက်ထပ် (မဖြစ်မနေမဟုတ်)', signup: 'စာရင်းသွင်းရန်', f: { name: 'နာမည်', phone: 'ဖုန်း', line: 'LINE ID', pp: 'PromptPay (ဖုန်း သို့မဟုတ် မှတ်ပုံတင်နံပါတ်)', area: 'သွားနိုင်သောနေရာ', langs: 'ပြောနိုင်သောဘာသာစကား', via: 'ဘယ်သူ ညွှန်းလိုက်သလဲ', send: 'ပို့ပါ' },
     thanks: (n) => `ကျေးဇူးတင်ပါသည် ${n}။ Beer က LINE ဖြင့် ဆက်သွယ်ပါမည်။`, bad: 'နာမည်၊ ဖုန်းနှင့် PromptPay ဖြည့်ပါ။', badpp: 'PromptPay: ဖုန်း ၁၀ လုံး သို့မဟုတ် မှတ်ပုံတင် ၁၃ လုံး',
     kit: (n) => `${n} · သင့်ကိရိယာ`, month: 'ဤလ', plans: 'ရောင်းရ', sales: 'ရောင်းအား', share: 'ဝေစု', get: 'သင်ရမည်', target: 'ပစ်မှတ်',
     qr: 'သင့် QR', qrnote: 'ဆိုင်များ ဖုန်းကင်မရာဖြင့် စကင်ဖတ်ပါ။ သင့်နာမည်ပါသော စာမျက်နှာပြုလုပ်ရန် ဖွင့်ပေးသည်။', save: 'ပုံ သိမ်းရန်',
@@ -117,7 +117,7 @@ h2{font:400 24px/1.2 "Chonburi","Prompt",system-ui,serif;margin:30px 0 10px}
 .work{display:grid;gap:10px}.job{background:#fff;border:2px solid #1c1530;border-radius:14px;padding:14px;display:grid;grid-template-columns:1fr auto;gap:2px 12px}
 .job b{font-size:20px}.job small{color:#5a4f6a;grid-column:1}.job .n{grid-row:1/3;grid-column:2;text-align:right}.job .n s{text-decoration:none;display:block;font-size:14px;color:#5a4f6a}.job .n strong{font-size:26px;color:#a3140f}
 ul,ol{padding-left:22px;margin:0}li{margin:6px 0}.ladder{display:flex;gap:6px;margin:10px 0}.ladder span{flex:1;text-align:center;border:2px solid #1c1530;border-radius:10px;padding:6px 0;font-weight:600}.ladder .on{background:#ffb000}
-form{display:grid;gap:12px;background:#fff;border:2px solid #1c1530;border-radius:16px;padding:16px}label{display:grid;gap:4px;font-size:15px;color:#5a4f6a}
+details.opt summary{cursor:pointer;color:#5a4f6a;font-size:15px}details.opt[open]{display:grid;gap:12px}.top .go{display:inline-block;margin-top:14px;background:#fff7ec;color:#1c1530;font-weight:700;text-decoration:none;padding:12px 22px;border-radius:99px}form{display:grid;gap:12px;background:#fff;border:2px solid #1c1530;border-radius:16px;padding:16px}label{display:grid;gap:4px;font-size:15px;color:#5a4f6a}
 input{font:inherit;padding:12px;border:2px solid #ecd8bf;border-radius:10px;background:#fff;color:#1c1530;width:100%}input:focus{outline:none;border-color:#d7261e}
 button,.btn{font:600 18px "Prompt",system-ui,sans-serif;padding:15px;border-radius:12px;border:2px solid #1c1530;background:#ffb000;color:#000;cursor:pointer;text-align:center;text-decoration:none;display:block}
 .btn.line{background:#06c755;color:#fff;border-color:#06c755}.err{color:#a3140f;font-weight:600}.ok{background:#fff;border:2px solid #06c755;border-radius:14px;padding:16px;font-size:20px}
@@ -211,7 +211,13 @@ async function signupPage(env, url, request, origin, d, { lang = langOf(url, req
   const title = `${w.title} · ${W.th.title}`
   const og = `<meta name="description" content="${esc(w.lead)}"><meta property="og:type" content="website"><meta property="og:url" content="${origin}/sell"><meta property="og:title" content="${esc(w.h1(START.rate))} · ${esc(W.th.h1(START.rate))}">
 <meta property="og:description" content="${esc(w.lead)}"><meta property="og:image" content="${origin}/s/sell-card.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:image:alt" content="ขายหน้าเว็บ รับ 20% · Sell Mot Dang pages, keep 20%"><meta name="twitter:card" content="summary_large_image">`
-  return shell(lang, title, `<header class="top">${ANT}<h1>${esc(w.h1(START.rate))}</h1><p>${esc(w.lead)}</p></header>
+  return shell(lang, title, `<header class="top">${ANT}<h1>${esc(w.h1(START.rate))}</h1><p>${esc(w.lead)}</p><a class="go" href="#join">${w.signup} ↓</a></header>
+<h2 id="join">${w.signup}</h2>${err ? `<p class="err">${esc(err)}</p>` : ''}
+<form method="post" action="/sell#join"><input type="hidden" name="l" value="${lang}">
+${f('name', 'name', 'text', 'required maxlength="60" autocomplete="name"')}${f('phone', 'phone', 'tel', 'required maxlength="20" autocomplete="tel"')}${f('pp', 'promptpay', 'text', 'required inputmode="numeric" maxlength="20"')}
+<details class="opt"${form.line || form.area || form.langs ? ' open' : ''}><summary>${w.more}</summary>${f('line', 'line', 'text', 'maxlength="40"')}${f('area', 'area', 'text', 'maxlength="80"')}${f('langs', 'langs', 'text', 'maxlength="80"')}${via ? '' : f('via', 'via', 'text', 'maxlength="24"')}</details>
+${via ? `<input type="hidden" name="via" value="${esc(via.id)}"><p class="hint">${w.f.via}: <b>${esc(via.name)}</b></p>` : ''}
+<button>${w.f.send}</button></form>
 <h2>${w.work}</h2><div class="work">
 <div class="job"><b>${w.gold[0]}</b><small>${w.gold[1]}</small><div class="n"><s>${w.price} ฿${nf(p.gold)}</s>${w.you} <strong>฿${share(p.gold)}</strong></div></div>
 <div class="job"><b>${w.hotel[0]}</b><small>${w.hotel[1]}</small><div class="n"><s>${w.price} ฿${nf(p.hotel)}</s>${w.you} <strong>฿${share(p.hotel)}</strong></div></div>
@@ -220,13 +226,7 @@ async function signupPage(env, url, request, origin, d, { lang = langOf(url, req
 <h2>${w.pay}</h2><div class="ladder">${LADDER.map((r) => `<span${r === START.rate ? ' class="on"' : ''}>${r}%</span>`).join('')}</div>
 <ul><li>${esc(w.ladder(START.rate, nf(START.target), LADDER.join(' · ')))}</li><li>${w.paid}</li><li>${w.payFee}</li><li>${esc(w.bring(BONUS))}</li><li>${w.money}</li></ul>
 <h2>${w.need}</h2><p>${w.needs}</p>
-<h2>${w.steps}</h2><ol>${w.s.map((x) => `<li>${x}</li>`).join('')}</ol>
-<h2 id="join">${w.signup}</h2>${err ? `<p class="err">${esc(err)}</p>` : ''}
-<form method="post" action="/sell#join"><input type="hidden" name="l" value="${lang}">
-${f('name', 'name', 'text', 'required maxlength="60" autocomplete="name"')}${f('phone', 'phone', 'tel', 'required maxlength="20" autocomplete="tel"')}${f('line', 'line', 'text', 'maxlength="40"')}
-${f('pp', 'promptpay', 'text', 'required inputmode="numeric" maxlength="20"')}${f('area', 'area', 'text', 'maxlength="80"')}${f('langs', 'langs', 'text', 'maxlength="80"')}
-${via ? `<input type="hidden" name="via" value="${esc(via.id)}"><p class="hint">${w.f.via}: <b>${esc(via.name)}</b></p>` : f('via', 'via', 'text', 'maxlength="24"')}
-<button>${w.f.send}</button></form>`, { og, noindex: false, langs: langBar(lang, href) })
+<h2>${w.steps}</h2><ol>${w.s.map((x) => `<li>${x}</li>`).join('')}</ol>`, { og, noindex: false, langs: langBar(lang, href) })
 }
 
 async function join(request, env, url, origin, d) {
