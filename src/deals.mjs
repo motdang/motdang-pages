@@ -131,17 +131,18 @@ function applyPage(done) {
 <div class="card"><p><b>ลิงก์ของคุณ · Your board</b><br><span class="hint">เก็บไว้ ลิงก์นี้คือบัญชีของคุณ · Keep it; this link is your account.</span></p>
 <p><a href="${esc(done)}">${esc(done)}</a></p><a class="btn line" href="${esc(lineShare(done))}">ส่งให้ตัวเองทาง LINE · Send to yourself on LINE</a></div>`)
   return shell('Lister', `<h1>หาเงินจากการลงประกาศ · Earn from listings</h1>
-<p>ลงบ้าน ที่ดิน ร้าน และช่างบน motdang เมื่อปิดดีลได้ คุณได้ส่วนแบ่งของค่าธรรมเนียม<br>List homes, land, shops and home help on motdang. When one turns into a deal, you get a share of the fee.</p>
-<ul><li>เช่า ขาย ที่อยู่อาศัย พาณิชย์ อุตสาหกรรม · Rent or sale: residential, commercial, industrial</li>
-<li>ช่างซ่อม แม่บ้าน คนสวน ช่างประปา ช่างไฟ ขนย้าย · Handyman, maid, gardener, plumber, electrician, packer · mover</li>
-<li>ส่วนแบ่งเริ่ม ${SPLIT_LADDER[2]}% ของค่าธรรมเนียม จ่ายวันที่เจ้าของจ่าย · Your share starts at ${SPLIT_LADDER[2]}% of each fee, sent the day the owner pays</li></ul>
+<p>ได้ ${SPLIT_LADDER[2]}% ของค่าธรรมเนียมทุกดีลที่ปิดได้<br>Get ${SPLIT_LADDER[2]}% of the fee on every deal you bring.</p>
 <form method="post" class="card"><label>ชื่อ · Name<input name="name" required maxlength="60" autocomplete="name"></label>
 <label>โทร · Phone<input name="phone" required maxlength="20" inputmode="tel" autocomplete="tel"></label>
-<label>LINE ID<input name="line" maxlength="40"></label>
 <label>พร้อมเพย์ (เบอร์หรือเลขบัตร) · PromptPay (phone or ID number)<input name="promptpay" required maxlength="20" inputmode="numeric"></label>
-<label>ย่าน · Area<input name="area" maxlength="60" placeholder="นิมมาน, สันทราย, เชียงราย…"></label>
+<details><summary class="hint">เพิ่มเติม (ไม่บังคับ) · More (optional)</summary>
+<label>LINE ID<input name="line" maxlength="40"></label>
+<label>ย่าน · Area<input name="area" maxlength="60" placeholder="นิมมาน, สันทราย, เชียงราย…"></label></details>
 <input class="hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
-<p><button type="submit">ส่ง · Send</button></p></form>`)
+<p><button type="submit">ส่ง · Send</button></p></form>
+<details><summary class="hint">ลงอะไรได้บ้าง · What you can list</summary><ul><li>เช่า ขาย ที่อยู่อาศัย พาณิชย์ อุตสาหกรรม · Rent or sale: residential, commercial, industrial</li>
+<li>ช่างซ่อม แม่บ้าน คนสวน ช่างประปา ช่างไฟ ขนย้าย · Handyman, maid, gardener, plumber, electrician, packer · mover</li>
+<li>ส่วนแบ่งเริ่ม ${SPLIT_LADDER[2]}% ของค่าธรรมเนียม จ่ายวันที่เจ้าของจ่าย · Your share starts at ${SPLIT_LADDER[2]}% of each fee, sent the day the owner pays</li></ul></details>`)
 }
 
 function slugOf(name) {
