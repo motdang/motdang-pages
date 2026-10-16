@@ -42,7 +42,8 @@ const subject = (s) => String(s).replace(/[.!\s]+$/, '').replace(/^(A|An|The|Our
 // Thai monks and novices shave their heads and wear saffron robes over one shoulder (Nan 2026-10-16: monks shown with respect are drawn)
 const MONKS = /\b(?:monks?|novices?|alms)\b/i
 const peopleLine = (draw, people) => (MONKS.test(draw)
-  ? 'The monks and novices are Thai Theravada monks with fully shaved heads and no hair, in saffron orange robes worn over one shoulder, barefoot, calm and dignified; on an alms round each carries a round alms bowl. Any lay people are friendly Thai people with black hair. '
+  ? 'The monks and novices are Thai Theravada monks with fully shaved heads and no hair, in saffron orange robes worn over one shoulder, barefoot, calm and dignified. ' +
+    (/\balms\b/i.test(draw) ? 'Each monk carries a round alms bowl. ' : '') + 'Any lay people are friendly Thai people with black hair. '
   : people ? 'The people are friendly Thai people with black hair. ' : '')
 export const composeDraw = (style, draw, { people = false } = {}) => `A cheerful ${STYLES[style].noun} of ${subject(draw)}. ${peopleLine(draw, people)}${STYLES[style].look} ${HOUSE}`
 /** ... and for a doodle from the maker's own photo; `change` is what the maker asked to change, or ''. */
