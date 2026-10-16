@@ -1551,7 +1551,10 @@ function camStart() {
     toast,
     send: async (blob) => {
       if (S.d.photos.length >= photoMax(S.kind, isGold())) throw new Error('full')
-      return (await addBitmap(await createImageBitmap(blob))).id
+      const cover = S.d.cover
+      const id = (await addBitmap(await createImageBitmap(blob))).id
+      S.d.cover = cover // an amulet on white is no cover; the maker picks one
+      return id
     },
     made: (id) => {
       S.d.amulets = S.d.amulets.filter((a) => a.t || a.photos.length) // the empty starter row goes

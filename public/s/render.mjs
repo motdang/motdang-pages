@@ -756,7 +756,9 @@ export function render(site, opt = {}) {
     out.push('</section>')
   }
 
-  const gallery = photos.length === 1 && photos[0] === d.cover ? [] : photos
+  // on an amulet page the gallery leaves out the amulets' own photos: each is on its amulet already
+  const amPh = new Set(ams.flatMap((a) => a.photos))
+  const gallery = (photos.length === 1 && photos[0] === d.cover ? [] : photos).filter((p) => !amPh.has(p))
   if (gallery.length) {
     out.push(`<section class="card rise">${H2('photos', W('photos'))}<div class="gallery">`)
     for (const p of gallery) {
