@@ -275,7 +275,7 @@ test('refusals: the plain words stop it before any model; the gatekeeper and Lla
   const w = await world()
   const r = await w.call({ ...asks, prompt: 'the King of Thailand waving' })
   assert.deepEqual([r.status, r.json.error, r.json.why], [422, 'refused', 'royal'])
-  assert.equal(r.json.reason, 'We do not draw the Thai royal family.') // a plain reason, in the builder's own words
+  assert.equal(r.json.reason, "This can't be drawn: the Thai royal family.") // a plain reason, in the builder's own words
   assert.equal(w.env.AI.calls.length, 0)
   const g = await world({ ai: { gate: () => ({ ok: false, no: 'person' }) } })
   assert.equal((await g.call({ ...asks, prompt: 'Taylor Swift singing' })).json.why, 'person')
