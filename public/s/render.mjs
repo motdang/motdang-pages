@@ -42,10 +42,12 @@ export const SCENES = {
     ['run', 'วิ่ง', 'Run'], ['calm', 'สมาธิ', 'Meditation'], ['wat', 'วัด', 'Wat'], ['akha', 'อาข่า', 'Akha'], ['spirithouse', 'ศาลพระภูมิ', 'Spirit house']],
 }
 const SCENE_IDS = new Set(Object.values(SCENES).flat().map((x) => x[0]))
+export const DPROPS = ['wifi', 'aircon', 'parking', 'wheelchair', 'pool', 'tables', 'takeaway', 'lights', 'water', 'farm', 'camp', 'chicken', 'rooster', 'noodles', 'pizza', 'bubbletea']
+export const DTIMES = ['dawn', 'day', 'dusk', 'night']
 export const sceneOf = (kind, d) => (d.scene && SCENE_IDS.has(d.scene) ? d.scene : (SCENES[kind] || SCENES.shop)[0][0])
 
 // The dingbat beside each section's heading, and the look each page look draws them in.
-const HEAD_DING = { about: 'sparkle', menu: 'noodles', prices: 'coin', hours: 'clock', photos: 'camera', where: 'pin', line: 'chat', links: 'link',
+const HEAD_DING = { pay: 'coin', about: 'sparkle', menu: 'noodles', prices: 'coin', hours: 'clock', photos: 'camera', where: 'pin', line: 'chat', links: 'link',
   contact: 'telephone', msg: 'envelope', when: 'calendar', drawn: 'pencil', video: 'play', spots: 'compass', share: 'share',
   cal: 'calendar', camp: 'megaphone', book: 'clock', rooms: 'key', lists: 'home', works: 'nib', quotes: 'hedera' }
 const DING_LOOK = { poster: 'riso', loom: 'paper', stitch: 'paper', night: 'neon', clean: 'ink', lanna: 'paper', gold: 'paper' }
@@ -107,6 +109,12 @@ export function normalize(d = {}) {
   o.photos = (Array.isArray(d.photos) ? d.photos : []).filter((p) => PHOTO_ID.test(p)).slice(0, MAX_PHOTOS.gold)
   o.scene = SCENE_IDS.has(d.scene) ? d.scene : ''
   o.drawing = d.drawing !== false
+  const pay = d.pay || {}, ppn = String(pay.pp || '').replace(/\D/g, '')
+  o.pay = { pp: [10, 13, 15].includes(ppn.length) ? ppn : '', tips: !!pay.tips, price: str(pay.price, 10).replace(/[^\d.]/g, '') }
+  o.dprops = [...new Set((Array.isArray(d.dprops) ? d.dprops : []).filter((x) => DPROPS.includes(x)))].slice(0, 8)
+  o.dseed = Number.isInteger(d.dseed) && d.dseed > 0 && d.dseed < 1e9 ? d.dseed : 0
+  o.dtime = DTIMES.includes(d.dtime) ? d.dtime : ''
+  o.floors = Number.isInteger(d.floors) && d.floors > 0 ? Math.min(60, d.floors) : 0
   o.msg = d.msg !== false
   o.dings = [...new Set((Array.isArray(d.dings) ? d.dings : []).filter((n) => typeof n === 'string' && DINGBATS[n]))].slice(0, 6)
   o.credits = {}
@@ -371,6 +379,13 @@ img{max-width:100%;display:block}a{color:inherit}.i{width:22px;height:22px;flex:
 .spots b{display:block}.spots small{color:var(--mute);font-size:15px}.spots button{border:0;background:none;color:var(--acc-ink);font:600 14px var(--body);padding:4px 0;cursor:pointer;text-decoration:underline}
 .qty{display:inline-flex;align-items:center;gap:6px;margin-left:4px}.qty button{width:38px;height:38px;border-radius:50%;border:2px solid currentColor;background:transparent;color:inherit;font:700 20px/1 system-ui;cursor:pointer}
 .qty b{min-width:1.4em;text-align:center}.qty.on b{color:var(--acc-ink)}.btn.order{position:sticky;bottom:12px;margin-top:16px;z-index:5;box-shadow:0 6px 20px rgba(0,0,0,.25)}
+.top .cta{display:inline-flex;margin-top:18px;min-height:58px;padding:12px 28px;font-size:19px}.top .cta .i{width:24px;height:24px}
+.orderrow{display:grid;gap:10px;margin-top:16px}.orderrow .btn.order{position:sticky;bottom:12px}
+.pay .amts{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0 0}.pay .amt{min-width:84px;min-height:56px;padding:8px 16px;border-radius:calc(var(--r) + 4px);border:2px solid var(--line);background:var(--soft);color:var(--ink);font:800 20px/1.1 var(--body);cursor:pointer}
+.pay .amt small{display:block;font:600 12px/1.2 var(--body);color:var(--mute)}.pay .amt.on{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent)}
+.pay .amtin{display:flex;align-items:center;gap:6px;flex:1 1 160px;min-height:56px;padding:0 14px;border-radius:calc(var(--r) + 4px);border:2px solid var(--line);background:var(--soft)}
+.pay .amtin input{flex:1;min-width:0;border:0;background:none;color:var(--ink);font:700 20px var(--body);outline:0}.pay #paygo{flex:1 1 100%}
+.ppout{margin-top:16px;text-align:center}.ppout .qr{width:min(260px,72vw);height:auto;border-radius:14px;background:#fff;padding:8px}.ppout b{display:block;font-size:24px;margin:8px 0 4px}
 .lineqr{display:grid;grid-template-columns:150px 1fr;gap:18px;align-items:center}.lineqr .qr{width:150px;height:150px;border-radius:10px}
 .links a.btn{margin:0 0 10px}
 .contact{display:grid;gap:8px}.contact a{display:flex;align-items:center;gap:12px;min-height:48px;padding:6px 0;text-decoration:none;border-bottom:1px dashed var(--line);overflow-wrap:anywhere}
@@ -400,15 +415,6 @@ dialog.qrd{background:#fff;color:#000;padding:26px;text-align:center;width:min(9
 .mapfull{position:fixed;inset:0;z-index:50;background:#e8e2d4}.mapfull .x{position:absolute;right:12px;top:12px;z-index:5;width:48px;height:48px;border-radius:50%;border:0;background:#fff;color:#000;font:700 24px/1 system-ui;box-shadow:0 2px 10px rgba(0,0,0,.3)}
 .checking{padding:40px 22px;text-align:center}
 .rise{opacity:0;transform:translateY(18px);transition:opacity .7s ease,transform .7s cubic-bezier(.2,.8,.2,1)}.rise.in{opacity:1;transform:none}
-.sun .spin{transform-origin:60px 60px}.sun.go .spin{animation:spin 1.6s cubic-bezier(.3,1.6,.5,1)}@keyframes spin{to{transform:rotate(180deg)}}
-.loom.go .shuttle{animation:shuttle 1.2s ease-in-out}@keyframes shuttle{50%{transform:translateY(-22px)}}.loom.go .warp rect:nth-child(odd){animation:shuttle .9s ease-in-out reverse}
-.cat .eyes{transform-origin:60px 62px}.cat.go .eyes{animation:wink .8s}@keyframes wink{40%{transform:scaleY(.1)}}
-.cat .hearts{opacity:0}.cat.go .hearts{animation:hearts 1.3s}@keyframes hearts{30%{opacity:1}100%{opacity:0;transform:translateY(-22px)}}
-.lanterns.go .l{animation:float 2.2s ease-in-out}.lanterns.go .l1{animation-delay:.15s}.lanterns.go .l2{animation-delay:.3s}@keyframes float{50%{transform:translateY(-34px)}}
-.spark .s{transform-origin:60px 60px}.spark.go .s{animation:spark 1s}@keyframes spark{50%{transform:scale(1.25) rotate(20deg)}}
-.flame .f{transform-origin:60px 112px}.flame.go .f{animation:flick 1s}@keyframes flick{30%{transform:scale(1.08,.92)}60%{transform:scale(.94,1.1)}}
-.leaf .lotus{transform-origin:60px 96px}.leaf.go .lotus{animation:bloom 1.4s cubic-bezier(.3,1.5,.5,1)}@keyframes bloom{40%{transform:scale(1.12) rotate(-4deg)}}
-.leaf .glints{animation:glint 2.8s ease-in-out infinite}@keyframes glint{50%{opacity:.25}}.leaf.go .glints{animation:spark 1s}
 .drawn .pen{position:absolute;left:0;top:0;width:36px;height:36px;z-index:2;pointer-events:none;filter:drop-shadow(0 3px 3px rgba(0,0,0,.45));transition:opacity .5s}
 .camp{position:relative;margin:22px 0;border-radius:calc(var(--r) + 6px);background:var(--accent);color:var(--on-accent);overflow:hidden;box-shadow:0 12px 34px rgba(0,0,0,.2)}
 .camp::before{content:"";position:absolute;inset:0 -60px;background:repeating-linear-gradient(135deg,rgba(255,255,255,.16) 0 14px,transparent 14px 28px);animation:slide 3.5s linear infinite}
@@ -454,8 +460,8 @@ dialog.qrd{background:#fff;color:#000;padding:26px;text-align:center;width:min(9
 @keyframes up{from{opacity:0;transform:translate(-50%,40px)}}
 @media (max-width:560px){.campin{flex-wrap:wrap;padding:18px 22px}.campin>[data-dingbat]{font-size:34px}.campt{flex:1 1 calc(100% - 52px)}.code{width:100%;flex-direction:row;justify-content:center;gap:12px}}.readin button{padding:0 4px;border:0;background:none;color:inherit;font:700 20px/1 system-ui;cursor:pointer}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}.rise{opacity:1;transform:none}}
-@media (min-width:760px){.top .t{padding:84px 16px 72px}.art{width:128px;height:128px;right:24px;top:24px}.t .art{right:auto;top:auto}.drawn{margin:30px -40px}}
-@media print{.reach,.foot,.art,.tools-row,.msgcard,.dmap{display:none}body{background:#fff;color:#000}}`
+@media (min-width:760px){.drawn{margin:30px -40px}}
+@media print{.reach,.foot,.tshare,.tools-row,.msgcard,.dmap{display:none}body{background:#fff;color:#000}}`
 
 const DAY_ORDER = [0, 1, 2, 3, 4, 5, 6]
 const OSM_DAY = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su']
@@ -578,8 +584,8 @@ export function render(site, opt = {}) {
   const deco = look.deco ? look.deco({ gold, open: !!(st && (st.open || st.always)) }) : {}
   const h1 = L ? L.t : Wk ? Wk.t : name
   out.push(`<header class="top${cov ? ' has-cover' : ''}${gold ? ' gilt' : ''}">`, deco.back || '')
-  if (cov) out.push(`<div class="pf"><div class="ph"><img src="${esc(img(cov))}" alt="" fetchpriority="high">${deco.ph || ''}</div>${deco.frame || ''}${look.art}${d.credits[cov] ? `<p class="cr">${creditLine(d.credits[cov])}</p>` : ''}</div>`)
-  out.push(deco.front || '', `<div class="t">${cov ? '' : look.art}`)
+  if (cov) out.push(`<div class="pf"><div class="ph"><img src="${esc(img(cov))}" alt="" fetchpriority="high">${deco.ph || ''}</div>${deco.frame || ''}${d.credits[cov] ? `<p class="cr">${creditLine(d.credits[cov])}</p>` : ''}</div>`)
+  out.push(deco.front || '', '<div class="t">')
   const kick = !L && !Wk ? kicker(d) : ''
   if (kick) out.push(`<p class="kick">${esc(kick)}</p>`)
   if (d.avatar && !L && !Wk) out.push(`<img class="av${d.avround ? ' round' : ''}" src="${esc(img(d.avatar, true))}" alt="" width="104" height="104">`)
@@ -588,7 +594,11 @@ export function render(site, opt = {}) {
   else if (Wk) out.push(`<p class="tag"><a href="/${esc(site.name)}#works">${esc(name)}</a></p>`)
   else if (d.tagline) out.push(`<p class="tag">${esc(d.tagline)}</p>`)
   if (d.dings.length) out.push(`<p class="dings">${d.dings.map((n) => ding(n, dl)).join('')}</p>`)
-  out.push(`<span id="st">${badge(lang, st)}</span></div>`)
+  out.push(`<span id="st">${badge(lang, st)}</span>`)
+  const cta = !L && !Wk ? leadButton(site, d, gold, line) : null
+  if (cta) out.push(`<a class="btn cta" data-t="cta" href="${esc(cta[0])}"${/^https?:/.test(cta[0]) ? ' rel="nofollow noopener"' : ''}>${icon(cta[2])}${W(cta[1])}</a>`)
+  out.push('</div>')
+  out.push(`<button class="tshare" data-t="share" aria-label="${W('share')}" title="${W('share')}">${icon('share')}</button>`)
   if (gold) out.push(`<span class="seal" role="img" aria-label="${W('gold')}" title="${W('gold')}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 18.5h18l1.2-11-5.7 4.2L12 4.5l-4.5 7.2L1.8 7.5z" fill="currentColor"/></svg></span>`)
   out.push('</header>', deco.under || '')
   // a look picker's tile: the top of the page only, no script (make.js scales it down)
@@ -654,8 +664,8 @@ export function render(site, opt = {}) {
   // the drawing: the auto-doodler draws the place from its own facts, lit by the sun where it stands
   if (d.drawing) {
     const scene = sceneOf(site.kind, d)
-    const facts = { id: site.name, name, nameTh: name, nameEn: name, cat: site.kind, sub: [scene], hours: osmHours(d.hours) || undefined, lat: pl.lat ?? undefined, lng: pl.lng ?? undefined }
-    out.push(`<figure class="drawn rise" id="drawn"><canvas data-set="${esc(scene)}" data-p="${esc(JSON.stringify(facts))}" role="img" aria-label="${W('drawnAlt', { n: name })}"></canvas>`,
+    const facts = { id: site.name, name, nameTh: name, nameEn: name, cat: site.kind, sub: [scene], hours: osmHours(d.hours) || undefined, lat: pl.lat ?? undefined, lng: pl.lng ?? undefined, props: d.dprops.length ? d.dprops : undefined, floors: d.floors || undefined }
+    out.push(`<figure class="drawn rise" id="drawn"><canvas data-set="${esc(scene)}" data-seed="${d.dseed}" data-time="${d.dtime}" data-p="${esc(JSON.stringify(facts))}" role="img" aria-label="${W('drawnAlt', { n: name })}"></canvas>`,
       `<figcaption>${ding('pencil', 'mono')}${W('drawnTap')}</figcaption></figure>`)
   }
 
@@ -676,12 +686,15 @@ export function render(site, opt = {}) {
   }
 
   if (d.items.length) {
-    const oa = lineOa(c.line)
-    out.push(`<section class="card rise">${H2(site.kind === 'food' ? 'menu' : 'prices', W(site.kind === 'food' ? 'menu' : 'prices'))}<ul class="menu${oa ? ' orderable' : ''}">`)
+    const oa = lineOa(c.line), pp = !!d.pay.pp
+    out.push(`<section class="card rise" id="menu">${H2(site.kind === 'food' ? 'menu' : 'prices', W(site.kind === 'food' ? 'menu' : 'prices'))}<ul class="menu${oa || pp ? ' orderable' : ''}">`)
     d.items.forEach((it, i) => out.push(`<li><span class="n">${esc(it.n)}${it.note ? `<small>${esc(it.note)}</small>` : ''}</span><span class="p">${esc(price(it.p, cur))}</span>` +
-      (oa ? `<span class="qty" data-i="${i}" data-n="${esc(it.n)}"><button aria-label="−">−</button><b>0</b><button aria-label="+">+</button></span>` : '') + '</li>'))
+      (oa || pp ? `<span class="qty" data-i="${i}" data-n="${esc(it.n)}" data-p="${amountOf(it.p)}"><button aria-label="−">−</button><b>0</b><button aria-label="+">+</button></span>` : '') + '</li>'))
     out.push('</ul>')
+    if (oa || pp) out.push('<div class="orderrow">')
     if (oa) out.push(`<a class="btn line order" id="lineorder" data-t="order" data-oa="${esc(oa)}" href="${esc(lineHref(c.line))}" rel="nofollow noopener" hidden>${icon('chat')}${W('lineOrder')} <span></span></a>`)
+    if (pp) out.push(`<button class="btn order" id="paytotal" data-t="paytotal" data-sym="${esc(sym)}" data-w="${W('payTotal')}" hidden>${icon('coin')}<span></span></button>`)
+    if (oa || pp) out.push('</div>')
     out.push('</section>')
   }
 
@@ -801,6 +814,17 @@ export function render(site, opt = {}) {
     out.push('</section>')
   }
 
+  // paying by PromptPay: amounts to tap; the Worker draws the QR with the amount in it
+  if (d.pay.pp && !L && !Wk) {
+    const opts = []
+    if (site.kind === 'event' && amountOf(d.pay.price)) opts.push([amountOf(d.pay.price), W('payTicket')])
+    if (d.pay.tips) for (const a of [20, 50, 100, 500]) opts.push([a, ''])
+    out.push(`<section class="card rise pay" id="pay">${H2('pay', W('pay'))}<p>${W('payHint', { n: esc(name) })}</p><div class="amts">`,
+      opts.map(([a, l]) => `<button class="amt" data-a="${a}" data-t="payamt">${esc(money(String(a), sym))}${l ? `<small>${l}</small>` : ''}</button>`).join(''),
+      `<label class="amtin"><span>${esc(sym || '฿')}</span><input type="number" inputmode="decimal" min="1" max="999999" step="any" placeholder="${W('payOther')}" aria-label="${W('payAmt')}"></label>`,
+      `<button class="btn" id="paygo" data-t="pay">${icon('coin')}${W('payShow')}</button></div><div class="ppout" id="ppout" hidden></div></section>`)
+  }
+
   if (d.msg) {
     out.push(`<section class="card msgcard rise" id="message">${H2('msg', W('msg'))}`,
       opt.preview ? `<p style="color:var(--mute)">${W('msgPreview')}</p>` : '',
@@ -825,7 +849,8 @@ export function render(site, opt = {}) {
     book: gold && (d.svc.length || (hotel && d.rooms.length)) ? { ahead: d.book.ahead, svc: Object.fromEntries(d.svc.map((v) => [v.id, { cap: v.cap, mins: v.mins, p: v.p }])), rooms: Object.fromEntries(d.rooms.map((r) => [r.id, { g: r.guests, p: r.p, p2: r.p2, rates: r.rates, min: r.min, units: r.units }])), stay: { in: d.stay.in, out: d.stay.out } } : null,
     w: Object.fromEntries(['happening', 'ended', 'farFrom', 'reportAsk', 'send', 'thanks', 'close', 'copied', 'orderHi', 'msgSent', 'msgFail', 'saveQr', 'story', 'drawnTap',
       'bookPick', 'bookNone', 'bookName', 'bookReach', 'bookEmail', 'bookPeople', 'bookNote', 'bookSend', 'bookAsked', 'bookDone', 'bookFail', 'bookDeposit', 'bookScan', 'bookLeft',
-      'roomIn', 'roomOut', 'roomNights', 'roomNight1', 'roomSend', 'roomTotal', 'roomPickIn', 'roomPickOut', 'roomTaken', 'roomMin', 'roomLeft', 'bookRef', 'payNow', 'payHotel', 'payLink', 'yourBooking', 'readIn', 'msgName', 'msgReach', 'msgBody', 'msgSend'].map((k) => [k, word(lang, k)])),
+      'roomIn', 'roomOut', 'roomNights', 'roomNight1', 'roomSend', 'roomTotal', 'roomPickIn', 'roomPickOut', 'roomTaken', 'roomMin', 'roomLeft', 'bookRef', 'payNow', 'payHotel', 'payLink', 'yourBooking', 'readIn', 'msgName', 'msgReach', 'msgBody', 'msgSend', 'payScan', 'paySlip', 'payTotal'].map((k) => [k, word(lang, k)])),
+    line: line || '',
   }
   out.push(`<template id="qrsvg">${qrSvg(url, { dark: '#000', light: '#fff', label: url })}</template>`)
   out.push(`<script type="application/json" id="pd">${JSON.stringify(pd).replace(/</g, '\\u003c')}</script>`)
@@ -870,6 +895,29 @@ function workBody(x, { site, d, W, H2, img, gold }) {
 
 /** Letters in the title's longest word, so the title is sized to keep every word whole.
  *  Thai, Lao, Khmer and Burmese run without spaces and break between words on their own. */
+/** A number from a price as typed ("฿60", "60 baht", "1,500"); 0 when there is none. */
+export function amountOf(p) {
+  const n = parseFloat(String(p || '').replace(/,/g, '').match(/\d+(\.\d+)?/)?.[0] || '')
+  return n > 0 && n < 1e6 ? n : 0
+}
+
+/** The button a page leads with, by kind and by what the page holds: [href, word, icon]. */
+function leadButton(site, d, gold, line) {
+  const k = site.kind, c = d.contact, pp = !!d.pay.pp, oa = lineOa(c.line)
+  if ((k === 'food' || k === 'shop') && d.items.length && (pp || oa)) return ['#menu', k === 'food' ? 'ctaOrder' : 'ctaBuy', 'basket']
+  if (k === 'stay' && gold && d.rooms.length) return ['#rooms', 'ctaRoom', 'cal']
+  if (k === 'service' && gold && d.svc.length) return ['#book', 'ctaBook', 'cal']
+  if (k === 'homes' && gold && d.lists.length) return ['#lists', 'ctaHomes', 'tag']
+  if (k === 'event' && pp && amountOf(d.pay.price)) return ['#pay', 'ctaTicket', 'coin']
+  if ((k === 'me' || k === 'group') && pp && d.pay.tips) return ['#pay', k === 'group' ? 'ctaDues' : 'ctaTip', 'heart']
+  if (k === 'work') return [d.msg ? '#message' : line || (c.phone ? telHref(c.phone) : '#message'), 'ctaHire', 'mail']
+  if (k === 'group' && (line || d.msg)) return [line || '#message', 'ctaJoin', 'people']
+  if (k === 'event') return [`/${site.name}/event.ics`, 'addCal', 'cal']
+  if (line) return [line, 'line', 'chat']
+  if (c.phone) return [telHref(c.phone), 'call', 'phone']
+  return null
+}
+
 /** The name as words, each in a span a look can move on its own. */
 function wordsOf(t) {
   let i = 0

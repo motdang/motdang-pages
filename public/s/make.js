@@ -3,7 +3,7 @@
 // own; "Put it online" is the only button that matters. Beside the page:
 // its messages, its traffic, and Gold.
 
-import { render, normalize, LOOKS, LOOK_IDS, GOLD_LOOKS, lookOf, KINDS, ACCENTS, CURRENCY, SCENES, MAX_PHOTOS, osmHours, currencyFor, qrSvg, lineShare, esc } from './render.mjs'
+import { render, normalize, LOOKS, LOOK_IDS, GOLD_LOOKS, lookOf, KINDS, ACCENTS, CURRENCY, SCENES, DPROPS, MAX_PHOTOS, osmHours, currencyFor, qrSvg, lineShare, esc } from './render.mjs'
 import { MAX, UNIT_LABEL } from './extras.mjs'
 import { DINGBATS } from './db/names.mjs'
 import { PAGE_LANGS } from './words.mjs'
@@ -55,15 +55,15 @@ const T = (k) => esc(ui(S.lang, k))
 // ---- starting data per kind ---------------------------------------------------------
 
 const DEFAULT_OPEN = {
-  shop: ['words', 'photos', 'contact', 'map', 'hours', 'items'],
-  food: ['words', 'photos', 'items', 'order', 'map', 'hours', 'contact'],
-  service: ['words', 'face', 'photos', 'svc', 'items', 'contact', 'map'],
-  work: ['words', 'face', 'works', 'photos', 'quotes', 'contact', 'links'],
-  me: ['words', 'face', 'photos', 'links', 'contact'],
-  stay: ['words', 'photos', 'rooms', 'ota', 'map', 'contact'],
-  homes: ['words', 'lists', 'photos', 'contact', 'map'],
-  event: ['event', 'words', 'cal', 'photos', 'map', 'contact'],
-  group: ['words', 'cal', 'photos', 'links', 'contact'],
+  shop: ['pay', 'words', 'photos', 'contact', 'map', 'hours', 'items'],
+  food: ['pay', 'words', 'photos', 'items', 'order', 'map', 'hours', 'contact'],
+  service: ['pay', 'words', 'face', 'photos', 'svc', 'items', 'contact', 'map'],
+  work: ['pay', 'words', 'face', 'works', 'photos', 'quotes', 'contact', 'links'],
+  me: ['pay', 'words', 'face', 'photos', 'links', 'contact'],
+  stay: ['pay', 'words', 'photos', 'rooms', 'ota', 'map', 'contact'],
+  homes: ['pay', 'words', 'lists', 'photos', 'contact', 'map'],
+  event: ['pay', 'event', 'words', 'cal', 'photos', 'map', 'contact'],
+  group: ['pay', 'words', 'cal', 'photos', 'links', 'contact'],
 }
 const LOOK_FOR = { shop: 'poster', food: 'night', service: 'loom', work: 'clean', stay: 'lanna', homes: 'clean', me: 'stitch', event: 'poster', group: 'stitch' }
 
@@ -226,6 +226,8 @@ function examples(kind, lang) {
   ]
   if (parts.includes('quotes')) x.quotes = [{ q: th ? 'เร็ว ใจดี และรูปสวยมาก' : 'Quick, kind, and the photos were beautiful.', who: 'Ploy' }]
   if (parts.includes('links')) x.links = [{ t: 'Facebook', u: 'https://www.facebook.com/' }, { t: 'Instagram', u: 'https://www.instagram.com/' }]
+  x.pay = { pp: '0812345678', tips: ['me', 'work', 'group', 'service'].includes(kind), price: kind === 'event' ? '150' : '' }
+  x.contact = { line: '@yourpage' }
   if (parts.includes('cal')) x.cal = [
     { t: th ? 'นัดพบประจำเดือน' : 'Monthly meet-up', start: day(5, '18:00'), end: '20:00', rep: 'monthly' },
     { t: th ? 'ตลาดนัดวันเสาร์' : 'Saturday market', start: day(2, '16:00'), end: '21:00', rep: 'weekly' },
@@ -253,11 +255,11 @@ function partAt(p) {
 }
 
 function kindTile(k) {
-  return `<button class="kind${k === S.kind ? ' on' : ''}" data-kind="${k}" aria-pressed="${k === S.kind}">${KPIC[k] ? `<img src="${kpicUrl(k, true)}" alt="" loading="lazy">` : `<span class="kd">${ding(KIND_DING[k] || 'star', 'paper')}</span>`}<b>${T('k_' + k)}</b><small>${T('h_' + k)}</small></button>`
+  return `<button class="kind${k === S.kind ? ' on' : ''}" data-kind="${k}" aria-pressed="${k === S.kind}">${KPIC[k] ? `<img src="${kpicUrl(k, true)}" alt="" loading="lazy">` : `<span class="kd">${ding(KIND_DING[k] || 'star', 'paper')}</span>`}<b>${T('k_' + k)}</b><small>${T('hk_' + k)}</small></button>`
 }
 
 function getsHtml() {
-  return `<p class="gl">${T('gets')} <span>${T('getsTap')} ${T('exNote')}</span></p><div class="getchips">${(DEFAULT_OPEN[S.kind] || []).map((p) => {
+  return `<p class="gwhy">${T('why_' + S.kind)}</p><p class="gl">${T('gets')} <span>${T('getsTap')} ${T('exNote')}</span></p><div class="getchips">${(DEFAULT_OPEN[S.kind] || []).map((p) => {
     const [ic, g] = secIcon(p) || ['star']
     return `<button class="chip" data-at="${p}">${icon(ic)}${T('s_' + p)}${g ? '<i>★</i>' : ''}</button>`
   }).join('')}</div>`
@@ -560,7 +562,7 @@ async function create(look, btn) {
 // ---- the editor ------------------------------------------------------------------------
 
 const SECTIONS = [
-  ['event', 'cal', 's_event'], ['words', 'note', 's_words'], ['face', 'me', 's_face'], ['works', 'star', 's_works'], ['drawing', 'sparkle', 's_drawing'], ['photos', 'camera', 's_photos'], ['quotes', 'chat', 's_quotes'],
+  ['pay', 'coin', 's_pay'], ['event', 'cal', 's_event'], ['words', 'note', 's_words'], ['face', 'me', 's_face'], ['works', 'star', 's_works'], ['drawing', 'sparkle', 's_drawing'], ['photos', 'camera', 's_photos'], ['quotes', 'chat', 's_quotes'],
   ['rooms', 'moon', 's_rooms', 'gold'], ['ota', 'globe', 's_ota', 'gold'], ['lists', 'tag', 's_lists', 'gold'], ['svc', 'clock', 's_svc', 'gold'], ['items', 'tag', 's_items'],
   ['cal', 'cal', 's_cal'], ['camps', 'party', 's_camps', 'gold'],
   ['order', 'basket', 's_order'], ['contact', 'phone', 's_contact'], ['map', 'pin', 's_map'], ['spots', 'compass', 's_spots'], ['hours', 'clock', 's_hours'],
@@ -587,7 +589,7 @@ function tabs() {
 const GROUPS = [
   ['words', ['event', 'words'], 'pencil'],
   ['pics', ['photos', 'drawing', 'face', 'video'], 'camera'],
-  ['offer', ['items', 'works', 'amulets', 'svc', 'rooms', 'lists', 'ota', 'cal', 'camps', 'quotes'], 'cart'],
+  ['offer', ['pay', 'items', 'works', 'amulets', 'svc', 'rooms', 'lists', 'ota', 'cal', 'camps', 'quotes'], 'cart'],
   ['reach', ['contact', 'order', 'msg', 'links'], 'telephone'],
   ['where', ['map', 'hours', 'spots'], 'compass'],
   ['look', ['look'], 'sparkle'],
@@ -712,12 +714,25 @@ const SEC = {
       `<label class="field"><span>${T('about')}</span><textarea data-k="about" maxlength="2400">${val(S.d.about)}</textarea></label>`
   },
   drawing() {
-    const list = SCENES[S.kind] || SCENES.shop
-    const cur = S.d.scene || list[0][0]
-    const th = S.lang === 'th'
+    const cur = S.d.scene || (SCENES[S.kind] || SCENES.shop)[0][0]
+    const tab = S.dtab || (DO_SCENES.has(cur) ? 'do' : 'place')
     return `<label class="check"><input type="checkbox" class="sw" data-k="drawing" ${S.d.drawing ? 'checked' : ''}>${T('drawingOn')}</label>
-      <div ${S.d.drawing ? '' : 'hidden'}><div class="drawpv"><canvas id="drawpv"></canvas></div><p class="hint">${T('drawingHint')}</p>
-      <div class="scenes">${list.map(([id, t, e]) => `<button data-scene="${id}"${id === cur ? ' class="on"' : ''}>${esc(th ? t : e)}</button>`).join('')}</div></div>`
+      <div ${S.d.drawing ? '' : 'hidden'}>
+        <div class="drawpv"><canvas id="drawpv"></canvas>
+          <div class="dbar"><button type="button" class="dbtn" id="dshuffle">${icon('sparkle')}${T('d_shuffle')}</button><button type="button" class="dbtn" id="dcover">${icon('camera')}${T('d_cover')}</button><button type="button" class="dbtn" id="dsave">${icon('download')}${T('d_save')}</button></div></div>
+        <div class="seg dtime" role="group">${['', 'dawn', 'day', 'dusk', 'night'].map((k) => `<button type="button" data-dtime="${k}"${k === S.d.dtime ? ' class="on"' : ''}>${icon(k === 'night' || k === 'dusk' ? 'moon' : k ? 'sun' : 'clock')}${T('t_' + (k || 'now'))}</button>`).join('')}</div>
+        <div class="dtabs" role="tablist">${['place', 'do'].map((k) => `<button type="button" role="tab" data-dtab="${k}" aria-selected="${k === tab}"${k === tab ? ' class="on"' : ''}>${T('d_' + k)}</button>`).join('')}</div>
+        <div class="scenegrid">${sceneList(tab).map((id) => `<button type="button" class="sc${id === cur ? ' on' : ''}" data-scene="${id}"><canvas data-sc="${id}"></canvas><span>${esc(sceneLabel(id))}</span></button>`).join('')}</div>
+        <p class="lbl2">${T('d_things')}</p>
+        <div class="dprops">${DPROPS.map((p) => `<button type="button" data-dprop="${p}"${S.d.dprops.includes(p) ? ' class="on"' : ''}>${T('p_' + p)}</button>`).join('')}</div>
+        <div class="floors"><span>${T('d_floors')}</span><button type="button" data-floors="-1" aria-label="−">−</button><b>${S.d.floors || '–'}</b><button type="button" data-floors="1" aria-label="+">+</button></div>
+      </div>`
+  },
+  pay() {
+    const p = S.d.pay || {}
+    return `<p class="hint">${T('pay_why')}</p>` + field('pay.pp', T('pay_pp'), p.pp || '', 'tel', 'inputmode="numeric" autocomplete="off" placeholder="08x xxx xxxx"') +
+      (S.kind === 'event' ? field('pay.price', T('pay_price'), p.price || '', 'text', 'inputmode="decimal" placeholder="150"') : '') +
+      `<label class="check"><input type="checkbox" class="sw" data-k="pay.tips" ${p.tips ? 'checked' : ''}>${T('pay_tips')}</label>`
   },
   photos() {
     const max = isGold() ? MAX_PHOTOS.gold : MAX_PHOTOS.free
@@ -1128,6 +1143,13 @@ function bindEdit() {
     if (b.dataset.lpingo) listingPin(+b.dataset.lpingo)
     if (b.dataset.lpinx) { const x = S.d.lists[+b.dataset.lpinx]; if (x) { x.lat = x.lng = null; redrawSec('lists'); changed() } }
     if (b.dataset.scene) { S.d.scene = b.dataset.scene; app.querySelectorAll('[data-scene]').forEach((x) => x.classList.toggle('on', x === b)); drawPreviewSoon(); changed() }
+    if (b.dataset.dtime !== undefined) { S.d.dtime = b.dataset.dtime; redrawSec('drawing'); drawPreviewSoon(); changed() }
+    if (b.dataset.dtab) { S.dtab = b.dataset.dtab; redrawSec('drawing') }
+    if (b.dataset.dprop) { const p = b.dataset.dprop; S.d.dprops = S.d.dprops.includes(p) ? S.d.dprops.filter((x) => x !== p) : [...S.d.dprops, p].slice(-8); b.classList.toggle('on', S.d.dprops.includes(p)); app.querySelectorAll('canvas[data-sc]').forEach((x) => delete x.dataset.done); paintShelf(); drawPreviewSoon(); changed() }
+    if (b.dataset.floors) { S.d.floors = Math.max(0, Math.min(60, (S.d.floors || 0) + (+b.dataset.floors) * ((S.d.floors || 0) >= 10 ? 5 : 1))); const v = b.parentNode.querySelector('b'); if (v) v.textContent = S.d.floors || '–'; drawPreviewSoon(); changed() }
+    if (b.id === 'dshuffle') { S.d.dseed = 1 + Math.floor(Math.random() * 999999); app.querySelectorAll('canvas[data-sc]').forEach((x) => delete x.dataset.done); paintShelf(); drawPreviewSoon(); changed() }
+    if (b.id === 'dsave' && window.MDDOODLER) drawingPicture(1600, 900).toBlob((bl) => { if (!bl) return; const a = document.createElement('a'); a.href = URL.createObjectURL(bl); a.download = (S.name || 'drawing') + '.png'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 4000) }, 'image/png')
+    if (b.id === 'dcover' && window.MDDOODLER) { b.disabled = true; createImageBitmap(drawingPicture(1600, 1200)).then((bmp) => addBitmap(bmp)).then((r) => { S.d.cover = r.id; changed(); redrawSec('photos'); preview(true) }).catch(() => toast(ui(S.lang, 'e_net'))).finally(() => { b.disabled = false }) }
     if (b.id === 'sameall') { const r = S.d.hours.week.find(Boolean) || [['09:00', '18:00']]; S.d.hours.week = S.d.hours.week.map(() => r.map((x) => [...x])); redrawSec('hours'); changed() }
     if (b.id === 'here') here()
     if (b.id === 'photopin' && S.photoGps) setPin(S.photoGps.lat, S.photoGps.lng, 18)
@@ -1175,8 +1197,9 @@ function mountDrawing() {
   if (!cv || !S.d.drawing) return
   drawCv = cv
   const add = (src) => new Promise((ok, no) => { const s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = no; document.head.appendChild(s) })
-  drawLoad = drawLoad || add('/front/skyline.js').then(() => add('/front/doodler.js')).then(() => addEventListener('mddoodler', () => paintDrawing(performance.now())))
+  drawLoad = drawLoad || add('/front/skyline.js').then(() => add('/front/doodler.js')).then(() => addEventListener('mddoodler', () => { paintDrawing(performance.now()); paintShelf() }))
   drawLoad.then(() => {
+    paintShelf()
     cancelAnimationFrame(drawRaf)
     const loop = (t) => { if (!drawCv || !drawCv.isConnected) return; paintDrawing(t); drawRaf = requestAnimationFrame(loop) }
     drawRaf = requestAnimationFrame(loop)
@@ -1191,10 +1214,51 @@ function paintDrawing(t) {
   if (cv.width !== Math.round(W * dpr)) { cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr) }
   const c = cv.getContext('2d'); c.setTransform(dpr, 0, 0, dpr, 0, 0); c.clearRect(0, 0, W, H)
   const set = S.d.scene || (SCENES[S.kind] || SCENES.shop)[0][0]
-  const p = S.d.place
-  try { D.portrait(c, W, H, t, { set, place: { id: S.name, name: S.d.name || S.name, nameTh: S.d.name, nameEn: S.d.name, cat: S.kind, sub: [set], hours: osmHours(S.d.hours) || undefined, lat: p.lat ?? undefined, lng: p.lng ?? undefined } }) } catch {}
+  try { D.portrait(c, W, H, t, { set, place: drawFacts(set), alt: ALT_OF[S.d.dtime], seed: S.d.dseed || undefined }) } catch {}
 }
 function drawPreviewSoon() { lastDraw = 0 }
+
+// ---- the drawing: two shelves, your place and what you do (Nan 2026-10-16: "place doodle builder,
+// and service doodle builder should be much more developed") ----------------------------------
+const DO_SCENES = new Set(['massage', 'salon', 'tattoo', 'sakyant', 'muaythai', 'cooking', 'yoga', 'dance', 'band', 'learn', 'training', 'fixit', 'tours', 'run', 'latin', 'film',
+  'calm', 'ball', 'social', 'feast', 'songkran', 'yipeng', 'flowers', 'walking-street', 'market', 'akha', 'community', 'tuktuk', 'robots', 'gym', 'beautyclinic', 'dentist', 'optician', 'clinic'])
+const SCENE_WORDS = {}
+for (const list of Object.values(SCENES)) for (const [id, th, en] of list) if (!SCENE_WORDS[id]) SCENE_WORDS[id] = [th, en]
+const sceneLabel = (id) => (SCENE_WORDS[id] ? SCENE_WORDS[id][S.lang === 'th' ? 0 : 1] : id)
+function sceneList(tab) {
+  const own = (SCENES[S.kind] || SCENES.shop).map((x) => x[0])
+  const all = [...new Set([...own, ...Object.keys(SCENE_WORDS)])]
+  return all.filter((id) => (tab === 'do' ? DO_SCENES.has(id) : !DO_SCENES.has(id)))
+}
+const ALT_OF = { dawn: 2, day: 38, dusk: -6, night: -22 }
+function drawFacts(set) {
+  const p = S.d.place
+  return { id: S.name, name: S.d.name || S.name, nameTh: S.d.name, nameEn: S.d.name, cat: S.kind, sub: [set], hours: osmHours(S.d.hours) || undefined,
+    lat: p.lat ?? undefined, lng: p.lng ?? undefined, props: S.d.dprops.length ? S.d.dprops : undefined, floors: S.d.floors || undefined }
+}
+// each scene on the shelf drawn small, once its drawing file has come in
+function paintShelf() {
+  const D = window.MDDOODLER
+  if (!D) return
+  const have = new Set(D.sets())
+  app.querySelectorAll('canvas[data-sc]').forEach((cv) => {
+    const id = cv.dataset.sc
+    if (cv.dataset.done === '1') return
+    const dpr = Math.min(2, devicePixelRatio || 1), W = cv.clientWidth, H = cv.clientHeight
+    if (!W || !H) return
+    cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr)
+    const c = cv.getContext('2d'); c.setTransform(dpr, 0, 0, dpr, 0, 0)
+    try { D.portrait(c, W, H, 4000, { set: id, place: drawFacts(id), alt: ALT_OF[S.d.dtime] ?? 38, seed: S.d.dseed || undefined }) } catch {}
+    if (have.has(id)) cv.dataset.done = '1'
+  })
+}
+function drawingPicture(w, h) {
+  const D = window.MDDOODLER, cv = document.createElement('canvas')
+  cv.width = w; cv.height = h
+  const set = S.d.scene || (SCENES[S.kind] || SCENES.shop)[0][0]
+  D.portrait(cv.getContext('2d'), w, h, performance.now(), { set, place: drawFacts(set), alt: ALT_OF[S.d.dtime], seed: S.d.dseed || undefined })
+  return cv
+}
 
 // ---- the page is the editor (Nan 2026-10-15: what you see is what you get) --------------------
 // A tap on a part of the page opens the part of the form that draws it; the name and the line under
@@ -1210,7 +1274,7 @@ const PART = [
 const PART_CSS = `[data-part]{cursor:pointer;transition:opacity .3s}[data-part]:hover{outline:3px dashed #d7261e;outline-offset:3px}
 .mk-on{outline:4px solid #ffb000!important;outline-offset:4px;border-radius:8px}body.mk-lit main.wrap>[data-part]:not(.mk-on){opacity:.45}
 [contenteditable]{cursor:text;outline:0}[contenteditable]:hover,[contenteditable]:focus{outline:3px solid #ffb000;outline-offset:4px;border-radius:6px}
-.mk-ghost{opacity:.55;font-style:italic}.mk-pic{position:absolute;left:12px;top:12px;z-index:5;padding:6px 12px;border-radius:99px;background:#1c1530e0;color:#fff;font:600 13px/1.2 system-ui,sans-serif;cursor:pointer}`
+.mk-ghost{opacity:.55;font-style:italic}.mk-pic{position:absolute;left:56px;top:14px;z-index:5;padding:6px 12px;border-radius:99px;background:#1c1530e0;color:#fff;font:600 13px/1.2 system-ui,sans-serif;cursor:pointer}`
 
 // a block of the page and the part of the form that draws it: by what it is, else by what it holds
 function partOf(el) {

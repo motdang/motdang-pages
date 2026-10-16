@@ -14,7 +14,8 @@
 // motdang.net/~… (the first address, 2026-10-12) answers with a redirect here.
 // The edit link is the sign-in: a long random token, stored only as its hash.
 
-import { render, normalize, vcard, ics, sign, KINDS, LOOK_IDS, GOLD_LOOKS, MAX_PHOTOS, sceneOf, HOME } from '../public/s/render.mjs'
+import { promptPayPayload } from './promptpay.mjs'
+import { render, qrSvg, normalize, vcard, ics, sign, KINDS, LOOK_IDS, GOLD_LOOKS, MAX_PHOTOS, sceneOf, HOME } from '../public/s/render.mjs'
 import { PAGE_LANGS } from '../public/s/words.mjs'
 import { nameProblem, screen } from './screen.mjs'
 import { clean, look, typeOf, MAX_BIG, MAX_SMALL } from './photo.mjs'
@@ -323,6 +324,16 @@ async function api(request, env, ctx, p, url, origin) {
   }
 
   // bookings: free times, taken nights, an ask, a booked time's calendar file
+  // a PromptPay QR for a page, with the amount in it (any page whose maker gave a PromptPay number)
+  if (p === 'pay' && m === 'GET') {
+    const s = await env.DB.prepare("SELECT name, d FROM site WHERE name = ? AND status != 'held'").bind(String(url.searchParams.get('n') || '')).first()
+    const a = Math.round(Number(url.searchParams.get('a')) * 100) / 100
+    if (!s || !(a >= 1 && a <= 999999)) return J({ error: 'not-found' }, 404)
+    const d = normalize(JSON.parse(s.d))
+    if (!d.pay.pp) return J({ error: 'not-found' }, 404)
+    const payload = promptPayPayload({ payeeId: d.pay.pp, satang: Math.round(a * 100), merchantName: (d.name || s.name).replace(/[^\x20-\x7e]/g, '').slice(0, 25) || 'Mot Dang', ref: 'MD' })
+    return J({ amount: a, qr: qrSvg(payload, { dark: '#0e1f3d', light: '#ffffff', label: 'PromptPay' }) }, 200, { 'cache-control': 'no-store' })
+  }
   if ((p === 'slots' || p === 'nights') && m === 'GET') {
     const s = await env.DB.prepare("SELECT * FROM site WHERE name = ? AND status = 'live'").bind(String(url.searchParams.get('n') || '')).first()
     if (!s || !gold.isGold(s)) return J({ error: 'not-found' }, 404)
