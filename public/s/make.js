@@ -1967,6 +1967,13 @@ async function drawGold() {
   const rooms = S.d.rooms.length > 0
   const want = S.payPlan || (rooms && (S.trial || S.plan === 'hotel') ? 'hotel' : 'gold')
   const needHotel = rooms && S.plan !== 'hotel'
+  // founding membership (src/founding.mjs): two Gold years for one payment, while this month has seats.
+  // Not for a page with rooms: a Gold code gives the Gold year, not the hotel plan.
+  const fm = S.founders, nfL = new Intl.NumberFormat(S.lang)
+  const fmBox = fm && fm.left > 0 && !rooms ? `<section class="gfound"><h3>${T('g_fmH')}</h3>
+    <p>${esc(ui(S.lang, 'g_fmP').replace('{p}', nfL.format(fm.price)))}</p><p class="hint">${T('g_fmHow')}</p>
+    <p class="left">${esc(ui(S.lang, 'g_fmLeft').replace('{n}', nfL.format(fm.left)))}</p>
+    <a class="go" href="/founders" target="_blank" rel="noopener">${T('g_fmGo')} →</a></section>` : ''
   if (isGold() && !S.trial && !(needHotel && /^hotel/.test(S.payPlan || ''))) {
     tb.innerHTML = head + `<p class="goldon">★ ${esc(ui(S.lang, 'g_on').replace('{d}', S.goldUntil || ''))}</p>` +
       (needHotel ? `<p style="text-align:center"><button class="go" id="tohotel">${esc(ui(S.lang, 'g_hotelGo').replace('{p}', new Intl.NumberFormat(S.lang).format(S.plans?.hotel?.baht || 555)))}</button></p>` : '') + domainBox() + list
@@ -1984,7 +1991,7 @@ async function drawGold() {
   tb.innerHTML = head + (S.trial ? `<p class="goldon">★ ${esc(ui(S.lang, 'g_trial').replace('{d}', S.goldUntil || ''))}</p>` : '') + pick + `<section class="goldpay"><p class="price">${esc(ui(S.lang, r.months === 1 ? 'g_priceMonth' : 'g_price').replace('{p}', nf.format(r.baht)))}</p>${r.hotel ? `<p class="hint">${T(r.months === 1 ? 'g_hotelWhy' : 'g_hotelYearWhy')}</p>` : ''}
     ${r.payload ? `<div class="ppqr">${qrSvg(r.payload, { dark: '#0e3d78', light: '#ffffff', label: 'PromptPay' })}<b>฿${esc(nf.format(Number(r.amount)))}</b><span>PromptPay</span></div>
       <p class="hint">${esc(ui(S.lang, 'g_scan').replace('{s}', tail))}</p>
-      <label class="pick goldslip">${icon('download')}${T('g_slip')}<input type="file" accept="image/*" id="slip"></label><p id="slipstate" class="pinstate"></p>` : `<p class="hint">${T('g_nopp')}</p>`}</section>` + list + (isGold() ? domainBox() : '')
+      <label class="pick goldslip">${icon('download')}${T('g_slip')}<input type="file" accept="image/*" id="slip"></label><p id="slipstate" class="pinstate"></p>` : `<p class="hint">${T('g_nopp')}</p>`}</section>` + fmBox + list + (isGold() ? domainBox() : '')
   after()
   dingbats(['signals', 'classic', 'curious'])
   bindDomain()
@@ -2126,7 +2133,7 @@ async function boot() {
       Object.assign(S, { name: r.name, kind: r.kind, look: lookOf(r.look), pageLang: r.lang, status: r.status, views: r.views, d: normalize(r.d), step: 'edit',
         tier: r.tier, goldUntil: r.gold_until || '', notifyEmail: r.notify_email, notifyOk: r.notify_ok, unread: r.unread,
         trial: !!r.trial, asks: r.asks || 0, domain: r.domain || '', domainState: r.domain_state || '', domains: !!r.domains, price: r.price || 3000,
-        plan: r.plan || 'gold', hotel: !!r.hotel, plans: r.plans || null, cardUrl: '' })
+        plan: r.plan || 'gold', hotel: !!r.hotel, plans: r.plans || null, founders: r.founders || null, cardUrl: '' })
       S.d.event = S.d.event || undefined
       S.open = new Set(DEFAULT_OPEN[S.kind]); S.part = ''
       if (h.get('tab')) S.tab = h.get('tab')

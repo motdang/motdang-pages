@@ -484,7 +484,8 @@ ${s ? `<p>ข้อความถึง ${escHtml(title)} จะส่งสำ
       tier: isGold ? 'gold' : 'free', gold_until: s.gold_until, trial: !!s.trial, notify_email: s.notify_email || '', notify_ok: !!s.notify_ok, unread: un?.n || 0,
       asks: (await env.DB.prepare("SELECT COUNT(*) AS n FROM booking WHERE site_id = ? AND status = 'new'").bind(s.id).first())?.n || 0,
       domain: s.domain || '', domain_state: s.domain_state || '', domains: dom.on(env), price: Number(env.GOLD_THB) || gold.GOLD_THB,
-      plan: s.plan || 'gold', hotel: gold.isHotel(s), plans: gold.PLANS(env) })
+      plan: s.plan || 'gold', hotel: gold.isHotel(s), plans: gold.PLANS(env),
+      founders: await founding.thisMonth(env).then((f) => ({ price: f.price, left: f.left })).catch(() => null) })
   }
 
   if (p === 'site' && m === 'PUT') {
