@@ -1,0 +1,87 @@
+diff --git a/public/s/make.css b/public/s/make.css
+index 8443504..b9c9975 100644
+--- a/public/s/make.css
++++ b/public/s/make.css
+@@ -219,6 +219,7 @@ textarea{min-height:130px;resize:vertical;line-height:1.5}
+ .paidy{color:var(--green)}.paidn{color:#b45309}.msg.bk.hold{box-shadow:0 0 0 2px var(--line);opacity:.8}.msg.bk.gone{opacity:.5}
+ /* 2026-10-15: the picture studio, the mark maker, the avatar, the portfolio */
+ .ph .tools{flex-wrap:wrap}.ph .tools button{flex:1 1 40%;font-size:12px;padding:5px 3px}.ph .tools [data-mo]{flex-basis:100%;background:#1c1530;color:#fff}
++.ph .tools [data-dd]{flex-basis:100%;background:var(--red);color:#fff}
+ .studio .box,.marker .box{width:min(640px,100%)}
+ .stage{position:relative;margin:10px 0;border-radius:14px;overflow:hidden;background:var(--line);touch-action:none}
+ .stage canvas{display:block;width:100%;height:auto}.studio.av .stage{width:min(320px,80vw);margin:10px auto;cursor:grab}.studio.av .stage.round{border-radius:50%}
+diff --git a/public/s/make.js b/public/s/make.js
+index 6037d58..7957698 100644
+--- a/public/s/make.js
++++ b/public/s/make.js
+@@ -10,6 +10,7 @@ import { PAGE_LANGS } from './words.mjs'
+ import { ui, UI_LANGS } from './make-words.mjs'
+ import { exifBlock, readExif } from './exif.mjs'
+ import { openStudio, openMark } from './studio-ui.mjs'
++import { openDoodle } from './doodle-ui.mjs'
+ import { drawCard, cardKey, CARD } from './card.mjs'
+ import { loadFaces } from './mark.mjs'
+ 
+@@ -722,11 +723,12 @@ const SEC = {
+   photos() {
+     const max = isGold() ? MAX_PHOTOS.gold : MAX_PHOTOS.free
+     return `<div class="photos">${S.d.photos.map((id) => `<div class="ph${id === S.d.cover ? ' cover' : ''}" data-ph="${id}"><img src="${esc(imgUrl(id, true))}" alt="">${id === S.d.cover ? `<span class="flag">${T('cover')}</span>` : ''}${S.d.credits?.[id] ? '<span class="pdf">PD</span>' : ''}
+-      <div class="tools"><button data-mo="${id}">${T('st_make')}</button>${id !== S.d.cover ? `<button data-cover="${id}">${T('makeCover')}</button>` : ''}<button data-rm="${id}">${T('remove')}</button></div></div>`).join('')}
++      <div class="tools"><button data-mo="${id}">${T('st_make')}</button><button data-dd="${id}">${T('dd_fromBtn')}</button>${id !== S.d.cover ? `<button data-cover="${id}">${T('makeCover')}</button>` : ''}<button data-rm="${id}">${T('remove')}</button></div></div>`).join('')}
+       ${Array.from({ length: S.busy }, () => '<div class="ph"><div class="busy">…</div></div>').join('')}</div>
+       ${S.d.photos.length < max ? `<div class="row2"><label class="pick">${icon('camera')}${T('addPhotos')}<input type="file" accept="image/*" multiple id="files"></label>
+       <button class="pick pdpick" id="pdopen">${ding('sparkle', 'riso')}${T('pdBtn')}</button>
+-      <button class="pick pdpick" id="mkcover">${ding('pencil', 'riso')}${T('mk_coverBtn')}</button></div>
++      <button class="pick pdpick" id="mkcover">${ding('pencil', 'riso')}${T('mk_coverBtn')}</button>
++      <button class="pick pdpick" id="ddopen">${ding('lantern', 'riso')}${T('dd_btn')}</button></div>
+       <p class="hint">${T('st_tip')}</p>` : ''}`
+   },
+   items() {
+@@ -993,6 +995,18 @@ async function makeOver(id) {
+   } })
+ }
+ 
++/** Doodle anything: words, or one of the page's photos, in; two doodles out; the one picked goes on the page. */
++function doodleSheet(from = '') {
++  openDoodle({ name: S.name, kind: S.kind, T, call, from, imgUrl, photos: S.d.photos.filter((x) => x !== KPIC_ID),
++    onUse: async (id, { as }) => {
++      const have = S.d.photos.includes(id)
++      if (!have && S.d.photos.length >= (isGold() ? MAX_PHOTOS.gold : MAX_PHOTOS.free)) { toast(ui(S.lang, 'e_full')); throw new Error('full') }
++      if (!have) S.d.photos[as === 'cover' ? 'unshift' : 'push'](id)
++      if (as === 'cover') S.d.cover = id
++      redrawSec('photos'); changed()
++    } })
++}
++
+ async function avatarStudio(bmp) {
+   openStudio({ bitmap: bmp, mode: 'avatar', round: S.d.avround, accent: accentNow(), T, onUse: async (canvas) => {
+     S.d.avatar = await sendCanvas(canvas, 640).catch(sendFail)
+@@ -1135,6 +1149,8 @@ function bindEdit() {
+     if (b.id === 'clearpin') { S.d.place.lat = S.d.place.lng = null; S.d.place.snap = ''; redrawSec('map'); changed() }
+     if (b.id === 'pdopen') pdSheet()
+     if (b.dataset.mo) makeOver(b.dataset.mo)
++    if (b.id === 'ddopen') doodleSheet()
++    if (b.dataset.dd) doodleSheet(b.dataset.dd)
+     if (b.id === 'mkcover') markSheet('cover')
+     if (b.id === 'avmake') markSheet('avatar')
+     if (b.dataset.avpick) avatarFrom(b.dataset.avpick)
+diff --git a/src/worker.mjs b/src/worker.mjs
+index eb0d730..5d22e76 100644
+--- a/src/worker.mjs
++++ b/src/worker.mjs
+@@ -33,6 +33,7 @@ import * as slipq from './slipq.mjs'
+ import { readCalendars, monthly, trialNotes } from './cron.mjs'
+ import { calIcs, roomIcs, addDays } from '../public/s/extras.mjs'
+ import { guestPage } from './guest.mjs'
++import { doodleRoute } from './doodle.mjs'
+ 
+ const QUOTA = { site: 3, photo: 200, save: 400, report: 20, msg: 12, pd: 200, notify: 3, slip: 10, book: 10, domain: 6 }
+ const TRIAL_DAYS = 30 // Nan 2026-10-14: a new page is Gold for its first 30 days
+@@ -289,6 +290,7 @@ const J = (o, status = 200, extra = {}) => new Response(JSON.stringify(o), { sta
+ async function api(request, env, ctx, p, url, origin) {
+   const m = request.method
+   if (m !== 'GET' && !sameOrigin(request, url)) return J({ error: 'origin' }, 403)
++  if (p === 'doodle') return doodleRoute(request, env, ctx, url)
+ 
+   if (p === 'name' && m === 'GET') {
+     const n = (url.searchParams.get('n') || '').toLowerCase()
