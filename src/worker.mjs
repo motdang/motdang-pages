@@ -36,12 +36,13 @@ import * as slipq from './slipq.mjs'
 import * as trcheck from './trcheck.mjs'
 import * as sell from './sell.mjs'
 import * as deals from './deals.mjs'
+import * as founding from './founding.mjs'
 import { readCalendars, monthly, trialNotes } from './cron.mjs'
 import { calIcs, roomIcs, addDays } from '../public/s/extras.mjs'
 import { guestPage } from './guest.mjs'
 import { doodleRoute } from './doodle.mjs'
 
-const QUOTA = { site: 3, photo: 200, save: 400, report: 20, msg: 12, pd: 200, notify: 3, slip: 10, book: 10, domain: 6, lister: 3, deal: 40, terms: 10, join: 3 }
+const QUOTA = { site: 3, photo: 200, save: 400, report: 20, msg: 12, pd: 200, notify: 3, slip: 10, book: 10, domain: 6, lister: 3, deal: 40, terms: 10, join: 3, founding: 5, gift: 20 }
 const TRIAL_DAYS = 30 // Nan 2026-10-14: a new page is Gold for its first 30 days
 const MAIN = 'https://motdang.net'
 const PASS = /^\/(vendor|fonts|tiles|data|front)\/|^\/sites\/doodle-map\//
@@ -116,6 +117,10 @@ async function route(request, env, ctx) {
   if (path.startsWith('/x/')) return trcheck.route(request, env, path, url, origin, { html, sha, sameOrigin, normalize, log, postPeople: (c) => postTo(env.DISCORD_PEOPLE, 'motdang people', c) })
   if (path === '/sell' || path.startsWith('/sell/') || path.startsWith('/h/') || path.startsWith('/p/')) {
     const r = await sell.route(request, env, path, url, origin, sellDeps(env, ctx))
+    if (r) return r
+  }
+  if (/^\/(founders\/?$|fm\/|g\/)/.test(path)) {
+    const r = await founding.route(request, env, path, url, origin, { html, sha, rand, sameOrigin, take, sender, log, slipLink: (id) => slipq.link(env, origin, id, sha) })
     if (r) return r
   }
   if (/^\/(lister|me|t|f|ya|yo)(\/|$)/.test(path)) {
@@ -841,8 +846,14 @@ async function postTo(hook, username, content) {
 
 /** A slip a person has looked at: paid. Only a payment still waiting moves. */
 async function payOk(env, id, origin, how) {
-  const p = await env.DB.prepare("SELECT pay.site_id, pay.months, pay.plan, pay.amount, site.name, site.d FROM pay JOIN site ON site.id = pay.site_id WHERE pay.id = ? AND pay.status IN ('open','slip')").bind(id).first()
+  const p = await env.DB.prepare("SELECT pay.site_id, pay.months, pay.plan, pay.amount, site.name, site.d FROM pay LEFT JOIN site ON site.id = pay.site_id WHERE pay.id = ? AND pay.status IN ('open','slip')").bind(id).first()
   if (!p) return false
+  if (p.plan === 'founding') { // a founding member: a number and two Gold codes (founding.mjs)
+    await env.DB.prepare("UPDATE pay SET status='paid', note=COALESCE(note,'') || ?, updated=? WHERE id=?").bind(' · ' + how, new Date().toISOString(), id).run()
+    await founding.paid(env, id, origin, how, rand).catch((e) => console.error(e))
+    return true
+  }
+  if (!p.name) return false
   if (p.plan === 'fee') { // a deal's fee: no Gold to grant; the lister's share goes out (deals.mjs)
     await env.DB.prepare("UPDATE pay SET status='paid', note=COALESCE(note,'') || ?, updated=? WHERE id=?").bind(' · ' + how, new Date().toISOString(), id).run()
     await deals.paid(env, id, origin, how, sha).catch((e) => console.error(e))
@@ -863,7 +874,7 @@ async function slipPage(request, env, path, url, origin) {
   const q = await slipq.read(env, path, sha)
   if (!q) return new Response('', { status: 404 })
   if (q.expired) return html('<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width"><p style="font:18px system-ui;padding:20px">ลิงก์หมดอายุ ใช้ sites.motdang.net/admin<br>This link has expired; use sites.motdang.net/admin.</p>', 410)
-  const p = await env.DB.prepare('SELECT pay.*, site.name, site.d FROM pay JOIN site ON site.id = pay.site_id WHERE pay.id = ?').bind(q.payId).first()
+  const p = await env.DB.prepare('SELECT pay.*, site.name, site.d FROM pay LEFT JOIN site ON site.id = pay.site_id WHERE pay.id = ?').bind(q.payId).first()
   if (!p) return new Response('', { status: 404 })
   if (q.img) {
     const o = p.slip && await env.MEDIA.get(p.slip)
@@ -877,7 +888,8 @@ async function slipPage(request, env, path, url, origin) {
     return Response.redirect(url.origin + path, 303)
   }
   const now = await env.DB.prepare('SELECT status, note FROM pay WHERE id = ?').bind(p.id).first()
-  return html(slipq.page({ title: JSON.parse(p.d || '{}').name || p.name, name: p.name, amount: p.amount, status: now.status, note: now.note, fee: p.plan === 'fee' }, url.origin + path, origin), 200)
+  const fm = p.plan === 'founding' && await env.DB.prepare('SELECT name FROM founder WHERE pay_id = ?').bind(p.id).first()
+  return html(slipq.page({ title: fm ? `สมาชิกผู้ก่อตั้ง · Founding member · ${fm.name}` : JSON.parse(p.d || '{}').name || p.name, name: fm ? 'founders' : p.name, amount: p.amount, status: now.status, note: now.note, fee: p.plan === 'fee', founding: !!fm }, url.origin + path, origin), 200)
 }
 
 async function releasePhoto(env, id) {
@@ -917,7 +929,7 @@ async function tidy(env) {
   const day = (n) => new Date(Date.now() - n * 864e5).toISOString().slice(0, 10)
   await env.DB.prepare('DELETE FROM quota WHERE day < ?').bind(day(3)).run()
   await env.DB.prepare('DELETE FROM seen WHERE day < ?').bind(day(2)).run()
-  await env.DB.prepare("DELETE FROM pay WHERE status = 'open' AND COALESCE(plan, '') != 'fee' AND created < ?").bind(new Date(Date.now() - 14 * 864e5).toISOString()).run()
+  await env.DB.prepare("DELETE FROM pay WHERE status = 'open' AND COALESCE(plan, '') NOT IN ('fee', 'founding') AND created < ?").bind(new Date(Date.now() - 14 * 864e5).toISOString()).run()
   // 2026-10-14: room calendars, translations, the monthly note, the trial's end note
   const job = async (name, f) => { try { done[name] = await f() } catch (e) { done[name] = 'error: ' + String(e?.message || e).slice(0, 300); console.error(name, e?.stack || e) } }
   await job('calendars', () => readCalendars(env, gold.isGold, normalize))
@@ -926,6 +938,7 @@ async function tidy(env) {
   await job('trial', () => trialNotes(env, HOME, (d) => gold.planOf(env, d)))
   await job('sellers', () => sellers.monthEnd(env, (c) => gold.postSales(env, c), (id) => sell.beerLink(env, sha, HOME, 'p', id, 60), (t) => tellBeer(env, t)))
   await job('deals', () => deals.monthly(env, (c) => gold.postSales(env, c)))
+  await job('founding', async () => (await founding.thisMonth(env, Date.now(), (c) => gold.postSales(env, c))).price)
   await env.DB.prepare("UPDATE site SET trial = 0 WHERE trial = 1 AND gold_until < ?").bind(new Date().toISOString().slice(0, 10)).run()
   return done
 }
