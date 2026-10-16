@@ -27,8 +27,8 @@ export async function read(env, path, sha) {
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c])
 
 /** The page: slip, amount, shop, two buttons; or what became of it. */
-export function page({ title, name, amount, status, note, fee }, self, origin) {
-  const done = status === 'paid' ? ['✓ จ่ายแล้ว · Paid', fee ? 'ค่าธรรมเนียมดีลเข้าแล้ว · The deal fee is in.' : 'หน้าเว็บเป็นทองแล้ว · The page is Gold.'] : status === 'refused' ? ['✕ ไม่ได้จ่าย · Not paid', 'ปฏิเสธแล้ว · Refused.'] : null
+export function page({ title, name, amount, status, note, fee, founding }, self, origin) {
+  const done = status === 'paid' ? ['✓ จ่ายแล้ว · Paid', founding ? 'สมาชิกผู้ก่อตั้งได้เลขและโค้ดทองแล้ว · The founding member has a number and Gold codes.' : fee ? 'ค่าธรรมเนียมดีลเข้าแล้ว · The deal fee is in.' : 'หน้าเว็บเป็นทองแล้ว · The page is Gold.'] : status === 'refused' ? ['✕ ไม่ได้จ่าย · Not paid', 'ปฏิเสธแล้ว · Refused.'] : null
   return `<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex">
 <title>สลิป · Slip · ${esc(title)}</title>
 <style>body{margin:0;font:17px/1.45 system-ui,sans-serif;background:#fff8e7;color:#1c1530}main{max-width:480px;margin:0 auto;padding:18px 16px 40px}
