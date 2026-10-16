@@ -86,7 +86,7 @@ export async function adminPage(env, sel = { sellers: [], due: [], gigs: [] }) {
   const photos = (await env.DB.prepare("SELECT p.id, p.why, s.name FROM photo p JOIN site s ON s.id = p.site_id WHERE p.verdict='hold' ORDER BY p.created DESC LIMIT 60").all()).results
   const ev = (await env.DB.prepare('SELECT e.at, e.what, e.note, s.name FROM event e LEFT JOIN site s ON s.id = e.site_id ORDER BY e.at DESC LIMIT 80').all()).results
   const n = (await env.DB.prepare("SELECT status, COUNT(*) AS n FROM site GROUP BY status").all()).results
-  const pays = (await env.DB.prepare("SELECT p.id, p.amount, p.status, p.note, p.updated, s.name, s.id AS sid FROM pay p JOIN site s ON s.id = p.site_id WHERE p.status IN ('slip','paid') ORDER BY p.updated DESC LIMIT 60").all()).results
+  const pays = (await env.DB.prepare("SELECT p.id, p.amount, p.status, p.note, p.updated, COALESCE(s.name, CASE WHEN p.plan = 'founding' THEN 'founders' END) AS name, s.id AS sid FROM pay p LEFT JOIN site s ON s.id = p.site_id WHERE p.status IN ('slip','paid') ORDER BY p.updated DESC LIMIT 60").all()).results
   const golds = (await env.DB.prepare("SELECT name, gold_until FROM site WHERE tier='gold' ORDER BY gold_until DESC LIMIT 100").all()).results
   const btn = (id, act, label) => `<form method="post" action="/admin/act" style="display:inline"><input type="hidden" name="id" value="${esc(id)}"><input type="hidden" name="act" value="${act}"><button>${label}</button></form>`
   const T = (rows, f) => `<table>${rows.map(f).join('')}</table>`
