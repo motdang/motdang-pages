@@ -10,7 +10,7 @@ const GATE = '@cf/mistralai/mistral-small-3.1-24b-instruct'
 const TRANSLATE = '@cf/aisingapore/gemma-sea-lion-v4-27b-it' // reads Burmese, Lao and Khmer; Mistral does not
 
 /** In the order they are checked and shown. */
-export const WHY = ['royal', 'sacred', 'minor', 'sexual', 'violence', 'hate', 'drugs', 'brand', 'political', 'person', 'other']
+export const WHY = ['royal', 'sacred', 'monk', 'minor', 'sexual', 'violence', 'hate', 'drugs', 'brand', 'political', 'person', 'other']
 
 const INVISIBLE = /[\u00ad\u034f\u061c\u115f\u1160\u17b4\u17b5\u180e\u200b-\u200f\u202a-\u202e\u2060-\u206f\u3164\ufe00-\ufe0f\ufeff]/g
 const LEET = { 0: 'o', 1: 'i', 3: 'e', 4: 'a', 5: 's', '@': 'a', $: 's' }
@@ -28,7 +28,9 @@ const re = (src) => new RegExp(src.normalize('NFKC'), 'u')
 // "monk fruit", "buddha bowl", "red shirt") are left to the model that reads the meaning.
 const EN = {
   royal: re(String.raw`\b(?:thai\s+(?:king(?!\s+prawns?)|queen|monarch\w*|prince|princess)|king\s+of\s+thailand|queen\s+of\s+thailand|royal\s+family|monarchy|rama\s*(?:ix|x|9|10|nine|ten)|bhumibol|adulyadej|vajiralongkorn|sirikit|suthida|sirindhorn|l[eè]se[\s-]*majest\w*|article\s*112|section\s*112)\b`),
-  sacred: re(String.raw`\b(?:buddha(?!'s\s+hand|\s+bowl)|buddhas|buddhist\s+(?:monks?|nuns?|images?|statues?)|monks?(?!\s+fruit)|novice\s+monks?|bhikkhus?|bhikkhunis?)\b`),
+  sacred: re(String.raw`\b(?:buddha(?!'s\s+hand|\s+bowl)|buddhas|buddhist\s+(?:images?|statues?))\b`),
+  // a monk by name or by the titles that go before a monk's name (Nan 2026-10-16: "no specific monks")
+  monk: re(String.raw`\b(?:luang\s*(?:por|pho|phor|pu|poo|ta|phi)|kru\s*ba|khruba|ajahn|ajarn|achaan|somdet)\s+[a-z]{2,}`),
   sexual: re(String.raw`\b(?:nude|nudes|nudity|naked|topless|nsfw|porn\w*|sex|sexy|sexual\w*|erotic\w*|lingerie|fetish\w*|bdsm|hentai|nipples?|genitals?|penis|vagina|vulva|boobs?|masturbat\w*|orgasm\w*|blowjobs?|handjobs?|onlyfans|strippers?|striptease|dildos?|cumshot|camgirl|prostitut\w*|brothel)\b`),
   violence: re(String.raw`\b(?:gore|gory|stabb(?:ed|ing)|beheaded|beheading|decapitat\w*|corpses?|dead\s+bod(?:y|ies)|massacre\w*|torture\w*|murder\w*|suicide|self[\s-]?harm|mutilat\w*|rape|rapes|raped|rapist|bloodbath)\b`),
   hate: re(String.raw`\b(?:nazis?|hitler|kkk|white\s+power|heil|nigg\w+|fagg?ots?|chinks?|kikes?|spics?|retards?|retarded)\b`),
@@ -42,7 +44,8 @@ const EN = {
 const TH = {
   royal: ['ในหลวง', 'พระมหากษัตริย์', 'พระราชินี', 'พระบรมวงศ์', 'พระราชวงศ์', 'ราชวงศ์จักรี', 'รัชกาลที่', 'พระบาทสมเด็จ', 'สมเด็จพระ', 'พระเจ้าอยู่หัว', 'เจ้าฟ้า',
     'พระองค์เจ้า', 'พระบรมฉายาลักษณ์', 'ทรงพระเจริญ', 'ล้นเกล้า', 'มาตรา112', '泰国国王', '泰王', '国王陛下', '王室', '拉玛九世', '拉玛十世', '普密蓬', '诗丽吉', '哇集拉隆功'],
-  sacred: ['พระพุทธ', 'พุทธรูป', 'พระสงฆ์', 'พระภิกษุ', 'ภิกษุ', 'สามเณร', 'หลวงพ่อ', 'หลวงพี่', 'หลวงตา', 'แม่ชี', 'พระเณร', 'พระอาจารย์', '佛像', '佛祖', '和尚', '僧人'],
+  sacred: ['พระพุทธ', 'พุทธรูป', '佛像', '佛祖'],
+  monk: ['หลวงพ่อ', 'หลวงปู่', 'หลวงตา', 'ครูบา', 'พระอาจารย์', 'สมเด็จโต'],
   sexual: ['เปลือย', 'หนังโป๊', 'ภาพโป๊', 'ภาพนู้ด', 'เซ็กซ์', 'เซ็กส์', 'เซ็กซี่', 'อนาจาร', 'ยั่วยวน', 'เย็ด', 'ควย', 'เงี่ยน', 'ขายตัว', 'ไซด์ไลน์', '裸体', '色情'],
   violence: ['เลือดสาด', 'จมกองเลือด', 'ฆ่าตัวตาย', 'ศพนอน', 'ฆาตกรรม', 'ตัดหัว', 'ข่มขืน', '血腥', '杀人'],
   hate: ['ไอ้พม่า', 'ไอ้ลาว', 'ไอ้แขก', 'ไอ้ดำ', 'ไอ้เหลือง', 'ไอ้จีน'], // 'นาซี' (Nazi) is also nasi, the rice: the model reads that one
@@ -58,6 +61,8 @@ const THQ = Object.fromEntries(Object.entries(TH).map(([k, v]) => [k, v.filter(B
 // "โป๊" is a nude picture; "โป๊ะ" is a jetty
 const TH_RE = { sexual: re('(?<![ก-๙])โป๊(?!ะ)') }
 
+const MONKISH = re(String.raw`\b(?:monks?(?!\s+fruit)|novices?|bhikkhus?|nuns?)\b|พระสงฆ์|ภิกษุ|เณร|แม่ชี|หลวงพี่|和尚|僧人|沙弥`)
+const SLIGHT = re(String.raw`\b(?:beer|whisk(?:e)?y|wine|vodka|alcohol|drunk|cocktails?|smok\w*|cigar\w*|vap\w*|kiss\w*|girlfriend|boyfriend|dating|sexy|romanc\w*|selfie|guns?|fight\w*|punch\w*|party\s+animal|clubbing|funny|joke|silly|meme)\b|เบียร์|เหล้า|บุหรี่|สูบ|จูบ|แฟน|เมา|ปืน|ต่อย|ตลก|啤酒|喝酒|抽烟|接吻|女朋友`)
 const CHILD = re(String.raw`\b(?:child|children|kid|kids|teens?|teenagers?|minors?|baby|babies|toddlers?|schoolgirls?|schoolboys?|underage|preteen|loli\w*|(?:[0-9]|1[0-7])[\s-]*(?:years?|yrs?)[\s-]*old)\b|เด็ก|นักเรียน|เยาวชน|ลูกสาว|ลูกชาย|儿童|小孩|少女|少年`)
 // Llama Guard 3's categories, as far as they map to ours
 const GUARD = { S1: 'violence', S2: 'drugs', S3: 'sexual', S4: 'minor', S5: 'person', S8: 'brand', S9: 'violence', S10: 'hate', S11: 'violence', S12: 'sexual', S13: 'political' }
@@ -74,6 +79,7 @@ export function blocked(text) {
   if (page.includes('drugs')) found.add('drugs')
   if (page.includes('instruction')) found.add('other')
   if (found.has('sexual') && CHILD.test(f)) found.add('minor')
+  if ((MONKISH.test(f) || MONKISH.test(q)) && (SLIGHT.test(f) || SLIGHT.test(q))) found.add('monk')
   return WHY.find((k) => found.has(k)) || ''
 }
 
@@ -83,7 +89,8 @@ export const GATE_SYSTEM = `You are the gatekeeper of a doodle-drawing tool on a
 
 Set ok to false and "no" to the first reason that applies:
 royal: the Thai king, queen or any royal family member, royal portraits or ceremonies, or the monarchy, named or by title (Rama, Bhumibol, Vajiralongkorn, ในหลวง). The "king of fruits" (ราชาแห่งผลไม้, a durian) or a chess king is fine.
-sacred: a Buddha image or statue, a monk, novice or nun as the subject, or any joke about them. Temples, chedis, lanterns, lotus flowers and food offerings are fine.
+sacred: a Buddha image or statue, or any joke about the Buddha. Temples, chedis, lanterns, lotus flowers and food offerings are fine.
+monk: a specific real monk, named or by a title before a name (Luang Por, Luang Pu, Kruba, Ajahn, Somdet, หลวงพ่อ, หลวงปู่, ครูบา), or any monk, novice or nun shown without respect: drinking, smoking, romantic, fighting, mocked, as a joke, or selling a product. Monks shown with respect are fine: a morning alms round, monks releasing lanterns at Yi Peng, a Songkran blessing, chanting or merit making at a temple, a smiling little novice like the one for the Thai letter ณ เณร.
 person: ONLY a specific real person named or described by name or likeness: celebrity, politician, athlete, influencer, any named living or dead person. Generic people are always fine (a cook, a grandma, a yoga teacher, a bride and groom, a hill-tribe woman, a crowd, a pretty bartender). The maker and their own people are fine too (me, myself, our team, my mother): draw a friendly generic character.
 sexual: nudity, sex, sexual poses or clothes, fetish, sex work.
 minor: a child or teenager in a sexual, romantic, nude, violent, dangerous, alcohol, tobacco or drug scene. Ordinary wholesome children eating, playing, reading or smiling are fine and common (ice cream shop, school, family restaurant).
