@@ -210,7 +210,7 @@ async function signupPage(env, url, request, origin, d, { lang = langOf(url, req
   const f = (k, name, type = 'text', extra = '') => `<label>${w.f[k]}<input name="${name}" type="${type}" value="${esc(form[name] || '')}" ${extra}></label>`
   const title = `${w.title} · ${W.th.title}`
   const og = `<meta name="description" content="${esc(w.lead)}"><meta property="og:type" content="website"><meta property="og:url" content="${origin}/sell"><meta property="og:title" content="${esc(w.h1(START.rate))} · ${esc(W.th.h1(START.rate))}">
-<meta property="og:description" content="${esc(w.lead)}"><meta property="og:image" content="${origin}/s/sell-card.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta name="twitter:card" content="summary_large_image">`
+<meta property="og:description" content="${esc(w.lead)}"><meta property="og:image" content="${origin}/s/sell-card.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:image:alt" content="ขายหน้าเว็บ รับ 20% · Sell Mot Dang pages, keep 20%"><meta name="twitter:card" content="summary_large_image">`
   return shell(lang, title, `<header class="top">${ANT}<h1>${esc(w.h1(START.rate))}</h1><p>${esc(w.lead)}</p></header>
 <h2>${w.work}</h2><div class="work">
 <div class="job"><b>${w.gold[0]}</b><small>${w.gold[1]}</small><div class="n"><s>${w.price} ฿${nf(p.gold)}</s>${w.you} <strong>฿${share(p.gold)}</strong></div></div>
