@@ -31,8 +31,11 @@
     if (i.complete && !i.naturalWidth) gone(); else i.addEventListener('error', gone)
   })
 
-  $$('.art').forEach(function (a) {
-    a.addEventListener('click', function () { a.classList.remove('go'); void a.getBoundingClientRect(); a.classList.add('go') })
+  // a tap on the top of the page plays its look again: the weave, the neon, the gold (looks.mjs .top.go)
+  var top = $('header.top')
+  if (top) top.addEventListener('click', function (e) {
+    if (e.target.closest && e.target.closest('a,button,[contenteditable]')) return
+    top.classList.remove('go'); void top.getBoundingClientRect(); top.classList.add('go')
   })
 
   // sections rise into place as they scroll in
@@ -54,7 +57,8 @@
     var cv = drawn.querySelector('canvas'), c = cv.getContext('2d'), set = cv.getAttribute('data-set'), place = {}
     try { place = JSON.parse(cv.getAttribute('data-p')) } catch (e) {}
     var W = 0, H = 0, dpr = 1, on = false, last = 0, ridge = null, started = false
-    var ALTS = [null, 38, 2, -6, -22], ai = 0
+    var ALTS = [null, 38, 2, -6, -22], ai = { day: 1, dawn: 2, dusk: 3, night: 4 }[cv.getAttribute('data-time')] || 0
+    var seed = +cv.getAttribute('data-seed') || undefined
     var off = document.createElement('canvas'), oc = off.getContext('2d'), mask = document.createElement('canvas'), mc = mask.getContext('2d')
     var revealAt = null, revealed = REDUCED, pen = null, ROWS = 6, DUR = 1900
     function size() { dpr = Math.min(2, window.devicePixelRatio || 1); W = cv.clientWidth; H = cv.clientHeight; cv.width = off.width = mask.width = Math.round(W * dpr); cv.height = off.height = mask.height = Math.round(H * dpr); c.setTransform(dpr, 0, 0, dpr, 0, 0) }
@@ -75,14 +79,14 @@
       var D = window.MDDOODLER; if (!D || !W) return
       if (revealed) {
         c.clearRect(0, 0, W, H)
-        try { D.portrait(c, W, H, t, { set: set, place: place, ridge: ridge, alt: ALTS[ai] }) } catch (e) {}
+        try { D.portrait(c, W, H, t, { set: set, place: place, ridge: ridge, alt: ALTS[ai], seed: seed }) } catch (e) {}
         return
       }
       c.clearRect(0, 0, W, H)
       if (revealAt === null) return
       var p = Math.min(1, (performance.now() - revealAt) / DUR)
       oc.setTransform(dpr, 0, 0, dpr, 0, 0); oc.clearRect(0, 0, W, H)
-      try { D.portrait(oc, W, H, t, { set: set, place: place, ridge: ridge, alt: ALTS[ai] }) } catch (e) {}
+      try { D.portrait(oc, W, H, t, { set: set, place: place, ridge: ridge, alt: ALTS[ai], seed: seed }) } catch (e) {}
       var at = scribble(1 - Math.pow(1 - p, 1.6))
       c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.drawImage(off, 0, 0); c.globalCompositeOperation = 'destination-in'; c.drawImage(mask, 0, 0); c.restore()
       if (pen) pen.style.transform = 'translate(' + (Math.max(0, Math.min(W - 10, at[0])) - 4) + 'px,' + (at[1] - 32) + 'px)'
@@ -145,11 +149,11 @@
   }
 
   // ---- sharing ----
-  var share = $('#share')
-  if (share) share.onclick = function () {
+  function doShare() {
     if (navigator.share) navigator.share({ title: pd.title, text: pd.tagline || pd.title, url: pd.url }).catch(function () {})
     else copy()
   }
+  $$('#share, .tshare').forEach(function (b) { b.onclick = doShare })
   var cp = $('#copy')
   function copy() {
     var done = function () { if (!cp) return; var sp = cp.querySelector('span'), t = sp.textContent; sp.textContent = w.copied; setTimeout(function () { sp.textContent = t }, 1800) }
@@ -277,27 +281,67 @@
     }
   })
 
-  // ---- ordering on LINE ----
-  var order = $('#lineorder')
-  if (order) {
-    var counts = {}
+  // ---- ordering: on LINE, and paying the total by PromptPay ----
+  var order = $('#lineorder'), ptot = $('#paytotal')
+  if ($('.qty')) {
+    var counts = {}, total = 0
     var paint = function () {
       var lines = [], n = 0
+      total = 0
       $$('.qty').forEach(function (q) {
         var k = +(counts[q.dataset.i] || 0)
         q.querySelector('b').textContent = k
         q.classList.toggle('on', k > 0)
-        if (k) { lines.push(q.dataset.n + ' × ' + k); n += k }
+        if (k) { lines.push(q.dataset.n + ' × ' + k); n += k; total += k * (+q.dataset.p || 0) }
       })
-      order.hidden = !n
-      order.querySelector('span').textContent = n ? '(' + n + ')' : ''
-      order.href = 'https://line.me/R/oaMessage/' + encodeURIComponent(order.dataset.oa) + '/?' + encodeURIComponent((w.orderHi || '') + '\n' + lines.join('\n'))
+      if (order) {
+        order.hidden = !n
+        order.querySelector('span').textContent = n ? '(' + n + ')' : ''
+        order.href = 'https://line.me/R/oaMessage/' + encodeURIComponent(order.dataset.oa) + '/?' + encodeURIComponent((w.orderHi || '') + '\n' + lines.join('\n'))
+      }
+      if (ptot) {
+        ptot.hidden = !total
+        ptot.querySelector('span').textContent = (ptot.dataset.w || '{t}').replace('{t}', (ptot.dataset.sym || '') + Math.round(total * 100) / 100)
+      }
     }
     $$('.qty').forEach(function (q) {
       var b = q.querySelectorAll('button')
       b[0].onclick = function () { counts[q.dataset.i] = Math.max(0, (counts[q.dataset.i] || 0) - 1); paint() }
       b[1].onclick = function () { counts[q.dataset.i] = Math.min(99, (counts[q.dataset.i] || 0) + 1); paint() }
     })
+    if (ptot) ptot.onclick = function () { payQr(total, ptot.parentNode) }
+  }
+
+  // ---- paying by PromptPay: the Worker draws the QR for this page with the amount in it ----
+  var ppout = $('#ppout'), amt = 0
+  function payQr(a, near) {
+    if (!(a > 0)) return
+    var box = ppout
+    if (near && near !== (ppout && ppout.parentNode)) {
+      box = near.querySelector('.ppout') || near.appendChild(Object.assign(document.createElement('div'), { className: 'ppout' }))
+    }
+    if (!box) return
+    box.hidden = false
+    box.innerHTML = '<p>…</p>'
+    fetch('/api/pay?n=' + encodeURIComponent(pd.name) + '&a=' + encodeURIComponent(a))
+      .then(function (r) { if (!r.ok) throw r; return r.json() })
+      .then(function (j) {
+        var t = (pd.sym || '') + j.amount
+        box.innerHTML = j.qr + '<b>' + (w.payScan || '{t}').replace('{t}', t) + '</b>' +
+          (pd.line ? '<a class="btn line" data-t="payslip" href="' + pd.line + '" rel="nofollow noopener">' + (w.paySlip || 'LINE') + '</a>' : '')
+        box.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      })
+      .catch(function () { box.innerHTML = '<p>' + (w.msgFail || '') + '</p>' })
+  }
+  var pay = $('#pay')
+  if (pay) {
+    var inp = pay.querySelector('.amtin input')
+    $$('.amt', pay).forEach(function (b) {
+      b.onclick = function () { amt = +b.dataset.a; if (inp) inp.value = ''; $$('.amt', pay).forEach(function (x) { x.classList.toggle('on', x === b) }); payQr(amt) }
+    })
+    if (inp) inp.oninput = function () { amt = +inp.value; $$('.amt', pay).forEach(function (x) { x.classList.remove('on') }) }
+    var go = $('#paygo')
+    if (go) go.onclick = function () { payQr(inp && +inp.value ? +inp.value : amt) }
   }
 
   // ---- a message to the maker ----

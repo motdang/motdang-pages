@@ -2,6 +2,8 @@
 // language from the maker's words; the cron does it once the words have sat
 // for ten minutes, and again when they change. A reader asks with ?hl=xx.
 // Names, prices, codes and links stay as the maker wrote them.
+// A translator's fix (tr_fix, written by a page check, trcheck.mjs) wins over the
+// machine's for the same words, and the cron never writes it.
 
 import { PAGE_LANGS } from '../public/s/words.mjs'
 
@@ -67,14 +69,29 @@ export async function translate(env, list, from, to) {
   return out
 }
 
-/** The page in `lang`, when a translation made from the current words exists. */
+/** The strings to show: a person's fix for the same words first, then the machine's
+ *  when it was made from the current words; null when a string has neither. */
+export function merge(list, machine, fixes) {
+  const out = list.map(([, src], i) => fixes.get(src) ?? machine?.[i])
+  return out.every((x) => typeof x === 'string' && x.trim()) ? out : null
+}
+
+/** A page's fixes in one language: Map of the maker's words → the fix. */
+export async function fixesOf(env, siteId, lang) {
+  const rows = (await env.DB.prepare('SELECT src, v FROM tr_fix WHERE site_id = ? AND lang = ?').bind(siteId, lang).all()).results
+  return new Map(rows.map((r) => [r.src, r.v]))
+}
+
+/** The page in `lang`, when every string has a fix or a machine version of the current words. */
 export async function read(env, s, d, lang) {
   if (!PAGE_LANGS[lang] || lang === s.lang) return null
   const list = texts(d)
   if (!list.length) return d
   const row = await env.DB.prepare('SELECT src, d FROM tr WHERE site_id = ? AND lang = ?').bind(s.id, lang).first()
-  if (!row || row.src !== (await hashOf(list))) return null
-  try { return apply(d, list.map((x) => x[0]), JSON.parse(row.d)) } catch { return null }
+  let machine = null
+  if (row && row.src === (await hashOf(list))) try { machine = JSON.parse(row.d) } catch {}
+  const strings = merge(list, machine, await fixesOf(env, s.id, lang))
+  return strings ? apply(d, list.map((x) => x[0]), strings) : null
 }
 
 /** Languages a page can be read in now (its own first). */
@@ -83,6 +100,14 @@ export async function langsOf(env, s, d) {
   if (!list.length) return Object.keys(PAGE_LANGS)
   const h = await hashOf(list)
   const rows = (await env.DB.prepare('SELECT lang FROM tr WHERE site_id = ? AND src = ?').bind(s.id, h).all()).results.map((r) => r.lang)
+  const missing = Object.keys(PAGE_LANGS).filter((l) => l !== s.lang && !rows.includes(l))
+  if (missing.length) { // a language a translator has fixed in full reads before the cron catches up
+    const fx = (await env.DB.prepare('SELECT lang, src FROM tr_fix WHERE site_id = ?').bind(s.id).all()).results
+    for (const l of missing) {
+      const have = new Set(fx.filter((r) => r.lang === l).map((r) => r.src))
+      if (list.every(([, src]) => have.has(src))) rows.push(l)
+    }
+  }
   return [s.lang, ...Object.keys(PAGE_LANGS).filter((l) => l !== s.lang && rows.includes(l))]
 }
 

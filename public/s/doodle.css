@@ -1,0 +1,49 @@
+/* doodle anything (src/doodle.mjs), 2026-10-16: the sheet. Built on the sheet, field, go and back of make.css. */
+.dd .box{width:min(640px,100%)}
+.dd h2{margin:0 0 6px}
+.dd .hint{margin:0 0 14px}
+.dd textarea{min-height:96px;font-size:19px}
+.ddcount{display:block;margin:4px 2px 0;text-align:right;color:var(--mute);font-size:13px}
+.ddex{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 18px}
+.ddex>span{margin-right:2px;font-size:15px;font-weight:700;color:var(--mute)}
+.ddx{flex:0 1 auto;max-width:100%;padding:9px 14px;border:0;border-radius:16px;background:#fff;box-shadow:inset 0 0 0 2px var(--line);font-size:15px;line-height:1.3;text-align:left;cursor:pointer}
+.ddx:hover,.ddx:focus-visible{box-shadow:inset 0 0 0 2px var(--red);outline:0}
+.ddstyles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.ddstyles button{display:flex;flex-direction:column;gap:5px;padding:6px;border:0;border-radius:14px;background:var(--cream);box-shadow:inset 0 0 0 2px var(--line);color:var(--ink);font-size:14px;font-weight:700;line-height:1.2;cursor:pointer}
+.ddstyles img{display:block;width:100%;height:auto;aspect-ratio:1;object-fit:cover;border-radius:9px;background:var(--line)}
+.ddstyles button[aria-checked=true]{background:#fff;box-shadow:0 0 0 3px var(--red)}
+.ddphotos{display:flex;gap:8px;overflow-x:auto;padding:3px 3px 8px;scrollbar-width:none}.ddphotos::-webkit-scrollbar{display:none}
+.ddphotos button{flex:none;width:72px;height:72px;padding:0;border:0;border-radius:12px;overflow:hidden;background:var(--line);box-shadow:inset 0 0 0 2px var(--line);cursor:pointer}
+.ddphotos img{display:block;width:100%;height:100%;object-fit:cover}
+.ddphotos button[aria-pressed=true]{box-shadow:0 0 0 3px var(--red)}
+.ddmsg{margin:0 0 14px;padding:12px 14px;border-radius:14px;background:#fff0ee;box-shadow:inset 0 0 0 2px var(--red);font-size:16px;line-height:1.4}
+.ddleft{margin:8px 0 0;text-align:right;color:var(--mute);font-size:14px}
+.dd .go svg.i{width:24px;height:24px}
+
+/* while it draws: a lantern inks itself, the list says where the doodle is */
+.ddwait{padding:4px 0 2px;text-align:center}
+.ddlantern{display:block;width:132px;height:132px;margin:0 auto 4px;overflow:visible}
+.ddlantern path{fill:none;stroke:var(--ink);stroke-width:3.5;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:1;stroke-dashoffset:1;animation:ddink 5.6s ease-in-out infinite}
+.ddlantern g path:nth-child(1){animation-delay:.05s}.ddlantern g path:nth-child(2){animation-delay:.2s}.ddlantern g path:nth-child(3){animation-delay:.35s}.ddlantern g path:nth-child(4){animation-delay:.9s}
+.ddlantern g path:nth-child(5){animation-delay:1.05s}.ddlantern g path:nth-child(6){animation-delay:1.2s}.ddlantern g path:nth-child(7){animation-delay:1.35s}
+.ddlantern .fill{fill:var(--gold);stroke:none;stroke-dasharray:none;stroke-dashoffset:0;opacity:0;animation:ddglow 5.6s ease-in-out infinite}
+@keyframes ddink{0%{stroke-dashoffset:1}50%,86%{stroke-dashoffset:0}100%{stroke-dashoffset:1}}
+@keyframes ddglow{0%,48%{opacity:0}62%,86%{opacity:.85}100%{opacity:0}}
+.ddsay{margin:0 0 14px;padding:10px 14px;border-radius:14px;background:var(--cream);font-weight:600;overflow-wrap:anywhere}
+.ddsteps{display:grid;gap:7px;max-width:300px;margin:0 auto 12px;padding:0;list-style:none;text-align:left}
+.ddsteps li{position:relative;padding-left:28px;color:var(--mute);font-size:17px}
+.ddsteps li::before{content:"";position:absolute;left:3px;top:.42em;width:14px;height:14px;border-radius:50%;box-shadow:inset 0 0 0 2px var(--line)}
+.ddsteps li.on{color:var(--ink);font-weight:700}.ddsteps li.on::before{background:var(--gold);box-shadow:none;animation:ddpulse 1s ease-in-out infinite}
+.ddsteps li.done{color:var(--ink)}.ddsteps li.done::before{background:var(--green);box-shadow:none}
+@keyframes ddpulse{50%{transform:scale(1.35)}}
+@media (prefers-reduced-motion:reduce){.ddlantern path{animation:none;stroke-dashoffset:0}.ddlantern .fill{animation:none;opacity:.85}.ddsteps li.on::before{animation:none}}
+
+/* the two to choose from, side by side */
+.ddopts{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 0 14px}
+.ddopt{margin:0;border-radius:16px;overflow:hidden;background:#fff;box-shadow:0 0 0 2px var(--line)}
+.ddopt img{display:block;width:100%;height:auto;background:var(--cream)}
+.ddopt figcaption{display:grid;gap:6px;padding:8px}
+.ddopt .go{min-height:48px;padding:6px 8px;border-radius:14px;font-size:15px;line-height:1.2;text-align:center}
+.ddok{display:flex;align-items:center;justify-content:center;gap:6px;min-height:48px;margin:0;color:var(--green);font-size:15px;font-weight:800;line-height:1.2;text-align:center}
+@media (min-width:520px){.ddopts{gap:14px}.ddopt .go{font-size:17px}.ddok{font-size:17px}}
+:lang(my) .dd h2,:lang(my) .dd .hint{line-height:1.55}

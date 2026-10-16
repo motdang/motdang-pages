@@ -1,0 +1,62 @@
+/* avatar.css — the avatar sheet (openAvatar in avatar-ui.mjs). Uses the colours of make.css; load it after make.css. */
+.sheet.avmk .box{display:flex;flex-direction:column;width:min(640px,100%);height:min(92vh,880px);max-height:92vh;padding:0;overflow:hidden;outline:0}
+@media (max-width:599px){.sheet.avmk .box{height:96vh;height:96dvh;max-height:96vh;max-height:96dvh}}
+.avmk [hidden]{display:none!important}
+.avhead{flex:none;padding:14px 18px 0}
+.sheet.avmk .avhead h2{margin:0;font-size:23px;line-height:1.2}
+.avhead .hint{margin:2px 0 2px;font-size:15px}
+@media (max-height:700px){.avhead .hint{display:none}}
+.avmain{flex:1 1 auto;min-height:0;display:flex;flex-direction:column}
+.avprev{flex:none;display:flex;align-items:center;gap:14px;padding:6px 18px 8px}
+.avstage{flex:none;width:min(150px,40vw);aspect-ratio:1;display:grid;place-items:center;border-radius:20px;background:repeating-conic-gradient(#f2eadc 0 25%,#fff 0 50%) 0 0/16px 16px;box-shadow:inset 0 0 0 2px var(--line)}
+.avstage svg{display:block;width:92%;height:92%}
+.avq{flex:1;min-width:0;display:grid;gap:10px}
+.avq button{display:flex;align-items:center;justify-content:center;gap:8px;min-height:54px;padding:8px 12px;border:0;border-radius:16px;background:var(--ink);color:#fff;font-weight:800;font-size:17px;cursor:pointer}
+.avq button.light{background:#fff;color:var(--ink);box-shadow:inset 0 0 0 3px var(--ink)}
+.avq button:disabled{opacity:.38;cursor:default}
+.avq svg{flex:none;width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.avbody{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:0 18px 14px;-webkit-overflow-scrolling:touch}
+.avlab{margin:2px 0 2px;font-weight:800;font-size:16px}
+.avpre{display:flex;gap:10px;overflow-x:auto;padding:4px 2px 8px;scroll-snap-type:x proximity}
+.avp{flex:none;width:90px;display:flex;flex-direction:column;align-items:center;gap:3px;padding:5px 4px 7px;border:0;border-radius:16px;background:var(--cream);color:var(--ink);box-shadow:inset 0 0 0 2px var(--line);font-weight:700;font-size:14px;line-height:1.2;text-align:center;cursor:pointer;scroll-snap-align:start}
+.avp span{display:block;width:66px;height:66px}
+.avp svg{display:block;width:100%;height:100%}
+.avp b{font-weight:700;overflow-wrap:anywhere}
+.avtabs{position:sticky;top:0;z-index:3;display:flex;gap:2px;margin:0 -18px;padding:6px 10px 8px;background:#fff;box-shadow:0 1px 0 var(--line)}
+.avtab{flex:1 1 auto;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-width:0;min-height:58px;padding:6px 4px;border:0;border-radius:14px;background:transparent;color:var(--ink);font-weight:800;font-size:12.5px;line-height:1.1;text-align:center;cursor:pointer;white-space:nowrap}
+.avtab svg{width:26px;height:26px;flex:none}
+.avtab[aria-selected="true"]{background:var(--ink);color:#fff}
+.avsec{margin:14px 0 6px}
+.avh{display:flex;flex-wrap:wrap;align-items:baseline;gap:0 4px;margin:0 0 8px;font-size:17px;font-weight:800}
+.avh b{font-weight:600;font-size:15px;color:var(--mute)}
+.avgrid{display:grid;gap:8px}
+.avgrid.tile{grid-template-columns:repeat(auto-fill,minmax(70px,1fr))}
+.avgrid.swatch{grid-template-columns:repeat(auto-fill,minmax(48px,1fr));gap:12px 10px;padding:4px 2px}
+.avt{position:relative;aspect-ratio:1;padding:0;border:0;border-radius:16px;background:#e9dfd0;overflow:hidden;cursor:pointer;box-shadow:inset 0 0 0 2px #cdbfa8}
+.avt .avpic{display:block;width:100%;height:100%}
+.avt svg{display:block;width:100%;height:100%}
+.avt.on{background:#fff;box-shadow:0 0 0 4px var(--red)}
+.avt.on::after{content:"";position:absolute;right:4px;top:4px;width:22px;height:22px;border-radius:50%;background:var(--red) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5.5 12.5l4.2 4.2L18.5 8' fill='none' stroke='white' stroke-width='3.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/15px no-repeat}
+.avsw{width:100%;max-width:52px;aspect-ratio:1;padding:0;border:0;border-radius:50%;background:var(--c);box-shadow:inset 0 0 0 2px rgba(0,0,0,.4);cursor:pointer}
+.avsw.on{box-shadow:0 0 0 3px #fff,0 0 0 7px var(--red)}
+.avmk button:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+.avfoot .go{min-height:52px;padding:10px 24px}
+.avfoot{flex:none;display:flex;justify-content:flex-end;align-items:center;gap:10px;padding:8px 18px calc(10px + env(safe-area-inset-bottom));background:#fff;box-shadow:0 -1px 0 var(--line)}
+@media (min-width:600px){.avstage{width:200px}.avgrid.tile{grid-template-columns:repeat(auto-fill,minmax(84px,1fr))}}
+/* a laptop: the character and its starting points on the left, the parts on the right */
+@media (min-width:780px) and (min-height:560px){
+  .sheet.avmk .box{width:min(940px,100%)}
+  .avmain{display:grid;grid-template-columns:330px minmax(0,1fr);grid-template-rows:auto minmax(0,1fr)}
+  .avprev{grid-column:1;grid-row:1;flex-direction:column;align-items:stretch;gap:10px}
+  .avstage{width:min(210px,100%);align-self:center}
+  .avq{grid-template-columns:1fr 1fr}
+  .avq button{min-height:48px;padding:6px 8px;font-size:16px}
+  .avbody{display:contents}
+  .avstart{grid-column:1;grid-row:2;min-height:0;overflow-y:auto;padding:0 18px 10px}
+  .avpre{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));overflow:visible;padding:4px 0 8px}
+  .avp{width:auto}
+  .avp span{width:100%;height:auto;aspect-ratio:1}
+  .avparts{grid-column:2;grid-row:1 / span 2;display:flex;flex-direction:column;min-height:0}
+  .avtabs{position:static;margin:0;padding:8px 18px;box-shadow:0 1px 0 var(--line)}
+  #avpanel{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:0 18px 14px}
+}

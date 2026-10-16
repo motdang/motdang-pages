@@ -2,6 +2,11 @@
 
 import { Z } from './make-words-more.mjs'
 import { Y } from './make-words-try.mjs'
+import { X } from './make-words-edit.mjs'
+import { W } from './make-words-pick.mjs'
+import { A } from './make-words-avatar.mjs'
+import { G } from './make-words-logo.mjs'
+import { Q } from './make-words-doodle.mjs'
 
 export const UI_LANGS = { th: 'ไทย', en: 'English', my: 'မြန်မာ', zh: '中文' }
 
@@ -163,7 +168,7 @@ const V = {
     dev_phone: 'Phone', dev_tablet: 'Tablet', dev_computer: 'Computer',
     g_lead: 'Your page, in gold.', g_price: '฿{p} a year', g_pay: 'Get Gold', g_scan: 'Scan with any Thai bank app. The amount ends in .{s} so we know it is yours.',
     g_slip: 'Send the bank slip', g_wait: 'Slip received. Gold turns on when it is checked.', g_on: 'Gold until {d}', g_thanks: 'Gold is on.', g_nopp: 'PromptPay is not set up yet.',
-    g_f1: 'Gold leaf and Riso looks', g_f2: 'Your page on Google and other search engines', g_f3: '120 photos and a video', g_f4: 'Around here: your own places on your drawn map',
+    g_f1: 'The Gold leaf look', g_f2: 'Your page on Google and other search engines', g_f3: '120 photos and a video', g_f4: 'Around here: your own places on your drawn map',
     g_f5: 'A year of traffic, and a CSV of it', g_f6: 'First in the list of pages, with a gold star', g_free: 'Free', g_freeList: 'Everything else on this page',
   },
   th: {
@@ -186,7 +191,7 @@ const V = {
     dev_phone: 'มือถือ', dev_tablet: 'แท็บเล็ต', dev_computer: 'คอมพิวเตอร์',
     g_lead: 'หน้าเว็บของคุณ ฉบับทอง', g_price: '฿{p} ต่อปี', g_pay: 'สมัครทอง', g_scan: 'สแกนด้วยแอปธนาคารไหนก็ได้ ยอดลงท้ายด้วย .{s} เพื่อให้รู้ว่าเป็นของคุณ',
     g_slip: 'ส่งสลิป', g_wait: 'ได้รับสลิปแล้ว ทองเปิดเมื่อตรวจเสร็จ', g_on: 'ทองถึง {d}', g_thanks: 'เปิดทองแล้ว', g_nopp: 'ยังไม่ได้ตั้งพร้อมเพย์',
-    g_f1: 'แบบลายคำทองและริโซ่', g_f2: 'หน้าเว็บขึ้นบน Google และเสิร์ชเอนจินอื่น', g_f3: 'รูป 120 รูปและวิดีโอ', g_f4: 'แถวนี้: ที่ของคุณเองบนแผนที่วาดมือ',
+    g_f1: 'แบบทองคำเปลว', g_f2: 'หน้าเว็บขึ้นบน Google และเสิร์ชเอนจินอื่น', g_f3: 'รูป 120 รูปและวิดีโอ', g_f4: 'แถวนี้: ที่ของคุณเองบนแผนที่วาดมือ',
     g_f5: 'สถิติคนเข้าชมหนึ่งปี และไฟล์ CSV', g_f6: 'ขึ้นก่อนในรายชื่อเว็บ มีดาวทอง', g_free: 'ฟรี', g_freeList: 'ทุกอย่างที่เหลือในหน้านี้',
   },
   my: {
@@ -209,7 +214,7 @@ const V = {
     dev_phone: 'ဖုန်း', dev_tablet: 'တက်ဘလက်', dev_computer: 'ကွန်ပျူတာ',
     g_lead: 'သင့်စာမျက်နှာ ရွှေဖြင့်။', g_price: 'တစ်နှစ် ฿{p}', g_pay: 'ရွှေယူရန်', g_scan: 'ထိုင်းဘဏ်အက်ပ်ဖြင့် စကန်ပါ။ ပမာဏ .{s} ဖြင့်ဆုံးသည်။',
     g_slip: 'ဘဏ်ပြေစာပို့ရန်', g_wait: 'ပြေစာရပြီ။ စစ်ပြီးမှ ရွှေဖွင့်မည်။', g_on: '{d} အထိ ရွှေ', g_thanks: 'ရွှေဖွင့်ပြီ။', g_nopp: 'PromptPay မပြင်ဆင်ရသေးပါ။',
-    g_f1: 'ရွှေနှင့် Riso ပုံစံများ', g_f2: 'Google တွင် ပေါ်သည်', g_f3: 'ဓာတ်ပုံ ၄၈ ပုံနှင့် ဗီဒီယို', g_f4: 'ဤအနီး- သင့်နေရာများ မြေပုံပေါ်တွင်',
+    g_f1: 'ရွှေဆိုင်းပုံစံ', g_f2: 'Google တွင် ပေါ်သည်', g_f3: 'ဓာတ်ပုံ ၄၈ ပုံနှင့် ဗီဒီယို', g_f4: 'ဤအနီး- သင့်နေရာများ မြေပုံပေါ်တွင်',
     g_f5: 'တစ်နှစ်စာ စာရင်းနှင့် CSV', g_f6: 'စာရင်းတွင် ရှေ့ဆုံး၊ ရွှေကြယ်', g_free: 'အခမဲ့', g_freeList: 'ကျန်အားလုံး',
   },
   zh: {
@@ -232,12 +237,19 @@ const V = {
     dev_phone: '手机', dev_tablet: '平板', dev_computer: '电脑',
     g_lead: '你的网页，金色版。', g_price: '每年 ฿{p}', g_pay: '开通金卡', g_scan: '用任何泰国银行 App 扫码。金额尾数是 .{s}，这样我们知道是你。',
     g_slip: '发送转账凭证', g_wait: '凭证已收到，核对后开通金卡。', g_on: '金卡到 {d}', g_thanks: '金卡已开通。', g_nopp: 'PromptPay 还没设置好。',
-    g_f1: '金箔和 Riso 两种样式', g_f2: '网页能出现在 Google 等搜索引擎', g_f3: '120 张照片和一个视频', g_f4: '附近：你的地方标在手绘地图上',
+    g_f1: '金箔样式', g_f2: '网页能出现在 Google 等搜索引擎', g_f3: '120 张照片和一个视频', g_f4: '附近：你的地方标在手绘地图上',
     g_f5: '一年的访问数据，可下载 CSV', g_f6: '在网页列表里排前面，带金星', g_free: '免费', g_freeList: '本页其他一切',
   },
 }
 
-export function ui(lang, k) { return (U[lang] && U[lang][k]) || (V[lang] && V[lang][k]) || (Z[lang] && Z[lang][k]) || (Y[lang] && Y[lang][k]) || U.en[k] || V.en[k] || Z.en[k] || Y.en[k] || k }
+// each table in turn in the maker's language, then each in English (the tables: words for the steps, the
+// editor, the pickers, the avatar maker, the logo maker, the doodles)
+const TABLES = [U, V, Z, Y, X, W, A, G, Q]
+export function ui(lang, k) {
+  for (const t of TABLES) if (t[lang] && t[lang][k]) return t[lang][k]
+  for (const t of TABLES) if (t.en[k]) return t.en[k]
+  return k
+}
 
 /** The reader's language from Accept-Language, among the builder's four. */
 export function pickLang(header) {

@@ -35,10 +35,16 @@ bucket_name = "motdang-pages"
 binding = "SITE"
 service = "mot-dang-site"
 
-# Llama Guard on page text, Mistral Small on photos.
+# Llama Guard on page text, Mistral Small on photos. Doodle anything (src/doodle.mjs) draws with FLUX.2 klein.
 [ai]
 binding = "AI"
 remote = true
+
+# Doodle anything: the 1024 px and 480 px WebP copies of each doodle. Without it the model's JPEG is stored as it is.
+# A page asks for 5 doodles a day (Gold and the 30-day trial 30), every page together 600; vars DOODLE_FREE, DOODLE_GOLD
+# and DOODLE_DAY change those numbers.
+[images]
+binding = "IMAGES"
 
 # Drafts older than 30 days go; pages and photos a model failed to answer get another look.
 [triggers]
@@ -66,3 +72,5 @@ MAIL_FROM = "Mot Dang <pages@motdang.net>"
 #   PROMPTPAY       the PromptPay id Gold is paid to
 #   SLIPOK_KEY, SLIPOK_BRANCH   the slip check; Gold slips wait at /admin without them
 #   DISCORD_SALES   webhook of the team's #minisites channel; each paid plan is posted there
+#   DISCORD_PEOPLE  webhook of #people-team; each sign-up at /sell is posted there for Beer
+# SELLER_AUTO = "1" (a var) lets a sign-up sell at once; without it Beer says yes first

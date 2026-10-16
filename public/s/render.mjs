@@ -8,10 +8,11 @@ import { encodeQr } from './qr.mjs'
 import { DINGBATS } from './db/names.mjs'
 import { normalizeExtras, upcoming, campsNow, utcOf, money, MAP_NEAR, MAX, UNIT_LABEL, tagsOf } from './extras.mjs'
 import { normalizeAmulets, amuletSection, amuletBody, amuletLd, amuletDesc, AM_CSS, AM_MAX } from './amulet.mjs'
+import { LOOKS, LOOK_IDS, GOLD_LOOKS, LOOK_ALIAS, lookOf, HERO_CSS, F_THAI } from './looks.mjs'
+
+export { LOOKS, LOOK_IDS, GOLD_LOOKS, LOOK_ALIAS, lookOf }
 
 export const KINDS = ['shop', 'food', 'service', 'work', 'amulet', 'stay', 'homes', 'me', 'event', 'group']
-export const LOOK_IDS = ['poster', 'loom', 'stitch', 'night', 'y1997', 'clean', 'lanna', 'gold', 'riso']
-export const GOLD_LOOKS = ['gold', 'riso']
 export const HOME = 'https://sites.motdang.net'
 export const MAIN = 'https://motdang.net'
 export const MAX_PHOTOS = { free: 12, gold: 120 }
@@ -43,13 +44,15 @@ export const SCENES = {
     ['run', 'วิ่ง', 'Run'], ['calm', 'สมาธิ', 'Meditation'], ['wat', 'วัด', 'Wat'], ['akha', 'อาข่า', 'Akha'], ['spirithouse', 'ศาลพระภูมิ', 'Spirit house']],
 }
 const SCENE_IDS = new Set(Object.values(SCENES).flat().map((x) => x[0]))
+export const DPROPS = ['wifi', 'aircon', 'parking', 'wheelchair', 'pool', 'tables', 'takeaway', 'lights', 'water', 'farm', 'camp', 'chicken', 'rooster', 'noodles', 'pizza', 'bubbletea']
+export const DTIMES = ['dawn', 'day', 'dusk', 'night']
 export const sceneOf = (kind, d) => (d.scene && SCENE_IDS.has(d.scene) ? d.scene : (SCENES[kind] || SCENES.shop)[0][0])
 
 // The dingbat beside each section's heading, and the look each page look draws them in.
-const HEAD_DING = { about: 'sparkle', menu: 'noodles', prices: 'coin', hours: 'clock', photos: 'camera', where: 'pin', line: 'chat', links: 'link',
+const HEAD_DING = { pay: 'coin', about: 'sparkle', menu: 'noodles', prices: 'coin', hours: 'clock', photos: 'camera', where: 'pin', line: 'chat', links: 'link',
   contact: 'telephone', msg: 'envelope', when: 'calendar', drawn: 'pencil', video: 'play', spots: 'compass', share: 'share',
   cal: 'calendar', camp: 'megaphone', book: 'clock', rooms: 'key', lists: 'home', works: 'nib', quotes: 'hedera', amulets: 'lotus', amterms: 'bell' }
-const DING_LOOK = { poster: 'riso', loom: 'paper', stitch: 'paper', night: 'neon', y1997: 'neon', clean: 'ink', lanna: 'paper', gold: 'paper', riso: 'riso' }
+const DING_LOOK = { poster: 'riso', loom: 'paper', stitch: 'paper', night: 'neon', clean: 'ink', lanna: 'paper', gold: 'paper' }
 export const ACCENTS = ['#f04a00', '#ff2e88', '#ffb000', '#19a974', '#137a71', '#2563eb', '#7c3aed', '#111827']
 
 // Grab's own countries, and the path its web pages use for each.
@@ -102,17 +105,24 @@ export function normalize(d = {}) {
   o.counter = !!d.counter
   o.currency = CURRENCY[d.currency] ? d.currency : ''
   o.cover = PHOTO_ID.test(d.cover || '') ? d.cover : ''
+  o.coverPos = Array.isArray(d.coverPos) && d.coverPos.length === 2 && d.coverPos.every((v) => typeof v === 'number' && v >= 0 && v <= 1) ? d.coverPos.map((v) => Math.round(v * 100) / 100) : null
   o.card = PHOTO_ID.test(d.card || '') ? d.card : ''
   o.avatar = PHOTO_ID.test(d.avatar || '') ? d.avatar : ''
   o.avround = d.avround !== false
   o.photos = (Array.isArray(d.photos) ? d.photos : []).filter((p) => PHOTO_ID.test(p)).slice(0, MAX_PHOTOS.gold)
   o.scene = SCENE_IDS.has(d.scene) ? d.scene : ''
   o.drawing = d.drawing !== false
+  const pay = d.pay || {}, ppn = String(pay.pp || '').replace(/\D/g, '')
+  o.pay = { pp: [10, 13, 15].includes(ppn.length) ? ppn : '', tips: !!pay.tips, price: str(pay.price, 10).replace(/[^\d.]/g, '') }
+  o.dprops = [...new Set((Array.isArray(d.dprops) ? d.dprops : []).filter((x) => DPROPS.includes(x)))].slice(0, 8)
+  o.dseed = Number.isInteger(d.dseed) && d.dseed > 0 && d.dseed < 1e9 ? d.dseed : 0
+  o.dtime = DTIMES.includes(d.dtime) ? d.dtime : ''
+  o.floors = Number.isInteger(d.floors) && d.floors > 0 ? Math.min(60, d.floors) : 0
   o.msg = d.msg !== false
   o.dings = [...new Set((Array.isArray(d.dings) ? d.dings : []).filter((n) => typeof n === 'string' && DINGBATS[n]))].slice(0, 6)
   o.credits = {}
   for (const [id, c] of Object.entries(d.credits && typeof d.credits === 'object' ? d.credits : {})) {
-    if (!PHOTO_ID.test(id) || !c || typeof c !== 'object') continue
+    if (!PHOTO_ID.test(id) || !c || typeof c !== 'object' || c.from === 'doodle') continue // a doodle is the maker's own picture: no credit line, no PD badge
     o.credits[id] = { title: str(c.title, 120), by: str(c.by, 120), src: safeUrl(c.src), license: str(c.license, 40), licenseUrl: safeUrl(c.licenseUrl), from: str(c.from, 20) }
   }
   o.video = videoUrl(d.video)
@@ -318,7 +328,6 @@ export function qrSvg(text, { dark = '#111', light = '#fff', label = 'QR' } = {}
 
 // ---- the looks --------------------------------------------------------------------
 
-const F_THAI = '"Prompt","Noto Sans Thai","Leelawadee UI","Thonburi",Tahoma'
 const FONTS = {
   Prompt: [[400, 'prompt-400'], [600, 'prompt-600']], Chonburi: [[400, 'chonburi-400']], Sriracha: [[400, 'sriracha-400']],
 }
@@ -333,135 +342,11 @@ function faces(names) {
   return s
 }
 
-// Each look: palette, type, and the drawing at the top that answers a tap.
-export const LOOKS = {
-  poster: {
-    label: 'Poster', fonts: ['Prompt'], accent: '#f04a00',
-    vars: `--bg:#fff7ec;--card:#ffffff;--ink:#1c1530;--mute:#5a4f6a;--line:#efd9bf;--hero:#1c1530;--r:4px;
-      --display:"Avenir Next Condensed","HelveticaNeue-CondensedBold","Arial Narrow Bold","Franklin Gothic Heavy",Impact,${F_THAI},sans-serif;
-      --body:"Avenir Next",Avenir,"Segoe UI",system-ui,-apple-system,Helvetica,Arial,${F_THAI},sans-serif;--case:uppercase;--h1w:800;--track:.01em`,
-    css: `.top h1{font-stretch:condensed}.top .bar{display:block;width:84px;height:8px;background:var(--accent);margin:14px 0 10px}
-      .card h2{font:800 30px/1 var(--display);letter-spacing:.02em;text-transform:uppercase;color:var(--ink)}
-      .card.tools{background:var(--ink);color:var(--bg)}.card.tools h2{color:var(--bg)}
-      .menu .p{font:800 26px/1 var(--display);color:var(--acc-ink)}.btn{border-radius:2px;text-transform:uppercase;letter-spacing:.04em}`,
-    art: `<svg viewBox="0 0 120 120" class="art sun" aria-hidden="true"><g class="spin">${Array.from({ length: 12 }, (_, i) => `<rect x="57" y="4" width="6" height="22" rx="3" fill="var(--accent)" transform="rotate(${i * 30} 60 60)"/>`).join('')}</g><circle cx="60" cy="60" r="24" fill="#ffb000"/><circle cx="52" cy="56" r="3" fill="#1c1530"/><circle cx="68" cy="56" r="3" fill="#1c1530"/><path d="M50 66q10 9 20 0" stroke="#1c1530" stroke-width="3" fill="none" stroke-linecap="round"/></svg>`,
-  },
-  loom: {
-    label: 'Loom', fonts: ['Chonburi'], accent: '#c24a82',
-    vars: `--bg:#f6efe3;--card:#fffaf1;--ink:#2a1a12;--mute:#62503f;--line:#e3d5c0;--hero:#2a1a12;--r:14px;
-      --display:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,"Chonburi",serif;
-      --body:Georgia,"Iowan Old Style",${F_THAI},serif;--case:none;--h1w:700;--track:-.01em`,
-    css: `.card{position:relative;overflow:hidden;padding-top:34px}.card::before{content:"";position:absolute;left:0;right:0;top:0;height:12px;
-      background:repeating-linear-gradient(90deg,#b97a1c 0 10px,#137a71 10px 20px,var(--accent) 20px 30px,#2a1a12 30px 34px);
-      -webkit-mask:repeating-linear-gradient(0deg,#000 0 3px,rgba(0,0,0,.55) 3px 6px);mask:repeating-linear-gradient(0deg,#000 0 3px,rgba(0,0,0,.55) 3px 6px)}
-      .card h2{font:italic 700 24px/1.1 var(--display);color:var(--acc-ink);letter-spacing:0;text-transform:none}`,
-    art: `<svg viewBox="0 0 120 120" class="art loom" aria-hidden="true"><g class="warp">${Array.from({ length: 9 }, (_, i) => `<rect x="${14 + i * 11}" y="10" width="5" height="100" rx="2" fill="${['#b97a1c', '#137a71', 'var(--accent)'][i % 3]}"/>`).join('')}</g><g class="weft">${Array.from({ length: 6 }, (_, i) => `<rect x="8" y="${18 + i * 16}" width="104" height="7" rx="3" fill="#2a1a12" opacity=".82"/>`).join('')}</g><path class="shuttle" d="M10 60q50-16 100 0q-50 16-100 0z" fill="#fffaf1" stroke="#2a1a12" stroke-width="2"/></svg>`,
-  },
-  stitch: {
-    label: 'Stitch', fonts: ['Sriracha', 'Prompt'], accent: '#ff2e88',
-    vars: `--bg:#1b1f5e;--card:#fffdf5;--ink:#1b1f5e;--mute:#45487a;--line:#d9d6ef;--hero:#1b1f5e;--r:18px;
-      --display:"Sriracha","Chalkboard SE","Comic Sans MS",${F_THAI},cursive;--body:system-ui,-apple-system,"Segoe UI",${F_THAI},sans-serif;
-      --case:none;--h1w:400;--track:0`,
-    css: `body{color:var(--ink)}.top{color:#fff}.card{border:4px solid #1b1f5e;box-shadow:7px 7px 0 var(--accent)}
-      .card h2{font:400 26px/1.1 var(--display);color:var(--acc-ink);text-transform:none;letter-spacing:0}
-      main>.card+.card{margin-top:58px}main>.card+.card::before{content:"";display:block;height:26px;margin:-58px -26px 32px;
-      background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='52' height='26'%3E%3Cpath d='M13 2l11 11-11 11L2 13z' fill='%23ff2e88'/%3E%3Cpath d='M13 8l5 5-5 5-5-5z' fill='%23ffd400'/%3E%3Cpath d='M39 2l11 11-11 11-11-11z' fill='%2319c37d'/%3E%3Cpath d='M39 8l5 5-5 5-5-5z' fill='%23fff'/%3E%3C/svg%3E") center/52px 26px repeat-x}
-      .foot{color:#fff}.foot a{color:#ffd400}.btn{box-shadow:4px 4px 0 #1b1f5e;border:3px solid #1b1f5e}`,
-    art: `<svg viewBox="0 0 120 120" class="art cat" aria-hidden="true"><path d="M24 44 30 12l22 20h16l22-20 6 32" fill="#ffd400" stroke="#1b1f5e" stroke-width="4" stroke-linejoin="round"/><ellipse cx="60" cy="66" rx="40" ry="34" fill="#ffd400" stroke="#1b1f5e" stroke-width="4"/><g class="eyes"><circle cx="45" cy="62" r="6" fill="#1b1f5e"/><circle cx="75" cy="62" r="6" fill="#1b1f5e"/></g><path d="M56 74l4 4 4-4" fill="#ff2e88" stroke="#1b1f5e" stroke-width="3" stroke-linejoin="round"/><path d="M44 84q16 10 32 0" stroke="#1b1f5e" stroke-width="3" fill="none" stroke-linecap="round"/><g class="hearts" fill="#ff2e88"><path d="M20 20c-4-6 4-10 6-4 2-6 10-2 6 4l-6 6z"/><path d="M92 16c-4-6 4-10 6-4 2-6 10-2 6 4l-6 6z"/><path d="M100 50c-3-5 3-8 5-3 2-5 8-2 5 3l-5 5z"/></g></svg>`,
-  },
-  night: {
-    label: 'Night market', fonts: ['Prompt'], accent: '#ff4fa3',
-    vars: `--bg:#0d1030;--card:#171b45;--ink:#fdf6ff;--mute:#c4c1e4;--line:#30367a;--hero:#0d1030;--r:16px;
-      --display:"Prompt","Avenir Next",system-ui,${F_THAI},sans-serif;--body:system-ui,-apple-system,"Segoe UI",${F_THAI},sans-serif;
-      --case:none;--h1w:600;--track:-.01em`,
-    css: `.top h1{text-shadow:0 0 18px var(--accent),0 0 2px #fff}.lights{position:absolute;left:0;right:0;top:0;height:46px;z-index:2;pointer-events:none;
-      background:radial-gradient(circle at 18px 26px,#ffd76a 0 5px,transparent 6px) 0 0/72px 46px,radial-gradient(circle at 54px 30px,#7df9ff 0 5px,transparent 6px) 0 0/72px 46px;
-      animation:twinkle 2.4s steps(2) infinite}.lights::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 36px 32px,#ff7ad1 0 5px,transparent 6px) 0 0/72px 46px;animation:twinkle 1.7s steps(2) infinite reverse}
-      @keyframes twinkle{50%{opacity:.45}}.card{box-shadow:0 0 0 1px var(--line),0 12px 40px rgba(0,0,0,.35)}
-      .card h2{color:var(--acc-ink)}.menu .p{color:#ffd76a}`,
-    art: `<svg viewBox="0 0 120 120" class="art lanterns" aria-hidden="true">${[[30, 52, '#ff4fa3'], [62, 36, '#ffd76a'], [92, 58, '#7df9ff']].map(([x, y, c], i) => `<g class="l l${i}"><path d="M${x} ${y - 30}v12" stroke="#c4c1e4" stroke-width="1.5"/><ellipse cx="${x}" cy="${y}" rx="14" ry="18" fill="${c}"/><path d="M${x - 14} ${y}h28M${x} ${y - 18}v36" stroke="#0d1030" stroke-width="1.5" opacity=".35"/><rect x="${x - 6}" y="${y + 16}" width="12" height="5" rx="2" fill="#0d1030" opacity=".6"/></g>`).join('')}</svg>`,
-  },
-  y1997: {
-    label: '1997', fonts: [], accent: '#ffff00',
-    vars: `--bg:#000018;--card:#000000;--ink:#ffffff;--mute:#c8d0ff;--line:#3a3aff;--hero:#000018;--r:0px;
-      --display:"Comic Sans MS","Comic Neue","Chalkboard SE","Sriracha",${F_THAI},cursive;--body:Verdana,Tahoma,${F_THAI},sans-serif;
-      --case:none;--h1w:700;--track:0`,
-    css: `body{background-color:#000018;background-image:radial-gradient(1px 1px at 20px 30px,#fff,transparent),radial-gradient(1px 1px at 120px 80px,#9cf,transparent),
-      radial-gradient(2px 2px at 200px 150px,#fff,transparent),radial-gradient(1px 1px at 300px 40px,#ff9,transparent),radial-gradient(1px 1px at 380px 200px,#fff,transparent);background-size:400px 240px}
-      .top h1{background:linear-gradient(90deg,#ff004c,#ff9900,#ffee00,#33dd00,#00ccff,#9933ff);-webkit-background-clip:text;background-clip:text;color:#ffee00;-webkit-text-fill-color:transparent}
-      .card{border:3px ridge #8a8aff;background:#000a}.card h2{color:#00ffff;font:700 22px/1.1 var(--display);text-transform:none;letter-spacing:0}
-      .card h2::before{content:"★ ";color:#ff0}a{color:#00ffff}.btn{border:3px outset #c0c0c0;border-radius:0}.marq{overflow:hidden;white-space:nowrap;background:#000080;color:#ffee00;font:700 16px/34px var(--body);border-block:2px solid #ff00ff}
-      .marq span{display:inline-block;padding-left:100%;animation:marq 16s linear infinite}@keyframes marq{to{transform:translateX(-100%)}}
-      .odo{display:inline-flex;gap:2px;font:700 22px/1 "Courier New",monospace}.odo b{background:#000;color:#3f3;padding:4px 5px;border:1px solid #555}
-      .badge88{display:inline-block;width:88px;min-height:31px;border:2px outset #ccc;background:#c0c0c0;color:#000;font:700 9px/12px Verdana,sans-serif;padding:2px 4px;text-align:center}`,
-    art: `<svg viewBox="0 0 120 120" class="art hardhat" aria-hidden="true"><g class="dig"><path d="M28 54a32 32 0 0 1 64 0z" fill="#ffd400" stroke="#000" stroke-width="3"/><rect x="22" y="52" width="76" height="8" rx="3" fill="#ffb000" stroke="#000" stroke-width="3"/><circle cx="60" cy="76" r="18" fill="#d92b2b" stroke="#000" stroke-width="3"/><circle cx="53" cy="73" r="3"/><circle cx="67" cy="73" r="3"/><path d="M40 92l-12 18M80 92l12 18M50 96l-4 18M70 96l4 18" stroke="#000" stroke-width="4" stroke-linecap="round"/><path d="M48 50l-10-30M72 50l10-30" stroke="#000" stroke-width="3"/></g><text x="60" y="118" text-anchor="middle" font-size="9" font-family="Verdana" fill="#ff0">UNDER CONSTRUCTION</text></svg>`,
-  },
-  clean: {
-    label: 'Clean', fonts: ['Prompt'], accent: '#2563eb',
-    vars: `--bg:#ffffff;--card:#f5f6f8;--ink:#111827;--mute:#4b5563;--line:#e5e7eb;--hero:#111827;--r:14px;
-      --display:system-ui,-apple-system,"Segoe UI",${F_THAI},sans-serif;--body:system-ui,-apple-system,"Segoe UI",${F_THAI},sans-serif;
-      --case:none;--h1w:700;--track:-.02em`,
-    css: `.card h2{color:var(--mute)}`,
-    art: `<svg viewBox="0 0 120 120" class="art spark" aria-hidden="true"><g class="s">${[[60, 60, 30], [24, 30, 12], [96, 34, 10], [94, 92, 14], [26, 94, 9]].map(([x, y, r]) => `<path d="M${x} ${y - r}C${x + r * 0.2} ${y - r * 0.2} ${x + r * 0.2} ${y - r * 0.2} ${x + r} ${y}C${x + r * 0.2} ${y + r * 0.2} ${x + r * 0.2} ${y + r * 0.2} ${x} ${y + r}C${x - r * 0.2} ${y + r * 0.2} ${x - r * 0.2} ${y + r * 0.2} ${x - r} ${y}C${x - r * 0.2} ${y - r * 0.2} ${x - r * 0.2} ${y - r * 0.2} ${x} ${y - r}z" fill="var(--accent)"/>`).join('')}</g></svg>`,
-  },
-  lanna: {
-    label: 'Lanna gold', fonts: ['Chonburi', 'Prompt'], accent: '#e2b03a',
-    vars: `--bg:#5c0f14;--card:#fff6e3;--ink:#3b0a0d;--mute:#6e3f30;--line:#ebcf86;--hero:#3b0a0d;--r:6px;
-      --display:"Chonburi","Iowan Old Style",Georgia,serif;--body:system-ui,-apple-system,"Segoe UI",${F_THAI},sans-serif;--case:none;--h1w:400;--track:0`,
-    css: `.top{color:#fff6e3}.card{border:2px solid #e2b03a;box-shadow:0 0 0 6px var(--card),0 0 0 8px #e2b03a}
-      .card h2{font:400 26px/1.2 var(--display);color:#8a1a1f;text-transform:none;letter-spacing:0}
-      .kranok{height:28px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='28'%3E%3Cpath d='M20 26C10 22 8 12 14 6c0 6 4 8 6 8 2 0 6-2 6-8 6 6 4 16-6 20z' fill='%23e2b03a'/%3E%3Cpath d='M20 22c-4-2-5-6-3-9 1 3 2 4 3 4s2-1 3-4c2 3 1 7-3 9z' fill='%235c0f14'/%3E%3C/svg%3E") center/40px 28px repeat-x;margin:20px 0}
-      .foot{color:#fff6e3}.foot a{color:#ffd77a}`,
-    art: `<svg viewBox="0 0 120 120" class="art flame" aria-hidden="true"><g class="f"><path d="M60 112C30 100 22 66 40 40c0 18 10 26 20 26s20-8 20-26c18 26 10 60-20 72z" fill="#e2b03a"/><path d="M60 98c-14-6-18-22-10-34 2 10 6 14 10 14s8-4 10-14c8 12 4 28-10 34z" fill="#5c0f14"/><path d="M60 64c-6-10-6-24 0-40 6 16 6 30 0 40z" fill="#ffd77a"/></g></svg>`,
-  },
-  gold: {
-    label: 'Gold leaf', gold: true, fonts: ['Chonburi', 'Prompt'], accent: '#f3c552',
-    vars: `--bg:#120d08;--card:#1d150d;--ink:#fbecc8;--mute:#d7c29a;--line:#5a4321;--hero:#120d08;--r:10px;
-      --display:"Chonburi","Iowan Old Style",Georgia,serif;--body:system-ui,-apple-system,"Segoe UI",${F_THAI},sans-serif;--case:none;--h1w:400;--track:0`,
-    css: `body{background-color:#120d08;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='84' height='84'%3E%3Cg fill='none' stroke='%23c99a3a' stroke-opacity='.16' stroke-width='1.4'%3E%3Cpath d='M42 6c10 12 10 24 0 36C32 30 32 18 42 6zM42 78c10-12 10-24 0-36-10 12-10 24 0 36zM6 42c12-10 24-10 36 0-12 10-24 10-36 0zM78 42c-12 10-24 10-36 0 12-10 24-10 36 0z'/%3E%3Ccircle cx='42' cy='42' r='4'/%3E%3C/g%3E%3C/svg%3E")}
-      .top{color:#fbecc8}.top h1{background:linear-gradient(100deg,#b5832a 0%,#f8dd8e 22%,#fff6d5 30%,#d9a441 46%,#f3c552 62%,#9c6a1c 100%);background-size:220% 100%;-webkit-background-clip:text;background-clip:text;color:#f3c552;-webkit-text-fill-color:transparent;animation:leaf 7s ease-in-out infinite}
-      @keyframes leaf{50%{background-position:100% 0}}
-      .card{border:1px solid #c99a3a;box-shadow:inset 0 0 0 5px #1d150d,inset 0 0 0 6px #6b4e1f,0 18px 40px rgba(0,0,0,.45)}
-      .card h2{font:400 26px/1.2 var(--display);color:#f3c552;text-transform:none;letter-spacing:0}
-      .btn{border-radius:99px}.btn.ghost{color:#f3c552}.menu .p{color:#f3c552;font-family:var(--display)}
-      .foot{color:#d7c29a}.foot a{color:#f3c552}.goldrule{height:30px;margin:24px 0;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='30'%3E%3Cpath d='M30 28C18 22 16 10 24 2c0 8 3 11 6 11s6-3 6-11c8 8 6 20-6 26z' fill='%23d9a441'/%3E%3Cpath d='M0 15h14M46 15h14' stroke='%23d9a441' stroke-width='1.5'/%3E%3C/svg%3E") center/60px 30px repeat-x}`,
-    art: `<svg viewBox="0 0 120 120" class="art leaf" aria-hidden="true"><defs><linearGradient id="gl" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff2c2"/><stop offset=".45" stop-color="#e2ac44"/><stop offset="1" stop-color="#8e5f17"/></linearGradient></defs><g class="lotus">${[-60, -30, 0, 30, 60].map((r) => `<path d="M60 96C44 76 46 46 60 22 74 46 76 76 60 96z" fill="url(#gl)" stroke="#120d08" stroke-width="2" transform="rotate(${r} 60 96)"/>`).join('')}<circle cx="60" cy="96" r="7" fill="#fff2c2" stroke="#120d08" stroke-width="2"/></g><g class="glints" fill="#fff6d5">${[[22, 24, 3], [96, 18, 2.5], [104, 70, 3], [16, 70, 2]].map(([x, y, r]) => `<path d="M${x} ${y - r * 3}L${x + r} ${y}L${x} ${y + r * 3}L${x - r} ${y}z"/>`).join('')}</g></svg>`,
-  },
-  riso: {
-    label: 'Riso', gold: true, fonts: ['Prompt'], accent: '#ff48b0',
-    vars: `--bg:#f3eee2;--card:#fbf8f0;--ink:#0b3b8c;--mute:#3d5b8f;--line:#c9d5ea;--hero:#0b3b8c;--r:4px;
-      --display:"Avenir Next Condensed","HelveticaNeue-CondensedBold","Arial Narrow Bold",Impact,${F_THAI},sans-serif;
-      --body:"Avenir Next",Avenir,"Segoe UI",system-ui,-apple-system,${F_THAI},sans-serif;--case:uppercase;--h1w:800;--track:.01em`,
-    css: `body{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.04 0 0 0 0 0.23 0 0 0 0 0.55 0 0 0 .09 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E")}
-      .top h1{color:#0b3b8c;text-shadow:4px 3px 0 #ff48b0;mix-blend-mode:multiply}.top .tag{color:#0b3b8c}
-      .card{box-shadow:6px 6px 0 #ff48b0,6px 6px 0 1px #0b3b8c;border:2px solid #0b3b8c;background-image:radial-gradient(#ff48b0 1px,transparent 1.4px);background-size:9px 9px;background-position:-4px -4px;background-color:var(--card)}
-      .card>*{background:var(--card)}.card h2{font:800 30px/1 var(--display);text-transform:uppercase;color:#0b3b8c;text-shadow:2px 2px 0 #ff48b0;letter-spacing:.02em;display:inline-block;padding:0 6px}
-      .btn{border-radius:2px;text-transform:uppercase;letter-spacing:.05em;box-shadow:3px 3px 0 #0b3b8c}.menu .p{font:800 26px/1 var(--display);color:#ff48b0}`,
-    art: `<svg viewBox="0 0 120 120" class="art riso" aria-hidden="true"><g class="pink" style="mix-blend-mode:multiply">${Array.from({ length: 8 }, (_, i) => `<ellipse cx="60" cy="34" rx="12" ry="24" fill="#ff48b0" transform="rotate(${i * 45} 60 60)" opacity=".9"/>`).join('')}</g><g class="blue" style="mix-blend-mode:multiply"><circle cx="63" cy="62" r="17" fill="#0b78d1"/><circle cx="57" cy="57" r="3" fill="#0b3b8c"/><circle cx="69" cy="57" r="3" fill="#0b3b8c"/><path d="M55 67q8 7 16 0" stroke="#0b3b8c" stroke-width="3" fill="none" stroke-linecap="round"/></g></svg>`,
-  },
-}
-
-
-// ---- the page ---------------------------------------------------------------------
-
 const BASE_CSS = `*{box-sizing:border-box}[hidden]{display:none!important}html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
 body{margin:0;background:var(--bg);color:var(--ink);font:400 18px/1.6 var(--body);overflow-x:hidden}
 img{max-width:100%;display:block}a{color:inherit}.i{width:22px;height:22px;flex:none;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
 .wrap{max-width:760px;margin:0 auto;padding:0 16px}
-.top{position:relative;overflow:hidden;color:var(--ink)}
-.top.has-cover{color:#fff;min-height:min(78vh,640px);display:flex;align-items:flex-end;background:var(--hero)}
-.top.has-cover{clip-path:inset(0)}.top.has-cover>img{position:fixed;inset:0;width:100%;height:100vh;height:100lvh;object-fit:cover}
-@keyframes drift{to{transform:scale(1.07) translate(-1%,-1%)}}
-.top.has-cover::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0) 30%,rgba(0,0,0,.74) 100%)}
-.top .t{position:relative;z-index:1;width:100%;padding:56px 16px 50px;max-width:760px;margin:0 auto}
-.top{container-type:inline-size}.top h1{margin:0;font-family:var(--display);font-weight:var(--h1w);font-size:min(clamp(40px,11vw,88px),calc((100cqi - 56px) / (var(--lw,8) * var(--em,.66))));line-height:.98;letter-spacing:var(--track);text-transform:var(--case);overflow-wrap:break-word;text-wrap:balance}
-.top .tag{margin:12px 0 0;font-size:clamp(18px,4.6vw,23px);line-height:1.35;max-width:34em}
-.top figcaption{position:absolute;right:10px;bottom:8px;z-index:2;font-size:11px;opacity:.8;max-width:60%;text-align:right}
-.top figcaption a{color:#fff}
-.goldtag{display:inline-flex;align-items:center;gap:6px;margin:0 0 12px;padding:4px 12px 4px 8px;border-radius:99px;background:linear-gradient(100deg,#9c6a1c,#f8dd8e 40%,#d9a441 60%,#f3c552);color:#2a1a04;font:800 13px/1.2 var(--body);letter-spacing:.08em;text-transform:uppercase}
 .dings{display:flex;gap:.35em;margin:14px 0 0;font-size:clamp(30px,8vw,46px);line-height:1}
-.art{position:absolute;right:14px;top:14px;width:96px;height:96px;z-index:3;cursor:pointer;-webkit-tap-highlight-color:transparent;filter:drop-shadow(0 2px 6px rgba(0,0,0,.35))}
-.t .art{position:relative;right:auto;top:auto;float:right;margin:0 0 0 12px;filter:none}
 .badge{display:inline-flex;align-items:center;gap:6px;margin-top:16px;padding:6px 14px;border-radius:99px;font:600 15px/1.2 var(--body);background:#3d3d3d;color:#fff}
 .badge.open{background:#0b8043}.badge .dot{width:9px;height:9px;border-radius:50%;background:currentColor}.badge.open .dot{animation:pulse 1.6s ease-in-out infinite}
 @keyframes pulse{50%{opacity:.35;transform:scale(.7)}}
@@ -497,6 +382,13 @@ img{max-width:100%;display:block}a{color:inherit}.i{width:22px;height:22px;flex:
 .spots b{display:block}.spots small{color:var(--mute);font-size:15px}.spots button{border:0;background:none;color:var(--acc-ink);font:600 14px var(--body);padding:4px 0;cursor:pointer;text-decoration:underline}
 .qty{display:inline-flex;align-items:center;gap:6px;margin-left:4px}.qty button{width:38px;height:38px;border-radius:50%;border:2px solid currentColor;background:transparent;color:inherit;font:700 20px/1 system-ui;cursor:pointer}
 .qty b{min-width:1.4em;text-align:center}.qty.on b{color:var(--acc-ink)}.btn.order{position:sticky;bottom:12px;margin-top:16px;z-index:5;box-shadow:0 6px 20px rgba(0,0,0,.25)}
+.top .cta{display:inline-flex;margin-top:18px;min-height:58px;padding:12px 28px;font-size:19px}.top .cta .i{width:24px;height:24px}
+.orderrow{display:grid;gap:10px;margin-top:16px}.orderrow .btn.order{position:sticky;bottom:12px}
+.pay .amts{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0 0}.pay .amt{min-width:84px;min-height:56px;padding:8px 16px;border-radius:calc(var(--r) + 4px);border:2px solid var(--line);background:var(--soft);color:var(--ink);font:800 20px/1.1 var(--body);cursor:pointer}
+.pay .amt small{display:block;font:600 12px/1.2 var(--body);color:var(--mute)}.pay .amt.on{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent)}
+.pay .amtin{display:flex;align-items:center;gap:6px;flex:1 1 160px;min-height:56px;padding:0 14px;border-radius:calc(var(--r) + 4px);border:2px solid var(--line);background:var(--soft)}
+.pay .amtin input{flex:1;min-width:0;border:0;background:none;color:var(--ink);font:700 20px var(--body);outline:0}.pay #paygo{flex:1 1 100%}
+.ppout{margin-top:16px;text-align:center}.ppout .qr{width:min(260px,72vw);height:auto;border-radius:14px;background:#fff;padding:8px}.ppout b{display:block;font-size:24px;margin:8px 0 4px}
 .lineqr{display:grid;grid-template-columns:150px 1fr;gap:18px;align-items:center}.lineqr .qr{width:150px;height:150px;border-radius:10px}
 .links a.btn{margin:0 0 10px}
 .contact{display:grid;gap:8px}.contact a{display:flex;align-items:center;gap:12px;min-height:48px;padding:6px 0;text-decoration:none;border-bottom:1px dashed var(--line);overflow-wrap:anywhere}
@@ -526,19 +418,6 @@ dialog.qrd{background:#fff;color:#000;padding:26px;text-align:center;width:min(9
 .mapfull{position:fixed;inset:0;z-index:50;background:#e8e2d4}.mapfull .x{position:absolute;right:12px;top:12px;z-index:5;width:48px;height:48px;border-radius:50%;border:0;background:#fff;color:#000;font:700 24px/1 system-ui;box-shadow:0 2px 10px rgba(0,0,0,.3)}
 .checking{padding:40px 22px;text-align:center}
 .rise{opacity:0;transform:translateY(18px);transition:opacity .7s ease,transform .7s cubic-bezier(.2,.8,.2,1)}.rise.in{opacity:1;transform:none}
-.sun .spin{transform-origin:60px 60px}.sun.go .spin{animation:spin 1.6s cubic-bezier(.3,1.6,.5,1)}@keyframes spin{to{transform:rotate(180deg)}}
-.loom.go .shuttle{animation:shuttle 1.2s ease-in-out}@keyframes shuttle{50%{transform:translateY(-22px)}}.loom.go .warp rect:nth-child(odd){animation:shuttle .9s ease-in-out reverse}
-.cat .eyes{transform-origin:60px 62px}.cat.go .eyes{animation:wink .8s}@keyframes wink{40%{transform:scaleY(.1)}}
-.cat .hearts{opacity:0}.cat.go .hearts{animation:hearts 1.3s}@keyframes hearts{30%{opacity:1}100%{opacity:0;transform:translateY(-22px)}}
-.lanterns.go .l{animation:float 2.2s ease-in-out}.lanterns.go .l1{animation-delay:.15s}.lanterns.go .l2{animation-delay:.3s}@keyframes float{50%{transform:translateY(-34px)}}
-.hardhat .dig{transform-origin:60px 110px}.hardhat.go .dig{animation:dig .9s}@keyframes dig{25%{transform:rotate(-8deg)}75%{transform:rotate(8deg)}}
-.spark .s{transform-origin:60px 60px}.spark.go .s{animation:spark 1s}@keyframes spark{50%{transform:scale(1.25) rotate(20deg)}}
-.flame .f{transform-origin:60px 112px}.flame.go .f{animation:flick 1s}@keyframes flick{30%{transform:scale(1.08,.92)}60%{transform:scale(.94,1.1)}}
-.leaf .lotus{transform-origin:60px 96px}.leaf.go .lotus{animation:bloom 1.4s cubic-bezier(.3,1.5,.5,1)}@keyframes bloom{40%{transform:scale(1.12) rotate(-4deg)}}
-.leaf .glints{animation:glint 2.8s ease-in-out infinite}@keyframes glint{50%{opacity:.25}}.leaf.go .glints{animation:spark 1s}
-.riso .pink{transform-origin:60px 60px}.riso.go .pink{animation:spin 1.4s cubic-bezier(.3,1.6,.5,1)}.riso.go .blue{animation:shuttle .7s ease-in-out}
-.top.gilt::before{content:"";position:absolute;inset:0;z-index:4;pointer-events:none;background:linear-gradient(105deg,transparent 38%,rgba(255,226,140,.32) 47%,rgba(255,250,225,.62) 50%,rgba(255,226,140,.32) 53%,transparent 62%) no-repeat;background-size:260% 100%;background-position:130% 0;animation:gilt 2.6s .6s cubic-bezier(.4,0,.2,1) forwards}
-@keyframes gilt{to{background-position:-40% 0}}
 .drawn .pen{position:absolute;left:0;top:0;width:36px;height:36px;z-index:2;pointer-events:none;filter:drop-shadow(0 3px 3px rgba(0,0,0,.45));transition:opacity .5s}
 .camp{position:relative;margin:22px 0;border-radius:calc(var(--r) + 6px);background:var(--accent);color:var(--on-accent);overflow:hidden;box-shadow:0 12px 34px rgba(0,0,0,.2)}
 .camp::before{content:"";position:absolute;inset:0 -60px;background:repeating-linear-gradient(135deg,rgba(255,255,255,.16) 0 14px,transparent 14px 28px);animation:slide 3.5s linear infinite}
@@ -584,8 +463,8 @@ dialog.qrd{background:#fff;color:#000;padding:26px;text-align:center;width:min(9
 @keyframes up{from{opacity:0;transform:translate(-50%,40px)}}
 @media (max-width:560px){.campin{flex-wrap:wrap;padding:18px 22px}.campin>[data-dingbat]{font-size:34px}.campt{flex:1 1 calc(100% - 52px)}.code{width:100%;flex-direction:row;justify-content:center;gap:12px}}.readin button{padding:0 4px;border:0;background:none;color:inherit;font:700 20px/1 system-ui;cursor:pointer}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}.rise{opacity:1;transform:none}}
-@media (min-width:760px){.top .t{padding:84px 16px 72px}.art{width:128px;height:128px;right:24px;top:24px}.t .art{right:auto;top:auto}.drawn{margin:30px -40px}}
-@media print{.reach,.foot,.art,.tools-row,.msgcard,.dmap{display:none}body{background:#fff;color:#000}}`
+@media (min-width:760px){.drawn{margin:30px -40px}}
+@media print{.reach,.foot,.tshare,.tools-row,.msgcard,.dmap{display:none}body{background:#fff;color:#000}}`
 
 const DAY_ORDER = [0, 1, 2, 3, 4, 5, 6]
 const OSM_DAY = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su']
@@ -649,7 +528,8 @@ export function render(site, opt = {}) {
   const lang = PAGE_LANGS[site.lang] ? site.lang : 'en'
   const gold = opt.gold ?? site.tier === 'gold'
   const hotel = gold && (opt.hotel ?? !!site.hotel) // direct room bookings: the hotel month or the first 30 days
-  const lookId = LOOKS[site.look] && (gold || !LOOKS[site.look].gold || opt.preview) ? site.look : 'poster'
+  const wantLook = lookOf(site.look)
+  const lookId = LOOKS[wantLook] && (gold || !LOOKS[wantLook].gold || opt.preview) ? wantLook : 'poster'
   const look = LOOKS[lookId]
   const accent = d.accent || look.accent
   const dl = DING_LOOK[lookId] || 'ink'
@@ -696,7 +576,7 @@ export function render(site, opt = {}) {
     gold && site.status === 'live' && !opt.preview ? `<script type="application/ld+json">${(Am ? JSON.stringify(amuletLd(Am, pageUrl, card, cur)) : ldJson(site, d, name, pageUrl, card, L, sym)).replace(/</g, '\\u003c')}</script>` : '',
     `<meta name="theme-color" content="${/--bg:(#[0-9a-f]+)/i.exec(look.vars)?.[1] || '#ffffff'}">`,
     `<link rel="icon" href="${d.avatar ? esc(img(d.avatar, true)) : '/s/ant.svg'}">`,
-    `<style>${faces(look.fonts)}:root{${look.vars};--accent:${accent};--on-accent:${onColor(accent)};--acc-ink:${accInk(look, accent)};--soft:color-mix(in srgb,var(--ink) 6%,var(--card))}${BASE_CSS}${ams.length ? AM_CSS : ''}${look.css}</style></head><body>`)
+    `<style>${faces(look.fonts)}:root{${look.vars};--accent:${accent};--on-accent:${onColor(accent)};--acc-ink:${accInk(look, accent)};--soft:color-mix(in srgb,var(--ink) 6%,var(--card))}${BASE_CSS}${HERO_CSS}${ams.length ? AM_CSS : ''}${look.css}</style></head><body>`)
 
   if (site.status === 'held' && !opt.preview) {
     out.push(`<main class="wrap"><section class="card checking"><h1 style="font:700 28px var(--display)">${esc(name)}</h1><p>${W('checking')}</p></section></main>`,
@@ -704,24 +584,31 @@ export function render(site, opt = {}) {
     return out.join('')
   }
 
-  // top
+  // top: each look lays it out its own way (looks.mjs); the photo box holds still while the page slides over it
   const cov = L ? L.photos[0] || '' : Wk ? Wk.photos[0] || '' : d.cover
-  out.push(`<header class="top${cov ? ' has-cover' : ''}${gold ? ' gilt' : ''}">`)
-  if (lookId === 'night') out.push('<div class="lights"></div>')
-  if (cov) out.push(`<img src="${esc(img(cov))}" alt="" fetchpriority="high">${look.art}${d.credits[cov] ? `<figcaption>${creditLine(d.credits[cov])}</figcaption>` : ''}`)
-  out.push(`<div class="t">${cov ? '' : look.art}`)
-  if (d.avatar && !L && !Wk && !Am) out.push(`<img class="av${d.avround ? ' round' : ''}" src="${esc(img(d.avatar, true))}" alt="" width="104" height="104">`)
-  if (gold) out.push(`<span class="goldtag">${ding('crown', 'mono')}${W('gold')}</span><br>`)
+  const deco = look.deco ? look.deco({ gold, open: !!(st && (st.open || st.always)) }) : {}
   const h1 = L ? L.t : Wk ? Wk.t : Am ? Am.t : name
-  out.push(`<h1 style="--lw:${longestWord(h1)}">${esc(h1)}</h1>`)
-  if (lookId === 'poster') out.push('<span class="bar"></span>')
+  out.push(`<header class="top${cov ? ' has-cover' : ''}${gold ? ' gilt' : ''}">`, deco.back || '')
+  if (cov) out.push(`<div class="pf"><div class="ph"><img src="${esc(img(cov))}" alt="" fetchpriority="high"${cov === d.cover && d.coverPos ? ` style="object-position:${d.coverPos[0] * 100}% ${d.coverPos[1] * 100}%;--fy:${d.coverPos[1]}"` : ''}>${deco.ph || ''}</div>${deco.frame || ''}${d.credits[cov] ? `<p class="cr">${creditLine(d.credits[cov])}</p>` : ''}</div>`)
+  out.push(deco.front || '', '<div class="t">')
+  const kick = !L && !Wk && !Am ? kicker(d) : ''
+  if (kick) out.push(`<p class="kick">${esc(kick)}</p>`)
+  if (d.avatar && !L && !Wk && !Am) out.push(`<img class="av${d.avround ? ' round' : ''}" src="${esc(img(d.avatar, true))}" alt="" width="104" height="104">`)
+  out.push(`<h1 style="--lw:${longestWord(h1)}"${/[\u0E00-\u0E7F]/.test(h1) ? ' class="th"' : ''}>${wordsOf(h1)}</h1><span class="bar"></span>`)
   if (L) out.push(`<p class="tag"><a href="/${esc(site.name)}#lists">${esc(name)}</a></p>`)
   else if (Wk) out.push(`<p class="tag"><a href="/${esc(site.name)}#works">${esc(name)}</a></p>`)
   else if (Am) out.push(`<p class="tag"><a href="/${esc(site.name)}#amulets">${esc(name)}</a></p>`)
   else if (d.tagline) out.push(`<p class="tag">${esc(d.tagline)}</p>`)
   if (d.dings.length) out.push(`<p class="dings">${d.dings.map((n) => ding(n, dl)).join('')}</p>`)
-  out.push(`<span id="st">${badge(lang, st)}</span></div></header>`)
-  if (lookId === 'y1997' && d.tagline) out.push(`<div class="marq"><span>★ ${esc(d.tagline)} ★ ${esc(name)} ★</span></div>`)
+  out.push(`<span id="st">${badge(lang, st)}</span>`)
+  const cta = !L && !Wk ? leadButton(site, d, gold, line) : null
+  if (cta) out.push(`<a class="btn cta" data-t="cta" href="${esc(cta[0])}"${/^https?:/.test(cta[0]) ? ' rel="nofollow noopener"' : ''}>${icon(cta[2])}${W(cta[1])}</a>`)
+  out.push('</div>')
+  out.push(`<button class="tshare" data-t="share" aria-label="${W('share')}" title="${W('share')}">${icon('share')}</button>`)
+  if (gold) out.push(`<span class="seal" role="img" aria-label="${W('gold')}" title="${W('gold')}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 18.5h18l1.2-11-5.7 4.2L12 4.5l-4.5 7.2L1.8 7.5z" fill="currentColor"/></svg></span>`)
+  out.push('</header>', deco.under || '')
+  // a look picker's tile: the top of the page only, no script (make.js scales it down)
+  if (opt.thumb) return out.join('') + '</body></html>'
 
   out.push('<main class="wrap">')
   if (L) out.push(listingBody(L, { site, d, W, H2, img, sym, gold, opt, name }))
@@ -784,8 +671,8 @@ export function render(site, opt = {}) {
   // the drawing: the auto-doodler draws the place from its own facts, lit by the sun where it stands
   if (d.drawing) {
     const scene = sceneOf(site.kind, d)
-    const facts = { id: site.name, name, nameTh: name, nameEn: name, cat: site.kind, sub: [scene], hours: osmHours(d.hours) || undefined, lat: pl.lat ?? undefined, lng: pl.lng ?? undefined }
-    out.push(`<figure class="drawn rise" id="drawn"><canvas data-set="${esc(scene)}" data-p="${esc(JSON.stringify(facts))}" role="img" aria-label="${W('drawnAlt', { n: name })}"></canvas>`,
+    const facts = { id: site.name, name, nameTh: name, nameEn: name, cat: site.kind, sub: [scene], hours: osmHours(d.hours) || undefined, lat: pl.lat ?? undefined, lng: pl.lng ?? undefined, props: d.dprops.length ? d.dprops : undefined, floors: d.floors || undefined }
+    out.push(`<figure class="drawn rise" id="drawn"><canvas data-set="${esc(scene)}" data-seed="${d.dseed}" data-time="${d.dtime}" data-p="${esc(JSON.stringify(facts))}" role="img" aria-label="${W('drawnAlt', { n: name })}"></canvas>`,
       `<figcaption>${ding('pencil', 'mono')}${W('drawnTap')}</figcaption></figure>`)
   }
 
@@ -809,12 +696,15 @@ export function render(site, opt = {}) {
   }
 
   if (d.items.length) {
-    const oa = lineOa(c.line)
-    out.push(`<section class="card rise">${H2(site.kind === 'food' ? 'menu' : 'prices', W(site.kind === 'food' ? 'menu' : 'prices'))}<ul class="menu${oa ? ' orderable' : ''}">`)
+    const oa = lineOa(c.line), pp = !!d.pay.pp
+    out.push(`<section class="card rise" id="menu">${H2(site.kind === 'food' ? 'menu' : 'prices', W(site.kind === 'food' ? 'menu' : 'prices'))}<ul class="menu${oa || pp ? ' orderable' : ''}">`)
     d.items.forEach((it, i) => out.push(`<li><span class="n">${esc(it.n)}${it.note ? `<small>${esc(it.note)}</small>` : ''}</span><span class="p">${esc(price(it.p, cur))}</span>` +
-      (oa ? `<span class="qty" data-i="${i}" data-n="${esc(it.n)}"><button aria-label="−">−</button><b>0</b><button aria-label="+">+</button></span>` : '') + '</li>'))
+      (oa || pp ? `<span class="qty" data-i="${i}" data-n="${esc(it.n)}" data-p="${amountOf(it.p)}"><button aria-label="−">−</button><b>0</b><button aria-label="+">+</button></span>` : '') + '</li>'))
     out.push('</ul>')
+    if (oa || pp) out.push('<div class="orderrow">')
     if (oa) out.push(`<a class="btn line order" id="lineorder" data-t="order" data-oa="${esc(oa)}" href="${esc(lineHref(c.line))}" rel="nofollow noopener" hidden>${icon('chat')}${W('lineOrder')} <span></span></a>`)
+    if (pp) out.push(`<button class="btn order" id="paytotal" data-t="paytotal" data-sym="${esc(sym)}" data-w="${W('payTotal')}" hidden>${icon('coin')}<span></span></button>`)
+    if (oa || pp) out.push('</div>')
     out.push('</section>')
   }
 
@@ -934,6 +824,17 @@ export function render(site, opt = {}) {
     out.push('</section>')
   }
 
+  // paying by PromptPay: amounts to tap; the Worker draws the QR with the amount in it
+  if (d.pay.pp && !L && !Wk) {
+    const opts = []
+    if (site.kind === 'event' && amountOf(d.pay.price)) opts.push([amountOf(d.pay.price), W('payTicket')])
+    if (d.pay.tips) for (const a of [20, 50, 100, 500]) opts.push([a, ''])
+    out.push(`<section class="card rise pay" id="pay">${H2('pay', W('pay'))}<p>${W('payHint', { n: esc(name) })}</p><div class="amts">`,
+      opts.map(([a, l]) => `<button class="amt" data-a="${a}" data-t="payamt">${esc(money(String(a), sym))}${l ? `<small>${l}</small>` : ''}</button>`).join(''),
+      `<label class="amtin"><span>${esc(sym || '฿')}</span><input type="number" inputmode="decimal" min="1" max="999999" step="any" placeholder="${W('payOther')}" aria-label="${W('payAmt')}"></label>`,
+      `<button class="btn" id="paygo" data-t="pay">${icon('coin')}${W('payShow')}</button></div><div class="ppout" id="ppout" hidden></div></section>`)
+  }
+
   if (d.msg) {
     out.push(`<section class="card msgcard rise" id="message">${H2('msg', W('msg'))}`,
       opt.preview ? `<p style="color:var(--mute)">${W('msgPreview')}</p>` : '',
@@ -958,7 +859,8 @@ export function render(site, opt = {}) {
     book: gold && (d.svc.length || (hotel && d.rooms.length)) ? { ahead: d.book.ahead, svc: Object.fromEntries(d.svc.map((v) => [v.id, { cap: v.cap, mins: v.mins, p: v.p }])), rooms: Object.fromEntries(d.rooms.map((r) => [r.id, { g: r.guests, p: r.p, p2: r.p2, rates: r.rates, min: r.min, units: r.units }])), stay: { in: d.stay.in, out: d.stay.out } } : null,
     w: Object.fromEntries(['happening', 'ended', 'farFrom', 'reportAsk', 'send', 'thanks', 'close', 'copied', 'orderHi', 'msgSent', 'msgFail', 'saveQr', 'story', 'drawnTap',
       'bookPick', 'bookNone', 'bookName', 'bookReach', 'bookEmail', 'bookPeople', 'bookNote', 'bookSend', 'bookAsked', 'bookDone', 'bookFail', 'bookDeposit', 'bookScan', 'bookLeft',
-      'roomIn', 'roomOut', 'roomNights', 'roomNight1', 'roomSend', 'roomTotal', 'roomPickIn', 'roomPickOut', 'roomTaken', 'roomMin', 'roomLeft', 'bookRef', 'payNow', 'payHotel', 'payLink', 'yourBooking', 'readIn', 'msgName', 'msgReach', 'msgBody', 'msgSend'].map((k) => [k, word(lang, k)])),
+      'roomIn', 'roomOut', 'roomNights', 'roomNight1', 'roomSend', 'roomTotal', 'roomPickIn', 'roomPickOut', 'roomTaken', 'roomMin', 'roomLeft', 'bookRef', 'payNow', 'payHotel', 'payLink', 'yourBooking', 'readIn', 'msgName', 'msgReach', 'msgBody', 'msgSend', 'payScan', 'paySlip', 'payTotal'].map((k) => [k, word(lang, k)])),
+    line: line || '',
   }
   out.push(`<template id="qrsvg">${qrSvg(url, { dark: '#000', light: '#fff', label: url })}</template>`)
   out.push(`<script type="application/json" id="pd">${JSON.stringify(pd).replace(/</g, '\\u003c')}</script>`)
@@ -1003,6 +905,45 @@ function workBody(x, { site, d, W, H2, img, gold }) {
 
 /** Letters in the title's longest word, so the title is sized to keep every word whole.
  *  Thai, Lao, Khmer and Burmese run without spaces and break between words on their own. */
+/** A number from a price as typed ("฿60", "60 baht", "1,500"); 0 when there is none. */
+export function amountOf(p) {
+  const n = parseFloat(String(p || '').replace(/,/g, '').match(/\d+(\.\d+)?/)?.[0] || '')
+  return n > 0 && n < 1e6 ? n : 0
+}
+
+/** The button a page leads with, by kind and by what the page holds: [href, word, icon]. */
+function leadButton(site, d, gold, line) {
+  const k = site.kind, c = d.contact, pp = !!d.pay.pp, oa = lineOa(c.line)
+  if ((k === 'food' || k === 'shop') && d.items.length && (pp || oa)) return ['#menu', k === 'food' ? 'ctaOrder' : 'ctaBuy', 'basket']
+  if (k === 'stay' && gold && d.rooms.length) return ['#rooms', 'ctaRoom', 'cal']
+  if (k === 'service' && gold && d.svc.length) return ['#book', 'ctaBook', 'cal']
+  if (k === 'homes' && gold && d.lists.length) return ['#lists', 'ctaHomes', 'tag']
+  if (k === 'event' && pp && amountOf(d.pay.price)) return ['#pay', 'ctaTicket', 'coin']
+  if ((k === 'me' || k === 'group') && pp && d.pay.tips) return ['#pay', k === 'group' ? 'ctaDues' : 'ctaTip', 'heart']
+  if (k === 'work') return [d.msg ? '#message' : line || (c.phone ? telHref(c.phone) : '#message'), 'ctaHire', 'mail']
+  if (k === 'group' && (line || d.msg)) return [line || '#message', 'ctaJoin', 'people']
+  if (k === 'event') return [`/${site.name}/event.ics`, 'addCal', 'cal']
+  if (line) return [line, 'line', 'chat']
+  if (c.phone) return [telHref(c.phone), 'call', 'phone']
+  return null
+}
+
+/** The name as words, each in a span a look can move on its own. */
+function wordsOf(t) {
+  let i = 0
+  return esc(t).split(/(\s+)/).map((p) => (!p || /^\s+$/.test(p) ? p : `<span class="w" style="--i:${i++}">${p}</span>`)).join('')
+}
+
+/** The line over the name: the town, from the last part of the address. */
+function kicker(d) {
+  const a = (d.place.addr || '').trim()
+  if (!a) return ''
+  const segs = a.split(/[,，、]/).map((x) => x.trim()).filter(Boolean)
+  let c = (segs[segs.length - 1] || '').replace(/\s*\d[\d\s-]*$/, '').trim()
+  if (segs.length === 1 && c.length > 22) c = c.split(/\s+/).pop()
+  return c.length >= 2 && c.length <= 28 ? c : ''
+}
+
 export function longestWord(t) {
   const words = String(t || '').split(/\s+/).filter((w) => /[\p{Script=Latin}\p{Script=Cyrillic}\p{Script=Greek}\d]/u.test(w))
   return Math.min(16, Math.max(6, ...words.map((w) => [...w].length)))
@@ -1090,8 +1031,7 @@ function foot(site, d, lang, url, opt, held, gold, dl) {
   }
   const cr = Object.entries(d.credits).filter(([id]) => d.photos.includes(id) || id === d.cover)
   if (cr.length && !held) parts.push(`<details class="credits"><summary>${W('pictures')} (${cr.length})</summary><ul>${cr.map(([, c]) => `<li>${creditLine(c)}</li>`).join('')}</ul></details>`)
-  if (d.counter && site.look === 'y1997') parts.push(`<p><span class="odo">${String(views).padStart(6, '0').split('').map((n) => `<b>${n}</b>`).join('')}</span><br>${W('visits')}</p><p><span class="badge88">BEST VIEWED ON ANY PHONE</span></p>`)
-  else if (d.counter) parts.push(`<p>${new Intl.NumberFormat(lang).format(views)} ${W('visits')}</p>`)
+  if (d.counter) parts.push(`<p>${new Intl.NumberFormat(lang).format(views)} ${W('visits')}</p>`)
   if (!held && opt.langs && opt.langs.length > 1) {
     const home = opt.home || site.lang, cur = opt.hl || home
     parts.push(`<nav class="langs" aria-label="${W('readIn')}">${opt.langs.map((l) => `<a href="${l === home ? '?' : '?hl=' + l}" data-t="lang" hreflang="${l}"${l === cur ? ' aria-current="true"' : ''}>${esc(PAGE_LANGS[l])}</a>`).join('')}</nav>`)

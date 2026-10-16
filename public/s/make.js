@@ -3,13 +3,15 @@
 // own; "Put it online" is the only button that matters. Beside the page:
 // its messages, its traffic, and Gold.
 
-import { render, normalize, LOOKS, LOOK_IDS, GOLD_LOOKS, KINDS, ACCENTS, CURRENCY, SCENES, MAX_PHOTOS, osmHours, currencyFor, qrSvg, lineShare, esc } from './render.mjs'
+import { render, normalize, LOOKS, LOOK_IDS, GOLD_LOOKS, lookOf, KINDS, ACCENTS, CURRENCY, SCENES, DPROPS, MAX_PHOTOS, osmHours, currencyFor, qrSvg, lineShare, esc } from './render.mjs'
 import { MAX, UNIT_LABEL } from './extras.mjs'
 import { DINGBATS } from './db/names.mjs'
 import { PAGE_LANGS } from './words.mjs'
 import { ui, UI_LANGS } from './make-words.mjs'
 import { exifBlock, readExif } from './exif.mjs'
-import { openStudio, openMark } from './studio-ui.mjs'
+import { openStudio } from './studio-ui.mjs'
+import { openAvatar } from './avatar-ui.mjs'
+import { openDoodle } from './doodle-ui.mjs'
 import { amuletsSec, amToggle, amUi, newAmulet } from './make-amulet.mjs'
 import { AM_MAX } from './amulet.mjs'
 import { drawCard, cardKey, CARD } from './card.mjs'
@@ -27,11 +29,11 @@ const TZ = (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZon
 
 const S = {
   lang: store.get('lang', (() => { const l = (navigator.language || 'th').slice(0, 2); return UI_LANGS[l] ? l : 'th' })()),
-  step: 'kind', kind: 'shop', name: '', addr: '', addrTouched: false, look: 'poster', token: '', status: 'draft', views: 0,
+  step: 'kind', kind: 'shop', name: '', addr: '', addrTouched: false, look: 'poster', accent: '', peek: '', token: '', status: 'draft', views: 0,
   pageLang: '', d: null, open: new Set(), local: new Map(), big: new Map(), photoGps: null, picker: null, busy: 0,
   tab: 'edit', tier: 'gold', goldUntil: '', notifyEmail: '', notifyOk: false, unread: 0, // a page starts with 30 days of Gold
   trial: false, asks: 0, domain: '', domainState: '', domains: false, price: 3000, dbFam: '', dbQ: '',
-  plan: 'gold', hotel: true, plans: null, payPlan: '',
+  plan: 'gold', hotel: true, plans: null, payPlan: '', part: '',
 }
 const isGold = () => S.tier === 'gold'
 const ding = (n, look = 'ink', play = 'loop') => `<i data-dingbat="${n}" data-look="${look}" data-play="${play}" aria-hidden="true"></i>`
@@ -57,18 +59,18 @@ const T = (k) => esc(ui(S.lang, k))
 // ---- starting data per kind ---------------------------------------------------------
 
 const DEFAULT_OPEN = {
-  shop: ['words', 'photos', 'contact', 'map', 'hours', 'items'],
-  food: ['words', 'photos', 'items', 'order', 'map', 'hours', 'contact'],
-  service: ['words', 'face', 'photos', 'svc', 'items', 'contact', 'map'],
-  work: ['words', 'face', 'works', 'photos', 'quotes', 'contact', 'links'],
-  amulet: ['words', 'face', 'amulets', 'contact', 'photos', 'map', 'hours'],
-  me: ['words', 'face', 'photos', 'links', 'contact'],
-  stay: ['words', 'photos', 'rooms', 'ota', 'map', 'contact'],
-  homes: ['words', 'lists', 'photos', 'contact', 'map'],
-  event: ['event', 'words', 'cal', 'photos', 'map', 'contact'],
-  group: ['words', 'cal', 'photos', 'links', 'contact'],
+  shop: ['pay', 'words', 'photos', 'contact', 'map', 'hours', 'items'],
+  food: ['pay', 'words', 'photos', 'items', 'order', 'map', 'hours', 'contact'],
+  service: ['pay', 'words', 'face', 'photos', 'svc', 'items', 'contact', 'map'],
+  work: ['pay', 'words', 'face', 'works', 'photos', 'quotes', 'contact', 'links'],
+  amulet: ['pay', 'words', 'face', 'amulets', 'contact', 'photos', 'map', 'hours'],
+  me: ['pay', 'words', 'face', 'photos', 'links', 'contact'],
+  stay: ['pay', 'words', 'photos', 'rooms', 'ota', 'map', 'contact'],
+  homes: ['pay', 'words', 'lists', 'photos', 'contact', 'map'],
+  event: ['pay', 'event', 'words', 'cal', 'photos', 'map', 'contact'],
+  group: ['pay', 'words', 'cal', 'photos', 'links', 'contact'],
 }
-const LOOK_FOR = { shop: 'poster', food: 'night', service: 'clean', work: 'clean', amulet: 'lanna', stay: 'loom', homes: 'clean', me: 'y1997', event: 'stitch', group: 'loom' }
+const LOOK_FOR = { shop: 'poster', food: 'night', service: 'loom', work: 'clean', amulet: 'lanna', stay: 'lanna', homes: 'clean', me: 'stitch', event: 'poster', group: 'stitch' }
 
 function guessCc() {
   const zone = { 'Asia/Bangkok': 'TH', 'Asia/Yangon': 'MM', 'Asia/Rangoon': 'MM', 'Asia/Vientiane': 'LA', 'Asia/Phnom_Penh': 'KH',
@@ -200,11 +202,173 @@ let KPIC = {}
 const kpicReady = fetch('/s/kinds/kinds.json').then((r) => r.json()).then((j) => { KPIC = j }).catch(() => {})
 const KPIC_ID = 'kindpic000000'
 const kpicUrl = (kind, small) => `/s/kinds/${kind}${small ? '-s' : ''}.webp`
+let EX = {}
+const exReady = fetch('/s/ex/ex.json').then((r) => (r.ok ? r.json() : {})).then((j) => { EX = j || {} }).catch(() => {})
+const exOf = (kind, look) => EX[kind]?.[look] || null
+const exUrl = (kind, look, small) => (exOf(kind, look) ? `/s/ex/${kind}-${look}${small ? '-s' : ''}.webp` : kpicUrl(kind, small))
+const exCredit = (kind, look) => { const e = exOf(kind, look), k = KPIC[kind]; return e ? { title: e.title, by: e.by, src: e.src, license: e.license, licenseUrl: e.licenseUrl, from: 'commons' } : k ? { title: k.title, by: 'Wikimedia Commons', src: k.src, license: k.license, from: 'commons' } : null }
 
-function tryData() {
-  const d = normalize(applyPrefill({ ...starter(S.kind), name: S.name.trim() || ui(S.lang, 'yourName') }))
-  if (KPIC[S.kind]) { d.cover = KPIC_ID; d.photos = [KPIC_ID]; d.credits = { [KPIC_ID]: { title: KPIC[S.kind].title, by: 'Wikimedia Commons', src: KPIC[S.kind].src, license: KPIC[S.kind].license, from: 'commons' } } }
+// On the first screen the phone shows each kind's own parts filled in with examples, so a hotel shows
+// rooms and a noodle shop a menu; the box above it says they are examples. The new page starts empty.
+function examples(kind, lang) {
+  const th = lang === 'th'
+  const day = (n, hh) => { const t = new Date(Date.now() + n * 864e5); const p = (x) => String(x).padStart(2, '0'); return `${t.getFullYear()}-${p(t.getMonth() + 1)}-${p(t.getDate())}T${hh}` }
+  const x = {}
+  const parts = DEFAULT_OPEN[kind] || []
+  if (parts.includes('map')) x.place = { lat: 18.78772, lng: 98.99331, addr: th ? 'ถนนท่าแพ เชียงใหม่' : 'Tha Phae Road, Chiang Mai', cc: 'TH', snap: '', zoom: 16 }
+  if (parts.includes('items')) x.items = {
+    shop: th ? [['ถุงผ้าฝ้าย', '250'], ['โปสการ์ด ชุดละ 6 ใบ', '120'], ['ชาอู่หลง 100 กรัม', '180']] : [['Cotton bag', '250'], ['Postcards, set of 6', '120'], ['Oolong tea, 100 g', '180']],
+    food: th ? [['ข้าวซอยไก่', '60'], ['กะเพราหมูสับ ไข่ดาว', '55'], ['ชาเย็น', '30']] : [['Khao soi with chicken', '60'], ['Kaphrao with fried egg', '55'], ['Thai iced tea', '30']],
+    service: th ? [['นวดไทย 1 ชั่วโมง', '300'], ['นวดเท้า', '250']] : [['Thai massage, 1 hour', '300'], ['Foot massage', '250']],
+  }[kind]?.map(([n, p]) => ({ n, p, note: '' }))
+  if (parts.includes('svc')) x.svc = th ? [{ n: 'นวดไทย', mins: 60, p: '300' }, { n: 'นวดน้ำมัน', mins: 90, p: '500' }] : [{ n: 'Thai massage', mins: 60, p: '300' }, { n: 'Oil massage', mins: 90, p: '500' }]
+  if (parts.includes('rooms')) x.rooms = [
+    { n: th ? 'ห้องริมสวน' : 'Garden room', guests: 2, beds: th ? 'เตียงควีน 1' : '1 queen bed', p: '900', p2: '1100', photos: [KPIC_ID] },
+    { n: th ? 'ห้องครอบครัว' : 'Family room', guests: 4, beds: th ? 'เตียงคู่ 2' : '2 double beds', p: '1500', photos: [] },
+  ]
+  if (parts.includes('lists')) x.lists = [
+    { t: th ? 'บ้านไม้สัก 3 ห้องนอน' : 'Teak house, 3 bedrooms', deal: 'sale', p: '4500000', area: '320', beds: 3, baths: 2, photos: [KPIC_ID] },
+    { t: th ? 'สตูดิโอใกล้นิมมาน' : 'Studio near Nimman', deal: 'rent', p: '9000', area: '32', beds: 1, baths: 1, photos: [] },
+  ]
+  if (parts.includes('works')) x.works = [
+    { t: th ? 'งานแต่ง ดอยสุเทพ' : 'A wedding on Doi Suthep', year: '2026', tags: th ? 'งานแต่ง' : 'weddings', photos: [KPIC_ID] },
+    { t: th ? 'รูปเมนูร้านกาแฟ' : 'Menu photos for a café', year: '2025', tags: th ? 'อาหาร' : 'food', photos: [KPIC_ID] },
+  ]
+  if (parts.includes('quotes')) x.quotes = [{ q: th ? 'เร็ว ใจดี และรูปสวยมาก' : 'Quick, kind, and the photos were beautiful.', who: 'Ploy' }]
+  if (parts.includes('links')) x.links = [{ t: 'Facebook', u: 'https://www.facebook.com/' }, { t: 'Instagram', u: 'https://www.instagram.com/' }]
+  x.pay = { pp: '0812345678', tips: ['me', 'work', 'group', 'service'].includes(kind), price: kind === 'event' ? '150' : '' }
+  x.contact = { line: '@yourpage' }
+  if (parts.includes('cal')) x.cal = [
+    { t: th ? 'นัดพบประจำเดือน' : 'Monthly meet-up', start: day(5, '18:00'), end: '20:00', rep: 'monthly' },
+    { t: th ? 'ตลาดนัดวันเสาร์' : 'Saturday market', start: day(2, '16:00'), end: '21:00', rep: 'weekly' },
+  ]
+  return x
+}
+
+function tryData(look = S.look) {
+  const d = normalize(applyPrefill({ ...starter(S.kind), ...examples(S.kind, S.pageLangTry || 'en'), name: S.name.trim() || ui(S.lang, 'yourName'), accent: S.accent || '' }))
+  const cr = exCredit(S.kind, look)
+  if (cr) { d.cover = KPIC_ID; d.photos = [KPIC_ID]; d.credits = { [KPIC_ID]: cr }; d.coverPos = exOf(S.kind, look)?.focus || null }
   return d
+}
+
+// The two pickers (Nan 2026-10-15, "Level 1/10. Bring it up to 11."; notes/pickers-2026-10-15.txt):
+// every kind on screen with what its page gets, every look a small copy of the page with the
+// maker's name in it, a colour now, and the look changed on the phone itself.
+const shownName = () => S.name.trim() || ui(S.lang, 'yourName')
+// (SECTIONS and PART are declared further down, so these are worked out on first use)
+let SEC_ICON = null, PART_AT = null
+const secIcon = (p) => (SEC_ICON ||= Object.fromEntries(SECTIONS.map(([id, ic, , g]) => [id, [ic, g]])))[p]
+// where each part sits on the page, for "tap one to see it"
+function partAt(p) {
+  if (!PART_AT) { PART_AT = { photos: '.gallery, header.top img:not(.av)', ota: '#rooms', face: 'header.top', order: 'nav.reach, ul.menu', event: '.when, #count' }; for (const [sel, part] of PART) if (!PART_AT[part]) PART_AT[part] = sel }
+  return PART_AT[p]
+}
+
+function kindTile(k) {
+  return `<button class="kind${k === S.kind ? ' on' : ''}" data-kind="${k}" aria-pressed="${k === S.kind}">${KPIC[k] ? `<img src="${kpicUrl(k, true)}" alt="" loading="lazy">` : `<span class="kd">${ding(KIND_DING[k] || 'star', 'paper')}</span>`}<b>${T('k_' + k)}</b><small>${T('hk_' + k)}</small></button>`
+}
+
+function getsHtml() {
+  return `<p class="gwhy">${T('why_' + S.kind)}</p><p class="gl">${T('gets')} <span>${T('getsTap')} ${T('exNote')}</span></p><div class="getchips">${(DEFAULT_OPEN[S.kind] || []).map((p) => {
+    const [ic, g] = secIcon(p) || ['star']
+    return `<button class="chip" data-at="${p}">${icon(ic)}${T('s_' + p)}${g ? '<i>★</i>' : ''}</button>`
+  }).join('')}</div>`
+}
+
+function lookTile(id) {
+  const L = LOOKS[id]
+  return `<button class="lp${id === S.look ? ' on' : ''}" data-look="${id}" aria-pressed="${id === S.look}">
+    <span class="mp"><iframe data-th="${id}" tabindex="-1" aria-hidden="true" sandbox="allow-same-origin" scrolling="no" loading="lazy" title=""></iframe></span>
+    <span class="lkt"><b>${T('lk_' + id)}${L.gold ? `<i class="gtag">★ ${T('tagGold')}</i>` : ''}</b><small>${T('m_' + id)}</small></span></button>`
+}
+
+// Each look tile is the page itself in that look, the top of it, drawn by the same render() and
+// scaled down: what the maker picks is what the page will be.
+const THUMB_W = 390, THUMB_H = 660
+function thumbData(look) { return S.step === 'edit' && S.d ? { ...S.d, name: S.d.name || S.name } : tryData(look) }
+function fillThumbs(root = app) {
+  root.querySelectorAll('iframe[data-th]').forEach((f) => {
+    const id = f.dataset.th
+    const d = thumbData(id)
+    const html = render({ name: S.addr || S.name || 'your-page', look: id, lang: (S.step === 'edit' ? S.pageLang : S.pageLangTry) || 'en', kind: S.kind, d, views: 1234, status: 'live', tier: 'gold' },
+      { preview: true, thumb: true, gold: true, hotel: true, origin: location.origin, img: (x, small) => (x === KPIC_ID ? exUrl(S.kind, id, small) : imgUrl(x, small)) })
+    if (f.dataset.html !== html) { f.dataset.html = html; f.srcdoc = html }
+  })
+  sizeThumbs(root)
+}
+function sizeThumbs(root = app) {
+  root.querySelectorAll('.mp').forEach((m) => m.style.setProperty('--k', String(m.clientWidth / THUMB_W)))
+}
+let thumbTimer = 0
+const thumbsSoon = (ms = 600) => { clearTimeout(thumbTimer); thumbTimer = setTimeout(() => fillThumbs(), ms) }
+addEventListener('resize', () => sizeThumbs())
+
+function accDots() {
+  const own = LOOKS[S.look].accent
+  return `<button class="ad own${S.accent ? '' : ' on'}" data-acc="" style="--c:${own}" title="${T('lookOwn')}" aria-label="${T('lookOwn')}"></button>` +
+    ACCENTS.filter((c) => c !== own).map((c) => `<button class="ad${S.accent === c ? ' on' : ''}" data-acc="${c}" style="--c:${c}" aria-label="${c}"></button>`).join('')
+}
+
+function lookNav() {
+  return `<button class="ln" id="lkprev" aria-label="${T('prevLook')}">‹</button><span><b>${T('lk_' + S.look)}</b><small>${T('swipe')}</small></span><button class="ln" id="lknext" aria-label="${T('nextLook')}">›</button>`
+}
+
+// after a kind, look or colour changes: the tiles, the chips and the phone, the name box untouched
+function syncPick() {
+  app.querySelectorAll('.kind').forEach((x) => { const on = x.dataset.kind === S.kind; x.classList.toggle('on', on); x.setAttribute('aria-pressed', on) })
+  const g = $('#gets'); if (g) g.innerHTML = getsHtml()
+  const l = $('#lks'); if (l) l.innerHTML = LOOK_IDS.map(lookTile).join('')
+  const a = $('#accs'); if (a) a.innerHTML = accDots()
+  const n = $('#lknav'); if (n) n.innerHTML = lookNav()
+  wirePick()
+  fillThumbs()
+}
+
+function setLook(id, how) {
+  if (!LOOKS[id] || id === S.look) return
+  S.look = S.lookWanted = id
+  if (S.accent === LOOKS[id].accent) S.accent = ''
+  syncPick()
+  const sh = $('.tphone .shell')
+  if (sh) { sh.classList.remove('flip', 'fl', 'fr'); void sh.offsetWidth; sh.classList.add('flip', how === 'prev' ? 'fr' : 'fl') }
+  tryPreview(0)
+}
+const stepLook = (n) => setLook(LOOK_IDS[(LOOK_IDS.indexOf(S.look) + n + LOOK_IDS.length) % LOOK_IDS.length], n < 0 ? 'prev' : 'next')
+
+// "tap one to see it on the page": the phone scrolls to the part and lights it
+function showPart(p) {
+  const f = $('#tryframe'), doc = f?.contentDocument
+  const el = doc && ((partAt(p) && doc.querySelector(partAt(p))) || doc.querySelector('header.top'))
+  if (!el) return
+  const sh = $('.tphone .shell').getBoundingClientRect()
+  if (sh.top > innerHeight * 0.55 || sh.bottom < 80) window.scrollBy({ top: sh.top - 70, behavior: 'smooth' })
+  f.contentWindow.scrollTo({ top: Math.max(0, el.getBoundingClientRect().top + f.contentWindow.scrollY - 60), behavior: 'smooth' })
+  doc.querySelectorAll('.mk-flash').forEach((x) => x.classList.remove('mk-flash'))
+  void el.offsetWidth
+  el.classList.add('mk-flash')
+}
+
+let peekTimer = 0
+function wirePick() {
+  app.querySelectorAll('.chip').forEach((b) => (b.onclick = () => {
+    app.querySelectorAll('.chip').forEach((x) => x.classList.toggle('on', x === b))
+    showPart(b.dataset.at)
+  }))
+  app.querySelectorAll('.lp').forEach((b) => {
+    b.onclick = () => { clearTimeout(peekTimer); S.peek = ''; setLook(b.dataset.look, 'next') }
+    // pointing at a look shows it on the phone; moving away puts the picked one back
+    b.onmouseenter = () => {
+      if (!matchMedia('(hover:hover)').matches || b.dataset.look === S.look) return
+      clearTimeout(peekTimer); peekTimer = setTimeout(() => { S.peek = b.dataset.look; tryPreview(0) }, 140)
+    }
+  })
+  const lks = $('#lks')
+  if (lks) lks.onmouseleave = () => { clearTimeout(peekTimer); if (S.peek) { S.peek = ''; tryPreview(0) } }
+  app.querySelectorAll('.ad').forEach((b) => (b.onclick = () => { S.accent = b.dataset.acc; syncPick(); tryPreview(0) }))
+  const p = $('#lkprev'), n = $('#lknext')
+  if (p) p.onclick = () => stepLook(-1)
+  if (n) n.onclick = () => stepLook(1)
 }
 
 function drawTry() {
@@ -215,12 +379,16 @@ function drawTry() {
     <div class="tw"><p class="why">${T('why')}</p><p class="why2">${T('why2')}</p>
       <h1 class="q">${T('try')}</h1>
       <input id="nm" class="bigname" maxlength="60" autocomplete="off" placeholder="${T('ph')}" value="${esc(S.name)}"></div>
-    <div class="tphone"><div class="shell"><div class="url">${icon('globe')}<span>sites.motdang.net/<b id="pvaddr">${esc(S.addr || '…')}</b></span></div><iframe id="tryframe" title="${T('preview')}"></iframe></div></div>
+    <div class="tphone"><div class="shell"><div class="url">${icon('globe')}<span>sites.motdang.net/<b id="pvaddr">${esc(S.addr || '…')}</b></span></div><iframe id="tryframe" title="${T('preview')}"></iframe></div>
+      <div class="lknav" id="lknav">${lookNav()}</div></div>
     <div class="tkind"><p class="lbl">${T('for')}</p>
-      <div class="kinds">${KINDS.map((k) => `<button class="kind${k === S.kind ? ' on' : ''}" data-kind="${k}">${KPIC[k] ? `<img src="${kpicUrl(k, true)}" alt="" loading="lazy">` : `<span class="kd">${ding(KIND_DING[k] || 'star', 'paper')}</span>`}<b>${T('k_' + k)}</b></button>`).join('')}</div></div>
+      <div class="kinds">${KINDS.map(kindTile).join('')}</div>
+      <div class="gets" id="gets">${getsHtml()}</div></div>
+    <div class="tlook">
+      <div class="lbrow"><p class="lbl">${T('look')}</p><button class="dice" id="dice">${ding('sparkle', 'ink')}${T('surprise')}</button></div>
+      <div class="lks" id="lks">${LOOK_IDS.map(lookTile).join('')}</div>
+      <div class="accrow"><span>${T('colour')}</span><div class="accs" id="accs">${accDots()}</div></div></div>
     <div class="tpick">
-      <p class="lbl">${T('look')}</p>
-      <div class="lks">${LOOK_IDS.map((id) => { const L = LOOKS[id]; return `<button class="lk${id === S.look ? ' on' : ''}" data-look="${id}" style="${esc(L.vars.replace(/\s+/g, ' ') + ';--accent:' + L.accent)}"><b>Aa</b><span class="acc"></span><small>${esc(L.label)}${L.gold ? ' ★' : ''}</small></button>` }).join('')}</div>
       <label class="field taddr"><span>${T('addr')}</span><div class="addr"><span>sites.motdang.net/</span><input id="ad" maxlength="30" autocomplete="off" autocapitalize="off" spellcheck="false" inputmode="url" value="${esc(S.addr)}"></div><span class="avail" id="av"></span></label>
       <div class="row"><button class="go big" id="next">${T('go')} →</button></div>
       <p class="afraid">${ding('heart', 'paper')}${T('afraid')}</p>
@@ -232,9 +400,10 @@ function drawTry() {
     S.name = nm.value
     if (!S.addrTouched) { ad.value = S.addr = slugify(nm.value, S.kind) }
     $('#pvaddr').textContent = S.addr || '…'
-    // the name changes in the page at once; the whole page is drawn again when typing stops
+    // the name changes in the page and in every look at once; the whole page is drawn again when typing stops
     const h1 = $('#tryframe').contentDocument?.querySelector('header.top h1')
-    if (h1) h1.textContent = S.name.trim() || ui(S.lang, 'yourName')
+    if (h1) h1.textContent = shownName()
+    thumbsSoon(700)
     tryPreview(700)
     check()
   }
@@ -242,17 +411,19 @@ function drawTry() {
   nm.onkeydown = ad.onkeydown = (e) => { if (e.key === 'Enter') $('#next').click() }
   app.querySelectorAll('.kind').forEach((b) => (b.onclick = () => {
     S.kind = b.dataset.kind
-    if (!S.lookWanted) S.look = LOOK_FOR[S.kind] || S.look
+    if (!S.lookWanted) { S.look = LOOK_FOR[S.kind] || S.look; if (S.accent === LOOKS[S.look].accent) S.accent = '' }
     if (!S.addrTouched && S.name) { ad.value = S.addr = slugify(S.name, S.kind); check() }
-    app.querySelectorAll('.kind').forEach((x) => x.classList.toggle('on', x === b))
-    app.querySelectorAll('.lk').forEach((x) => x.classList.toggle('on', x.dataset.look === S.look))
+    syncPick()
     tryPreview(0)
   }))
-  app.querySelectorAll('.lk').forEach((b) => (b.onclick = () => {
-    S.look = S.lookWanted = b.dataset.look
-    app.querySelectorAll('.lk').forEach((x) => x.classList.toggle('on', x === b))
-    tryPreview(0)
-  }))
+  $('#dice').onclick = () => {
+    const others = LOOK_IDS.filter((x) => x !== S.look)
+    const id = others[Math.floor(Math.random() * others.length)]
+    S.accent = Math.random() < 0.5 ? '' : ACCENTS[Math.floor(Math.random() * ACCENTS.length)]
+    if (S.accent === LOOKS[id].accent) S.accent = ''
+    setLook(id, 'next')
+  }
+  wirePick()
   $('#next').onclick = () => {
     if (!S.name.trim()) { nm.focus(); nm.classList.add('nudge'); setTimeout(() => nm.classList.remove('nudge'), 600); return }
     if (availOk) create(S.look, $('#next'))
@@ -260,7 +431,7 @@ function drawTry() {
   app.querySelectorAll('.mine a').forEach((a) => (a.onclick = (e) => { e.preventDefault(); history.replaceState(null, '', a.getAttribute('href')); boot() }))
   S.pageLangTry = pageLang
   if (S.addr) check()
-  kpicReady.then(() => tryPreview(0))
+  Promise.all([kpicReady, exReady]).then(() => { tryPreview(0); fillThumbs() })
 }
 
 let tryTimer = 0
@@ -270,14 +441,24 @@ function tryPreview(ms) {
     const f = $('#tryframe')
     if (!f) return
     const y = f.contentWindow?.scrollY || 0
-    f.srcdoc = render({ name: S.addr || 'your-page', look: S.look, lang: S.pageLangTry || 'en', kind: S.kind, d: tryData(), views: 1234, status: 'live', tier: 'gold' },
-      { preview: true, gold: true, hotel: true, origin: location.origin, img: (id, small) => (id === KPIC_ID ? kpicUrl(S.kind, small) : imgUrl(id, small)) })
+    const lk = S.peek || S.look
+    f.srcdoc = render({ name: S.addr || 'your-page', look: lk, lang: S.pageLangTry || 'en', kind: S.kind, d: tryData(lk), views: 1234, status: 'live', tier: 'gold' },
+      { preview: true, gold: true, hotel: true, origin: location.origin, img: (id, small) => (id === KPIC_ID ? exUrl(S.kind, lk, small) : imgUrl(id, small)) })
     f.onload = () => {
       try {
         f.contentWindow.scrollTo(0, y)
-        // a tap on the page's name goes to the name box; links stay inside
+        // a tap on the page's name goes to the name box; links stay inside; a sideways swipe is another look
         const doc = f.contentDocument
+        const st = doc.createElement('style')
+        st.textContent = '.mk-flash{outline:4px solid #ffb000!important;outline-offset:4px;border-radius:8px;animation:mkf 1.8s ease-out}@keyframes mkf{0%,40%{outline-color:#ffb000}100%{outline-color:#ffb00000}}'
+        doc.head.appendChild(st)
         doc.addEventListener('click', (e) => { const a = e.target.closest('a[href]'); if (a && !a.getAttribute('href').startsWith('#')) e.preventDefault(); if (e.target.closest('header.top')) $('#nm')?.focus() }, true)
+        let x0 = 0, y0 = 0
+        doc.addEventListener('touchstart', (e) => { x0 = e.touches[0].clientX; y0 = e.touches[0].clientY }, { passive: true })
+        doc.addEventListener('touchend', (e) => {
+          const dx = e.changedTouches[0].clientX - x0, dy = e.changedTouches[0].clientY - y0
+          if (Math.abs(dx) > 60 && Math.abs(dy) < Math.abs(dx) * 0.6) stepLook(dx < 0 ? 1 : -1)
+        }, { passive: true })
       } catch {}
     }
   }, ms)
@@ -310,9 +491,10 @@ function check() {
 
 function lookCard(id, on) {
   const L = LOOKS[id]
-  const vars = L.vars.replace(/\s+/g, ' ') + `;--accent:${L.accent}`
   const locked = L.gold && !isGold()
-  return `<button class="look${on ? ' on' : ''}${L.gold ? ' goldlook' : ''}" data-look="${id}" style="${esc(vars)}">${L.art}<b>${esc(S.d?.name || S.name || L.label)}</b><small>${esc(L.label)}</small><span class="acc"></span>${L.gold ? `<span class="glock">${locked ? T('goldLock') : '★'}</span>` : ''}</button>`
+  return `<button class="lp${on ? ' on' : ''}" data-look="${id}" aria-pressed="${on}">
+    <span class="mp"><iframe data-th="${id}" tabindex="-1" aria-hidden="true" sandbox="allow-same-origin" scrolling="no" loading="lazy" title=""></iframe></span>
+    <span class="lkt"><b>${T('lk_' + id)}${L.gold ? `<i class="gtag">★ ${locked ? T('goldLock') : T('tagGold')}</i>` : ''}</b><small>${T('m_' + id)}</small></span></button>`
 }
 
 function goldTease() {
@@ -357,8 +539,10 @@ async function starterPic(kind) {
   S.busy++
   redrawSec('photos')
   try {
-    const bmp = await createImageBitmap(await (await fetch(kpicUrl(kind))).blob())
-    await addBitmap(bmp, KPIC[kind].pd)
+    const e = exOf(kind, S.look)
+    const bmp = await createImageBitmap(await (await fetch(e ? exUrl(kind, S.look) : kpicUrl(kind))).blob())
+    await addBitmap(bmp, e ? e.pd : KPIC[kind].pd)
+    if (e?.focus) S.d.coverPos = e.focus
     changed()
   } catch {}
   S.busy--
@@ -368,7 +552,7 @@ async function starterPic(kind) {
 async function create(look, btn) {
   S.look = look
   btn.classList.add('on')
-  S.d = normalize(applyPrefill({ ...starter(S.kind), name: S.name.trim() }))
+  S.d = normalize(applyPrefill({ ...starter(S.kind), name: S.name.trim(), accent: S.accent || '' }))
   if (S.kind === 'event') S.d.event = starter('event').event
   if (S.kind === 'stay') S.d.rooms = [NEW_ROW.rooms()]
   if (S.kind === 'homes') S.d.lists = [NEW_ROW.lists()]
@@ -380,10 +564,10 @@ async function create(look, btn) {
     S.token = r.token; S.name = r.name; S.status = r.status; S.tier = r.tier || 'gold'; S.goldUntil = r.gold_until || ''; S.trial = !!r.trial; S.hotel = !!r.trial
     history.replaceState(null, '', '/make#t=' + S.token)
     remember()
-    S.open = new Set(DEFAULT_OPEN[S.kind])
+    S.open = new Set(DEFAULT_OPEN[S.kind]); S.part = ''
     S.step = 'edit'
     draw()
-    if (KPIC[S.kind]) starterPic(S.kind)
+    if (KPIC[S.kind] || exOf(S.kind, S.look)) starterPic(S.kind)
   } catch (e) {
     toast(ui(S.lang, e.message === 'quota' ? 'e_quota' : e.message === 'name' ? 'e_name' : 'e_net'))
     if (e.message === 'name') { S.step = 'name'; draw() }
@@ -393,7 +577,7 @@ async function create(look, btn) {
 // ---- the editor ------------------------------------------------------------------------
 
 const SECTIONS = [
-  ['event', 'cal', 's_event'], ['words', 'note', 's_words'], ['face', 'me', 's_face'], ['works', 'star', 's_works'], ['amulets', 'flower', 's_amulets'], ['drawing', 'sparkle', 's_drawing'], ['photos', 'camera', 's_photos'], ['quotes', 'chat', 's_quotes'],
+  ['pay', 'coin', 's_pay'], ['event', 'cal', 's_event'], ['words', 'note', 's_words'], ['face', 'me', 's_face'], ['works', 'star', 's_works'], ['amulets', 'flower', 's_amulets'], ['drawing', 'sparkle', 's_drawing'], ['photos', 'camera', 's_photos'], ['quotes', 'chat', 's_quotes'],
   ['rooms', 'moon', 's_rooms', 'gold'], ['ota', 'globe', 's_ota', 'gold'], ['lists', 'tag', 's_lists', 'gold'], ['svc', 'clock', 's_svc', 'gold'], ['items', 'tag', 's_items'],
   ['cal', 'cal', 's_cal'], ['camps', 'party', 's_camps', 'gold'],
   ['order', 'basket', 's_order'], ['contact', 'phone', 's_contact'], ['map', 'pin', 's_map'], ['spots', 'compass', 's_spots'], ['hours', 'clock', 's_hours'],
@@ -413,25 +597,125 @@ function tabs() {
   return `<nav class="tabs">${t('edit', T('t_edit'))}${t('msgs', T('t_msgs'), S.unread ? `<span class="dot">${S.unread}</span>` : '')}${bk}${t('stats', T('t_stats'))}${t('gold', (isGold() ? '★ ' : '') + T('t_gold'))}</nav>`
 }
 
+// The editor is the page and six parts under it (Nan 2026-10-15: lead with why, try it, be not afraid,
+// what you see is what you get). A part is a card with a picture of what it puts on the page, a line on
+// why, and what it holds now; one opens at a time, beside the page on a wide screen and as a sheet under
+// the page on a phone. The page lights the part that is open.
+const GROUPS = [
+  ['words', ['event', 'words'], 'pencil'],
+  ['pics', ['photos', 'drawing', 'face', 'video'], 'camera'],
+  ['offer', ['pay', 'items', 'works', 'amulets', 'svc', 'rooms', 'lists', 'ota', 'cal', 'camps', 'quotes'], 'cart'],
+  ['reach', ['contact', 'order', 'msg', 'links'], 'telephone'],
+  ['where', ['map', 'hours', 'spots'], 'compass'],
+  ['look', ['look'], 'sparkle'],
+]
+const groupOf = (id) => (GROUPS.find(([g, ids]) => g === id || ids.includes(id)) || GROUPS[0])[0]
+const secRow = (id) => SECTIONS.find((x) => x[0] === id)
+const narrow = () => window.innerWidth < 980
+
+function groupTitle(g) {
+  if (g !== 'offer') return T('g_' + g)
+  const k = 'g_offer_' + S.kind
+  return ui(S.lang, k) === k ? T('g_offer') : T(k)
+}
+
+function thumb(g, ding0) {
+  const L = LOOKS[S.look], d = S.d
+  const vars = esc(L.vars.replace(/\s+/g, ' ') + ';--accent:' + (d.accent || L.accent))
+  const img = (src) => `<span class="th" data-d="${ding0}"><img src="${esc(src)}" alt="" loading="lazy"></span>`
+  if (g === 'words') {
+    const nm = (d.name || S.name).slice(0, 24), L = Math.max(4, ...nm.split(/\s+/).map((w) => [...w].length))
+    return `<span class="th lookth" style="${vars};--L:${L}"><b>${esc(nm)}</b></span>`
+  }
+  if (g === 'look') return `<span class="th lookth" style="${vars}"><b>Aa</b><i class="acc"></i>${d.dings[0] ? `<span class="tdg">${ding(d.dings[0], 'ink')}</span>` : ''}</span>`
+  if (g === 'pics') {
+    const c = d.cover && d.cover !== KPIC_ID ? imgUrl(d.cover, true) : (d.photos[0] ? imgUrl(d.photos[0], true) : '')
+    if (c) return img(c)
+  }
+  if (g === 'offer') {
+    const ph = ['works', 'amulets', 'rooms', 'lists'].flatMap((k) => (d[k] || []).flatMap((x) => x.photos || []))[0]
+    if (ph) return img(imgUrl(ph, true))
+    if (KPIC[S.kind]) return img(kpicUrl(S.kind, true))
+  }
+  if (g === 'where' && d.place.snap) return img(imgUrl(d.place.snap, true))
+  return `<span class="th dgth">${ding(ding0, 'riso')}</span>`
+}
+
+// what the part puts on the page now, in a few words; '' = nothing yet
+function summary(g) {
+  const d = S.d, n = (k) => (d[k] || []).length, out = []
+  const sec = (id) => T(secRow(id)?.[2] || id)
+  if (g === 'words') { if (d.event?.start) out.push(when(d.event.start)); if (d.tagline) out.push(d.tagline); else if (d.about) out.push(d.about.slice(0, 60)) }
+  if (g === 'pics') {
+    const own = d.photos.filter((x) => x !== KPIC_ID && !(d.credits?.[x] && KPIC[S.kind] && d.credits[x].src === KPIC[S.kind].src)).length
+    if (own) out.push(`${own} ${T('sm_photos')}`); else if (d.photos.length) out.push(T('sm_example'))
+    if (d.drawing) out.push(sec('drawing')); if (d.avatar) out.push(sec('face')); if (d.video) out.push(sec('video'))
+  }
+  if (g === 'offer') for (const k of ['items', 'works', 'amulets', 'svc', 'rooms', 'lists', 'cal', 'camps', 'quotes']) if (n(k)) out.push(`${sec(k)} · ${n(k)}`)
+  if (g === 'offer' && (d.ota.agoda || d.ota.booking)) out.push(sec('ota'))
+  if (g === 'reach') {
+    const c = d.contact
+    if (c.phone) out.push(T('phone')); if (c.line) out.push('LINE'); if (c.facebook || c.instagram || c.tiktok) out.push('Facebook · Instagram · TikTok'.split(' · ').filter((x, i) => [c.facebook, c.instagram, c.tiktok][i]).join(' · '))
+    if (d.order.grabfood) out.push('GrabFood'); if (d.order.lineman) out.push('LINE MAN'); if (d.msg) out.push(sec('msg')); if (n('links')) out.push(`${sec('links')} · ${n('links')}`)
+  }
+  if (g === 'where') { if (d.place.lat !== null) out.push(T('pinSet')); else if (d.place.addr) out.push(d.place.addr.slice(0, 40)); if (d.hours.on) out.push(d.hours.always ? T('open24') : sec('hours')); if (n('spots')) out.push(`${sec('spots')} · ${n('spots')}`) }
+  if (g === 'look') { out.push(LOOKS[S.look].label); if (d.dings.length) out.push(`${T('s_dings')} · ${d.dings.length}`) }
+  return out.join(' · ')
+}
+
+function partCard([g, ids, ding0]) {
+  const order = DEFAULT_OPEN[S.kind] || []
+  const rank = (id) => (order.includes(id) ? order.indexOf(id) : 99 + ids.indexOf(id))
+  const subs = ids.filter((id) => SEC[id] && secRow(id))
+  const shown = subs.filter((id) => S.open.has(id)).sort((a, b) => rank(a) - rank(b))
+  const more = subs.filter((id) => !S.open.has(id))
+  if (!shown.length && !more.length) return ''
+  const open = S.part === g, sm = summary(g)
+  const sub = (id) => {
+    const [, , t, gold] = secRow(id)
+    const head = gold || (shown.length > 1 && ui(S.lang, t) !== groupTitle(g))
+    return `<div class="sub${gold ? ' gsec' : ''}" data-sec="${id}">${head ? `<h4>${T(t)}${gold ? `<span class="gpill">★ ${T('t_gold')}</span>` : ''}</h4>` : ''}<div class="in">${gold && !isGold() ? goldLocked() : SEC[id]()}</div></div>`
+  }
+  return `<section class="part${open ? ' open' : ''}${sm ? '' : ' none'}" data-grp="${g}">
+    <button class="phead" data-pg="${g}" aria-expanded="${open}">${thumb(g, ding0)}<span class="pt"><b>${esc(groupTitle(g))}</b><small>${T('gw_' + g)}</small>
+      <em>${sm ? `${icon('check')}${esc(sm)}` : T('sm_none')}</em></span><span class="chev" aria-hidden="true"></span></button>
+    ${open ? `<div class="pbody"><div class="ptop"><b>${esc(groupTitle(g))}</b><button class="go small" data-pg="">${T('g_done')}</button></div>
+      ${shown.map(sub).join('')}
+      ${more.length ? `<div class="adds"><p>${T('g_more')}</p>${more.map((id) => { const [, , t, gold] = secRow(id); return `<button data-add="${id}"${gold ? ' class="g"' : ''}><b>+ ${T(t)}${gold ? ' ★' : ''}</b><small>${T('a_' + id)}</small></button>` }).join('')}</div>` : ''}
+    </div>` : ''}</section>`
+}
+
+function drawParts() {
+  const box = $('#parts')
+  if (!box) return
+  S.picker = null
+  box.innerHTML = GROUPS.map(partCard).join('')
+  dingbats(['curious'])
+  document.body.classList.toggle('sheeton', !!S.part && narrow())
+  const open = box.querySelector('.part.open')
+  if (open) {
+    if (open.querySelector('#mapel')) mountMap()
+    if (open.querySelector('#drawpv')) mountDrawing()
+    if (open.querySelector('iframe[data-th]')) fillThumbs(open)
+  }
+  lightPart()
+}
+
 function drawEdit() {
-  if (S.tab !== 'edit') return drawTab()
+  if (S.tab !== 'edit') { document.body.classList.remove('sheeton'); return drawTab() }
   for (const [id] of SECTIONS) if (hasData(id)) S.open.add(id)
   S.open.add('look'); S.open.add('drawing'); S.open.add('msg')
-  const shown = SECTIONS.filter(([id]) => S.open.has(id))
-  const more = SECTIONS.filter(([id]) => !S.open.has(id))
-  app.innerHTML = tabs() + `<div class="ed"><div class="form" id="form"><p class="taphint">${ding('pencil', 'paper')}${T('tap')}</p>
-    ${shown.map(([id, ic, t, g], n) => `<details class="sec${g ? ' gsec' : ''}" data-sec="${id}"${n < 3 || id === 'map' ? ' open' : ''}><summary>${icon(ic)}${T(t)}${g ? `<span class="gpill">★ ${T('t_gold')}</span>` : ''}</summary><div class="in">${g && !isGold() ? goldLocked() : SEC[id]()}</div></details>`).join('')}
-    ${more.length ? `<div class="adds">${more.map(([id, ic, t, g]) => `<button data-add="${id}"${g ? ' class="g"' : ''}>${icon('plus')}${T(t)}${g ? ' ★' : ''}</button>`).join('')}</div>` : ''}
-    <div class="danger"><button id="del">${T('del')}</button></div></div>
-    <div class="pv" id="pv"><div class="url">${icon('globe')}sites.motdang.net/${esc(S.name)}</div><iframe id="frame" title="${T('preview')}"></iframe></div></div>
+  app.innerHTML = tabs() + `<div class="ed">
+    <div class="pv" id="pv"><div class="url">${icon('globe')}<span>sites.motdang.net/${esc(S.name)}</span></div><iframe id="frame" title="${T('preview')}"></iframe>
+      <p class="taphint">${ding('manicule', 'paper')}${T('tap')}</p></div>
+    <div class="form" id="form"><div id="parts"></div>
+      <div class="danger"><button id="del">${T('del')}</button></div></div></div>
     <div class="dock"><span class="state" id="state">${stateText()}</span>
-      <button class="go ghost pvbtn" id="pvbtn">${icon('globe')}${T('preview')}</button>
       <button class="go red" id="pub">${S.status === 'live' ? T('share') : T('publish')}</button></div>`
   bindTabs()
   bindEdit()
-  preview()
-  if (S.open.has('map') && $('[data-sec=map]')?.open) mountMap()
-  if ($('[data-sec=drawing]')?.open) mountDrawing()
+  drawParts()
+  preview(true)
 }
 
 const goldLocked = () => `<p class="glocked">${T('goldLock')}. <button class="linkbtn" data-tab="gold">${T('goldOpen')} →</button></p>`
@@ -445,21 +729,35 @@ const SEC = {
       `<label class="field"><span>${T('about')}</span><textarea data-k="about" maxlength="2400">${val(S.d.about)}</textarea></label>`
   },
   drawing() {
-    const list = SCENES[S.kind] || SCENES.shop
-    const cur = S.d.scene || list[0][0]
-    const th = S.lang === 'th'
+    const cur = S.d.scene || (SCENES[S.kind] || SCENES.shop)[0][0]
+    const tab = S.dtab || (DO_SCENES.has(cur) ? 'do' : 'place')
     return `<label class="check"><input type="checkbox" class="sw" data-k="drawing" ${S.d.drawing ? 'checked' : ''}>${T('drawingOn')}</label>
-      <div ${S.d.drawing ? '' : 'hidden'}><div class="drawpv"><canvas id="drawpv"></canvas></div><p class="hint">${T('drawingHint')}</p>
-      <div class="scenes">${list.map(([id, t, e]) => `<button data-scene="${id}"${id === cur ? ' class="on"' : ''}>${esc(th ? t : e)}</button>`).join('')}</div></div>`
+      <div ${S.d.drawing ? '' : 'hidden'}>
+        <div class="drawpv"><canvas id="drawpv"></canvas>
+          <div class="dbar"><button type="button" class="dbtn" id="dshuffle">${icon('sparkle')}${T('d_shuffle')}</button><button type="button" class="dbtn" id="dcover">${icon('camera')}${T('d_cover')}</button><button type="button" class="dbtn" id="dsave">${icon('download')}${T('d_save')}</button></div></div>
+        <div class="seg dtime" role="group">${['', 'dawn', 'day', 'dusk', 'night'].map((k) => `<button type="button" data-dtime="${k}"${k === S.d.dtime ? ' class="on"' : ''}>${icon(k === 'night' || k === 'dusk' ? 'moon' : k ? 'sun' : 'clock')}${T('t_' + (k || 'now'))}</button>`).join('')}</div>
+        <div class="dtabs" role="tablist">${['place', 'do'].map((k) => `<button type="button" role="tab" data-dtab="${k}" aria-selected="${k === tab}"${k === tab ? ' class="on"' : ''}>${T('d_' + k)}</button>`).join('')}</div>
+        <div class="scenegrid">${sceneList(tab).map((id) => `<button type="button" class="sc${id === cur ? ' on' : ''}" data-scene="${id}"><canvas data-sc="${id}"></canvas><span>${esc(sceneLabel(id))}</span></button>`).join('')}</div>
+        <p class="lbl2">${T('d_things')}</p>
+        <div class="dprops">${DPROPS.map((p) => `<button type="button" data-dprop="${p}"${S.d.dprops.includes(p) ? ' class="on"' : ''}>${T('p_' + p)}</button>`).join('')}</div>
+        <div class="floors"><span>${T('d_floors')}</span><button type="button" data-floors="-1" aria-label="−">−</button><b>${S.d.floors || '–'}</b><button type="button" data-floors="1" aria-label="+">+</button></div>
+      </div>`
+  },
+  pay() {
+    const p = S.d.pay || {}
+    return `<p class="hint">${T('pay_why')}</p>` + field('pay.pp', T('pay_pp'), p.pp || '', 'tel', 'inputmode="numeric" autocomplete="off" placeholder="08x xxx xxxx"') +
+      (S.kind === 'event' ? field('pay.price', T('pay_price'), p.price || '', 'text', 'inputmode="decimal" placeholder="150"') : '') +
+      `<label class="check"><input type="checkbox" class="sw" data-k="pay.tips" ${p.tips ? 'checked' : ''}>${T('pay_tips')}</label>`
   },
   photos() {
     const max = isGold() ? MAX_PHOTOS.gold : MAX_PHOTOS.free
     return `<div class="photos">${S.d.photos.map((id) => `<div class="ph${id === S.d.cover ? ' cover' : ''}" data-ph="${id}"><img src="${esc(imgUrl(id, true))}" alt="">${id === S.d.cover ? `<span class="flag">${T('cover')}</span>` : ''}${S.d.credits?.[id] ? '<span class="pdf">PD</span>' : ''}
-      <div class="tools"><button data-mo="${id}">${T('st_make')}</button>${id !== S.d.cover ? `<button data-cover="${id}">${T('makeCover')}</button>` : ''}<button data-rm="${id}">${T('remove')}</button></div></div>`).join('')}
+      <div class="tools"><button data-mo="${id}">${T('st_make')}</button><button data-dd="${id}">${T('dd_fromBtn')}</button>${id !== S.d.cover ? `<button data-cover="${id}">${T('makeCover')}</button>` : ''}<button data-rm="${id}">${T('remove')}</button></div></div>`).join('')}
       ${Array.from({ length: S.busy }, () => '<div class="ph"><div class="busy">…</div></div>').join('')}</div>
       ${S.d.photos.length < max ? `<div class="row2"><label class="pick">${icon('camera')}${T('addPhotos')}<input type="file" accept="image/*" multiple id="files"></label>
       <button class="pick pdpick" id="pdopen">${ding('sparkle', 'riso')}${T('pdBtn')}</button>
-      <button class="pick pdpick" id="mkcover">${ding('pencil', 'riso')}${T('mk_coverBtn')}</button></div>
+      <button class="pick pdpick" id="mkcover">${ding('pencil', 'riso')}${T('mk_coverBtn')}</button>
+      <button class="pick pdpick" id="ddopen">${ding('lantern', 'riso')}${T('dd_btn')}</button></div>
       <p class="hint">${T('st_tip')}</p>` : ''}`
   },
   items() {
@@ -526,7 +824,7 @@ const SEC = {
   },
   look() {
     const acc = S.d.accent || LOOKS[S.look].accent
-    return `<div class="lookrow">${LOOK_IDS.map((id) => lookCard(id, id === S.look)).join('')}</div>
+    return `<div class="lks">${LOOK_IDS.map((id) => lookCard(id, id === S.look)).join('')}</div>
       <div><b>${T('colour')}</b><div class="swatches">${[LOOKS[S.look].accent, ...ACCENTS.filter((a) => a !== LOOKS[S.look].accent)].map((a) => `<button data-acc="${a}" style="background:${a}"${a === acc ? ' class="on"' : ''} aria-label="${a}"></button>`).join('')}</div></div>
       <div><b>${T('s_dings')}</b><p class="hint">${T('dingsHint')}</p>${dingBrowser()}</div>
       <label class="check"><input type="checkbox" class="sw" data-k="counter" ${S.d.counter ? 'checked' : ''}>${T('counter')}</label>
@@ -668,7 +966,8 @@ Object.assign(SEC, {
     const a = S.d.avatar
     return `<p class="hint">${T('face_hint')}</p><div class="avrow">${a ? `<img class="avpv${S.d.avround ? ' round' : ''}" src="${esc(imgUrl(a, true))}" alt="">` : `<span class="avpv none">${ding('smile', 'paper')}</span>`}
       <div class="avbtns"><label class="pick">${icon('camera')}${T('f_photo')}<input type="file" accept="image/*" id="avfile"></label>
-      <button class="pick pdpick" id="avmake">${ding('sparkle', 'riso')}${T('f_make')}</button></div></div>
+      <button class="pick pdpick" id="avmake">${ding('sparkle', 'riso')}${T('f_make')}</button>
+      <button class="pick pdpick" id="avdraw">${ding('smile', 'riso')}${T('av_open')}</button></div></div>
       ${S.d.photos.length ? `<div class="field"><span>${T('f_mine')}</span><div class="pickph">${S.d.photos.map((id) => `<button type="button" data-avpick="${id}"><img src="${esc(imgUrl(id, true))}" alt=""></button>`).join('')}</div></div>` : ''}
       ${a ? `<label class="check"><input type="checkbox" class="sw" id="avround" ${S.d.avround ? 'checked' : ''}>${T('f_round')}</label><button class="back" id="avrm">× ${T('remove')}</button>` : ''}`
   },
@@ -728,6 +1027,18 @@ async function makeOver(id) {
   } })
 }
 
+/** Doodle anything: words, or one of the page's photos, in; two doodles out; the one picked goes on the page. */
+function doodleSheet(from = '') {
+  openDoodle({ name: S.name, kind: S.kind, T, call, from, imgUrl, photos: S.d.photos.filter((x) => x !== KPIC_ID),
+    onUse: async (id, { as }) => {
+      const have = S.d.photos.includes(id)
+      if (!have && S.d.photos.length >= (isGold() ? MAX_PHOTOS.gold : MAX_PHOTOS.free)) { toast(ui(S.lang, 'e_full')); throw new Error('full') }
+      if (!have) S.d.photos[as === 'cover' ? 'unshift' : 'push'](id)
+      if (as === 'cover') S.d.cover = id
+      redrawSec('photos'); changed()
+    } })
+}
+
 async function avatarStudio(bmp) {
   openStudio({ bitmap: bmp, mode: 'avatar', round: S.d.avround, accent: accentNow(), T, onUse: async (canvas) => {
     S.d.avatar = await sendCanvas(canvas, 640).catch(sendFail)
@@ -739,15 +1050,27 @@ async function avatarFrom(id) {
 }
 
 /** The mark maker: an avatar, or a cover for a page with no photo. */
-function markSheet(mode) {
-  openMark({ mode, name: S.d.name || S.name, tagline: S.d.tagline, accent: accentNow(), T, need: (f) => dingbats(f.filter(Boolean)), onUse: async (canvas, o) => {
+// a drawn character for the avatar, picked from the kind's people and changed part by part (avatar-ui.mjs)
+function avatarDraw() {
+  openAvatar({ name: S.d.name || S.name, accent: accentNow(), kind: S.kind, T, onUse: async (canvas, o) => {
+    S.d.avatar = await sendCanvas(canvas, 640).catch(sendFail)
+    S.d.avround = o.frame === 'circle'
+    S.open.add('face'); redrawSec('face'); changed()
+  } })
+}
+
+// the logo maker: designs from the page's name, kind and look, then words, icon, letters, colour, layout and
+// mock-ups (logo-ui.mjs, loaded when first opened); the avatar gets the square, a cover gets the wide one
+async function markSheet(mode) {
+  const { openLogo } = await import('./logo-ui.mjs')
+  openLogo({ name: S.d.name || S.name, tagline: S.d.tagline, kind: S.kind, accent: accentNow(), look: S.look, T, need: (f) => dingbats(f.filter(Boolean)), onUse: async (canvas, { cover, design }) => {
     if (mode === 'avatar') {
       S.d.avatar = await sendCanvas(canvas, 640).catch(sendFail)
-      S.d.avround = o.shape === 'circle'
+      S.d.avround = ['badge', 'poster'].includes(design.layout)
       S.open.add('face'); redrawSec('face')
     } else {
       if (S.d.photos.length >= (isGold() ? MAX_PHOTOS.gold : MAX_PHOTOS.free)) { toast(ui(S.lang, 'e_full')); throw new Error('full') }
-      const nid = await sendCanvas(canvas, 1600).catch(sendFail)
+      const nid = await sendCanvas(cover, 1600).catch(sendFail)
       S.d.photos.unshift(nid); S.d.cover = nid
       redrawSec('photos')
     }
@@ -822,12 +1145,12 @@ function bindEdit() {
     const b = e.target.closest('button')
     if (!b) return
     if (b.dataset.tab) { e.preventDefault(); S.tab = b.dataset.tab; draw(); return }
+    if (b.dataset.pg !== undefined) { e.preventDefault(); if (b.dataset.pg && S.part !== b.dataset.pg) openPart(b.dataset.pg); else closePart(); return }
     if (b.dataset.add) {
-      e.preventDefault(); S.open.add(b.dataset.add)
+      e.preventDefault()
       if (b.dataset.add === 'event' && !S.d.event) S.d.event = starter('event').event
       if (b.dataset.add === 'hours') S.d.hours.on = true
-      drawEdit(); const sec = $(`[data-sec="${b.dataset.add}"]`); sec.open = true; sec.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      if (b.dataset.add === 'map') mountMap()
+      openPart(b.dataset.add)
       changed(); return
     }
     if (b.dataset.cover) { S.d.cover = b.dataset.cover; redrawSec('photos'); changed() }
@@ -867,6 +1190,13 @@ function bindEdit() {
     if (b.dataset.lpingo) listingPin(+b.dataset.lpingo)
     if (b.dataset.lpinx) { const x = S.d.lists[+b.dataset.lpinx]; if (x) { x.lat = x.lng = null; redrawSec('lists'); changed() } }
     if (b.dataset.scene) { S.d.scene = b.dataset.scene; app.querySelectorAll('[data-scene]').forEach((x) => x.classList.toggle('on', x === b)); drawPreviewSoon(); changed() }
+    if (b.dataset.dtime !== undefined) { S.d.dtime = b.dataset.dtime; redrawSec('drawing'); drawPreviewSoon(); changed() }
+    if (b.dataset.dtab) { S.dtab = b.dataset.dtab; redrawSec('drawing') }
+    if (b.dataset.dprop) { const p = b.dataset.dprop; S.d.dprops = S.d.dprops.includes(p) ? S.d.dprops.filter((x) => x !== p) : [...S.d.dprops, p].slice(-8); b.classList.toggle('on', S.d.dprops.includes(p)); app.querySelectorAll('canvas[data-sc]').forEach((x) => delete x.dataset.done); paintShelf(); drawPreviewSoon(); changed() }
+    if (b.dataset.floors) { S.d.floors = Math.max(0, Math.min(60, (S.d.floors || 0) + (+b.dataset.floors) * ((S.d.floors || 0) >= 10 ? 5 : 1))); const v = b.parentNode.querySelector('b'); if (v) v.textContent = S.d.floors || '–'; drawPreviewSoon(); changed() }
+    if (b.id === 'dshuffle') { S.d.dseed = 1 + Math.floor(Math.random() * 999999); app.querySelectorAll('canvas[data-sc]').forEach((x) => delete x.dataset.done); paintShelf(); drawPreviewSoon(); changed() }
+    if (b.id === 'dsave' && window.MDDOODLER) drawingPicture(1600, 900).toBlob((bl) => { if (!bl) return; const a = document.createElement('a'); a.href = URL.createObjectURL(bl); a.download = (S.name || 'drawing') + '.png'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 4000) }, 'image/png')
+    if (b.id === 'dcover' && window.MDDOODLER) { b.disabled = true; createImageBitmap(drawingPicture(1600, 1200)).then((bmp) => addBitmap(bmp)).then((r) => { S.d.cover = r.id; changed(); redrawSec('photos'); preview(true) }).catch(() => toast(ui(S.lang, 'e_net'))).finally(() => { b.disabled = false }) }
     if (b.id === 'sameall') { const r = S.d.hours.week.find(Boolean) || [['09:00', '18:00']]; S.d.hours.week = S.d.hours.week.map(() => r.map((x) => [...x])); redrawSec('hours'); changed() }
     if (b.id === 'here') here()
     if (b.id === 'photopin' && S.photoGps) setPin(S.photoGps.lat, S.photoGps.lng, 18)
@@ -874,8 +1204,11 @@ function bindEdit() {
     if (b.id === 'clearpin') { S.d.place.lat = S.d.place.lng = null; S.d.place.snap = ''; redrawSec('map'); changed() }
     if (b.id === 'pdopen') pdSheet()
     if (b.dataset.mo) makeOver(b.dataset.mo)
+    if (b.id === 'ddopen') doodleSheet()
+    if (b.dataset.dd) doodleSheet(b.dataset.dd)
     if (b.id === 'mkcover') markSheet('cover')
     if (b.id === 'avmake') markSheet('avatar')
+    if (b.id === 'avdraw') avatarDraw()
     if (b.dataset.avpick) avatarFrom(b.dataset.avpick)
     if (b.id === 'avrm') { S.d.avatar = ''; redrawSec('face'); changed() }
     if (b.id === 'nmailgo') notifyOn()
@@ -890,10 +1223,10 @@ function bindEdit() {
   }, true)
   form.addEventListener('change', (e) => { if (e.target.dataset.k === 'video') { S.d.video = e.target.value; changed() } })
   form.addEventListener('click', (e) => { const c = e.target.closest('.cp'); if (c) copy(c.dataset.copy) })
+  // a picture that will not load (a photo still waiting for its check) gives way to the part's drawing
+  form.addEventListener('error', (e) => { const th = e.target.tagName === 'IMG' && e.target.closest('.th[data-d]'); if (th) { th.classList.add('dgth'); th.innerHTML = ding(th.dataset.d, 'riso') } }, true)
   $('#del').onclick = del
   $('#pub').onclick = publish
-  $('#pvbtn').onclick = () => { $('#pv').classList.add('show'); document.body.classList.add('pvopen'); preview(true) }
-  $('#pv').addEventListener('click', (e) => { if (e.target.id === 'pv' || e.target.closest('.url')) { $('#pv').classList.remove('show'); document.body.classList.remove('pvopen') } })
 }
 
 function redrawSec(id) {
@@ -905,6 +1238,7 @@ function redrawSec(id) {
   if (id === 'drawing') { drawCv = null; mountDrawing() }
   // the amulets pick from the page's photos: show new ones there too, unless the maker is typing in it
   if (id === 'photos' && S.d.amulets?.length && !$('[data-sec="amulets"]')?.contains(document.activeElement)) redrawSec('amulets')
+  if (sec.querySelector('iframe[data-th]')) fillThumbs(sec)
 }
 
 // ---- the drawing preview in the editor ----------------------------------------------------
@@ -915,8 +1249,9 @@ function mountDrawing() {
   if (!cv || !S.d.drawing) return
   drawCv = cv
   const add = (src) => new Promise((ok, no) => { const s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = no; document.head.appendChild(s) })
-  drawLoad = drawLoad || add('/front/skyline.js').then(() => add('/front/doodler.js')).then(() => addEventListener('mddoodler', () => paintDrawing(performance.now())))
+  drawLoad = drawLoad || add('/front/skyline.js').then(() => add('/front/doodler.js')).then(() => addEventListener('mddoodler', () => { paintDrawing(performance.now()); paintShelf() }))
   drawLoad.then(() => {
+    paintShelf()
     cancelAnimationFrame(drawRaf)
     const loop = (t) => { if (!drawCv || !drawCv.isConnected) return; paintDrawing(t); drawRaf = requestAnimationFrame(loop) }
     drawRaf = requestAnimationFrame(loop)
@@ -931,10 +1266,51 @@ function paintDrawing(t) {
   if (cv.width !== Math.round(W * dpr)) { cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr) }
   const c = cv.getContext('2d'); c.setTransform(dpr, 0, 0, dpr, 0, 0); c.clearRect(0, 0, W, H)
   const set = S.d.scene || (SCENES[S.kind] || SCENES.shop)[0][0]
-  const p = S.d.place
-  try { D.portrait(c, W, H, t, { set, place: { id: S.name, name: S.d.name || S.name, nameTh: S.d.name, nameEn: S.d.name, cat: S.kind, sub: [set], hours: osmHours(S.d.hours) || undefined, lat: p.lat ?? undefined, lng: p.lng ?? undefined } }) } catch {}
+  try { D.portrait(c, W, H, t, { set, place: drawFacts(set), alt: ALT_OF[S.d.dtime], seed: S.d.dseed || undefined }) } catch {}
 }
 function drawPreviewSoon() { lastDraw = 0 }
+
+// ---- the drawing: two shelves, your place and what you do (Nan 2026-10-16: "place doodle builder,
+// and service doodle builder should be much more developed") ----------------------------------
+const DO_SCENES = new Set(['massage', 'salon', 'tattoo', 'sakyant', 'muaythai', 'cooking', 'yoga', 'dance', 'band', 'learn', 'training', 'fixit', 'tours', 'run', 'latin', 'film',
+  'calm', 'ball', 'social', 'feast', 'songkran', 'yipeng', 'flowers', 'walking-street', 'market', 'akha', 'community', 'tuktuk', 'robots', 'gym', 'beautyclinic', 'dentist', 'optician', 'clinic'])
+const SCENE_WORDS = {}
+for (const list of Object.values(SCENES)) for (const [id, th, en] of list) if (!SCENE_WORDS[id]) SCENE_WORDS[id] = [th, en]
+const sceneLabel = (id) => (SCENE_WORDS[id] ? SCENE_WORDS[id][S.lang === 'th' ? 0 : 1] : id)
+function sceneList(tab) {
+  const own = (SCENES[S.kind] || SCENES.shop).map((x) => x[0])
+  const all = [...new Set([...own, ...Object.keys(SCENE_WORDS)])]
+  return all.filter((id) => (tab === 'do' ? DO_SCENES.has(id) : !DO_SCENES.has(id)))
+}
+const ALT_OF = { dawn: 2, day: 38, dusk: -6, night: -22 }
+function drawFacts(set) {
+  const p = S.d.place
+  return { id: S.name, name: S.d.name || S.name, nameTh: S.d.name, nameEn: S.d.name, cat: S.kind, sub: [set], hours: osmHours(S.d.hours) || undefined,
+    lat: p.lat ?? undefined, lng: p.lng ?? undefined, props: S.d.dprops.length ? S.d.dprops : undefined, floors: S.d.floors || undefined }
+}
+// each scene on the shelf drawn small, once its drawing file has come in
+function paintShelf() {
+  const D = window.MDDOODLER
+  if (!D) return
+  const have = new Set(D.sets())
+  app.querySelectorAll('canvas[data-sc]').forEach((cv) => {
+    const id = cv.dataset.sc
+    if (cv.dataset.done === '1') return
+    const dpr = Math.min(2, devicePixelRatio || 1), W = cv.clientWidth, H = cv.clientHeight
+    if (!W || !H) return
+    cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr)
+    const c = cv.getContext('2d'); c.setTransform(dpr, 0, 0, dpr, 0, 0)
+    try { D.portrait(c, W, H, 4000, { set: id, place: drawFacts(id), alt: ALT_OF[S.d.dtime] ?? 38, seed: S.d.dseed || undefined }) } catch {}
+    if (have.has(id)) cv.dataset.done = '1'
+  })
+}
+function drawingPicture(w, h) {
+  const D = window.MDDOODLER, cv = document.createElement('canvas')
+  cv.width = w; cv.height = h
+  const set = S.d.scene || (SCENES[S.kind] || SCENES.shop)[0][0]
+  D.portrait(cv.getContext('2d'), w, h, performance.now(), { set, place: drawFacts(set), alt: ALT_OF[S.d.dtime], seed: S.d.dseed || undefined })
+  return cv
+}
 
 // ---- the page is the editor (Nan 2026-10-15: what you see is what you get) --------------------
 // A tap on a part of the page opens the part of the form that draws it; the name and the line under
@@ -947,9 +1323,10 @@ const PART = [
   ['#where', 'map'], ['ol.spots', 'spots'], ['.lineqr', 'contact'], ['.card.links', 'links'], ['.contact', 'contact'], ['#message', 'msg'], ['#amulets', 'amulets'],
   ['.card', 'words'], ['footer', 'look'],
 ]
-const PART_CSS = `[data-part]{cursor:pointer}[data-part]:hover{outline:3px dashed #d7261e;outline-offset:3px}
+const PART_CSS = `[data-part]{cursor:pointer;transition:opacity .3s}[data-part]:hover{outline:3px dashed #d7261e;outline-offset:3px}
+.mk-on{outline:4px solid #ffb000!important;outline-offset:4px;border-radius:8px}body.mk-lit main.wrap>[data-part]:not(.mk-on){opacity:.45}
 [contenteditable]{cursor:text;outline:0}[contenteditable]:hover,[contenteditable]:focus{outline:3px solid #ffb000;outline-offset:4px;border-radius:6px}
-.mk-ghost{opacity:.55;font-style:italic}.mk-pic{position:absolute;left:12px;top:12px;z-index:5;padding:6px 12px;border-radius:99px;background:#1c1530e0;color:#fff;font:600 13px/1.2 system-ui,sans-serif;cursor:pointer}`
+.mk-ghost{opacity:.55;font-style:italic}.mk-pic{position:absolute;left:56px;top:14px;z-index:5;padding:6px 12px;border-radius:99px;background:#1c1530e0;color:#fff;font:600 13px/1.2 system-ui,sans-serif;cursor:pointer}`
 
 // a block of the page and the part of the form that draws it: by what it is, else by what it holds
 function partOf(el) {
@@ -959,17 +1336,46 @@ function partOf(el) {
   return held ? held[1] : 'words'
 }
 
+// a part of the page (a section id) or a whole card (a group id): open its card, show it on the page
 function openPart(id) {
-  if (!SEC[id]) return
-  if (window.innerWidth < 980) { $('#pv')?.classList.remove('show'); document.body.classList.remove('pvopen') }
-  if (!S.open.has(id)) { S.open.add(id); drawEdit() }
-  const sec = $(`[data-sec="${id}"]`)
-  if (!sec) return
-  sec.open = true
-  if (id === 'map') mountMap()
-  if (id === 'drawing') mountDrawing()
-  sec.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  sec.classList.remove('flash'); void sec.offsetWidth; sec.classList.add('flash')
+  const g = groupOf(id)
+  if (SEC[id]) S.open.add(id)
+  S.part = g
+  // an empty menu opens on a blank line to type into
+  if (g === 'offer' && S.open.has('items') && !S.d.items.length) S.d.items.push({ n: '', p: '', note: '' })
+  drawParts()
+  const card = $(`[data-grp="${g}"]`)
+  if (!card) return
+  const sec = SEC[id] && card.querySelector(`[data-sec="${id}"]`)
+  if (narrow()) {
+    window.scrollTo(0, 0)
+    const body = card.querySelector('.pbody')
+    if (body && sec) body.scrollTop = sec.offsetTop - 70
+  } else (sec && id !== g ? sec : card).scrollIntoView({ behavior: 'smooth', block: 'start' })
+  const fl = sec || card
+  fl.classList.remove('flash'); void fl.offsetWidth; fl.classList.add('flash')
+}
+function closePart() {
+  const g = S.part
+  S.part = ''
+  drawParts()
+  if (!narrow() && g) $(`[data-grp="${g}"]`)?.scrollIntoView({ block: 'nearest' })
+}
+
+// the open part, lit on the page and scrolled into view
+function lightPart(scroll = true) {
+  const doc = $('#frame')?.contentDocument
+  if (!doc || !doc.body) return
+  const ids = S.part ? (GROUPS.find(([g]) => g === S.part)?.[1] || []) : []
+  // the first block of the part's first section that is on the page: the map before the hours
+  let first = null, rank = 99
+  doc.querySelectorAll('[data-part]').forEach((el) => {
+    const i = ids.indexOf(el.dataset.part)
+    el.classList.toggle('mk-on', i >= 0)
+    if (i >= 0 && i < rank) { first = el; rank = i }
+  })
+  doc.body.classList.toggle('mk-lit', !!first && S.part !== 'look')
+  if (scroll && first) first.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
 
 function wireFrame(f) {
@@ -1000,7 +1406,8 @@ function wireFrame(f) {
   inline(tag, 'tagline', 140)
   // the kind's picture, until the maker's own goes on
   const cov = S.d.cover && S.d.credits?.[S.d.cover]
-  if (cov && KPIC[S.kind] && (cov.src === KPIC[S.kind].src || cov.title === KPIC[S.kind].title) && doc.querySelector('header.top')) {
+  const sample = cov && ((KPIC[S.kind] && (cov.src === KPIC[S.kind].src || cov.title === KPIC[S.kind].title)) || Object.values(EX[S.kind] || {}).some((e) => e.src === cov.src || e.title === cov.title))
+  if (sample && doc.querySelector('header.top')) {
     const b = doc.createElement('span'); b.className = 'mk-pic'; b.textContent = ui(S.lang, 'yourPic'); b.dataset.part = 'photos'
     doc.querySelector('header.top').appendChild(b)
   }
@@ -1023,18 +1430,29 @@ function preview(now) {
   pvTimer = setTimeout(() => {
     const f = $('#frame')
     if (!f) return
-    if (window.innerWidth < 980 && !$('#pv').classList.contains('show') && !now) return
     if (S.inline) return
     const html = render({ name: S.name, look: S.look, lang: S.pageLang, kind: S.kind, d: S.d, views: S.views || 1234, status: 'live', tier: S.tier }, { preview: true, img: imgUrl, origin: location.origin, hotel: S.hotel })
     const y = f.contentWindow?.scrollY || 0
     f.srcdoc = html
-    f.onload = () => { try { f.contentWindow.scrollTo(0, y) } catch {} ; f.contentDocument?.querySelectorAll('a[href]').forEach((a) => a.setAttribute('target', '_blank')); try { wireFrame(f) } catch {} }
+    f.onload = () => { try { f.contentWindow.scrollTo(0, y) } catch {} ; f.contentDocument?.querySelectorAll('a[href]').forEach((a) => a.setAttribute('target', '_blank')); try { wireFrame(f); lightPart(false) } catch {} }
   }, now ? 0 : 260)
+}
+
+// the open card's picture and line follow what the maker types
+function refreshHead() {
+  const card = S.part && $(`[data-grp="${S.part}"]`)
+  if (!card) return
+  const [g, , d0] = GROUPS.find(([x]) => x === S.part)
+  const sm = summary(g), em = card.querySelector('.phead em'), th = card.querySelector('.phead .th')
+  card.classList.toggle('none', !sm)
+  if (em) em.innerHTML = sm ? `${icon('check')}${esc(sm)}` : T('sm_none')
+  if (th && !th.contains(document.activeElement)) { const t = document.createElement('div'); t.innerHTML = thumb(g, d0); if (t.firstChild.outerHTML !== th.outerHTML) th.replaceWith(t.firstChild) }
 }
 
 let saveTimer = 0
 function changed() {
   preview()
+  refreshHead()
   clearTimeout(saveTimer)
   saveTimer = setTimeout(save, 1400)
   store.set('d:' + S.token, { d: S.d, look: S.look, at: Date.now() })
@@ -1047,7 +1465,8 @@ async function save(extra = {}) {
   try {
     // a live page whose name, picture, avatar or look changed gets a new share card
     if (S.status === 'live' && !extra.publish && cardKey({ look: S.look, name: S.name, kind: S.kind, tier: S.tier }, S.d) !== S.cardKey) await makeCard().catch(() => {})
-    const r = await call('PUT', 'site', { d: S.d, look: S.look, lang: S.pageLang, kind: S.kind, ...extra })
+    const d = { ...S.d, items: S.d.items.filter((x) => x.n || x.p || x.note) }
+    const r = await call('PUT', 'site', { d, look: S.look, lang: S.pageLang, kind: S.kind, ...extra })
     S.status = r.status
     if (r.d) { S.d.credits = r.d.credits; S.d.video = r.d.video }
     remember()
@@ -1101,7 +1520,7 @@ async function addFiles(files) {
     S.busy--
     redrawSec('photos')
   }
-  if (S.photoGps && S.d.place.lat === null) { S.open.add('map'); drawEdit() }
+  if (S.photoGps && S.d.place.lat === null) { S.open.add('map'); drawParts() }
   changed()
 }
 
@@ -1355,15 +1774,43 @@ function replyHref(reach) {
   return null
 }
 
+// The other tabs each lead with what they are for, and show the page the way a reader meets it.
+function miniShell(id) {
+  return `<div class="mshell"><div class="url">${icon('globe')}<span>sites.motdang.net/${esc(S.name)}</span></div><iframe id="${id}" title="${T('preview')}" tabindex="-1"></iframe></div>`
+}
+function fillMini(id, { look, tier, anchor } = {}) {
+  const f = $('#' + id)
+  if (!f) return
+  const t = tier || S.tier
+  f.srcdoc = render({ name: S.name, look: look || S.look, lang: S.pageLang, kind: S.kind, d: S.d, views: S.views || 1234, status: 'live', tier: t }, { preview: true, gold: t === 'gold', img: imgUrl, origin: location.origin, hotel: S.hotel })
+  f.onload = () => {
+    try {
+      const doc = f.contentDocument
+      doc.addEventListener('click', (e) => { if (e.target.closest('a[href],button,form')) e.preventDefault() }, true)
+      const el = anchor && doc.querySelector(anchor)
+      if (el) f.contentWindow.scrollTo({ top: el.getBoundingClientRect().top + f.contentWindow.scrollY - 14, behavior: 'instant' })
+    } catch {}
+  }
+}
+
+function copiesBox() {
+  const st = S.notifyEmail ? (S.notifyOk ? `<p class="pinstate ok">${icon('check')}${esc(ui(S.lang, 'notifyOk').replace('{e}', S.notifyEmail))}</p>` : `<p class="pinstate">${icon('mail')}${T('notifyWait')} · ${esc(S.notifyEmail)}</p>`) : ''
+  return `<div class="copies"><b>${T('m_copies')}</b>${st}${S.notifyEmail ? `<button class="back" id="nmailoff">× ${T('notifyOff')}</button>`
+    : `<div class="row"><input id="nmail" type="email" autocomplete="email" placeholder="${T('email')}" aria-label="${T('notifyEmail')}" style="flex:1;min-width:180px"><button class="go ghost" id="nmailgo">${T('notifyGo')}</button></div>`}</div>`
+}
+
 async function drawMsgs() {
   const tb = $('#tb')
-  try {
-    const r = await call('GET', 'msgs')
-    const list = r.msgs
-    S.unread = list.filter((m) => m.status === 'new').length
-    const nav = app.querySelector('.tabs'); if (nav) { nav.outerHTML = tabs(); bindTabs() }
-    if (!list.length) { tb.innerHTML = `<div class="empty">${ding('mailbox', 'paper')}<p>${T('m_none')}</p></div>`; return }
-    tb.innerHTML = `${S.unread ? `<p style="text-align:right"><button class="go ghost" id="mall">${icon('check')}${T('m_all')}</button></p>` : ''}<div class="msgs">${list.map((m) => {
+  let list
+  try { list = (await call('GET', 'msgs')).msgs } catch { tb.innerHTML = `<p class="hint">${T('e_net')}</p>`; return }
+  S.unread = list.filter((m) => m.status === 'new').length
+  const nav = app.querySelector('.tabs'); if (nav) { nav.outerHTML = tabs(); bindTabs() }
+  // the messages first when there are any; then where copies go, and the box as a reader meets it
+  const head = `<section class="tabhead one"><div><h2 class="th2">${T('s_msg')}</h2><p class="why3">${T('m_why')}</p></div></section>`
+  const how = `<section class="tabhead later"><div>${S.d.msg ? copiesBox() : `<div class="copies off"><p>${T('m_off')}</p><button class="go" id="msgon">${T('m_on')}</button></div>`}</div>
+    <div class="minip"><p class="lbl">${T('m_pv')}</p>${miniShell('mini')}</div></section>`
+  const body = !list.length ? ''
+    : `${S.unread ? `<p style="text-align:right"><button class="go ghost small" id="mall">${icon('check')}${T('m_all')}</button></p>` : ''}<div class="msgs">${list.map((m) => {
       const rp = replyHref(m.reach)
       return `<article class="msg ${m.status}" data-id="${esc(m.id)}"><header><b>${esc(m.name || '—')}</b><span>${esc(when(m.at))}</span></header>
         ${m.status === 'held' ? `<p class="heldtag">${T('m_held')}</p>` : ''}<p class="body">${esc(m.body)}</p>${m.reach ? `<p class="reach">${esc(m.reach)}</p>` : ''}
@@ -1371,18 +1818,42 @@ async function drawMsgs() {
         <button class="go ghost small" data-act="${m.status === 'new' || m.status === 'held' ? 'read' : 'unread'}">${T(m.status === 'new' || m.status === 'held' ? 'm_read' : 'm_unread')}</button>
         <button class="go ghost small" data-act="gone">${T('m_del')}</button></footer></article>`
     }).join('')}</div>`
-    tb.onclick = async (e) => {
-      const b = e.target.closest('button'); if (!b) return
+  tb.innerHTML = head + (list.length ? body : `<p class="none2">${ding('mailbox', 'paper')}<span>${T('m_none')}</span></p>`) + how
+  fillMini('mini', { anchor: '#message' })
+  dingbats(['signals'])
+  tb.onclick = async (e) => {
+    const b = e.target.closest('button'); if (!b) return
+    if (b.id === 'nmailgo') return notifyOn().then(drawMsgs)
+    if (b.id === 'nmailoff') return notifyOff().then(drawMsgs)
+    if (b.id === 'msgon') { S.d.msg = true; await save(); return drawMsgs() }
+    try {
       if (b.id === 'mall') { await call('POST', 'msgs', { act: 'read', all: true }); return drawMsgs() }
       const id = b.closest('[data-id]')?.dataset.id
       if (b.dataset.act && id) { await call('POST', 'msgs', { act: b.dataset.act, id }); drawMsgs() }
-    }
-  } catch { tb.innerHTML = `<p class="hint">${T('e_net')}</p>` }
+    } catch { toast(ui(S.lang, 'e_net')) }
+  }
 }
 
 const TAP_WORD = { call: 'call', line: 'line', dir: 'dir', ride: 'ride', food: 'food', lineman: 'lineman', share: 'share', copy: 'copy', map: 'map', far: 'far', vcf: 'saveContact',
   ics: 'addCal', sign: 'sign', order: 'lineOrder', msg: 'msg', link: 'links', photo: 'photos', video: 'video', email: 'email', web: 'web', qr: 'qr', story: 'story' }
 const TAP_EXTRA = { get amulet() { return amUi(S.lang, 'tap_amulet') }, get reserve() { return amUi(S.lang, 'tap_reserve') }, shareline: 'LINE', sharefb: 'Facebook', sharex: 'X', sharewa: 'WhatsApp', sharetg: 'Telegram', social: 'Facebook · Instagram · TikTok', whatsapp: 'WhatsApp' }
+
+function shareBox() {
+  const url = `${location.origin}/${S.name}`
+  if (S.status === 'held') return `<div class="sharebox"><span class="sbd">${ding('hourglass', 'paper')}</span><p>${T('held')}</p></div>`
+  if (S.status !== 'live') return `<div class="sharebox"><span class="sbd">${ding('megaphone', 'paper')}</span><p>${T('st_notLive')}</p><button class="go red" id="sbpub">${T('publish')}</button></div>`
+  return `<div class="sharebox"><span class="sbd">${ding('megaphone', 'paper')}</span><p>${T('st_first')}</p>
+    <div class="sbrow"><a class="go line" href="${esc(lineShare((S.d.name || S.name) + ' ' + url))}" target="_blank" rel="noopener">${icon('chat')}LINE</a>
+      <button class="go" id="sbsh">${icon('share')}${T('share')}</button><button class="go ghost" id="sbcp">${T('copy')}</button>
+      <a class="go ghost" href="${esc(url)}/sign" target="_blank">${icon('print')}${T('sign')}</a></div>
+    <div class="sbqr">${qrSvg(url, { dark: '#000', light: '#fff', label: url })}<a href="${esc(url)}" target="_blank">${esc(url.replace(/^https?:\/\//, ''))}</a></div></div>`
+}
+function bindShare() {
+  const url = `${location.origin}/${S.name}`
+  const pub = $('#sbpub'); if (pub) pub.onclick = () => { S.tab = 'edit'; draw(); publish() }
+  const sh = $('#sbsh'); if (sh) sh.onclick = () => (navigator.share ? navigator.share({ title: S.d.name, url }).catch(() => {}) : copy(url))
+  const cp = $('#sbcp'); if (cp) cp.onclick = () => copy(url)
+}
 
 async function drawStats(days) {
   const tb = $('#tb')
@@ -1396,11 +1867,14 @@ async function drawStats(days) {
   const list = (rows, name) => rows.length ? `<ol class="hbars">${rows.map((x) => `<li><span class="lab">${esc(name(x.k))}</span><span class="bar"><i style="width:${Math.max(3, (x.n / rows[0].n) * 100)}%"></i></span><b>${nf.format(x.n)}</b></li>`).join('')}</ol>` : '<p class="hint">—</p>'
   const tile = (n, label, sub) => `<div class="tile"><b>${nf.format(n)}</b><span>${label}</span>${sub ? `<small>${sub}</small>` : ''}</div>`
   const hourMax = Math.max(1, ...r.hour)
-  const empty = !r.total.views && !r.total.machines
+  const empty = !r.total.views
   const step = Math.max(1, Math.ceil(r.days.length / 8))
-  tb.innerHTML = `${empty ? `<div class="empty">${ding('megaphone', 'paper')}<p>${T('st_empty')}</p></div>` : ''}
-    <div class="tiles">${tile(r.today.people, T('st_people'), T('st_today'))}${tile(r.week.people, T('st_people'), T('st_week'))}${tile(r.total.people, T('st_people'), r.days.length > 31 ? T('st_year') : T('st_month'))}
-      ${tile(r.total.views, T('st_views'), r.days.length > 31 ? T('st_year') : T('st_month'))}${tile(r.total.taps, T('st_taps'), r.days.length > 31 ? T('st_year') : T('st_month'))}</div>
+  const head = `<section class="tabhead one"><div><h2 class="th2">${T('t_stats')}</h2><p class="why3">${T('st_why')}</p></div></section>`
+  // nobody yet: no wall of zeros, the ways to send the page out instead
+  if (empty) { tb.innerHTML = head + shareBox(); bindShare(); dingbats(['signals']); return }
+  const span = r.days.length > 31 ? T('st_year') : T('st_month')
+  tb.innerHTML = `${head}<p class="headline">${esc(ui(S.lang, 'st_head').replace('{n}', nf.format(r.week.people)))} <span>${esc(ui(S.lang, 'st_headDay').replace('{n}', nf.format(r.today.people)))}</span></p>
+    <div class="tiles t3">${tile(r.total.people, T('st_people'), span)}${tile(r.total.views, T('st_views'), span)}${tile(r.total.taps, T('st_taps'), span)}</div>
     <section class="panel"><h3>${T('st_day')}</h3><div class="chart" id="chart" role="img" aria-label="${T('st_day')}">${r.days.map((d) => `<span class="col" data-tip="${esc(d.day)} · ${nf.format(d.people)} ${T('st_people')} · ${nf.format(d.views)} ${T('st_views')}"><i style="height:${(d.people / max) * 100}%"></i></span>`).join('')}</div>
       <div class="axis">${r.days.map((d, i) => `<span>${i % step === 0 ? esc(d.day.slice(5).replace('-', '/')) : ''}</span>`).join('')}</div><div class="tip" id="tip" hidden></div>
       ${isGold() ? `<p class="row" style="margin-top:12px"><button class="go ghost small" data-days="30">${T('st_month')}</button><button class="go ghost small" data-days="365">${T('st_year')}</button><button class="go ghost small" id="csv">${icon('download')}${T('st_csv')}</button></p>` : ''}</section>
@@ -1433,27 +1907,37 @@ async function drawGold() {
   let r = null
   const feats = ['g_f7', 'g_f8', 'g_f9', 'g_f1', 'g_f2', 'g_f3', 'g_f4', 'g_f5', 'g_f6']
   const fdings = ['key', 'megaphone', 'chat', 'crown', 'search', 'camera', 'compass', 'calendar', 'star']
-  const head = `<section class="goldhero">${LOOKS.gold.art}<h2>${T('g_lead')}</h2><ul>${feats.map((k, i) => `<li>${ding(fdings[i], 'paper')}<span>${T(k)}</span></li>`).join('')}</ul></section>`
+  // the maker's own page in Gold leaf first, then the price, then the list
+  const tryBtn = isGold() && S.look !== 'gold' ? `<button class="go big" id="trygold">${T('g_try')}</button>` : ''
+  const head = `<section class="goldtop"><div class="goldhero">${LOOKS.gold.art}<h2>${T('g_lead')}</h2><p class="gwhy">${T('g_why')}</p>${tryBtn}</div>
+    <div class="minip"><p class="lbl">${T('g_see')}</p>${miniShell('gmini')}</div></section>`
+  const list = `<section class="gfeats"><h3>${T('g_adds')}</h3><ul>${feats.map((k, i) => `<li>${ding(fdings[i], 'paper')}<span>${T(k)}</span></li>`).join('')}</ul></section>`
+  const after = () => {
+    fillMini('gmini', { look: 'gold', tier: 'gold' })
+    const tg = $('#trygold'); if (tg) tg.onclick = () => { S.look = 'gold'; S.d.accent = ''; changed(); S.tab = 'edit'; draw(); openPart('look') }
+  }
   const rooms = S.d.rooms.length > 0
   const want = S.payPlan || (rooms && (S.trial || S.plan === 'hotel') ? 'hotel' : 'gold')
   const needHotel = rooms && S.plan !== 'hotel'
   if (isGold() && !S.trial && !(needHotel && /^hotel/.test(S.payPlan || ''))) {
     tb.innerHTML = head + `<p class="goldon">★ ${esc(ui(S.lang, 'g_on').replace('{d}', S.goldUntil || ''))}</p>` +
-      (needHotel ? `<p style="text-align:center"><button class="go" id="tohotel">${esc(ui(S.lang, 'g_hotelGo').replace('{p}', new Intl.NumberFormat(S.lang).format(S.plans?.hotel?.baht || 555)))}</button></p>` : '') + domainBox()
+      (needHotel ? `<p style="text-align:center"><button class="go" id="tohotel">${esc(ui(S.lang, 'g_hotelGo').replace('{p}', new Intl.NumberFormat(S.lang).format(S.plans?.hotel?.baht || 555)))}</button></p>` : '') + domainBox() + list
+    after()
     dingbats(['signals', 'classic', 'curious'])
     bindDomain()
     const th = $('#tohotel'); if (th) th.onclick = () => { S.payPlan = 'hotel'; drawGold() }
     return
   }
   const pick = rooms && S.plans ? `<div class="field" style="text-align:center">${seg('payplan', want, [['gold', esc(ui(S.lang, 'g_planGold').replace('{p}', new Intl.NumberFormat(S.lang).format(S.plans.gold.baht)))], ['hotel', esc(ui(S.lang, 'g_planHotel').replace('{p}', new Intl.NumberFormat(S.lang).format(S.plans.hotel.baht)))], ...(S.plans.hotelyear ? [['hotelyear', esc(ui(S.lang, 'g_planHotelYear').replace('{p}', new Intl.NumberFormat(S.lang).format(S.plans.hotelyear.baht)))]] : [])])}</div>` : ''
-  try { r = await call('POST', 'gold', { plan: want }) } catch { tb.innerHTML = head + `<p class="hint">${T('e_net')}</p>`; return }
+  try { r = await call('POST', 'gold', { plan: want }) } catch { tb.innerHTML = head + `<p class="hint">${T('e_net')}</p>` + list; after(); return }
   if (r.tier === 'gold' && !S.trial) { S.tier = 'gold'; S.goldUntil = r.gold_until; return drawGold() }
   const tail = String(r.amount).split('.')[1] || '00'
   const nf = new Intl.NumberFormat(S.lang)
   tb.innerHTML = head + (S.trial ? `<p class="goldon">★ ${esc(ui(S.lang, 'g_trial').replace('{d}', S.goldUntil || ''))}</p>` : '') + pick + `<section class="goldpay"><p class="price">${esc(ui(S.lang, r.months === 1 ? 'g_priceMonth' : 'g_price').replace('{p}', nf.format(r.baht)))}</p>${r.hotel ? `<p class="hint">${T(r.months === 1 ? 'g_hotelWhy' : 'g_hotelYearWhy')}</p>` : ''}
     ${r.payload ? `<div class="ppqr">${qrSvg(r.payload, { dark: '#0e3d78', light: '#ffffff', label: 'PromptPay' })}<b>฿${esc(nf.format(Number(r.amount)))}</b><span>PromptPay</span></div>
       <p class="hint">${esc(ui(S.lang, 'g_scan').replace('{s}', tail))}</p>
-      <label class="pick goldslip">${icon('download')}${T('g_slip')}<input type="file" accept="image/*" id="slip"></label><p id="slipstate" class="pinstate"></p>` : `<p class="hint">${T('g_nopp')}</p>`}</section>` + (isGold() ? domainBox() : '')
+      <label class="pick goldslip">${icon('download')}${T('g_slip')}<input type="file" accept="image/*" id="slip"></label><p id="slipstate" class="pinstate"></p>` : `<p class="hint">${T('g_nopp')}</p>`}</section>` + list + (isGold() ? domainBox() : '')
+  after()
   dingbats(['signals', 'classic', 'curious'])
   bindDomain()
   tb.querySelectorAll('[data-seg="payplan"]').forEach((b) => (b.onclick = () => { S.payPlan = b.dataset.v; drawGold() }))
@@ -1512,6 +1996,8 @@ async function makeCard() {
   drawCard(c.getContext('2d'), { look: S.look, accent: S.d.accent, name: S.d.name || S.name, tagline: S.d.tagline, url: `${location.host}/${S.name}`, gold: isGold(),
     cover, drawing, avatar, round: S.d.avround, dings: S.d.dings, D: window.Dingbats || null })
   const blob = await new Promise((ok) => c.toBlob(ok, 'image/jpeg', 0.88))
+  if (S.cardUrl) URL.revokeObjectURL(S.cardUrl)
+  S.cardUrl = URL.createObjectURL(blob)
   const r = await upload(blob, null, 'card')
   S.d.card = r.id
   S.cardKey = cardKey({ look: S.look, name: S.name, kind: S.kind, tier: S.tier }, S.d)
@@ -1527,26 +2013,34 @@ async function publish() {
   } finally { pub.disabled = false }
 }
 
+// "Put it online": the page's card as people will see it in LINE, the ways to send it, and the key
 function done() {
+  const live = S.status === 'live'
   const url = `${location.origin}/${S.name}`
   const edit = `${location.origin}/make#t=${S.token}`
+  const card = S.cardUrl || (S.d.card ? `/img/${S.d.card}.jpg` : '')
   const box = document.createElement('div')
   box.className = 'sheet'
-  box.innerHTML = `<div class="box">${S.status === 'live' ? `<div class="confetti">${['party', 'sparkle', 'heart', 'star', 'lantern'].map((n) => ding(n, 'riso', 'loop')).join('')}</div>` : ''}<h2>${S.status === 'live' ? T('live') : S.status === 'held' ? T('held') : T('draft')}</h2>
-    <a class="link" href="${esc(url)}" target="_blank">${esc(url.replace(/^https?:\/\//, ''))}</a>
-    ${S.status === 'live' ? qrSvg(url, { dark: '#000', light: '#fff', label: url }) : ''}
-    <div class="grid2"><a class="go ink" href="${esc(url)}" target="_blank">${icon('globe')}${T('open')}</a>
+  box.innerHTML = `<div class="box donebox">${live ? `<div class="confetti">${['party', 'sparkle', 'heart', 'star', 'lantern'].map((n) => ding(n, 'riso', 'loop')).join('')}</div>` : ''}
+    <h2>${live ? T('live') : S.status === 'held' ? T('held') : T('draft')}</h2>
+    ${card ? `<figure class="dcard"><img src="${esc(card)}" alt=""><figcaption>${T('d_card')}</figcaption></figure>` : ''}
+    <div class="durl"><a href="${esc(url)}" target="_blank">${esc(url.replace(/^https?:\/\//, ''))}</a><button class="go ghost small" id="cpurl">${T('copy')}</button></div>
+    <div class="grid2"><a class="go line" href="${esc(lineShare((S.d.name || S.name) + ' ' + url))}" target="_blank" rel="noopener">${icon('chat')}LINE</a>
       <button class="go" id="sh">${icon('share')}${T('share')}</button>
-      <a class="go line" href="${esc(lineShare((S.d.name || S.name) + ' ' + url))}" target="_blank">${icon('chat')}LINE</a>
+      <a class="go ink" href="${esc(url)}" target="_blank">${icon('globe')}${T('open')}</a>
       <a class="go ghost" href="${esc(url)}/sign" target="_blank">${icon('print')}${T('sign')}</a></div>
-    <div class="key"><b>${T('editLink')}</b><br>${T('editHint')}<code>${esc(edit)}</code>
-      <div class="grid2"><a class="go line" href="${esc(lineShare(edit))}" target="_blank">${icon('chat')}${T('sendSelf')}</a><button class="go ghost" id="cpedit">${T('copy')}</button></div></div>
-    <p style="text-align:center"><button class="back" id="closesheet">${T('edit')}</button></p></div>`
+    ${live ? `<details class="dqr"><summary>${T('d_qr')}</summary>${qrSvg(url, { dark: '#000', light: '#fff', label: url })}</details>` : ''}
+    <div class="key"><span class="kd">${ding('key', 'paper')}</span><div><b>${T('d_key')}</b><p>${T('d_keyHint')}</p>
+      <div class="grid2"><a class="go line" href="${esc(lineShare(edit))}" target="_blank" rel="noopener">${icon('chat')}${T('sendSelf')}</a><button class="go ghost" id="cpedit">${T('copy')}</button></div>
+      <details><summary>${T('d_show')}</summary><code>${esc(edit)}</code></details></div></div>
+    <p class="dkeep"><button class="go ghost" id="closesheet">${T('d_keep')}</button></p></div>`
   document.body.appendChild(box)
-  if (S.status === 'live') dingbats(['faces', 'classic', 'lanna'])
+  dingbats(live ? ['faces', 'classic', 'lanna', 'signals', 'curious'] : ['signals', 'curious'])
+  const im = box.querySelector('.dcard img'); if (im) im.onerror = () => im.closest('figure').remove()
   box.querySelector('#closesheet').onclick = () => box.remove()
   box.addEventListener('click', (e) => { if (e.target === box) box.remove() })
   box.querySelector('#sh').onclick = () => (navigator.share ? navigator.share({ title: S.d.name, url }).catch(() => {}) : copy(url))
+  box.querySelector('#cpurl').onclick = () => copy(url)
   box.querySelector('#cpedit').onclick = () => copy(edit)
 }
 
@@ -1581,12 +2075,12 @@ async function boot() {
     S.token = t
     try {
       const r = await call('GET', 'site')
-      Object.assign(S, { name: r.name, kind: r.kind, look: r.look, pageLang: r.lang, status: r.status, views: r.views, d: normalize(r.d), step: 'edit',
+      Object.assign(S, { name: r.name, kind: r.kind, look: lookOf(r.look), pageLang: r.lang, status: r.status, views: r.views, d: normalize(r.d), step: 'edit',
         tier: r.tier, goldUntil: r.gold_until || '', notifyEmail: r.notify_email, notifyOk: r.notify_ok, unread: r.unread,
         trial: !!r.trial, asks: r.asks || 0, domain: r.domain || '', domainState: r.domain_state || '', domains: !!r.domains, price: r.price || 3000,
-        plan: r.plan || 'gold', hotel: !!r.hotel, plans: r.plans || null })
+        plan: r.plan || 'gold', hotel: !!r.hotel, plans: r.plans || null, cardUrl: '' })
       S.d.event = S.d.event || undefined
-      S.open = new Set(DEFAULT_OPEN[S.kind])
+      S.open = new Set(DEFAULT_OPEN[S.kind]); S.part = ''
       if (h.get('tab')) S.tab = h.get('tab')
       remember()
     } catch (e) {
@@ -1621,5 +2115,6 @@ async function boot() {
   }
 }
 window.addEventListener('hashchange', boot)
-window.addEventListener('resize', () => preview())
+window.addEventListener('resize', () => { preview(); document.body.classList.toggle('sheeton', S.tab === 'edit' && !!S.part && narrow()) })
+window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && S.tab === 'edit' && S.part && !document.querySelector('.sheet')) closePart() })
 boot()

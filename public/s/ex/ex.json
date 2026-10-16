@@ -1,0 +1,776 @@
+{
+ "shop": {
+  "poster": {
+   "title": "Hmong Market, Luang Prabang, Laos (4245239706)",
+   "src": "https://commons.wikimedia.org/wiki/File%3AHmong_Market%2C_Luang_Prabang%2C_Laos_%284245239706%29.jpg",
+   "license": "CC BY 2.0",
+   "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+   "by": "yeowatzup",
+   "focus": [
+    0.3,
+    0.48
+   ],
+   "pd": "c:24521008"
+  },
+  "loom": {
+   "title": "A Karen woman weaving",
+   "src": "https://commons.wikimedia.org/wiki/File%3AA_Karen_woman_weaving.jpg",
+   "license": "CC BY-SA 4.0",
+   "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+   "by": "Varvara Kless-Kaminskaia",
+   "focus": [
+    0.42,
+    0.42
+   ],
+   "pd": "c:115145430"
+  },
+  "stitch": {
+   "title": "Traditional weaving of Thai people in in Con Cuong, Nghe An",
+   "src": "https://commons.wikimedia.org/wiki/File%3ATraditional_weaving_of_Thai_people_in_in_Con_Cuong%2C_Nghe_An.jpg",
+   "license": "CC0",
+   "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+   "by": "KoheiU",
+   "focus": [
+    0.5,
+    0.45
+   ],
+   "pd": "c:158303514"
+  },
+  "night": {
+   "title": "Night Market (Luang Prabang)",
+   "src": "https://commons.wikimedia.org/wiki/File%3ANight_Market_%28Luang_Prabang%29.jpg",
+   "license": "CC BY 2.0",
+   "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+   "by": "Allie Caulfield",
+   "focus": [
+    0.19,
+    0.5
+   ],
+   "pd": "c:8620928"
+  },
+  "lanna": {
+   "title": "DGJ 4039 - How do we get to here. (3725553133)",
+   "src": "https://commons.wikimedia.org/wiki/File%3ADGJ_4039_-_How_do_we_get_to_here._%283725553133%29.jpg",
+   "license": "CC BY-SA 2.0",
+   "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+   "by": "Dennis G. Jarvis",
+   "focus": [
+    0.72,
+    0.42
+   ],
+   "pd": "c:66986887"
+  },
+  "clean": {
+   "title": "Minimalist Basket Chair (Unsplash)",
+   "src": "https://commons.wikimedia.org/wiki/File%3AMinimalist_Basket_Chair_%28Unsplash%29.jpg",
+   "license": "CC0",
+   "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+   "by": "Sarah Dorweiler sarahdorweiler",
+   "focus": [
+    0.35,
+    0.95
+   ],
+   "pd": "c:61807300"
+  },
+  "gold": {
+   "title": "Hội An, Vietnam (Unsplash E ySzvSJRI)",
+   "src": "https://commons.wikimedia.org/wiki/File%3AH%E1%BB%99i_An%2C_Vietnam_%28Unsplash_E_ySzvSJRI%29.jpg",
+   "license": "CC0",
+   "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+   "by": "Vincent Guth vingtcent",
+   "focus": [
+    0.51,
+    0.5
+   ],
+   "pd": "c:61801087"
+  }
+ },
+ "food": {
+  "poster": {
+   "title": "Street Wok",
+   "src": "https://commons.wikimedia.org/wiki/File%3AStreet_Wok.jpg",
+   "license": "CC BY 2.0",
+   "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+   "by": "Radek Kucharski",
+   "focus": [
+    0.53,
+    0.6
+   ],
+   "pd": "c:149161638"
+  },
+  "loom": {
+   "title": "Khao Soi Northern Thai food ข้าวซอย ผักดอง",
+   "src": "https://commons.wikimedia.org/wiki/File%3AKhao_Soi_Northern_Thai_food_%E0%B8%82%E0%B9%89%E0%B8%B2%E0%B8%A7%E0%B8%8B%E0%B8%AD%E0%B8%A2_%E0%B8%9C%E0%B8%B1%E0%B8%81%E0%B8%94%E0%B8%AD%E0%B8%87.jpg",
+   "license": "CC BY-SA 4.0",
+   "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+   "by": "Chainwit.",
+   "focus": [
+    0.45,
+    0.5
+   ],
+   "pd": "c:92394535"
+  },
+  "stitch": {
+   "title": "154 - khanom luk chup",
+   "src": "https://commons.wikimedia.org/wiki/File%3A154_-_khanom_luk_chup.jpg",
+   "license": "CC BY-SA 4.0",
+   "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+   "by": "Susan Slater",
+   "focus": [
+    0.5,
+    0.48
+   ],
+   "pd": "c:62472080"
+  },
+  "night": {
+   "title": "DFC 4431 Colorful candied fruit skewers glisten under the night market lights",
+   "src": "https://commons.wikimedia.org/wiki/File%3ADFC_4431_Colorful_candied_fruit_skewers_glisten_under_the_night_market_lights.jpg",
+   "license": "CC BY-SA 4.0",
+   "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+   "by": "PattayaPatrol",
+   "focus": [
+    0.55,
+    0.5
+   ],
+   "pd": "c:189025828"
+  },
+  "lanna": {
+   "title": "Lanna cuisine starters",
+   "src": "https://commons.wikimedia.org/wiki/File%3ALanna_cuisine_starters.JPG",
+   "license": "CC BY-SA 3.0",
+   "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+   "by": "Takeaway",
+   "focus": [
+    0.5,
+    0.5
+   ],
+   "pd": "c:18431732"
+  },
+  "clean": {
+   "title": "Thai Green Curry with Rice",
+   "src": "https://commons.wikimedia.org/wiki/File%3AThai_Green_Curry_with_Rice.jpg",
+   "license": "CC BY-SA 4.0",
+   "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+   "by": "Kenamparo",
+   "focus": [
+    0.56,
+    0.56
+   ],
+   "pd": "c:134355183"
+  },
+  "gold": {
+   "title": "Ang Thong (2024) - khanom hantra ขนมหันตรา 02",
+   "src": "https://commons.wikimedia.org/wiki/File%3AAng_Thong_%282024%29_-_khanom_hantra_%E0%B8%82%E0%B8%99%E0%B8%A1%E0%B8%AB%E0%B8%B1%E0%B8%99%E0%B8%95%E0%B8%A3%E0%B8%B2_02.jpg",
+   "license": "CC BY 4.0",
+   "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+   "by": "Chainwit.",
+   "focus": [
+    0.5,
+    0.47
+   ],
+   "pd": "c:152245246"
+  }
+ },
+ "service": {
+  "poster": {
+   "title": "Chinese barber chair",
+   "src": "https://commons.wikimedia.org/wiki/File%3AChinese_barber_chair.JPG",
+   "license": "CC BY-SA 3.0",
+   "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+   "by": "Sean.hoyland",
+   "focus": [
+    0.55,
+    0.5
+   ],
+   "pd": "c:18173385"
+  },
+  "loom": {
+   "title": "Igor Ovsyannykov 2017-05-08 (Unsplash)",
+   "src": "https://commons.wikimedia.org/wiki/File%3AIgor_Ovsyannykov_2017-05-08_%28Unsplash%29.jpg",
+   "license": "CC0",
+   "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+   "by": "Igor Ovsyannykov igorovsyannykov",
+   "focus": [
+    0.66,
+    0.52
+   ],
+   "pd": "c:61846071"
+  },
+  "stitch": {
+   "title": "Seamstress at work (Unsplash)",
+   "src": "https://commons.wikimedia.org/wiki/File%3ASeamstress_at_work_%28Unsplash%29.jpg",
+   "license": "CC0",
+   "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+   "by": "Kris Atomic krisatomic",
+   "focus": [
+    0.45,
+    0.5
+   ],
+   "pd": "c:61844960"
+  },
+  "night": {
+   "title": "Looking back (Unsplash)",
+   "src": "https://commons.wikimedia.org/wiki/File%3ALooking_back_%28Unsplash%29.jpg",
+   "license": "CC0",
+   "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+   "by": "Ryan Tang ryz0n",
+   "focus": [
+    0.52,
+    0.55
+   ],
+   "pd": "c:61902088"
+  },
+  "lanna": {
+   "title": "Traditional Thai massage",
+   "src": "https://commons.wikimedia.org/wiki/File%3ATraditional_Thai_massage.jpg",
+   "license": "CC BY-SA 4.0",
+   "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+   "by": "Garonzi Stefania",
+   "focus": [
+    0.45,
+    0.58
+   ],
+   "pd": "c:86817536"
+  },
+  "clean": {
+   "title": "Dentist (Unsplash)",
+   "src": "https://commons.wikimedia.org/wiki/File%3ADentist_%28Unsplash%29.jpg",
+   "license": "CC0",
+   "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+   "by": "Daniel Frank fr3nks",
+   "focus": [
+    0.45,
+    0.55
+   ],
+   "pd": "c:62051209"
+  },
+  "gold": {
+   "title": "Yoga sunrise. (Unsplash)",
+   "src": "https://commons.wikimedia.org/wiki/File%3AYoga_sunrise._%28Unsplash%29.jpg",
+   "license": "CC0",
+   "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+   "by": "Dave Contreras basixfilms",
+   "focus": [
+    0.46,
+    0.5
+   ],
+   "pd": "c:61857335"
+  }
+ },
+ "work": {
+  "poster": {
+   "title": "Shoot the sunset (Unsplash)",
+   "src": "https://commons.wikimedia.org/wiki/File%3AShoot_the_sunset_%28Unsplash%29.jpg",
+   "license": "CC0",
+   "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+   "by": "Diego PH jdiegoph",
+   "focus": [
+    0.5,
+    0.55
+   ],
+   "pd": "c:61798181"
+  },
+  "loom": {
+   "title": "Hands and threads",
+   "src": "https://commons.wikimedia.org/wiki/File%3AHands_and_threads.jpg",
+   "license": "CC BY-SA 4.0",
+   "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+   "by": "Alberto Buscató Vázquez",
+   "focus": [
+    0.58,
+    0.5
+   ],
+   "pd": "c:87460064"
+  },
+  "stitch": {
+   "title": "Silk - 1",
+   "src": "https://commons.wikimedia.org/wiki/File%3ASilk_-_1.jpeg",
+   "license": "CC BY-SA 3.0",
+   "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+   "by": "Olena Zakharian",
+   "focus": [
+    0.5,
+    0.52
+   ],
+   "pd": "c:34694110"
+  },
+  "night": {
+   "title": "Silhouettes on a dark stage (Unsplash)",
+   "src": "https://commons.wikimedia.org/wiki/File%3ASilhouettes_on_a_dark_stage_%28Unsplash%29.jpg",
+   "license": "CC0",
+   "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+   "by": "Marc-Antoine Dépelteau autumnsgrief",
+   "focus": [
+    0.17,
+    0.5
+   ],
+   "pd": "c:61687855"
+  },
+  "lanna": {
+   "title": "DGJ 3900 (3710133713)",
+   "src": "https://commons.wikimedia.org/wiki/File%3ADGJ_3900_%283710133713%29.jpg",
+   "license": "CC BY-SA 2.0",
+   "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+   "by": "Dennis G. Jarvis",
+   "focus": [
+    0.6,
+    0.5
+   ],
+   "pd": "c:66986843"
+  },
+  "clean": {
+   "title": "The Studio (Unsplash)",
+   "src": "https://commons.wikimedia.org/wiki/File%3AThe_Studio_%28Unsplash%29.jpg",
+   "license": "CC0",
+   "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+   "by": "Brooke Lark brookelark",
+   "focus": [
+    0.5,
+    0.9
+   ],
+   "pd": "c:62178372"
+  },
+  "gold": {
+   "title": "Schwarzgoldlack-Malerei",
+   "src": "https://commons.wikimedia.org/wiki/File%3ASchwarzgoldlack-Malerei.JPG",
+   "license": "CC BY-SA 3.0",
+   "licenseUrl": "http://creativecommons.org/licenses/by-sa/3.0/",
+   "by": "Franz Winter at German Wikipedia\n(Original text: Franz Winter (Benutzer: Franz W",
+   "focus": [
+    0.5,
+    0.45
+   ],
+   "pd": "c:2089868"
+  }
+ },
+ "stay": {
+  "poster": {
+   "title": "River bank of Don Khon with stilt wooden houses and leaning Arecaceae at golden hour from Don Det Laos",
+   "src": "https://commons.wikimedia.org/wiki/File%3ARiver_bank_of_Don_Khon_with_stilt_wooden_houses_and_leaning_Arecaceae_at_golden_hour_from_Don_Det_Laos.jpg",
+   "license": "CC BY-SA 4.0",
+   "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+   "by": "Basile Morin",
+   "focus": [
+    0.36,
+    0.5
+   ],
+   "pd": "c:75155520"
+  },
+  "loom": {
+   "title": "Wooden table and chairs over the Mekong at sunrise in Don Det Si Phan Don Laos",
+   "src": "https://commons.wikimedia.org/wiki/File%3AWooden_table_and_chairs_over_the_Mekong_at_sunrise_in_Don_Det_Si_Phan_Don_Laos.jpg",
+   "license": "CC BY-SA 4.0",
+   "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+   "by": "Basile Morin",
+   "focus": [
+    0.5,
+    0.55
+   ],
+   "pd": "c:121048231"
+  },
+  "stitch": {
+   "title": "Colorful Paper Flowers in Phu Hin Rong Kla",
+   "src": "https://commons.wikimedia.org/wiki/File%3AColorful_Paper_Flowers_in_Phu_Hin_Rong_Kla.jpg",
+   "license": "CC BY-SA 4.0",
+   "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+   "by": "Paktaotik123456",
+   "focus": [
+    0.42,
+    0.62
+   ],
+   "pd": "c:194143970"
+  },
+  "night": {
+   "title": "Exotic swimming pool at sunset (Unsplash)",
+   "src": "https://commons.wikimedia.org/wiki/File%3AExotic_swimming_pool_at_sunset_%28Unsplash%29.jpg",
+   "license": "CC0",
+   "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+   "by": "Raining Huang iourain",
+   "focus": [
+    0.5,
+    0.55
+   ],
+   "pd": "c:61710043"
+  },
+  "lanna": {
+   "title": "Thai Traditional House On Stilts Trat Thailand",
+   "src": "https://commons.wikimedia.org/wiki/File%3AThai_Traditional_House_On_Stilts_Trat_Thailand.jpg",
+   "license": "CC BY-SA 4.0",
+   "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+   "by": "Khaosaming",
+   "focus": [
+    0.57,
+    0.45
+   ],
+   "pd": "c:3364493"
+  },
+  "clean": {
+   "title": "Cozy bedroom with two beds window and wall art in a simple setting",
+   "src": "https://commons.wikimedia.org/wiki/File%3ACozy_bedroom_with_two_beds_window_and_wall_art_in_a_simple_setting.jpg",
+   "license": "CC BY 2.0",
+   "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+   "by": "Shixart1985",
+   "focus": [
+    0.6,
+    0.9
+   ],
+   "pd": "c:195256253"
+  },
+  "gold": {
+   "title": "The Mexican Sunflower Fields at Doi Mae U Kho, Mae Hong Son",
+   "src": "https://commons.wikimedia.org/wiki/File%3AThe_Mexican_Sunflower_Fields_at_Doi_Mae_U_Kho%2C_Mae_Hong_Son.jpg",
+   "license": "CC BY-SA 4.0",
+   "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+   "by": "Prawit thawonsak",
+   "focus": [
+    0.62,
+    0.5
+   ],
+   "pd": "c:194807420"
+  }
+ },
+ "homes": {
+  "poster": {
+   "title": "Cubical terraces (Unsplash)",
+   "src": "https://commons.wikimedia.org/wiki/File%3ACubical_terraces_%28Unsplash%29.jpg",
+   "license": "CC0",
+   "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+   "by": "vision webagency vision",
+   "focus": [
+    0.5,
+    0.5
+   ],
+   "pd": "c:62338505"
+  },
+  "loom": {
+   "title": "Cozy wooden cabin interior with kitchen",
+   "src": "https://commons.wikimedia.org/wiki/File%3ACozy_wooden_cabin_interior_with_kitchen.jpg",
+   "license": "CC BY 2.0",
+   "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+   "by": "Shixart1985",
+   "focus": [
+    0.5,
+    0.55
+   ],
+   "pd": "c:193969726"
+  },
+  "stitch": {
+   "title": "Painted houses of Santa Catarina Palopó",
+   "src": "https://commons.wikimedia.org/wiki/File%3APainted_houses_of_Santa_Catarina_Palop%C3%B3.jpg",
+   "license": "CC BY 4.0",
+   "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+   "by": "Bex Walton",
+   "focus": [
+    0.5,
+    0.55
+   ],
+   "pd": "c:183693199"
+  },
+  "night": {
+   "title": "Bangkok by night (50714417592)",
+   "src": "https://commons.wikimedia.org/wiki/File%3ABangkok_by_night_%2850714417592%29.jpg",
+   "license": "CC BY 2.0",
+   "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+   "by": "Nina R from Africa",
+   "focus": [
+    0.55,
+    0.35
+   ],
+   "pd": "c:113289667"
+  },
+  "lanna": {
+   "title": "Building in Chiang Khan",
+   "src": "https://commons.wikimedia.org/wiki/File%3ABuilding_in_Chiang_Khan.jpg",
+   "license": "CC BY-SA 4.0",
+   "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+   "by": "Christophe95",
+   "focus": [
+    0.6,
+    0.45
+   ],
+   "pd": "c:89373554"
+  },
+  "clean": {
+   "title": "Minimal creative interior (Unsplash)",
+   "src": "https://commons.wikimedia.org/wiki/File%3AMinimal_creative_interior_%28Unsplash%29.jpg",
+   "license": "CC0",
+   "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+   "by": "Breather breather",
+   "focus": [
+    0.5,
+    0.55
+   ],
+   "pd": "c:61682828"
+  },
+  "gold": {
+   "title": "River bank of Don Khon with stilt wooden houses at golden hour from Don Det Laos",
+   "src": "https://commons.wikimedia.org/wiki/File%3ARiver_bank_of_Don_Khon_with_stilt_wooden_houses_at_golden_hour_from_Don_Det_Laos.jpg",
+   "license": "CC BY-SA 4.0",
+   "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+   "by": "Basile Morin",
+   "focus": [
+    0.5,
+    0.55
+   ],
+   "pd": "c:76572314"
+  }
+ },
+ "me": {
+  "poster": {
+   "title": "แสงสุดท้าย ดอยหลวงเชียงดาว (Sunset at Doi Luang Chiang Dao)",
+   "src": "https://commons.wikimedia.org/wiki/File%3A%E0%B9%81%E0%B8%AA%E0%B8%87%E0%B8%AA%E0%B8%B8%E0%B8%94%E0%B8%97%E0%B9%89%E0%B8%B2%E0%B8%A2_%E0%B8%94%E0%B8%AD%E0%B8%A2%E0%B8%AB%E0%B8%A5%E0%B8%A7%E0%B8%87%E0%B9%80%E0%B8%8A%E0%B8%B5%E0%B8%A2%E0%B8%87%E0%B8%94%E0%B8%B2%E0%B8%A7_%28Sunset_at_Doi_Luang_Chiang_Dao%29.jpg",
+   "license": "CC BY-SA 4.0",
+   "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+   "by": "Suriya.saeng",
+   "focus": [
+    0.6,
+    0.9
+   ],
+   "pd": "c:194820408"
+  },
+  "loom": {
+   "title": "Reading in Bangkok (Unsplash)",
+   "src": "https://commons.wikimedia.org/wiki/File%3AReading_in_Bangkok_%28Unsplash%29.jpg",
+   "license": "CC0",
+   "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+   "by": "rawpixel.com rawpixel",
+   "focus": [
+    0.45,
+    0.55
+   ],
+   "pd": "c:61802907"
+  },
+  "stitch": {
+   "title": "Phayao - Lantern walkway at Wat Phra That Chom Thong Jan 2024",
+   "src": "https://commons.wikimedia.org/wiki/File%3APhayao_-_Lantern_walkway_at_Wat_Phra_That_Chom_Thong_Jan_2024.jpg",
+   "license": "CC BY-SA 4.0",
+   "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+   "by": "BigDom",
+   "focus": [
+    0.45,
+    0.45
+   ],
+   "pd": "c:145535691"
+  },
+  "night": {
+   "title": "Loi-Krathong-09797 (23409064512)",
+   "src": "https://commons.wikimedia.org/wiki/File%3ALoi-Krathong-09797_%2823409064512%29.jpg",
+   "license": "CC BY 2.0",
+   "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+   "by": "Visions of Domino",
+   "focus": [
+    0.45,
+    0.78
+   ],
+   "pd": "c:57502260"
+  },
+  "lanna": {
+   "title": "Chiang Mai - Wat Saen Mueang Ma Luang - 0001",
+   "src": "https://commons.wikimedia.org/wiki/File%3AChiang_Mai_-_Wat_Saen_Mueang_Ma_Luang_-_0001.jpg",
+   "license": "CC BY-SA 3.0",
+   "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+   "by": "Stefan Fussan",
+   "focus": [
+    0.5,
+    0.55
+   ],
+   "pd": "c:38365517"
+  },
+  "clean": {
+   "title": "Minimal hike on the dunes (Unsplash)",
+   "src": "https://commons.wikimedia.org/wiki/File%3AMinimal_hike_on_the_dunes_%28Unsplash%29.jpg",
+   "license": "CC0",
+   "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+   "by": "Matt Le mattlephoto",
+   "focus": [
+    0.45,
+    0.9
+   ],
+   "pd": "c:61634633"
+  },
+  "gold": {
+   "title": "Sunrise at Pu Chi Fah 05",
+   "src": "https://commons.wikimedia.org/wiki/File%3ASunrise_at_Pu_Chi_Fah_05.jpg",
+   "license": "CC BY-SA 4.0",
+   "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+   "by": "Pulperm Phungprachit",
+   "focus": [
+    0.52,
+    0.45
+   ],
+   "pd": "c:79933745"
+  }
+ },
+ "event": {
+  "poster": {
+   "title": "Folk Music and fire in Chiang Mai",
+   "src": "https://commons.wikimedia.org/wiki/File%3AFolk_Music_and_fire_in_Chiang_Mai.jpg",
+   "license": "CC BY-SA 4.0",
+   "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+   "by": "Bo.botones",
+   "focus": [
+    0.4,
+    0.6
+   ],
+   "pd": "c:87114740"
+  },
+  "loom": {
+   "title": "Making pottery (Unsplash)",
+   "src": "https://commons.wikimedia.org/wiki/File%3AMaking_pottery_%28Unsplash%29.jpg",
+   "license": "CC0",
+   "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+   "by": "Jared Sluyter jaredsluyter",
+   "focus": [
+    0.5,
+    0.55
+   ],
+   "pd": "c:62214199"
+  },
+  "stitch": {
+   "title": "Songkran 8 - Ayutthaya",
+   "src": "https://commons.wikimedia.org/wiki/File%3ASongkran_8_-_Ayutthaya.jpg",
+   "license": "CC BY-SA 3.0",
+   "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+   "by": "JJ Harrison (https://www.jjharrison.com.au/)",
+   "focus": [
+    0.48,
+    0.42
+   ],
+   "pd": "c:26044531"
+  },
+  "night": {
+   "title": "Loi-Krathong-09887 (22889466504)",
+   "src": "https://commons.wikimedia.org/wiki/File%3ALoi-Krathong-09887_%2822889466504%29.jpg",
+   "license": "CC BY 2.0",
+   "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+   "by": "Visions of Domino",
+   "focus": [
+    0.55,
+    0.5
+   ],
+   "pd": "c:57502700"
+  },
+  "lanna": {
+   "title": "Show in Chiang Mai",
+   "src": "https://commons.wikimedia.org/wiki/File%3AShow_in_Chiang_Mai.JPG",
+   "license": "CC BY-SA 3.0",
+   "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+   "by": "Supercarwaar",
+   "focus": [
+    0.47,
+    0.5
+   ],
+   "pd": "c:31278657"
+  },
+  "clean": {
+   "title": "The Umbrella Workshop",
+   "src": "https://commons.wikimedia.org/wiki/File%3AThe_Umbrella_Workshop.jpg",
+   "license": "CC BY-SA 4.0",
+   "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+   "by": "Sopyaylynn",
+   "focus": [
+    0.45,
+    0.52
+   ],
+   "pd": "c:162660003"
+  },
+  "gold": {
+   "title": "Golden Mediterranean (14668809835)",
+   "src": "https://commons.wikimedia.org/wiki/File%3AGolden_Mediterranean_%2814668809835%29.jpg",
+   "license": "CC BY-SA 2.0",
+   "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+   "by": "Kurt Bauschardt from Edmonton, Canada",
+   "focus": [
+    0.54,
+    0.4
+   ],
+   "pd": "c:50203456"
+  }
+ },
+ "group": {
+  "poster": {
+   "title": "People Group Silhouette Sunset (Unsplash)",
+   "src": "https://commons.wikimedia.org/wiki/File%3APeople_Group_Silhouette_Sunset_%28Unsplash%29.jpg",
+   "license": "CC0",
+   "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+   "by": "Ms.Sue Huan mssuehuan",
+   "focus": [
+    0.5,
+    0.42
+   ],
+   "pd": "c:62094814"
+  },
+  "loom": {
+   "title": "Amarapura-Seidenweberei-32-Weberinnen-gje",
+   "src": "https://commons.wikimedia.org/wiki/File%3AAmarapura-Seidenweberei-32-Weberinnen-gje.jpg",
+   "license": "CC BY-SA 4.0",
+   "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+   "by": "Gerd Eichmann",
+   "focus": [
+    0.5,
+    0.5
+   ],
+   "pd": "c:64728864"
+  },
+  "stitch": {
+   "title": "People making paper flower crafts",
+   "src": "https://commons.wikimedia.org/wiki/File%3APeople_making_paper_flower_crafts.jpg",
+   "license": "CC0",
+   "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+   "by": "rawpixel.com rawpixel",
+   "focus": [
+    0.5,
+    0.5
+   ],
+   "pd": "c:61802349"
+  },
+  "night": {
+   "title": "Thaïlande - Lanternes volantes",
+   "src": "https://commons.wikimedia.org/wiki/File%3ATha%C3%AFlande_-_Lanternes_volantes.jpg",
+   "license": "CC BY-SA 4.0",
+   "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+   "by": "PA",
+   "focus": [
+    0.5,
+    0.42
+   ],
+   "pd": "c:65031462"
+  },
+  "lanna": {
+   "title": "Chiang-Mai Thailand Buddhist-monks-installing-lampioons-01",
+   "src": "https://commons.wikimedia.org/wiki/File%3AChiang-Mai_Thailand_Buddhist-monks-installing-lampioons-01.jpg",
+   "license": "CC BY-SA 3.0",
+   "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+   "by": "CEphoto, Uwe Aranas",
+   "focus": [
+    0.52,
+    0.55
+   ],
+   "pd": "c:38551348"
+  },
+  "clean": {
+   "title": "Hikers at peak (Unsplash)",
+   "src": "https://commons.wikimedia.org/wiki/File%3AHikers_at_peak_%28Unsplash%29.jpg",
+   "license": "CC0",
+   "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+   "by": "Mathias Jensen mathiasjensen",
+   "focus": [
+    0.5,
+    0.95
+   ],
+   "pd": "c:61671715"
+  },
+  "gold": {
+   "title": "Sunset Picnic (Unsplash)",
+   "src": "https://commons.wikimedia.org/wiki/File%3ASunset_Picnic_%28Unsplash%29.jpg",
+   "license": "CC0",
+   "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+   "by": "Arthur Poulin barchpou",
+   "focus": [
+    0.3,
+    0.58
+   ],
+   "pd": "c:61668242"
+  }
+ }
+}
