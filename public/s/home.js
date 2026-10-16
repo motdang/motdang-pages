@@ -446,18 +446,22 @@ function words() {
 function all() {
   words(); chips(); phones(); toys(); looks(); tiers(COUNT?.price || 3000, COUNT?.hotel || 555, COUNT?.hotelYear || 5550); live(); studio(); cover(); credits(); steps()
   paint(performance.now())
+  watchDock()
+}
+
+// the docked button shows once the hero is gone, and steps aside while another "make" button is on screen,
+// so it never sits on top of a heading or a card's own button (2026-10-16). all() redraws those buttons on a
+// language switch, so it watches them afresh each time.
+let dockIO = null
+const dockSeen = new Set()
+function watchDock() {
+  dockIO?.disconnect(); dockSeen.clear()
+  dockIO = new IntersectionObserver((es) => { es.forEach((e) => (e.isIntersecting ? dockSeen.add(e.target) : dockSeen.delete(e.target))); $('#dock').classList.toggle('on', !dockSeen.size) }, { rootMargin: '0px 0px -40px 0px' })
+  dockIO.observe($('.hero'))
+  document.querySelectorAll('main a[href^="/make"], main .go, main button.go').forEach((el) => dockIO.observe(el))
 }
 all()
 lanterns()
-// the docked button shows once the hero is gone, and steps aside while another "make" button is on screen,
-// so it never sits on top of a heading or a card's own button (2026-10-16)
-{
-  const seen = new Set()
-  const dock = () => $('#dock').classList.toggle('on', !seen.size)
-  const io = new IntersectionObserver((es) => { es.forEach((e) => (e.isIntersecting ? seen.add(e.target) : seen.delete(e.target))); dock() }, { rootMargin: '0px 0px -40px 0px' })
-  io.observe($('.hero'))
-  document.querySelectorAll('main a[href^="/make"], main .go, main button.go').forEach((el) => io.observe(el))
-}
 $('#mshuffle').onclick = () => { cvI++; cover() }
 $('#tn').addEventListener('change', () => cover())
 Promise.all([fetch('/s/home/examples.json').then((r) => r.json()).then((j) => { EXCR = j }).catch(() => {}), avatar()]).then(() => phones())
