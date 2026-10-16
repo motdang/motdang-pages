@@ -69,6 +69,7 @@ export function label(path) {
   return `${a[0].toUpperCase()}${a.slice(1).replace(/s$/, '')} ${Number(b) + 1} · ${NAMES[c] || c}`
 }
 
+const lines = (n) => `${n} line${n === 1 ? '' : 's'}`
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c])
 const tall = (s) => Math.min(14, Math.max(2, Math.ceil(String(s).length / 38) + (String(s).match(/\n/g) || []).length))
 
@@ -99,13 +100,13 @@ textarea{width:100%;box-sizing:border-box;font:inherit;padding:10px;border:2px s
 ${saved ? `<p class="note ok">✓ บันทึกแล้ว · Saved. <a href="${esc(view)}" target="_blank">${esc(L)}</a> shows your words now.</p>` : ''}
 ${err ? `<p class="note err">${esc(err)}</p>` : ''}
 <form method="post"><label class="who">ชื่อของคุณ (สำหรับค่าจ้าง) · Your name, for the pay<input name="who" value="${esc(who || '')}" maxlength="60" required autocomplete="name"></label>
-<p class="hint">${list.length} lines · ${fixed} checked before${flagged ? ` · <b>${flagged} changed since they were checked</b>` : ''}</p>
+<p class="hint">${lines(list.length)} · ${fixed} checked before${flagged ? ` · <b>${flagged} changed since they were checked</b>` : ''}</p>
 <div class="head"><span>${esc(H)}</span><span>${esc(L)}</span></div>
 ${list.map((r, i) => `<div class="row"><span class="lab">${esc(label(r.path))} ${r.fixed ? '<span class="pill ok">checked</span>' : r.was ? '<span class="pill flag">words changed</span>' : r.mt ? '<span class="pill">machine</span>' : '<span class="pill flag">no machine version yet</span>'}</span>
 <div class="src" lang="${esc(home)}" data-h="${esc(H)}">${esc(r.src)}</div><input type="hidden" name="s${i}" value="${esc(r.src)}">
 <textarea name="v${i}" lang="${esc(lang)}" rows="${tall(r.v || r.src)}" aria-label="${esc(L)}: ${esc(label(r.path))}">${esc(r.v)}</textarea>
 ${r.was ? `<p class="was">ก่อนหน้านี้ · Before the maker changed it: <s>${esc(r.was.src)}</s><br>→ ${esc(r.was.v)}</p>` : ''}</div>`).join('\n')}
-<div class="bar"><div><button>บันทึก · Save</button><span>${esc(L)} · ${list.length} lines</span></div></div></form></main></body></html>`
+<div class="bar"><div><button>บันทึก · Save</button><span>${esc(L)} · ${lines(list.length)}</span></div></div></form></main></body></html>`
 }
 
 /** /x/<link>: GET the page, POST the translator's words. Answers every /x/ path. */
@@ -164,6 +165,6 @@ export async function route(request, env, path, url, origin, { html, sha, sameOr
   await log(env, g.site_id, 'tr-check', `${g.lang} ${put.length} lines, ${changed} changed, ${who}`)
   const first = !g.taken
   await postPeople(`${first ? '✓ ตรวจคำแปลเสร็จ · Page check done' : '✎ ตรวจคำแปลแก้อีกครั้ง · Page check saved again'} · ${PAGE_LANGS[g.lang]}\n` +
-    `${d.name || g.name} · ${who} · ${put.length} lines, ${changed} changed${drop.length ? `, ${drop.length} back to the machine` : ''}\n${origin}/${g.name}?hl=${g.lang}`).catch((e) => console.error(e))
+    `${d.name || g.name} · ${who} · ${lines(put.length)}, ${changed} changed${drop.length ? `, ${drop.length} back to the machine` : ''}\n${origin}/${g.name}?hl=${g.lang}`).catch((e) => console.error(e))
   return Response.redirect(url.origin + path + '?saved=1', 303)
 }
