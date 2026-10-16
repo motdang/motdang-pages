@@ -27,6 +27,7 @@ function data(kind) {
   if (kind === 'work') { x.works = [{ t: 'A wedding on Doi Suthep', year: '2026', tags: 'weddings', photos: [KPIC_ID] }, { t: 'Menu photos for a café', year: '2025', tags: 'food', photos: [KPIC_ID] }]; x.quotes = [{ q: 'Quick, kind, and the photos were beautiful.', who: 'Ploy' }] }
   if (kind === 'me' || kind === 'work' || kind === 'group') x.links = [{ t: 'Facebook', u: 'https://www.facebook.com/' }, { t: 'Instagram', u: 'https://www.instagram.com/' }]
   if (kind === 'event') x.event = { start: day(7, '18:00'), end: '', tz: 'Asia/Bangkok' }
+  x.pay = { pp: '0812345678', tips: ['me', 'work', 'group', 'service'].includes(kind), price: kind === 'event' ? '150' : '' }
   if (kind === 'event' || kind === 'group') x.cal = [{ t: 'Monthly meet-up', start: day(5, '18:00'), end: '20:00', rep: 'monthly' }, { t: 'Saturday market', start: day(2, '16:00'), end: '21:00', rep: 'weekly' }]
   return x
 }
@@ -43,7 +44,7 @@ const extra = [
   ['thai', 'food', (x) => { x.name = 'ก๋วยเตี๋ยวป้านิด'; x.tagline = 'ข้าวซอยตั้งแต่ปี 2530'; x.place.addr = 'ถนนท่าแพ, เชียงใหม่' }],
   ['nopic', 'shop', (x) => { x.cover = ''; x.photos = [] }],
   ['list', 'homes', null, { listing: true }],
-  ['work', 'work', null, { work: true }],
+  ['workpage', 'work', null, { work: true }],
 ]
 for (const look of looks) for (const [tag, kind, f, o] of extra) {
   const dd = data(kind); if (f) f(dd)
