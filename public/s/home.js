@@ -464,6 +464,6 @@ all()
 lanterns()
 $('#mshuffle').onclick = () => { cvI++; cover() }
 $('#tn').addEventListener('change', () => cover())
-Promise.all([fetch('/s/home/examples.json').then((r) => r.json()).then((j) => { EXCR = j }).catch(() => {}), avatar()]).then(() => phones())
+Promise.all([fetch('/s/home/examples.json').then((r) => r.json()).then((j) => { EXCR = j }).catch(() => {}), avatar()]).then(() => { phones(); watchDock() })
 fetch('/api/count').then((r) => r.json()).then((j) => { COUNT = j; tiers(j.price, j.hotel, j.hotelYear); live() }).catch(() => {})
 dbs.catch(() => {})
