@@ -244,7 +244,7 @@ function badge(d, E) {
       c.lineWidth = S.hair(9); c.strokeStyle = v === 0 ? R.edge : R.panel; c.beginPath(); circle(c, cx, cy, medR); c.stroke()
       if (v === 0) { c.lineWidth = S.hair(3); c.strokeStyle = alpha(R.edge, 0.55); c.beginPath(); circle(c, cx, cy, medR - 16); c.stroke() }
       arcText(c, topT, { cx, cy, r: rTop, mid: -PI / 2, dir: 'top', font: nfont, size: ts, track, fill: onPanel })
-      if (botT) arcText(c, botT, { cx, cy, r: rBot, mid: PI / 2, dir: 'bottom', font: bfont, size: botSize, track: two ? track : 0.05, fill: v === 0 ? R.edge : onPanel })
+      if (botT) arcText(c, botT, { cx, cy, r: rBot, mid: PI / 2, dir: 'bottom', font: bfont, size: botSize, track: two ? track : 0.05, fill: v === 0 ? R.edgeText : onPanel })
       const markCol = v === 0 ? R.edge : R.panel
       c.fillStyle = markCol
       const sr = Math.min(bw * 0.22, 32)
@@ -303,7 +303,7 @@ function mono(d, E, W0 = 1000) {
     } },
     { gap: 44, h: nb.h, w: nb.w, draw: (c, cx, y) => drawBlock(c, nb, cx, y + nb.asc, { fill: R.text }) },
   ]
-  if (tb) items.push({ gap: 22, h: tb.h, w: tb.w, draw: (c, cx, y) => drawBlock(c, tb, cx, y + tb.asc, { fill: R.brand }) })
+  if (tb) items.push({ gap: 22, h: tb.h, w: tb.w, draw: (c, cx, y) => drawBlock(c, tb, cx, y + tb.asc, { fill: R.brandText }) })
   return stack(items)
 }
 
@@ -325,7 +325,7 @@ function wordmark(d, E, W0 = 1000) {
     items.push({ h: 14, w: rw, draw: (c, cx, y, S) => { c.fillStyle = R.edge; c.fillRect(cx - rw / 2, y + 4, rw, S.hair(5)); c.fillRect(cx - rw / 2, y + 14, rw, S.hair(2)) } })
     items.push({ gap: 38, h: nb.h, w: nb.w, draw: (c, cx, y) => drawBlock(c, nb, cx, y + nb.asc, { fill: R.text }) })
     items.push({ gap: 36, h: 14, w: rw, draw: (c, cx, y, S) => { c.fillStyle = R.edge; c.fillRect(cx - rw / 2, y, rw, S.hair(2)); c.fillRect(cx - rw / 2, y + 9, rw, S.hair(5)); c.beginPath(); c.moveTo(cx, y - 8); c.lineTo(cx + 12, y + 7); c.lineTo(cx, y + 22); c.lineTo(cx - 12, y + 7); c.closePath(); c.fillStyle = R.brand; c.fill() } })
-    if (tb) items.push({ gap: 30, h: tb.h, w: tb.w, draw: (c, cx, y) => drawBlock(c, tb, cx, y + tb.asc, { fill: R.brand }) })
+    if (tb) items.push({ gap: 30, h: tb.h, w: tb.w, draw: (c, cx, y) => drawBlock(c, tb, cx, y + tb.asc, { fill: R.brandText }) })
   } else if (v === 3) {
     const bw = nb.w + 40, bh = tb ? tb.h + 44 : 0
     items.push({ h: nb.h, w: nb.w, draw: (c, cx, y) => drawBlock(c, nb, cx, y + nb.asc, { fill: R.brand }) })

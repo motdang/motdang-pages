@@ -7,10 +7,11 @@
 //     onUse(canvas640, { cover: canvas1600x900, design })  → a Promise; the sheet closes when it settles
 
 import { DINGBATS } from './db/names.mjs'
-import { logoDesigns, drawLogo, groundOf, roles, loadFonts, FONT_KEYS, FONTS, PALS, palFromMain, RECIPES, applyRecipe, iconsFor, familiesFor, renderPack, logoCanvas, squareCanvas, coverCanvas, slug } from './logo.mjs'
+import { logoDesigns, drawLogo, groundOf, loadFonts, FONT_KEYS, FONTS, PALS, palFromMain, RECIPES, applyRecipe, iconsFor, familiesFor, renderPack, logoCanvas, squareCanvas, coverCanvas, slug } from './logo.mjs'
 import { cssFamily, cssWeight } from './logo-fonts.mjs'
 import { MOCKS, paintMock } from './logo-mock.mjs'
-import { isHex, mix } from './logo-color.mjs'
+import { isHex } from './logo-color.mjs'
+import { hasThai } from './logo-text.mjs'
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c])
 const unesc = (s) => String(s).replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, '&')
@@ -36,6 +37,7 @@ export function ensureLogoCss() {
 
 function download(canvas, filename) {
   return new Promise((ok) => canvas.toBlob((b) => {
+    if (!b) return ok()
     const a = document.createElement('a')
     a.href = URL.createObjectURL(b); a.download = filename
     document.body.appendChild(a); a.click(); a.remove()
@@ -62,7 +64,7 @@ export function openLogo({ name = '', tagline = '', kind = 'shop', accent = '#d7
   const close = () => { alive = false; document.removeEventListener('keydown', onKey); box.remove() }
   const onKey = (e) => { if (e.key === 'Escape') (st.view === 'edit' ? toGallery() : close()) }
   document.addEventListener('keydown', onKey)
-  box.addEventListener('click', (e) => { if (e.target === box) close() })
+  box.addEventListener('click', (e) => { if (e.target === box && st.view === 'gallery') close() })
   $('#lg-x').onclick = close
 
   const words = () => ({ name: st.name.trim() || raw('lg_sample'), tagline: st.tagline.trim(), small: st.small.trim(), kind: st.kind, accent: st.accent, look: st.look })
@@ -113,9 +115,16 @@ export function openLogo({ name = '', tagline = '', kind = 'shop', accent = '#d7
     designs = logoDesigns({ ...wd, seed: st.seed })
     const gal = $('#lg-gal')
     if (!gal) return
-    if (fresh) gal.classList.remove('in')
-    gal.innerHTML = designs.map((d, i) => `<button class="lg-card" type="button" role="listitem" data-i="${i}" data-id="${d.id}" aria-label="${esc(d.name)} ${i + 1}" style="${groundCss(d)}"><canvas></canvas></button>`).join('')
-    requestAnimationFrame(() => gal.classList.add('in'))
+    let cards = [...gal.querySelectorAll('.lg-card')]
+    if (fresh || cards.length !== designs.length) {
+      if (fresh) gal.classList.remove('in')
+      gal.innerHTML = designs.map((d, i) => `<button class="lg-card" type="button" role="listitem" data-i="${i}" data-id="${d.id}" aria-label="${esc(d.name)} ${i + 1}" style="${groundCss(d)}"><canvas></canvas></button>`).join('')
+      requestAnimationFrame(() => gal.classList.add('in'))
+      cards = [...gal.querySelectorAll('.lg-card')]
+    } else {
+      // the same cards, new words: each keeps its picture until the new one is drawn over it
+      cards.forEach((c, i) => { c.dataset.id = designs[i].id; c.setAttribute('aria-label', `${designs[i].name} ${i + 1}`); c.style.cssText = groundCss(designs[i]) })
+    }
     if (obs) obs.disconnect()
     const my = (rebuild.gen = (rebuild.gen || 0) + 1)
     obs = new IntersectionObserver((es) => {
@@ -127,7 +136,7 @@ export function openLogo({ name = '', tagline = '', kind = 'shop', accent = '#d7
         ready(d).then(() => { if (alive && my === rebuild.gen && st.view === 'gallery' && e.target.isConnected) { paint(e.target.firstChild, d); e.target.classList.add('done') } })
       }
     }, { root: box.querySelector('.box'), rootMargin: '500px 0px' })
-    gal.querySelectorAll('.lg-card').forEach((c) => obs.observe(c))
+    cards.forEach((c) => obs.observe(c))
   }
 
   // ---- editor ------------------------------------------------------------------------------
@@ -202,6 +211,7 @@ export function openLogo({ name = '', tagline = '', kind = 'shop', accent = '#d7
     <div class="row"><input id="lg-iq" type="search" placeholder="${T('lg_icon_find')}" value="${esc(st.q)}" style="flex:1;min-width:150px"><button class="back" type="button" data-ic="">× ${T('lg_icon_none')}</button></div>
     <div class="chips" id="lg-fams"><button type="button" data-fam="suggested"${st.fam === 'suggested' ? ' class="on"' : ''}>${T('lg_icon_sug')}</button>${[...new Set(Object.values(DINGBATS))].map((f) => `<button type="button" data-fam="${f}"${st.fam === f ? ' class="on"' : ''}>${esc(f)}</button>`).join('')}</div>
     <div class="dpick lg-dp" id="lg-ig"></div>
+    <div class="field"><span>${T('lg_icon_size')}</span><input id="lg-is" type="range" min="0.5" max="1.3" step="0.05" value="${st.cur.is || 1}"></div>
     <div class="field"><span>${T('lg_icon_style')}</span>${seg('iconLook', [['auto', T('lg_is_auto')], ['ink', T('lg_is_colour')], ['mono', T('lg_is_mono')]], st.cur.iconLook === 'ink' || st.cur.iconLook === 'mono' ? st.cur.iconLook : 'auto')}</div>`
 
   async function glyphs() {
@@ -227,7 +237,7 @@ export function openLogo({ name = '', tagline = '', kind = 'shop', accent = '#d7
 
   const panelType = () => `<p class="hint">${T('lg_type_hint')}</p>
     <div class="lg-fonts" id="lg-fonts">${FONT_KEYS.map((k) => `<button type="button" class="lg-ft${k === st.cur.font ? ' on' : ''}" data-font="${k}"><span class="s" style='font-family:${cssFamily(k)};font-weight:${cssWeight(k)};font-size:${sampleSize(st.cur.name)}px'>${esc(st.cur.name)}</span><small>${esc(FONTS[k].fam)}</small></button>`).join('')}</div>
-    <div class="field"><span>${T('lg_space')}</span><input id="lg-sp" type="range" min="0" max="0.2" step="0.01" value="${st.cur.track || 0}"></div>
+    ${hasThai(st.cur.name) ? '' : `<div class="field"><span>${T('lg_space')}</span><input id="lg-sp" type="range" min="0" max="0.2" step="0.01" value="${st.cur.track || 0}"></div>`}
     <div class="field"><span>${T('lg_caps')}</span>${seg('caps', [['auto', T('lg_caps_auto')], ['upper', T('lg_caps_on')], ['none', T('lg_caps_off')]], st.cur.caps)}</div>`
   const fontTiles = () => { loadFonts(FONT_KEYS) }
 
@@ -342,6 +352,7 @@ export function openLogo({ name = '', tagline = '', kind = 'shop', accent = '#d7
     else if (t.id === 'lg-wt') { cur.tagline = t.value; redraw() }
     else if (t.id === 'lg-ws') { cur.small = t.value; redraw() }
     else if (t.id === 'lg-sp') { cur.track = Number(t.value); redraw() }
+    else if (t.id === 'lg-is') { cur.is = Number(t.value); redraw() }
     else if (t.id === 'lg-iq') { st.q = t.value; soon(glyphs, 160) }
     else if (t.id === 'lg-c1' || t.id === 'lg-c2') {
       const m = $('#lg-c1').value, a = $('#lg-c2').value

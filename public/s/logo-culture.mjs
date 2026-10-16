@@ -4,7 +4,7 @@
 // Also the cover grounds that go with each.
 
 import { fitName, drawBlock, line, ink, hasThai, clusters } from './logo-text.mjs'
-import { rr, circle, star, scallop, shield, ogee, rosette, ogeeRow, layer, erode, rng, scaleOf, BANDS, stitchBand, stitchCanvas, wovenBand, cloth, hexagon } from './logo-art.mjs'
+import { rr, circle, star, scallop, shield, ogee, rosette, kranokWheel, flame, ogeeRow, layer, erode, rng, scaleOf, BANDS, stitchBand, stitchCanvas, wovenBand, cloth, hexagon } from './logo-art.mjs'
 import { alpha, mix, shade, readable, contrast, lum, toHsl } from './logo-color.mjs'
 import { bodyH, within, stack, smallLine } from './logo-layouts.mjs'
 
@@ -208,9 +208,9 @@ function lanna(d, E, W0 = 1000) {
         c.lineWidth = S.hair(5); c.strokeStyle = goldL; c.beginPath(); rr(c, 46, 46, W - 92, H - 92, 8); c.stroke()
         c.lineWidth = S.hair(2.5); c.strokeStyle = alpha(goldL, 0.6); c.beginPath(); rr(c, 60, 60, W - 120, H - 120, 4); c.stroke()
         for (const [x, y] of [[62, 62], [W - 62, 62], [W - 62, H - 62], [62, H - 62]]) {
-          c.beginPath(); circle(c, x, y, 66); c.fillStyle = lacquer; c.fill()
-          c.lineWidth = S.hair(6); c.strokeStyle = gfill; c.stroke()
-          rosette(c, x, y, 58, 8, gold, goldL, lacquer)
+          c.beginPath(); circle(c, x, y, 70); c.fillStyle = lacquer; c.fill()
+          c.lineWidth = S.hair(5); c.strokeStyle = gfill; c.stroke()
+          kranokWheel(c, x, y, 64, 8, gold, goldL, lacquer)
         }
         c.beginPath(); ogee(c, W / 2, 60, 110, 130); c.fillStyle = gfill; c.fill()
         c.beginPath(); ogee(c, W / 2, H - 60, 110, -130); c.fillStyle = gfill; c.fill()
@@ -227,10 +227,12 @@ function lanna(d, E, W0 = 1000) {
         c.lineWidth = S.hair(5); c.strokeStyle = goldL; c.beginPath(); gable(c, W, H); c.stroke()
         c.restore()
         c.restore()
-        const fin = (x, y, w, h, rot = 0) => { c.save(); c.translate(x, y); c.rotate(rot); c.beginPath(); ogee(c, 0, 0, w, h); c.fillStyle = gfill; c.fill(); c.restore() }
+        const fin = (x, y, w, h, rot = 0) => { c.save(); c.translate(x, y); c.rotate(rot); c.beginPath(); ogee(c, 0, 0, w, h); c.fillStyle = gold; c.fill(); c.restore() }
         fin(W / 2, 14, 76, 92)
-        fin(W * 0.185, H * 0.3, 56, 70, -0.95)
-        fin(W * 0.815, H * 0.3, 56, 70, 0.95)
+        for (const sd of [-1, 1]) {
+          c.save(); c.translate(W / 2 + sd * W * 0.31, H * 0.255); c.scale(sd, 1); c.rotate(-0.95)
+          c.beginPath(); flame(c, 84, 0.3, 0.3); c.fillStyle = gold; c.fill(); c.restore()
+        }
         for (const x of [70, W - 70]) rosette(c, x, H - 70, 50, 8, gold, goldL, lacquer)
       }
       let y = v === 0 ? (H - content) / 2 + 6 : H * 0.215
@@ -460,7 +462,7 @@ function tag(d, E, W0 = 1000) {
       const total = nb.h + (tb ? tb.h + 28 : 0)
       let y = y0 + (h - total) / 2
       drawBlock(c, nb, tx, y + nb.asc, { fill: R.onPanel }); y += nb.h
-      if (tb) drawBlock(c, tb, tx, y + 28 + tb.asc, { fill: R.edge })
+      if (tb) drawBlock(c, tb, tx, y + 28 + tb.asc, { fill: R.edgeText })
       if (hasI) E.icon(c, d.icon, x0 + w - 70, y0 - 20, 190, 170, { look: 'paper', bg: R.ground })
       c.restore()
     },

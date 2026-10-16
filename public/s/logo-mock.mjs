@@ -5,6 +5,7 @@
 import { rr, circle } from './logo-art.mjs'
 import { mix, shade, alpha, lum, readable } from './logo-color.mjs'
 import { nameFont, smallFont } from './logo-fonts.mjs'
+import { balance } from './logo-text.mjs'
 
 const W = 480, H = 360
 const SANS = 'system-ui,-apple-system,"Segoe UI","Noto Sans Thai","Noto Sans Myanmar","PingFang SC",sans-serif'
@@ -38,6 +39,18 @@ function fitSize(c, s, maxW, fontFn, size, min) {
   let z = size
   while (z > min) { c.font = fontFn(z); if (c.measureText(s).width <= maxW) break; z -= 0.5 }
   return z
+}
+
+/** The text in one line or two at the largest size from `size` down to `min` that fits maxW; shortened if nothing does. */
+function fitLines(c, s, maxW, fontFn, size, min, maxLines = 2) {
+  s = String(s)
+  for (let n = 1; n <= maxLines; n++) {
+    const lines = n === 1 ? [s] : balance(c, s, fontFn(size), n)
+    if (lines.length < n) continue
+    for (let z = size; z >= min; z -= 0.5) { c.font = fontFn(z); if (lines.every((l) => c.measureText(l).width <= maxW)) return { lines, size: z } }
+  }
+  const f = fontFn(min)
+  return { lines: [ellipsize(c, s, maxW, f)], size: min }
 }
 
 function ellipsize(c, s, maxW, font) {
@@ -78,8 +91,8 @@ function page(c, P) {
   const ay = py + 7 + ch - 24
   c.beginPath(); circle(c, px + 44, ay + 28, 33); c.fillStyle = '#fff'; c.fill()
   c.save(); c.beginPath(); circle(c, px + 44, ay + 28, 29); c.clip(); cover(c, P.sq, px + 15, ay - 1, 58, 58); c.restore()
-  const nm = ellipsize(c, P.name, 100, `700 15px ${SANS}`)
-  text(c, nm, px + 84, ay + 36, `700 15px ${SANS}`, '#1c1530')
+  const pn = fitLines(c, P.name, 104, (z) => `700 ${z}px ${SANS}`, 15, 10.5)
+  pn.lines.forEach((l, i) => text(c, l, px + 84, ay + 40 + i * pn.size * 1.2, `700 ${pn.size}px ${SANS}`, '#1c1530'))
   c.fillStyle = '#eee'
   for (const [w, y] of [[150, 128], [120, 142]]) { c.beginPath(); rr(c, px + 20, ay + y - 14, w, 7, 3.5); c.fill() }
   c.fillStyle = P.R.panel; c.beginPath(); rr(c, px + 20, ay + 128, 84, 30, 15); c.fill()
@@ -178,15 +191,19 @@ function card(c, P) {
   shadow(c, 18, 6, 12); c.beginPath(); rr(c, -cw / 2, -ch / 2, cw, ch, 8); c.fillStyle = mix(P.R.ground, '#ffffff', P.R.dark ? 0 : 0.7); c.fill(); noShadow(c)
   const dark = lum(mix(P.R.ground, '#ffffff', P.R.dark ? 0 : 0.7)) < 0.3
   fit(c, P.sq, -cw / 2 + 16, -ch / 2 + 22, 112, 132)
-  const nfn = nameFont(P.d.font)
+  const nfn = nameFont(P.d.font), sfn = smallFont(P.d.font)
   const tx = -cw / 2 + 144
-  const nz = fitSize(c, P.name, cw / 2 - 12, nfn, 22, 13)
-  const nf = nfn(nz)
-  text(c, ellipsize(c, P.name, cw / 2 - 12, nf), tx, -18, nf, dark ? P.R.light : P.R.deep)
-  const sf = smallFont(P.d.font)(12.5)
-  if (P.tag) text(c, ellipsize(c, P.tag, cw / 2 - 24, sf), tx, 2, sf, P.R.brand)
+  const nm = fitLines(c, P.name, cw / 2 - 12, nfn, 22, 12)
+  const nlh = nm.size * 1.18
+  let y0 = -26
+  nm.lines.forEach((l, i) => text(c, l, tx, y0 + i * nlh, nfn(nm.size), dark ? P.R.light : P.R.deep))
+  y0 += (nm.lines.length - 1) * nlh + 20
+  if (P.tag) {
+    const tg = fitLines(c, P.tag, cw / 2 - 16, sfn, 12.5, 9.5)
+    tg.lines.forEach((l, i) => text(c, l, tx, y0 + i * tg.size * 1.2, sfn(tg.size), P.R.brandText))
+  }
   c.fillStyle = alpha(dark ? P.R.light : P.R.deep, 0.22)
-  for (const [w, y] of [[110, 40], [90, 56], [102, 72]]) { c.beginPath(); rr(c, tx, y, w, 5, 2.5); c.fill() }
+  for (const [w, y] of [[110, 52], [90, 66], [102, 80]]) { c.beginPath(); rr(c, tx, y, w, 5, 2.5); c.fill() }
   c.restore()
 }
 

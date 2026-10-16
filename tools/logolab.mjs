@@ -17,7 +17,7 @@
 // Playwright comes from the anidoodle-motdang checkout, Chrome is the installed one.
 
 import { createRequire } from 'node:module'
-import { writeFileSync, mkdirSync, rmSync, readdirSync, existsSync, mkdtempSync } from 'node:fs'
+import { writeFileSync, mkdirSync, rmSync, readdirSync, existsSync, mkdtempSync, readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -52,11 +52,10 @@ const SETS = {
 const kinds = opt('--kinds', 'all') === 'all' ? KINDS : opt('--kinds').split(',')
 const langs = opt('--langs', 'th,en').split(',')
 
-const HARNESS = `<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>logolab</title>
-<link rel="stylesheet" href="/s/make.css">
-<script type="module">
-import { ui } from '/s/make-words.mjs'
+// the builder's own content security policy, read from the worker, so a lab run fails where the page would
+const CSP = (() => { try { const m = /const CSP_TOOL = `([^`]*)`(?:\s*\+\s*`([^`]*)`)?/.exec(readFileSync(join(ROOT, 'src/worker.mjs'), 'utf8')); return (m[1] + (m[2] || '')).replace(/frame-ancestors[^;]*;?\s*/g, '').trim() } catch { return '' } })()
+
+const LABJS = `import { ui } from '/s/make-words.mjs'
 import { openLogo } from '/s/logo-ui.mjs'
 import { drawLogo, RECIPES } from '/s/logo.mjs'
 const q = new URLSearchParams(location.search)
@@ -84,7 +83,12 @@ window.labInk = () => [...document.querySelectorAll('#lg-gal .lg-card canvas')].
   for (let y = 0; y < 80; y++) for (let x = 0; x < 80; x++) if (d[(y * 80 + x) * 4 + 3] > 24) { n++; if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y }
   return { n, x0, y0, x1, y1, id: cv.parentNode.dataset.id }
 })
-</script></head><body></body></html>`
+`
+
+const HARNESS = `<!doctype html>
+<html lang="en"><head><meta charset="utf-8">${CSP ? `<meta http-equiv="Content-Security-Policy" content="${CSP.replace(/"/g, '&quot;')}">` : ''}<meta name="viewport" content="width=device-width,initial-scale=1"><title>logolab</title>
+<link rel="stylesheet" href="/s/make.css">
+<script type="module" src="/s/lab/logo-lab.mjs"></script></head><body></body></html>`
 
 function py(...a) {
   const r = spawnSync('python3', [join(ROOT, 'tools/logolab.py'), ...a], { stdio: 'inherit' })
@@ -95,7 +99,10 @@ mkdirSync(OUT, { recursive: true })
 mkdirSync(join(ROOT, 'public/s/lab'), { recursive: true })
 const labFile = join(ROOT, 'public/s/lab/logo.html')
 writeFileSync(labFile, HARNESS)
-const cleanup = () => { try { rmSync(labFile) } catch {}; try { if (!readdirSync(join(ROOT, 'public/s/lab')).length) rmSync(join(ROOT, 'public/s/lab'), { recursive: true }) } catch {} }
+const labJs = join(ROOT, 'public/s/lab/logo-lab.mjs')
+writeFileSync(labJs, LABJS)
+if (!CSP) console.log('note: no content security policy found in src/worker.mjs')
+const cleanup = () => { try { rmSync(labFile) } catch {}; try { rmSync(join(ROOT, 'public/s/lab/logo-lab.mjs')) } catch {}; try { if (!readdirSync(join(ROOT, 'public/s/lab')).length) rmSync(join(ROOT, 'public/s/lab'), { recursive: true }) } catch {} }
 process.on('exit', cleanup)
 process.on('SIGINT', () => process.exit(1))
 
@@ -118,6 +125,14 @@ async function open(lang, o, full = false) {
   return page
 }
 
+// a page that carries the policy refuses an inline script; if this one does not, the run proves nothing about it
+if (CSP) {
+  const t = await ctx.newPage()
+  await t.goto(`${ORIGIN}/s/lab/logo.html?lang=en`, { waitUntil: 'load' })
+  if (await t.evaluate(() => { const e = document.createElement('script'); e.textContent = 'window.__inline = 1'; document.head.appendChild(e); return !!window.__inline })) problems.push('lab: the content security policy is not enforced')
+  await t.close()
+}
+
 const sets = []
 for (const kind of kinds) for (const lang of langs) {
   const s = SETS[kind]
@@ -126,6 +141,7 @@ for (const kind of kinds) for (const lang of langs) {
 }
 
 const made = []
+const sheets = {}
 if (ONLY.includes('gallery')) for (const s of sets) {
   const page = await open(s.lang === 'th' ? 'th' : 'en', s, true)
   await page.waitForTimeout(300)
@@ -139,11 +155,17 @@ if (ONLY.includes('gallery')) for (const s of sets) {
   })
   let i = 0
   for (const r of rects) { await page.screenshot({ path: join(dir, `card-${String(i++).padStart(2, '0')}.png`), clip: { x: r.x, y: r.y, width: r.width, height: r.height }, fullPage: true }) }
-  const out = join(OUT, `logo-${s.kind}-${s.lang}.png`)
-  py('grid', dir, out, '--cols', '6', '--tile', '176', '--title', `${s.kind} · ${s.name}`)
-  made.push(out)
+  const one = join(SHOTS, `sheet-${s.kind}-${s.lang}.png`)
+  py('grid', dir, one, '--cols', '6', '--tile', '176', '--title', `${s.kind} · ${s.name}`)
+  sheets[s.kind] = { ...(sheets[s.kind] || {}), [s.lang]: one }
   if (s.lang === 'en' && ['food', 'stay'].includes(s.kind)) await page.screenshot({ path: join(SHOTS, `phone-${s.kind}.png`), fullPage: true })
   if (page.isClosed() === false) await page.close()
+}
+
+for (const [kind, by] of Object.entries(sheets)) {
+  const out = join(OUT, `logo-${kind}.png`)
+  py('hstack', out, ...langs.map((l) => by[l]).filter(Boolean))
+  made.push(out)
 }
 
 // the editor on each tab, on a phone, for one Thai and one English maker
@@ -153,10 +175,11 @@ const EDIT = [
 if (ONLY.includes('editor') || ONLY.includes('mocks')) for (const e of EDIT) {
   const s = sets.find((x) => x.kind === e.kind && x.lang === e.lang) || { ...SETS[e.kind], kind: e.kind, lang: e.lang, name: SETS[e.kind][e.lang][0], tagline: SETS[e.kind][e.lang][1], look: SETS[e.kind].look, accent: LOOKS[SETS[e.kind].look].accent }
   const page = await open(e.lang, s)
+  const shots = []
+  if (ONLY.includes('editor')) { const f = join(SHOTS, `edit-${e.kind}-gallery.png`); await page.screenshot({ path: f }); shots.push(f) }
   await page.locator('.lg-card').nth(e.pick).click()
   await page.waitForSelector('#lg-pv')
   await page.waitForTimeout(900)
-  const shots = []
   const tabs = ONLY.includes('editor') ? ['words', 'icon', 'type', 'colour', 'layout'] : []
   for (const t of tabs) {
     await page.locator(`.lg-tabs [data-tab="${t}"]`).click()
@@ -164,16 +187,17 @@ if (ONLY.includes('editor') || ONLY.includes('mocks')) for (const e of EDIT) {
     const f = join(SHOTS, `edit-${e.kind}-${t}.png`)
     await page.screenshot({ path: f }); shots.push(f)
   }
-  if (shots.length) { const o = join(OUT, `logo-editor-${e.lang}.png`); py('strip', o, ...shots, '--h', '1200', '--labels', tabs.join(',')); made.push(o) }
+  if (shots.length) { const o = join(OUT, `logo-editor-${e.lang}.png`); py('strip', o, ...shots, '--h', '1200', '--labels', ['gallery', ...tabs].join(',')); made.push(o) }
   if (ONLY.includes('mocks')) {
     await page.locator('.lg-tabs [data-tab="try"]').click()
     await page.waitForTimeout(2500)
     await page.addStyleTag({ content: '.sheet.logo{position:absolute;inset:0 0 auto 0;display:block;background:#fff;min-height:100%}.sheet.logo .box.lg{max-height:none;overflow:visible;width:390px;border-radius:0}.lg-top,.lg-pvw,.lg-tabs,.lg-bar{position:static!important}.lg-bar{display:none}' })
     await page.waitForTimeout(500)
-    const f = join(SHOTS, `mock-${e.kind}.png`)
-    await page.screenshot({ path: f, fullPage: true })
+    const files = []
+    const n = await page.locator('#lg-mocks canvas').count()
+    for (let i = 0; i < n; i++) { const f = join(SHOTS, `mock-${e.kind}-${i}.png`); await page.locator('#lg-mocks canvas').nth(i).screenshot({ path: f }); files.push(f) }
     const o = join(OUT, `logo-mockups-${e.kind}.png`)
-    py('strip', o, f, '--h', '2400')
+    py('mosaic', o, ...files, '--cols', '4', '--w', '360')
     made.push(o)
   }
   // the download and the use
@@ -212,9 +236,17 @@ if (ONLY.includes('flow')) {
     if (!(await page.locator('#lg-ig button').count())) throw new Error('no icon for coffee')
     await page.locator('#lg-ig button').first().click()
     await page.locator('[data-set="iconLook"][data-v="mono"]').click()
+    await page.fill('#lg-iq', ''); await page.waitForTimeout(300)
+    await page.locator('#lg-fams [data-fam="lanna"]').click(); await page.waitForTimeout(900)
+    if (!(await page.locator('#lg-ig button').count())) throw new Error('no icons in a family')
+    await page.locator('#lg-ig button').nth(2).click()
+    await page.locator('[data-ic=""]').first().click(); await page.waitForTimeout(300)
+    await page.locator('#lg-fams [data-fam="suggested"]').click(); await page.waitForTimeout(500)
+    await page.locator('#lg-ig button').first().click()
+    await page.locator('#lg-is').fill('0.7'); await page.waitForTimeout(300)
   })
   await step('letters', async () => { await page.locator('.lg-tabs [data-tab="type"]').click(); await page.waitForTimeout(1500); await page.locator('#lg-fonts .lg-ft').nth(5).click(); await page.waitForTimeout(500); await page.locator('#lg-sp').fill('0.1') })
-  await step('colour', async () => { await page.locator('.lg-tabs [data-tab="colour"]').click(); await page.locator('#lg-pals .lg-pal').nth(6).click(); await page.waitForTimeout(300); await page.locator('#lg-c1').fill('#1f7a5a'); await page.locator('[data-set="inv"][data-v="1"]').click(); await page.locator('.lg-gs [data-g="dark"]').click(); await page.waitForTimeout(500) })
+  await step('colour', async () => { await page.locator('.lg-tabs [data-tab="colour"]').click(); await page.locator('#lg-pals .lg-pal').nth(6).click(); await page.waitForTimeout(300); await page.locator('#lg-c1').fill('#1f7a5a'); await page.locator('[data-set="inv"][data-v="1"]').click(); await page.locator('.lg-gs [data-g="dark"]').click(); await page.locator('.lg-gs [data-g="clear"]').click(); await page.locator('.lg-gs [data-g="light"]').click(); await page.locator('.lg-gs [data-g="auto"]').click(); await page.waitForTimeout(500) })
   await step('layout', async () => { await page.locator('.lg-tabs [data-tab="layout"]').click(); await page.waitForTimeout(3000); await page.locator('#lg-lay .lg-card').nth(8).click(); await page.waitForTimeout(600) })
   await step('on things', async () => { await page.locator('.lg-tabs [data-tab="try"]').click(); await page.waitForTimeout(2500); const n = await page.locator('#lg-mocks canvas').count(); if (n < 8) throw new Error('mock-ups: ' + n) })
   await page.screenshot({ path: join(SHOTS, 'flow-end.png') })

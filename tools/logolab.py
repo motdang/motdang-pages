@@ -6,6 +6,8 @@
   logolab.py strip <out.png> <in.png>... [--h 1500] [--gap 14] [--labels a,b,c]
       phone screenshots side by side, scaled to one height
   logolab.py stack <out.png> <in.png>...     pictures one under another, as wide as the widest
+  logolab.py hstack <out.png> <in.png>...    pictures side by side, top-aligned
+  logolab.py mosaic <out.png> <in.png>... [--cols 4] [--w 360]   pictures of one width in rows
 """
 import sys, os, glob
 from PIL import Image, ImageDraw, ImageFont
@@ -98,6 +100,36 @@ def stack(args):
     save(S, out)
 
 
+def hstack(args):
+    out, ins = args[0], args[1:]
+    ims = [Image.open(f).convert('RGB') for f in ins]
+    W = sum(i.size[0] for i in ims)
+    H = max(i.size[1] for i in ims)
+    S = Image.new('RGB', (W, H), BG)
+    x = 0
+    for im in ims:
+        S.paste(im, (x, 0)); x += im.size[0]
+    save(S, out)
+
+
+def mosaic(args):
+    cols = int(opt(args, '--cols', 4)); w = int(opt(args, '--w', 360)); gap = 8
+    out, ins = args[0], args[1:]
+    ims = []
+    for f in ins:
+        im = Image.open(f).convert('RGB')
+        ims.append(im.resize((w, int(im.size[1] * w / im.size[0])), Image.LANCZOS))
+    rows = (len(ims) + cols - 1) // cols
+    rh = [max(i.size[1] for i in ims[r * cols:(r + 1) * cols]) for r in range(rows)]
+    S = Image.new('RGB', (gap + cols * (w + gap), gap + sum(rh) + gap * rows), BG)
+    y = gap
+    for r in range(rows):
+        for c, im in enumerate(ims[r * cols:(r + 1) * cols]):
+            S.paste(im, (gap + c * (w + gap), y))
+        y += rh[r] + gap
+    save(S, out)
+
+
 if __name__ == '__main__':
     cmd, rest = sys.argv[1], sys.argv[2:]
-    {'grid': grid, 'strip': strip, 'stack': stack}[cmd](rest)
+    {'grid': grid, 'strip': strip, 'stack': stack, 'hstack': hstack, 'mosaic': mosaic}[cmd](rest)

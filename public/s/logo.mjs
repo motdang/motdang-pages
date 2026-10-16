@@ -44,6 +44,8 @@ export const PALS = {
   gold: { main: '#1a140a', deep: '#0c0a07', light: '#f6e7c1', accent: '#e7b84a', accent2: '#fff0c0' },
   mono: { main: '#111827', deep: '#05070d', light: '#ffffff', accent: '#ffb000', accent2: '#d7261e' },
 }
+const DARK_LOOKS = new Set(['poster', 'loom', 'stitch', 'night', 'lanna', 'gold'])
+const FLIP = new Set(['stack-plain', 'word-rules', 'inline-plain', 'mono-hex'])
 const LOOK_PAL = { poster: 'sunset', loom: 'loom', stitch: 'akha', night: 'night', lanna: 'lacquer', clean: 'sky', gold: 'gold' }
 // the curated palettes that suit a kind, best first
 const KIND_PALS = {
@@ -71,8 +73,8 @@ const KIND_ICONS = {
   shop: ['cart', 'gift', 'kratip', 'ngob', 'bo-sang', 'lantern', 'heart', 'star', 'diamond', 'scissors', 'camera', 'kite', 'bookmark', 'flower', 'crown', 'abacus', 'coin', 'bee', 'cat'],
   service: ['lotus', 'wai', 'frangipani', 'leaf', 'scissors', 'sparkle', 'heart', 'wave', 'gear', 'key', 'lightbulb', 'sun', 'muscle', 'tuk-tuk', 'scooter', 'songthaew', 'compass', 'telephone', 'wind-chime'],
   work: ['nib', 'pencil', 'camera', 'lightbulb', 'compass', 'typewriter', 'gears', 'telescope', 'rocket', 'mic', 'note', 'abacus', 'atom', 'megaphone', 'eye', 'chat', 'key'],
-  stay: ['spirit-house', 'home', 'lantern', 'moon', 'lotus', 'chedi', 'sun', 'tree', 'frangipani', 'krathong', 'sunflower', 'bo-sang', 'wind-chime', 'elephant', 'turtle', 'key'],
-  homes: ['home', 'spirit-house', 'tree', 'key', 'lighthouse', 'compass', 'pin', 'diamond', 'chedi', 'sun', 'flag'],
+  stay: ['spirit-house', 'home', 'lantern', 'moon', 'lotus', 'chedi', 'sun', 'tree', 'frangipani', 'krathong', 'sunflower', 'bo-sang', 'wind-chime', 'elephant', 'turtle'],
+  homes: ['home', 'spirit-house', 'tree', 'lighthouse', 'compass', 'pin', 'diamond', 'chedi', 'sun', 'flag'],
   me: ['star', 'sparkle', 'heart', 'flower', 'smile', 'wave', 'nib', 'pencil', 'camera', 'note', 'cat', 'butterfly', 'owl', 'moon', 'rainbow', 'peace', 'wai', 'lotus'],
   event: ['lantern', 'krathong', 'party', 'balloon', 'songkran', 'sparkle', 'star', 'note', 'cake', 'gift', 'megaphone', 'music-box', 'clap', 'cocktail', 'rocket'],
   group: ['wai', 'heart', 'peace', 'clap', 'link', 'chat', 'flag', 'crown', 'tree', 'rock-on', 'muscle', 'fist', 'share', 'compass', 'scooter', 'elephant'],
@@ -109,10 +111,11 @@ const ICON_WORDS = [
   [/ข้าว|rice|restaurant|ร้านอาหาร|kitchen|ครัว|eat|food|อาหาร/i, ['noodles', 'pot']],
   [/นวด|สปา|อโรม่า|massage|\bspa\b|aroma|wellness/i, ['lotus', 'wai', 'frangipani']],
   [/ตัดผม|ซาลอน|ทำผม|เล็บ|hair|salon|barber|nail|beauty|สวย/i, ['scissors', 'sparkle']],
-  [/ตัดเสื้อ|ผ้า|ทอ|เสื้อ|tailor|textile|weav|woven|loom|cotton|silk|linen|cloth|fashion|batik/i, ['scissors', 'kratip']],
+  [/ตัดเสื้อ|เย็บ|ช่างตัด|tailor|sewing|seamstress/i, ['scissors', 'kratip']],
+  [/ผ้า|ทอ|เสื้อ|textile|weav|woven|loom|cotton|silk|linen|cloth|fashion|batik/i, ['kratip', 'ngob']],
   [/เกสต์เฮาส์|โรงแรม|รีสอร์ท|โฮมสเตย์|ที่พัก|บังกะโล|วิลล่า|guest ?house|hotel|resort|hostel|homestay|home ?stay|bungalow|villa|\binn\b|\bstay\b|lodge/i, ['spirit-house', 'home', 'lantern']],
   [/วัด|พระ|amulet|temple|buddha|เครื่องราง|ศักดิ์สิทธิ์/i, ['chedi', 'lotus']],
-  [/บ้าน|ที่ดิน|คอนโด|real ?estate|property|house|condo|\bland\b|homes/i, ['home', 'key']],
+  [/บ้าน|ที่ดิน|คอนโด|real ?estate|property|\bhouse|condo|\bland\b|\bhomes?\b/i, ['home', 'spirit-house']],
   [/ถ่ายภาพ|ช่างภาพ|สตูดิโอ|photo|camera|studio|film/i, ['camera']],
   [/เพลง|ดนตรี|กีตาร์|music|band|guitar|\bdj\b|sound/i, ['note', 'music-box']],
   [/หนังสือ|นักเขียน|book|write|writer|blog|story|poem/i, ['nib', 'pencil', 'typewriter']],
@@ -216,8 +219,10 @@ export function roles(d) {
   const text = inv ? p.light : p.deep
   let brand = inv ? p.accent : p.main
   if (contrast(brand, ground) < 3) brand = text
+  const brandText = contrast(brand, ground) >= 4.5 ? brand : text
+  const edgeText = contrast(edge, panel) >= 4.5 ? edge : onPanel
   const dark = lum(ground) < 0.2
-  return { panel, onPanel, edge, edge2, ground, text, brand, dark, ...p, inv }
+  return { panel, onPanel, edge, edge2, ground, text, brand, brandText, edgeText, dark, ...p, inv }
 }
 
 // ---- recipes --------------------------------------------------------------------------------
@@ -290,8 +295,11 @@ export function designFrom(recipe, o, i = 0, icon = '', seed = 0) {
   const font = usableFont(recipe.fonts, o.name, r ? Math.floor(r() * recipe.fonts.length) : 0)
   let token = recipe.pal
   if (r && (token === 'a' || token === 'k') && r() < 0.5) token = r() < 0.5 ? 'a2' : 'k'
+  // some of the plain designs take the page look's own colours, and a few go dark on the pages that are dark
+  if (token === 'a' && PALS[LOOK_PAL[o.look]] && i % 3 === 1) token = 'look'
   const pal = resolvePal(token, o, i, seed)
-  const inv = r && !['neon', 'lanna', 'woven'].includes(recipe.layout) ? (r() < 0.22 ? !recipe.inv : recipe.inv) : recipe.inv
+  let inv = r && !['neon', 'lanna', 'woven'].includes(recipe.layout) ? (r() < 0.22 ? !recipe.inv : recipe.inv) : recipe.inv
+  if (!r && DARK_LOOKS.has(o.look) && FLIP.has(recipe.id)) inv = true
   return {
     id: recipe.id, layout: recipe.layout, v: recipe.v,
     name: o.name, tagline: o.tagline || '', small: o.small || '',
@@ -349,6 +357,9 @@ export function applyRecipe(d, recipe, o = {}) {
 
 // ---- drawing --------------------------------------------------------------------------------
 
+// layouts that are round already
+const ROUND = new Set(['badge', 'poster'])
+
 let mctx
 const measureCtx = () => mctx || (mctx = document.createElement('canvas').getContext('2d'))
 const plans = new Map()
@@ -369,14 +380,15 @@ function env(d, D, ar) {
     small: () => [d.tagline, d.small].filter(Boolean).join(' · '),
     mono: initials(d.name),
     glyph: (n) => glyphBox(D, n),
-    icon: (c, n, cx, cy, bw, bh, st = {}) => (D && n ? drawGlyph(c, D, n, cx, cy, bw, bh, st.look === 'mono' && MONO_POOR.has(n) ? { ...st, look: 'ink' } : st) : 0),
+    // the maker's icon size scales the glyph inside the room the layout gave it
+    icon: (c, n, cx, cy, bw, bh, st = {}) => { const z = Math.min(1.3, Math.max(0.5, Number(d.is) || 1)); return D && n ? drawGlyph(c, D, n, cx, cy, bw * z, bh * z, st.look === 'mono' && MONO_POOR.has(n) ? { ...st, look: 'ink' } : st) : 0 },
     hasIcon: !!(D && d.icon && glyphBox(D, d.icon)),
   }
 }
 
 /** Layout a design for a box of aspect ar (w/h): the plan holds its natural size and a draw function. */
 export function planOf(d, D, ar = 1) {
-  const key = JSON.stringify([d.layout, d.v, d.name, d.tagline, d.small, d.icon, d.iconLook, d.font, d.caps, d.track, d.pal, d.inv, d.seed, !!D, fontEpoch(), Math.round(ar * 4)])
+  const key = JSON.stringify([d.layout, d.v, d.name, d.tagline, d.small, d.icon, d.iconLook, d.is, d.font, d.caps, d.track, d.pal, d.inv, d.seed, !!D, fontEpoch(), Math.round(ar * 4)])
   let p = plans.get(key)
   if (p) return p
   const lay = LAYOUTS[d.layout] || LAYOUTS.stacked
@@ -391,7 +403,9 @@ export function planOf(d, D, ar = 1) {
 export function drawLogo(ctx, w, h, d, D, o = {}) {
   const pad = o.pad ?? 0.07
   const plan = planOf(d, D, o.ar ?? d.ar ?? 1)
-  const s = Math.min((w * (1 - 2 * pad)) / plan.w, (h * (1 - 2 * pad)) / plan.h)
+  let s = Math.min((w * (1 - 2 * pad)) / plan.w, (h * (1 - 2 * pad)) / plan.h)
+  // for a picture that may be cropped round (a LINE profile): the corners of the logo stay in the circle
+  if (o.circle && !ROUND.has(d.layout)) s = Math.min(s, (1.05 * Math.min(w, h)) / Math.hypot(plan.w, plan.h))
   const ox = (w - plan.w * s) / 2, oy = (h - plan.h * s) / 2
   ctx.save()
   ctx.translate(ox, oy)
@@ -417,7 +431,7 @@ export function drawSquare(ctx, size, d, D, o = {}) {
   if (o.round) { ctx.beginPath(); ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2); ctx.clip() }
   const g = groundOf(d)
   if (g) { ctx.fillStyle = g; ctx.fillRect(0, 0, size, size) }
-  drawLogo(ctx, size, size, d, D, { pad: o.pad ?? 0.08 })
+  drawLogo(ctx, size, size, d, D, { pad: o.pad ?? 0.08, circle: o.circle ?? true })
   ctx.restore()
 }
 

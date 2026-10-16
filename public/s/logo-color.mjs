@@ -61,7 +61,7 @@ const PARTNER = [
 /** Five colours from one: main, deep (text on light), light (paper), accent and accent2. */
 export function paletteFrom(main, accent = '', accent2 = '') {
   const [h, s] = toHsl(main)
-  const partner = (PARTNER.find(([m]) => h < m) || PARTNER.at(-1))[1]
+  const partner = (PARTNER.find(([m]) => h < m) || PARTNER[PARTNER.length - 1])[1]
   const deep = fromHsl(h, clamp(s * 0.55, 0.12, 0.6), 0.1)
   const light = fromHsl(h, clamp(s * 0.4, 0.1, 0.5), 0.95)
   return { main, deep, light, accent: accent || partner, accent2: accent2 || mix(partner, '#ffffff', 0.45) }

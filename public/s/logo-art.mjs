@@ -132,6 +132,31 @@ export function rosette(ctx, cx, cy, R, n, a, b, centre) {
   ctx.beginPath(); ctx.arc(cx, cy, R * 0.12, 0, TAU); ctx.fillStyle = a; ctx.fill()
 }
 
+/** A kranok flame: base at the origin, tip up (negative y), length L, an S in its body and a curl at the tip. Adds a subpath. */
+export function flame(ctx, L, W = 0.3, bend = 0.3) {
+  const w = L * W
+  ctx.moveTo(0, 0)
+  ctx.bezierCurveTo(-w * 1.1, -L * 0.18, -w * 0.9, -L * 0.55, bend * L * 0.4, -L * 0.8)
+  ctx.bezierCurveTo(bend * L * 0.8, -L * 0.9, bend * L * 0.9, -L * 0.97, bend * L * 1.15, -L)
+  ctx.bezierCurveTo(w * 0.1 + bend * L * 0.2, -L * 0.7, w * 1.1, -L * 0.45, w * 0.8, -L * 0.18)
+  ctx.bezierCurveTo(w * 0.6, -L * 0.07, w * 0.3, -L * 0.02, 0, 0)
+  ctx.closePath()
+}
+
+/** A wheel of kranok flames about a centre, each turning the same way: the Lanna corner. */
+export function kranokWheel(ctx, cx, cy, R, n, a, b, centre) {
+  for (let i = 0; i < n; i++) {
+    ctx.save()
+    ctx.translate(cx, cy); ctx.rotate((i * TAU) / n); ctx.translate(0, -R * 0.3)
+    ctx.beginPath(); flame(ctx, R * 0.85, 0.3, 0.32)
+    ctx.fillStyle = i % 2 ? b : a
+    ctx.fill()
+    ctx.restore()
+  }
+  ctx.beginPath(); ctx.arc(cx, cy, R * 0.3, 0, TAU); ctx.fillStyle = centre; ctx.fill()
+  ctx.beginPath(); ctx.arc(cx, cy, R * 0.15, 0, TAU); ctx.fillStyle = a; ctx.fill()
+}
+
 /** A row of ogee petals along a line from x0 to x1, base on y, tips up (h > 0) or down (h < 0). */
 export function ogeeRow(ctx, x0, x1, y, n, w, h) {
   const step = (x1 - x0) / n

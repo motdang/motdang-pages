@@ -82,6 +82,8 @@ test('text colours read on their ground in every palette', () => {
     assert.ok(C.contrast(R.onPanel, R.panel) >= 4.5, `${id} onPanel ${inv}`)
     assert.ok(C.contrast(R.text, R.ground) >= 4.5, `${id} text ${inv}`)
     assert.ok(C.contrast(R.panel, R.ground) >= 1.5, `${id} panel ${inv}`)
+    assert.ok(C.contrast(R.brandText, R.ground) >= 4.5, `${id} brandText ${inv}`)
+    assert.ok(C.contrast(R.edgeText, R.panel) >= 4.5, `${id} edgeText ${inv}`)
   }
 })
 
