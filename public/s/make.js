@@ -11,6 +11,7 @@ import { ui, UI_LANGS } from './make-words.mjs'
 import { exifBlock, readExif } from './exif.mjs'
 import { openStudio } from './studio-ui.mjs'
 import { openAvatar } from './avatar-ui.mjs'
+import { openDoodle } from './doodle-ui.mjs'
 import { drawCard, cardKey, CARD } from './card.mjs'
 import { loadFaces } from './mark.mjs'
 
@@ -747,11 +748,12 @@ const SEC = {
   photos() {
     const max = isGold() ? MAX_PHOTOS.gold : MAX_PHOTOS.free
     return `<div class="photos">${S.d.photos.map((id) => `<div class="ph${id === S.d.cover ? ' cover' : ''}" data-ph="${id}"><img src="${esc(imgUrl(id, true))}" alt="">${id === S.d.cover ? `<span class="flag">${T('cover')}</span>` : ''}${S.d.credits?.[id] ? '<span class="pdf">PD</span>' : ''}
-      <div class="tools"><button data-mo="${id}">${T('st_make')}</button>${id !== S.d.cover ? `<button data-cover="${id}">${T('makeCover')}</button>` : ''}<button data-rm="${id}">${T('remove')}</button></div></div>`).join('')}
+      <div class="tools"><button data-mo="${id}">${T('st_make')}</button><button data-dd="${id}">${T('dd_fromBtn')}</button>${id !== S.d.cover ? `<button data-cover="${id}">${T('makeCover')}</button>` : ''}<button data-rm="${id}">${T('remove')}</button></div></div>`).join('')}
       ${Array.from({ length: S.busy }, () => '<div class="ph"><div class="busy">…</div></div>').join('')}</div>
       ${S.d.photos.length < max ? `<div class="row2"><label class="pick">${icon('camera')}${T('addPhotos')}<input type="file" accept="image/*" multiple id="files"></label>
       <button class="pick pdpick" id="pdopen">${ding('sparkle', 'riso')}${T('pdBtn')}</button>
-      <button class="pick pdpick" id="mkcover">${ding('pencil', 'riso')}${T('mk_coverBtn')}</button></div>
+      <button class="pick pdpick" id="mkcover">${ding('pencil', 'riso')}${T('mk_coverBtn')}</button>
+      <button class="pick pdpick" id="ddopen">${ding('lantern', 'riso')}${T('dd_btn')}</button></div>
       <p class="hint">${T('st_tip')}</p>` : ''}`
   },
   items() {
@@ -1019,6 +1021,18 @@ async function makeOver(id) {
   } })
 }
 
+/** Doodle anything: words, or one of the page's photos, in; two doodles out; the one picked goes on the page. */
+function doodleSheet(from = '') {
+  openDoodle({ name: S.name, kind: S.kind, T, call, from, imgUrl, photos: S.d.photos.filter((x) => x !== KPIC_ID),
+    onUse: async (id, { as }) => {
+      const have = S.d.photos.includes(id)
+      if (!have && S.d.photos.length >= (isGold() ? MAX_PHOTOS.gold : MAX_PHOTOS.free)) { toast(ui(S.lang, 'e_full')); throw new Error('full') }
+      if (!have) S.d.photos[as === 'cover' ? 'unshift' : 'push'](id)
+      if (as === 'cover') S.d.cover = id
+      redrawSec('photos'); changed()
+    } })
+}
+
 async function avatarStudio(bmp) {
   openStudio({ bitmap: bmp, mode: 'avatar', round: S.d.avround, accent: accentNow(), T, onUse: async (canvas) => {
     S.d.avatar = await sendCanvas(canvas, 640).catch(sendFail)
@@ -1180,6 +1194,8 @@ function bindEdit() {
     if (b.id === 'clearpin') { S.d.place.lat = S.d.place.lng = null; S.d.place.snap = ''; redrawSec('map'); changed() }
     if (b.id === 'pdopen') pdSheet()
     if (b.dataset.mo) makeOver(b.dataset.mo)
+    if (b.id === 'ddopen') doodleSheet()
+    if (b.dataset.dd) doodleSheet(b.dataset.dd)
     if (b.id === 'mkcover') markSheet('cover')
     if (b.id === 'avmake') markSheet('avatar')
     if (b.id === 'avdraw') avatarDraw()

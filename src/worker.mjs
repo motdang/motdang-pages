@@ -37,6 +37,7 @@ import * as deals from './deals.mjs'
 import { readCalendars, monthly, trialNotes } from './cron.mjs'
 import { calIcs, roomIcs, addDays } from '../public/s/extras.mjs'
 import { guestPage } from './guest.mjs'
+import { doodleRoute } from './doodle.mjs'
 
 const QUOTA = { site: 3, photo: 200, save: 400, report: 20, msg: 12, pd: 200, notify: 3, slip: 10, book: 10, domain: 6, lister: 3, deal: 40, terms: 10, join: 3 }
 const TRIAL_DAYS = 30 // Nan 2026-10-14: a new page is Gold for its first 30 days
@@ -301,6 +302,7 @@ const J = (o, status = 200, extra = {}) => new Response(JSON.stringify(o), { sta
 async function api(request, env, ctx, p, url, origin) {
   const m = request.method
   if (m !== 'GET' && !sameOrigin(request, url)) return J({ error: 'origin' }, 403)
+  if (p === 'doodle') return doodleRoute(request, env, ctx, url)
 
   if (p === 'name' && m === 'GET') {
     const n = (url.searchParams.get('n') || '').toLowerCase()
