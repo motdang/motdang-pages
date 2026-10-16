@@ -39,7 +39,12 @@ const NO_TEXT = 'No text of any kind: no letters, no numbers, no words, no logos
 const subject = (s) => String(s).replace(/[.!\s]+$/, '').replace(/^(A|An|The|Our|My|Two|Three|Some)\b/, (w) => w.toLowerCase())
 
 /** The words the picture model reads for a new doodle: `draw` is the English brief from the gatekeeper; `people`: the maker's words have people in them, who are drawn Thai. */
-export const composeDraw = (style, draw, { people = false } = {}) => `A cheerful ${STYLES[style].noun} of ${subject(draw)}. ${people ? 'The people are friendly Thai people with black hair. ' : ''}${STYLES[style].look} ${HOUSE}`
+// Thai monks and novices shave their heads and wear saffron robes over one shoulder (Nan 2026-10-16: monks shown with respect are drawn)
+const MONKS = /\b(?:monks?|novices?|alms)\b/i
+const peopleLine = (draw, people) => (MONKS.test(draw)
+  ? 'The monks and novices are Thai Theravada monks with fully shaved heads and no hair, in saffron orange robes worn over one shoulder, barefoot, calm and dignified; on an alms round each carries a round alms bowl. Any lay people are friendly Thai people with black hair. '
+  : people ? 'The people are friendly Thai people with black hair. ' : '')
+export const composeDraw = (style, draw, { people = false } = {}) => `A cheerful ${STYLES[style].noun} of ${subject(draw)}. ${peopleLine(draw, people)}${STYLES[style].look} ${HOUSE}`
 /** ... and for a doodle from the maker's own photo; `change` is what the maker asked to change, or ''. */
 export const composeEdit = (style, change) => `Redraw this photo as a cheerful ${STYLES[style].noun}. Keep the same subject, composition and main colours. Draw every sign, label, board, screen and surface that carries writing as a plain blank shape. ${STYLES[style].look} ${change ? `Change: ${subject(change)}. ` : ''}${NO_TEXT}`
 
