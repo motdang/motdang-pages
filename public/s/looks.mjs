@@ -80,7 +80,7 @@ export const LOOKS = {
       --body:"Avenir Next",Avenir,"Segoe UI",system-ui,-apple-system,Helvetica,Arial,${F_THAI},sans-serif;--case:uppercase;--h1w:800;--track:0`,
     css: `.top{display:flex;flex-direction:column;background:var(--bg)}
       .top .pf{height:min(58vh,520px);min-height:290px;clip-path:polygon(0 0,100% 0,100% 84%,0 100%)}
-      .top .ph>img{filter:grayscale(1) brightness(1.22) contrast(1.4);animation:drift 26s ease-in-out infinite alternate}
+      .top .ph>img{filter:grayscale(1) brightness(1.22) contrast(1.4);animation:drift 26s ease-in-out infinite alternate;translate:0 calc(-1 * clamp(0px, (var(--fy,.3) - .3) * 100lvh, 40lvh))}
       .top .ph::before{content:"";position:absolute;inset:0;z-index:1;background:var(--accent);mix-blend-mode:multiply}
       .top .ph::after{content:"";position:absolute;inset:0;z-index:1;background:#1c1530;mix-blend-mode:lighten}
       .top .cr{bottom:calc(16% + 6px)}
@@ -302,7 +302,7 @@ export const LOOKS = {
       --case:none;--h1w:700;--track:-.03em`,
     css: `.top{display:flex;flex-direction:column;background:#fff}
       .top .pf{height:min(56vh,540px);min-height:280px}
-      .top .ph>img{animation:kb 16s cubic-bezier(.2,.6,.2,1) both}@keyframes kb{from{transform:scale(1.14)}}
+      .top .ph>img{animation:kb 16s cubic-bezier(.2,.6,.2,1) both;translate:0 calc(-1 * clamp(0px, (var(--fy,.3) - .3) * 100lvh, 40lvh))}@keyframes kb{from{transform:scale(1.14)}}
       .top.go .ph>img{animation:breathe 1.4s cubic-bezier(.3,1.4,.4,1)}@keyframes breathe{40%{transform:scale(1.05)}}
       .top .cr{bottom:38px;right:12px}
       .top .t{z-index:4;margin-top:-28px;padding:30px 22px 22px;background:#fff;border-radius:28px 28px 0 0;box-shadow:0 -12px 30px rgba(17,24,39,.10);animation:sheet .9s .25s cubic-bezier(.2,.8,.2,1) both}
