@@ -19,6 +19,7 @@ import { promptPayPayload } from './promptpay.mjs'
 import { qrSvg } from '../public/s/render.mjs'
 import { tellBeer } from './line.mjs'
 import * as gold from './gold.mjs'
+import { kitLink } from './sell.mjs'
 
 export const USES = ['residential', 'commercial', 'industrial']
 export const TRADES = ['handyman', 'maid', 'gardener', 'plumber', 'electrician', 'mover']
@@ -195,6 +196,7 @@ async function boardPage(env, s, token, origin, sha, made) {
   out.push(`<p>ส่วนแบ่งของคุณ <b>${s.deal_rate}%</b> ของค่าธรรมเนียม · Your share: <b>${s.deal_rate}%</b> of each fee<br><span class="hint">ขยับทุกเดือน ${SPLIT_LADDER.join(' · ')}% ตามยอดเทียบเป้า ฿${nf(s.deal_target)} · Moves monthly on ${SPLIT_LADDER.join(' · ')}% with fees against a ฿${nf(s.deal_target)} target</span></p>`,
     `<div class="card row"><div style="flex:1"><span class="hint">เดือนนี้ · This month</span><div class="amt">฿${nf(earned)}</div></div><div style="flex:1"><span class="hint">รอโอน · To be sent</span><div class="amt">฿${nf(owed)}</div></div></div>`)
   if (made) out.push(`<div class="card"><p class="ok">บิลพร้อม · Bill ready — ฿${nf(made.fee)}</p><p class="hint">ส่งให้เจ้าของ · Send it to the owner:</p><p><a href="${esc(made.link)}">${esc(made.link)}</a></p><a class="btn line" href="${esc(lineShare('ค่าธรรมเนียม motdang · motdang fee\n' + made.link))}">ส่งทาง LINE · Send on LINE</a></div>`)
+  if (s.status === 'ok' && s.key) out.push(`<p><a class="btn" href="${esc(await kitLink(env, sha, origin, s))}">ชุดขาย · Sales kit</a> <span class="hint">QR · คำพูด · ทอง · Gold plans</span></p>`)
   if (s.status === 'ok') out.push(`<h2>ทำหน้าใหม่ · Make a page</h2><p><a class="btn" href="${origin}/make?by=${esc(s.id)}">+ หน้าใหม่ · New page</a></p><p class="hint">หน้าบ้าน ที่ดิน หรือช่าง ทำกับเจ้าของ แล้วส่งเงื่อนไขให้เจ้าของกดตกลง · Make it with the owner, then send them the terms to agree.</p>`)
   out.push('<h2>หน้าของคุณ · Your pages</h2>')
   if (!sites.length) out.push('<p class="hint">ยังไม่มี · None yet.</p>')
