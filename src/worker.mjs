@@ -17,7 +17,7 @@
 // The edit link is the sign-in: a long random token, stored only as its hash.
 
 import { promptPayPayload } from './promptpay.mjs'
-import { render, qrSvg, normalize, vcard, ics, sign, KINDS, LOOK_IDS, GOLD_LOOKS, MAX_PHOTOS, sceneOf, HOME } from '../public/s/render.mjs'
+import { render, qrSvg, normalize, vcard, ics, sign, KINDS, LOOK_IDS, GOLD_LOOKS, MAX_PHOTOS, photoMax, sceneOf, HOME } from '../public/s/render.mjs'
 import { AM_MAX } from '../public/s/amulet.mjs'
 import { PAGE_LANGS } from '../public/s/words.mjs'
 import { nameProblem, screen } from './screen.mjs'
@@ -217,8 +217,9 @@ const CSP_PAGE = (nonce) => `default-src 'self'; img-src 'self' data: blob: http
   `frame-src 'self' https://www.youtube-nocookie.com https://player.vimeo.com; frame-ancestors 'self'; base-uri 'none'; form-action 'self'`
 const CSP_MAP = (nonce) => `default-src 'self'; img-src 'self' data: blob: https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://motdang.net; font-src 'self' https://fonts.gstatic.com https://motdang.net; ` +
   `script-src 'self' 'nonce-${nonce}' https://motdang.net; connect-src 'self' https://motdang.net https://mot-dang-claims.nanobotco.workers.dev; worker-src 'self' blob:; frame-ancestors 'self'; base-uri https://motdang.net`
+// the builder frames Amulet Camera's cutting page (nanobotco.github.io/amulet-camera/cut.html): the model and its library load there, never here
 const CSP_TOOL = `default-src 'self'; img-src 'self' data: blob: https:; style-src 'self' 'unsafe-inline' https://motdang.net; font-src 'self'; script-src 'self' https://motdang.net https://static.cloudflareinsights.com; ` +
-  `connect-src 'self' https://motdang.net https://cloudflareinsights.com; worker-src 'self' blob:; child-src 'self' blob:; frame-src 'self' https://www.youtube-nocookie.com https://player.vimeo.com; frame-ancestors 'self'; base-uri 'none'; form-action 'self'`
+  `connect-src 'self' https://motdang.net https://cloudflareinsights.com; worker-src 'self' blob:; child-src 'self' blob:; frame-src 'self' https://www.youtube-nocookie.com https://player.vimeo.com https://nanobotco.github.io; frame-ancestors 'self'; base-uri 'none'; form-action 'self'`
 
 function html(body, status = 200, { nonce, cache, map } = {}) {
   return new Response(body, {
@@ -264,7 +265,7 @@ function asData(r, origin) {
     cc: d.place.cc || null, lat: d.place.lat, lng: d.place.lng, addr: d.place.addr, hours: d.hours.on ? { on: true, always: d.hours.always, tz: d.hours.tz, week: d.hours.week } : null,
     phone: d.contact.phone, line: d.contact.line, web: d.contact.web, facebook: d.contact.facebook, instagram: d.contact.instagram,
     items: d.items, currency: d.currency, cover: d.cover ? im(d.cover) : '',
-    photos: d.photos.slice(0, g ? MAX_PHOTOS.gold : MAX_PHOTOS.free).map((id) => ({ url: im(id), small: im(id, true), credit: d.credits[id] || null })),
+    photos: d.photos.slice(0, photoMax(r.kind, g)).map((id) => ({ url: im(id), small: im(id, true), credit: d.credits[id] || null })),
     event: d.event, scene: d.drawing ? sceneOf(r.kind, d) : '', published: r.published, updated: r.updated,
     rooms: g ? d.rooms.map((x) => ({ n: x.n, p: x.p, guests: x.guests, units: x.units })) : [], book: g && d.rooms.length && gold.isHotel(r) ? `${origin}/${r.name}#rooms` : '', ota: g ? d.ota : null,
   }
@@ -495,7 +496,7 @@ ${s ? `<p>ข้อความถึง ${escHtml(title)} จะส่งสำ
       const why = nameProblem(name)
       if (why) return J({ error: 'name', why }, 400)
     }
-    if (!isGold) d.photos = d.photos.slice(0, MAX_PHOTOS.free)
+    d.photos = d.photos.slice(0, photoMax(kind, isGold))
     // photos named in the page must be this page's own; credits come from the library, not the browser
     const ids = [...new Set([d.cover, d.card, d.avatar, d.place.snap, ...d.photos].filter(Boolean))]
     d.credits = {}
@@ -552,7 +553,7 @@ ${s ? `<p>ข้อความถึง ${escHtml(title)} จะส่งสำ
     const who = await sender(request, env)
     if (!(await take(env, who, 'photo'))) return J({ error: 'quota' }, 429)
     const have = await env.DB.prepare('SELECT COUNT(*) AS n FROM photo WHERE site_id = ?').bind(s.id).first()
-    if ((have?.n || 0) >= (isGold ? MAX_PHOTOS.gold : MAX_PHOTOS.free) * 2 + 10) return J({ error: 'too-many' }, 400)
+    if ((have?.n || 0) >= photoMax(s.kind, isGold) * 2 + 10) return J({ error: 'too-many' }, 400)
     const form = await request.formData()
     const role = ['photo', 'map', 'card'].includes(form.get('role')) ? form.get('role') : 'photo'
     const big = clean(await form.get('big')?.arrayBuffer?.() ?? new ArrayBuffer(0), MAX_BIG)

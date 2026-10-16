@@ -10,7 +10,7 @@
 // at again (photo.mjs look, then lettering, royal and sacred pictures), stored like an uploaded photo.
 // A doodle that fails, or is refused, does not count against the day.
 
-import { MAX_PHOTOS } from '../public/s/render.mjs'
+import { photoMax } from '../public/s/render.mjs'
 import { Q } from '../public/s/make-words-doodle.mjs'
 import * as gold from './gold.mjs'
 import { clean, look, sniff, typeOf, MAX_BIG } from './photo.mjs'
@@ -324,7 +324,7 @@ async function keep(env, s, isGold, id) {
   const credit = { from: 'doodle', style: row.style, prompt: row.prompt === '(photo)' ? '' : row.prompt }
   if (!row.kept) {
     const have = await env.DB.prepare('SELECT COUNT(*) AS n FROM photo WHERE site_id = ?').bind(s.id).first()
-    if ((have?.n || 0) >= (isGold ? MAX_PHOTOS.gold : MAX_PHOTOS.free) * 2 + 10) return fail(400, 'too-many')
+    if ((have?.n || 0) >= photoMax(s.kind, isGold) * 2 + 10) return fail(400, 'too-many')
     const now = new Date().toISOString()
     await env.DB.batch([
       env.DB.prepare('INSERT INTO photo (id, site_id, ext, bytes, w, h, role, verdict, why, created, credit) VALUES (?,?,?,?,?,?,?,?,?,?,?)')

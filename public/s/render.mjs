@@ -15,7 +15,9 @@ export { LOOKS, LOOK_IDS, GOLD_LOOKS, LOOK_ALIAS, lookOf }
 export const KINDS = ['shop', 'food', 'service', 'work', 'amulet', 'stay', 'homes', 'me', 'event', 'group']
 export const HOME = 'https://sites.motdang.net'
 export const MAIN = 'https://motdang.net'
-export const MAX_PHOTOS = { free: 12, gold: 120 }
+export const MAX_PHOTOS = { free: 12, gold: 120, amulet: 360 }
+// a Gold amulet page holds 360 (her word 2026-10-16: 120 amulets, front, back and a close-up)
+export const photoMax = (kind, gold) => (!gold ? MAX_PHOTOS.free : kind === 'amulet' ? MAX_PHOTOS.amulet : MAX_PHOTOS.gold)
 
 // The auto-doodler's scenes a page can draw itself as (motdang.net/front/doodler*.js),
 // by kind, with words for the builder. The first is each kind's own.
@@ -109,7 +111,7 @@ export function normalize(d = {}) {
   o.card = PHOTO_ID.test(d.card || '') ? d.card : ''
   o.avatar = PHOTO_ID.test(d.avatar || '') ? d.avatar : ''
   o.avround = d.avround !== false
-  o.photos = (Array.isArray(d.photos) ? d.photos : []).filter((p) => PHOTO_ID.test(p)).slice(0, MAX_PHOTOS.gold)
+  o.photos = (Array.isArray(d.photos) ? d.photos : []).filter((p) => PHOTO_ID.test(p)).slice(0, MAX_PHOTOS.amulet)
   o.scene = SCENE_IDS.has(d.scene) ? d.scene : ''
   o.drawing = d.drawing !== false
   const pay = d.pay || {}, ppn = String(pay.pp || '').replace(/\D/g, '')
@@ -545,7 +547,7 @@ export function render(site, opt = {}) {
   const c = d.contact
   const line = lineHref(c.line)
   const grabOk = hasPin && (GRAB_CC[pl.cc] || (!pl.cc && lang === 'th'))
-  const photos = d.photos.slice(0, gold ? MAX_PHOTOS.gold : MAX_PHOTOS.free)
+  const photos = d.photos.slice(0, photoMax(site.kind, gold))
   const H2 = (k, label) => `<h2>${ding(HEAD_DING[k], dl)}${label}</h2>`
   const out = []
   const L = gold && opt.listing ? d.lists.find((x) => x.id === opt.listing) || null : null
