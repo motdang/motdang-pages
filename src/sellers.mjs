@@ -15,7 +15,7 @@ const nf = (n) => new Intl.NumberFormat('en').format(n)
 export async function known(env, by) {
   const id = String(by || '').toLowerCase()
   if (!/^[a-z0-9-]{2,24}$/.test(id)) return null
-  return (await env.DB.prepare('SELECT id FROM seller WHERE id = ?').bind(id).first())?.id || null
+  return (await env.DB.prepare("SELECT id FROM seller WHERE id = ? AND status = 'ok'").bind(id).first())?.id || null
 }
 
 /** The seller's share of one paid plan, written once per payment. */
@@ -42,10 +42,11 @@ export async function monthEnd(env, post) {
   if (bkk.getUTCDate() !== 1 || bkk.getUTCHours() < 8) return 0
   const month = bkk.toISOString().slice(0, 7)
   const prev = bkkMonth(Date.now() - 2 * 864e5)
-  const rows = (await env.DB.prepare('SELECT * FROM seller WHERE closed IS NULL OR closed < ?').bind(month).all()).results
+  // a lister who has made no page and sold no plan gets no statement (deals.mjs has its own)
+  const rows = (await env.DB.prepare("SELECT * FROM seller WHERE status = 'ok' AND (closed IS NULL OR closed < ?) AND (created <= '2026-10-15' OR id IN (SELECT seller FROM site WHERE seller IS NOT NULL))").bind(month).all()).results
   for (const s of rows) {
     await env.DB.prepare('UPDATE seller SET closed = ? WHERE id = ?').bind(month, s.id).run()
-    const t = await env.DB.prepare('SELECT COUNT(*) AS n, COALESCE(SUM(baht),0) AS sales, COALESCE(SUM(cut),0) AS owed FROM earn WHERE seller = ? AND month = ?').bind(s.id, prev).first()
+    const t = await env.DB.prepare("SELECT COUNT(*) AS n, COALESCE(SUM(baht),0) AS sales, COALESCE(SUM(cut),0) AS owed FROM earn WHERE seller = ? AND month = ? AND kind = 'plan'").bind(s.id, prev).first()
     // a seller who started mid-month is held to the part of the month they had
     const days = new Date(Date.UTC(+prev.slice(0, 4), +prev.slice(5, 7), 0)).getUTCDate()
     const had = s.created.slice(0, 7) === prev ? days - Number(s.created.slice(8, 10)) + 1 : days
