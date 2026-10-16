@@ -6,6 +6,7 @@ import { X } from './make-words-edit.mjs'
 import { W } from './make-words-pick.mjs'
 import { A } from './make-words-avatar.mjs'
 import { G } from './make-words-logo.mjs'
+import { Q } from './make-words-doodle.mjs'
 
 export const UI_LANGS = { th: 'ไทย', en: 'English', my: 'မြန်မာ', zh: '中文' }
 
@@ -242,8 +243,8 @@ const V = {
 }
 
 // each table in turn in the maker's language, then each in English (the tables: words for the steps, the
-// editor, the pickers, the avatar maker, the logo maker)
-const TABLES = [U, V, Z, Y, X, W, A, G]
+// editor, the pickers, the avatar maker, the logo maker, the doodles)
+const TABLES = [U, V, Z, Y, X, W, A, G, Q]
 export function ui(lang, k) {
   for (const t of TABLES) if (t[lang] && t[lang][k]) return t[lang][k]
   for (const t of TABLES) if (t.en[k]) return t.en[k]

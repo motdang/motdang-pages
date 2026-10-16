@@ -35,10 +35,16 @@ bucket_name = "motdang-pages"
 binding = "SITE"
 service = "mot-dang-site"
 
-# Llama Guard on page text, Mistral Small on photos.
+# Llama Guard on page text, Mistral Small on photos. Doodle anything (src/doodle.mjs) draws with FLUX.2 klein.
 [ai]
 binding = "AI"
 remote = true
+
+# Doodle anything: the 1024 px and 480 px WebP copies of each doodle. Without it the model's JPEG is stored as it is.
+# A page asks for 5 doodles a day (Gold and the 30-day trial 30), every page together 600; vars DOODLE_FREE, DOODLE_GOLD
+# and DOODLE_DAY change those numbers.
+[images]
+binding = "IMAGES"
 
 # Drafts older than 30 days go; pages and photos a model failed to answer get another look.
 [triggers]
