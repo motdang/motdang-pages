@@ -1,9 +1,9 @@
 // studio-ui.mjs — the builder's two picture sheets (Nan 2026-10-15). The studio takes a
-// photo, however bad, and shows it fixed and drawn six ways; the maker taps one. The mark
+// photo, however bad, and shows it fixed and drawn in each of the styles; the maker taps one. The mark
 // maker builds an avatar or a cover from parts for a maker with no picture at all.
 // Each sheet hands its finished canvas to onUse, which uploads it like any photo.
 
-import { makeOver, STYLES, fit } from './studio.mjs'
+import { makeOver, SHOWN as STYLES, fit } from './studio.mjs'
 import { drawMark, drawCover, markDefaults, loadFaces, SHAPES, PATTERNS, MARK_COLOURS, FACES, inkOn } from './mark.mjs'
 import { DINGBATS } from './db/names.mjs'
 
@@ -55,7 +55,7 @@ export function openStudio({ bitmap, mode = 'photo', accent = '', round = true, 
     for (const b of box.querySelectorAll('[data-st]')) {
       if (my !== gen) return
       await tick()
-      paint(b.querySelector('canvas'), makeOver(small, b.dataset.st, { accent }))
+      paint(b.querySelector('canvas'), makeOver(small, b.dataset.st, { accent, frame: !av }))
     }
   }
   async function big(size = av ? 420 : 900) {
@@ -63,7 +63,7 @@ export function openStudio({ bitmap, mode = 'photo', accent = '', round = true, 
     wait.hidden = false
     await tick()
     if (my !== gen) return
-    paint(stage, makeOver(source(size), style, { accent }))
+    paint(stage, makeOver(source(size), style, { accent, frame: !av }))
     wait.hidden = true
   }
   let soon = 0
@@ -96,7 +96,7 @@ export function openStudio({ bitmap, mode = 'photo', accent = '', round = true, 
     await tick()
     try {
       const out = document.createElement('canvas')
-      paint(out, makeOver(source(av ? 640 : 1600), style, { accent }))
+      paint(out, makeOver(source(av ? 640 : 1600), style, { accent, frame: !av }))
       await onUse(out, style)
       box.remove()
     } catch { b.disabled = false; wait.hidden = true }
