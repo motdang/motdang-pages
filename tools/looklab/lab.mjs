@@ -6,6 +6,8 @@ const ROOT = fileURLToPath(new URL('../..', import.meta.url)).replace(/\/$/, '')
 mkdirSync(ROOT + '/public/s/lab', { recursive: true })
 const { render, LOOK_IDS, KINDS } = await import(ROOT + '/public/s/render.mjs?' + Date.now())
 const KP = JSON.parse(readFileSync(ROOT + '/public/s/kinds/kinds.json', 'utf8'))
+let EX = {}
+try { EX = JSON.parse(readFileSync(ROOT + '/public/s/ex/ex.json', 'utf8')) } catch {}
 const KPIC_ID = 'kindpic000000'
 const ORIGIN = process.env.LAB_ORIGIN || 'http://127.0.0.1:8790'
 const day = (n, hh) => { const t = new Date(Date.now() + n * 864e5); const p = (x) => String(x).padStart(2, '0'); return `${t.getFullYear()}-${p(t.getMonth() + 1)}-${p(t.getDate())}T${hh}` }
@@ -34,8 +36,10 @@ function data(kind) {
 const looks = process.argv[2] && process.argv[2] !== 'all' ? process.argv[2].split(',') : LOOK_IDS
 const kinds = process.argv[3] && process.argv[3] !== 'all' ? process.argv[3].split(',') : KINDS
 for (const look of looks) for (const kind of kinds) {
-  const html = render({ name: kind + '-page', look, lang: 'en', kind, d: data(kind), views: 1234, status: 'live', tier: 'gold' },
-    { preview: true, gold: true, hotel: true, origin: ORIGIN, now: Date.parse('2026-10-15T10:30:00+07:00'), img: (id, small) => (id === KPIC_ID ? `/s/kinds/${kind}${small ? '-s' : ''}.webp` : `/img/${id}${small ? '-s' : ''}.webp`) })
+  const dd = data(kind), e = EX[kind]?.[look]
+  if (e) { dd.credits = { [KPIC_ID]: { title: e.title, by: e.by, src: e.src, license: e.license, from: 'commons' } }; dd.coverPos = e.focus }
+  const html = render({ name: kind + '-page', look, lang: 'en', kind, d: dd, views: 1234, status: 'live', tier: 'gold' },
+    { preview: true, gold: true, hotel: true, origin: ORIGIN, now: Date.parse('2026-10-15T10:30:00+07:00'), img: (id, small) => (id === KPIC_ID ? (e ? `/s/ex/${kind}-${look}${small ? '-s' : ''}.webp` : `/s/kinds/${kind}${small ? '-s' : ''}.webp`) : `/img/${id}${small ? '-s' : ''}.webp`) })
   writeFileSync(`${ROOT}/public/s/lab/${look}-${kind}.html`, html)
 }
 console.log('wrote', looks.length * kinds.length)
