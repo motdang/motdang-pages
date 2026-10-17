@@ -64,6 +64,7 @@ GOLD_THB = "3000"
 HOTEL_THB = "555" # a month, for a page that takes room bookings (Nan 2026-10-14)
 HOTEL_YEAR_THB = "5550" # the hotel year paid up front, twelve months for ten (2026-10-15)
 MAIL_FROM = "Mot Dang <pages@motdang.net>"
+INVEST_TO = "nan@motdang.net" # an investor's note at /support goes here in full
 
 # Secrets (npx wrangler secret put NAME), never in this file:
 #   ADMIN_KEY       password for /admin (any user name)
@@ -72,5 +73,6 @@ MAIL_FROM = "Mot Dang <pages@motdang.net>"
 #   PROMPTPAY       the PromptPay id Gold is paid to
 #   SLIPOK_KEY, SLIPOK_BRANCH   the slip check; Gold slips wait at /admin without them
 #   DISCORD_SALES   webhook of the team's #minisites channel; each paid plan is posted there
-#   DISCORD_PEOPLE  webhook of #people-team; each sign-up at /sell is posted there for Beer
+#   DISCORD_PEOPLE  webhook of #people-team; each sign-up at /sell is posted there for Beer, and each volunteer at /support
+#   DISCORD_CORE_PLAN  webhook of #core-plan; an investor's note at /support is posted there, without the contact
 # SELLER_AUTO = "1" (a var) lets a sign-up sell at once; without it Beer says yes first
