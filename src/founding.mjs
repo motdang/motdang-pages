@@ -154,7 +154,8 @@ ${form}
 <li>ราคาขยับทุกวันที่ 1 ตามที่นั่งเดือนก่อน: ขายได้ 80% ขึ้นไป ขึ้นหนึ่งขั้น ต่ำกว่า 60% ลงหนึ่งขั้น · ${LADDER.map((x) => '฿' + nf(x)).join(' · ')}<br><span class="hint">The price moves on the 1st with last month's seats: 80% or more taken, up a step; under 60%, down a step.</span></li>
 <li>เป็นทองจ่ายล่วงหน้า ไม่ใช่หุ้นของมดแดง ไม่คืนเงิน<br><span class="hint">Prepaid Gold, not a share in motdang. No refunds.</span></li>
 <li>จ่ายด้วยพร้อมเพย์ ส่งสลิป เลขและโค้ดมาเมื่อสลิปผ่าน<br><span class="hint">Pay by PromptPay and send the slip; the number and codes come once the slip clears.</span></li>
-</ul></details>`, desc)
+</ul></details>
+<p class="hint"><a href="/support">ช่วยมดแดงแบบอื่น · Other ways to support motdang</a></p>`, desc)
 }
 
 /** /fm/<link> — the bill until it's paid, then the founder's page. */
