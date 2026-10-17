@@ -185,6 +185,7 @@ ${tally(c)}<div class="card4" aria-hidden="true"><span>ใช้ · Use it</span
 <p class="sub">${t('ฟรี', 'Free.')}</p>
 <a class="card go" href="${MAIN}/"><span><b>${t('ค้นหาเชียงใหม่ เชียงราย', 'Search Chiang Mai and Chiang Rai')}</b><small>motdang.net</small></span></a>
 <a class="card go" href="/make"><span><b>${t('ทำหน้าให้ร้านที่คุณรัก', 'Make a page for a shop you love')}</b><small>${t('ฟรี ทำได้ทุกประเทศ จากมือถือ', 'Free, any country, from a phone')}</small></span></a>
+<a class="card go" href="${MAIN}/sites/expat-toolkit/"><span><b>${t('ชุดเอาตัวรอดสำหรับชาวต่างชาติ', 'Expat Survival Toolkit')}</b><small>${t('วีซ่า เอกสาร บ้าน ถนน สุขภาพ จากมดแดง หงส์ดำ โต๊ะวีซ่าเชียงใหม่', 'Visas, papers, homes, roads, health, from Mot Dang, Hongdam and Chiang Mai Visa Desk')}</small></span></a>
 <a class="card go" href="${MAIN}/sites/"><span><b>${t('มินิไซต์', 'Minisites')}</b><small>${t('ผี โคมลอย สะพาน ฝน กะเพรา', 'Ghosts, lanterns, bridges, rain, krapow')}</small></span></a>
 <button type="button" class="wide ghost" id="send" data-t="send">${t('ส่งมดแดงให้คนที่อยู่เมืองไทย', 'Send motdang to someone in Thailand')}</button>
 </div></section>
