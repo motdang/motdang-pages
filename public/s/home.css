@@ -146,7 +146,7 @@ html[lang=th] .hero h1,html[lang=my] .hero h1{line-height:1.2}html[lang=th] h2,h
 .cbar b{font:800 20px/1 "Prompt",system-ui,sans-serif;white-space:nowrap}
 .keep{margin:0 0 6px;font-size:20px}.keep b{font:800 36px/1.1 "Prompt",system-ui,sans-serif;color:#f3c552;display:block}
 .src{margin:0 0 18px;font-size:13px;color:#a8977a}.src a{color:#d7c29a}
-@media (max-width:560px){.cbar{grid-template-columns:1fr auto}.cbar i{grid-column:1/-1;grid-row:2}}
+@media (max-width:560px){.cbar{grid-template-columns:1fr auto}.cbar i{grid-column:1/-1;grid-row:2}.cbar.flat b{grid-column:1/-1;grid-row:3;white-space:normal;line-height:1.3;font-size:18px}}
 .tc .pr .hotelp{display:block;margin-top:8px;font:600 16px/1.3 "Prompt",system-ui,sans-serif;color:#d7c29a}
 
 /* 2026-10-15: wide still pictures the page slides over (Nan: "big wide pictures that don't move
