@@ -113,6 +113,7 @@ h2{font-size:clamp(30px,6vw,52px);line-height:1.08;margin:0 0 12px}
 .tc{position:relative;padding:28px 24px;border-radius:28px;background:#fff;box-shadow:0 0 0 2px var(--line);overflow:hidden}
 .tc h3{margin:0;font-size:32px}.tc .pr{margin:6px 0 16px;font:600 44px/1 "Prompt",system-ui,sans-serif}.tc .pr small{font-size:18px;font-weight:400;color:var(--mute)}
 .tc ul{list-style:none;margin:0 0 22px;padding:0;display:grid;gap:10px}.tc li{display:flex;gap:10px;align-items:flex-start}.tc li [data-dingbat]{font-size:26px;flex:none;color:var(--red)}
+.tc li.more{display:block}.tc li.more summary{cursor:pointer;font-weight:600;padding-left:36px}.tc li.more ul{margin:12px 0 0}
 .tc.gold{background:var(--lacquer);color:#fbecc8;box-shadow:inset 0 0 0 1px #c99a3a,inset 0 0 0 8px var(--lacquer),inset 0 0 0 9px #6b4e1f,0 30px 60px -24px rgba(18,13,8,.7)}
 .tc.gold h3,.tc.gold .pr{background:linear-gradient(100deg,#b5832a,#f8dd8e 25%,#fff6d5 32%,#d9a441 50%,#f3c552);-webkit-background-clip:text;background-clip:text;color:#f3c552;-webkit-text-fill-color:transparent}
 .tc.gold li [data-dingbat]{color:#f3c552}.tc .leaf{position:absolute;right:18px;top:18px;width:90px;height:90px;animation:sway 6s ease-in-out infinite}@keyframes sway{50%{transform:rotate(6deg)}}
@@ -213,3 +214,5 @@ main>section{position:relative;z-index:1}
 .toy{min-height:200px}
 .dockcta{position:fixed;left:50%;bottom:calc(14px + env(safe-area-inset-bottom));z-index:50;transform:translate(-50%,140%);display:inline-flex;align-items:center;min-height:56px;padding:12px 30px;border-radius:99px;background:var(--gold);color:#000;font:600 19px/1.2 "Prompt",system-ui,sans-serif;text-decoration:none;box-shadow:0 6px 0 #c98a00,0 16px 40px -10px rgba(0,0,0,.45);transition:transform .35s cubic-bezier(.2,.8,.2,1)}
 .dockcta.on{transform:translate(-50%,0)}
+/* on a wide screen the bar's own button is always in reach: no dock over the content */
+@media (min-width:900px){.dockcta{display:none}}

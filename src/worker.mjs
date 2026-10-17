@@ -334,7 +334,7 @@ async function api(request, env, ctx, p, url, origin) {
     const g = await env.DB.prepare("SELECT COUNT(*) AS n FROM site WHERE status='live' AND tier='gold'").first()
     const latest = (await env.DB.prepare("SELECT name, kind, look, d, tier, gold_until FROM site WHERE status='live' ORDER BY published DESC LIMIT 12").all()).results
       .map((r) => { const d = JSON.parse(r.d); return { name: r.name, kind: r.kind, look: r.look, title: d.name || r.name, tagline: d.tagline || '', cover: d.cover ? `/img/${d.cover}-s.webp` : '', card: d.card ? `/img/${d.card}.jpg` : '', gold: gold.isGold(r) } })
-    return J({ live: r?.n || 0, countries: r?.cc || 0, gold: g?.n || 0, latest, price: Number(env.GOLD_THB) || gold.GOLD_THB, hotel: Number(env.HOTEL_THB) || gold.HOTEL_THB }, 200, { 'cache-control': 'public, max-age=120' })
+    return J({ live: r?.n || 0, countries: r?.cc || 0, gold: g?.n || 0, latest, price: Number(env.GOLD_THB) || gold.GOLD_THB, hotel: Number(env.HOTEL_THB) || gold.HOTEL_THB, hotelYear: Number(env.HOTEL_YEAR_THB) || gold.HOTEL_YEAR_THB }, 200, { 'cache-control': 'public, max-age=120' })
   }
 
   if (p === 'find' && m === 'GET') return J({ results: await find(env, url, origin) }, 200, { 'access-control-allow-origin': '*', 'cache-control': 'public, max-age=60' })
@@ -484,7 +484,8 @@ ${s ? `<p>ข้อความถึง ${escHtml(title)} จะส่งสำ
       tier: isGold ? 'gold' : 'free', gold_until: s.gold_until, trial: !!s.trial, notify_email: s.notify_email || '', notify_ok: !!s.notify_ok, unread: un?.n || 0,
       asks: (await env.DB.prepare("SELECT COUNT(*) AS n FROM booking WHERE site_id = ? AND status = 'new'").bind(s.id).first())?.n || 0,
       domain: s.domain || '', domain_state: s.domain_state || '', domains: dom.on(env), price: Number(env.GOLD_THB) || gold.GOLD_THB,
-      plan: s.plan || 'gold', hotel: gold.isHotel(s), plans: gold.PLANS(env) })
+      plan: s.plan || 'gold', hotel: gold.isHotel(s), plans: gold.PLANS(env),
+      founders: await founding.thisMonth(env).then((f) => ({ price: f.price, left: f.left })).catch(() => null) })
   }
 
   if (p === 'site' && m === 'PUT') {

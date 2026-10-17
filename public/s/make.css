@@ -137,7 +137,7 @@ textarea{min-height:130px;resize:vertical;line-height:1.5}
 .kind{position:relative;overflow:hidden}.kind .kd{font-size:46px;line-height:1;color:var(--red)}
 .kind:hover .kd [data-dingbat],.kind:focus-visible .kd [data-dingbat]{transform:scale(1.08)}
 .mine{margin-top:28px}
-.tabs{position:sticky;top:57px;z-index:19;display:flex;gap:6px;margin:-6px -16px 16px;padding:10px 16px;background:var(--cream);box-shadow:0 1px 0 var(--line);overflow-x:auto;scrollbar-width:none}
+.tabs{position:sticky;top:57px;z-index:19;display:flex;gap:6px;margin:-6px -16px 16px;padding:10px 16px;background:var(--cream);box-shadow:0 1px 0 var(--line),0 -12px 0 var(--cream) /* fills the slit under a red bar shorter than 57px */;overflow-x:auto;scrollbar-width:none}
 .tabs::-webkit-scrollbar{display:none}
 .tabs button{flex:none;display:inline-flex;align-items:center;gap:6px;padding:10px 18px;border:0;border-radius:99px;background:#fff;color:var(--ink);font-weight:700;font-size:16px;cursor:pointer;box-shadow:inset 0 0 0 2px var(--line)}
 .tabs button.on{background:var(--ink);color:#fff;box-shadow:none}
@@ -364,6 +364,7 @@ body{font-family:"Prompt",system-ui,-apple-system,"Segoe UI","Noto Sans Thai","N
 @media (min-width:760px){.goldtop{grid-template-columns:minmax(0,1fr) 300px}}
 .goldhero .gwhy{position:relative;margin:0 0 20px;max-width:26em;font-size:19px;color:#f3e2b8}
 .goldhero .go.big{background:linear-gradient(100deg,#b5832a,#f8dd8e 40%,#d9a441);color:#2a1a04;box-shadow:0 6px 0 #7a5410}
+.gfound{margin:16px 0;padding:22px;border-radius:22px;background:linear-gradient(160deg,#1a1208,#3a2a10);color:#fbecc8;box-shadow:0 0 0 2px #e6c77a}.gfound h3{margin:0 0 8px;color:#f3c552;font-size:20px}.gfound p{margin:0 0 8px;line-height:1.45}.gfound .hint{color:#e6d3a8}.gfound .left{font-weight:700;color:#f3c552}.gfound .go{display:inline-block;margin-top:6px;text-decoration:none}
 .gfeats{margin:16px 0;padding:20px;border-radius:22px;background:#fffaf0;box-shadow:0 0 0 2px #e6c77a}
 .gfeats h3{margin:0 0 12px;font-size:15px;color:#8a5a12;text-transform:uppercase;letter-spacing:.08em}
 .gfeats ul{list-style:none;margin:0;padding:0;display:grid;gap:10px 18px;grid-template-columns:repeat(auto-fill,minmax(240px,1fr))}
