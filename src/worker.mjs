@@ -232,12 +232,12 @@ async function page(request, env, ctx, name, sub, url, origin, base) {
 
 const CSP_PAGE = (nonce) => `default-src 'self'; img-src 'self' data: blob: https://i.ytimg.com; style-src 'self' 'unsafe-inline'; font-src 'self'; ` +
   `script-src 'self'${nonce ? ` 'nonce-${nonce}'` : ''} https://static.cloudflareinsights.com; connect-src 'self' https://cloudflareinsights.com; worker-src 'self' blob:; child-src 'self' blob:; ` +
-  `frame-src 'self' https://www.youtube-nocookie.com https://player.vimeo.com; frame-ancestors 'self'; base-uri 'none'; form-action 'self'`
+  `frame-src 'self' https://www.youtube-nocookie.com https://player.vimeo.com https://drive.google.com; frame-ancestors 'self'; base-uri 'none'; form-action 'self'`
 const CSP_MAP = (nonce) => `default-src 'self'; img-src 'self' data: blob: https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://motdang.net; font-src 'self' https://fonts.gstatic.com https://motdang.net; ` +
   `script-src 'self' 'nonce-${nonce}' https://motdang.net; connect-src 'self' https://motdang.net https://mot-dang-claims.nanobotco.workers.dev; worker-src 'self' blob:; frame-ancestors 'self'; base-uri https://motdang.net`
 // the builder frames Amulet Camera's cutting page (nanobotco.github.io/amulet-camera/cut.html): the model and its library load there, never here
 const CSP_TOOL = `default-src 'self'; img-src 'self' data: blob: https:; style-src 'self' 'unsafe-inline' https://motdang.net; font-src 'self'; script-src 'self' https://motdang.net https://static.cloudflareinsights.com; ` +
-  `connect-src 'self' https://motdang.net https://cloudflareinsights.com; worker-src 'self' blob:; child-src 'self' blob:; frame-src 'self' https://www.youtube-nocookie.com https://player.vimeo.com https://nanobotco.github.io; frame-ancestors 'self'; base-uri 'none'; form-action 'self'`
+  `connect-src 'self' https://motdang.net https://cloudflareinsights.com; worker-src 'self' blob:; child-src 'self' blob:; frame-src 'self' https://www.youtube-nocookie.com https://player.vimeo.com https://drive.google.com https://nanobotco.github.io; frame-ancestors 'self'; base-uri 'none'; form-action 'self'`
 
 function html(body, status = 200, { nonce, cache, map } = {}) {
   return new Response(body, {

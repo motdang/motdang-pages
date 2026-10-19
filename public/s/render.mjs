@@ -128,6 +128,8 @@ export function normalize(d = {}) {
     o.credits[id] = { title: str(c.title, 120), by: str(c.by, 120), src: safeUrl(c.src), license: str(c.license, 40), licenseUrl: safeUrl(c.licenseUrl), from: str(c.from, 20) }
   }
   o.video = videoUrl(d.video)
+  o.vposter = PHOTO_ID.test(d.vposter || '') ? d.vposter : ''
+  o.give = safeUrl(d.give)
   o.spots = (Array.isArray(d.spots) ? d.spots : []).map((x) => ({ n: str(x?.n, 60), note: str(x?.note, 160), lat: Number(x?.lat), lng: Number(x?.lng) }))
     .filter((x) => x.n && Number.isFinite(x.lat) && Number.isFinite(x.lng) && Math.abs(x.lat) <= 85 && Math.abs(x.lng) <= 180)
     .map((x) => ({ ...x, lat: Math.round(x.lat * 1e6) / 1e6, lng: Math.round(x.lng * 1e6) / 1e6 })).slice(0, 20)
@@ -173,17 +175,29 @@ export function normalize(d = {}) {
   return normalizeAmulets(d, normalizeExtras(d, o))
 }
 
-/** A YouTube or Vimeo address as { kind, id }, else null. */
+/** A YouTube, Vimeo or Google Drive address as { kind, id }, else null. */
 export function videoUrl(v) {
-  if (v && typeof v === 'object') return (v.kind === 'youtube' && /^[\w-]{11}$/.test(v.id)) || (v.kind === 'vimeo' && /^\d{6,12}$/.test(v.id)) ? { kind: v.kind, id: v.id } : null
+  if (v && typeof v === 'object') return (v.kind === 'youtube' && /^[\w-]{11}$/.test(v.id)) || (v.kind === 'vimeo' && /^\d{6,12}$/.test(v.id)) || (v.kind === 'drive' && /^[\w-]{20,80}$/.test(v.id)) ? { kind: v.kind, id: v.id } : null
   const u = safeUrl(v)
   if (!u) return null
   let m = /^https:\/\/(?:www\.|m\.)?(?:youtube\.com\/(?:watch\?(?:.*&)?v=|shorts\/|embed\/|live\/)|youtu\.be\/)([\w-]{11})/.exec(u)
   if (m) return { kind: 'youtube', id: m[1] }
   m = /^https:\/\/(?:www\.|player\.)?vimeo\.com\/(?:video\/)?(\d{6,12})/.exec(u)
   if (m) return { kind: 'vimeo', id: m[1] }
+  m = /^https:\/\/drive\.google\.com\/(?:file\/d\/|open\?id=)([\w-]{20,80})/.exec(u)
+  if (m) return { kind: 'drive', id: m[1] }
   return null
 }
+
+/** The video as a button that becomes the player on a tap; `poster` a photo id shown before. */
+function videoBlock(v, poster, H2, W, img) {
+  const thumb = poster ? img(poster) : v.kind === 'youtube' ? `https://i.ytimg.com/vi/${v.id}/hqdefault.jpg` : ''
+  return `<section class="card rise">${H2('video', W('video'))}<button class="video" data-t="video" data-kind="${v.kind}" data-id="${esc(v.id)}" aria-label="${W('video')}">` +
+    (thumb ? `<img src="${esc(thumb)}" alt="" loading="lazy">` : '') + `<span class="play"><svg viewBox="0 0 24 24" width="34" height="34" aria-hidden="true"><path d="M8 5v14l11-7z" fill="currentColor"/></svg></span></button></section>`
+}
+
+/** A Gold page's give button: a link to where the money goes. */
+const giveBtn = (u, W) => `<a class="btn give" data-t="give" href="${esc(u)}" rel="nofollow noopener">${icon('heart')}${W('give')}</a>`
 
 function validTz(tz) {
   try { if (tz) { new Intl.DateTimeFormat('en', { timeZone: tz }); return tz } } catch {}
@@ -354,6 +368,7 @@ img{max-width:100%;display:block}a{color:inherit}.i{width:22px;height:22px;flex:
 @keyframes pulse{50%{opacity:.35;transform:scale(.7)}}
 .reach{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:22px auto 0}
 .btn{display:flex;align-items:center;justify-content:center;gap:9px;min-height:56px;padding:10px 16px;border-radius:var(--r);border:0;font:700 17px/1.2 var(--body);text-decoration:none;cursor:pointer;background:var(--accent);color:var(--on-accent);transition:transform .15s}
+.btn.give{background:linear-gradient(100deg,#c8901f,#f8dd8e 45%,#e2b04a);color:#111}
 .btn:active{transform:scale(.97)}
 .btn.line{background:#06c755;color:#000}.btn.ota-agoda{background:#fff;color:#1a1a1a;box-shadow:inset 0 0 0 2px #1a1a1a}.btn.ota-booking{background:#003580;color:#fff}.btn.grab{background:#00b14f;color:#000}.btn.dark{background:var(--ink);color:var(--card)}
 .btn.ghost{background:transparent;color:inherit;box-shadow:inset 0 0 0 2px currentColor}.btn small{font-weight:400;opacity:.85}
@@ -381,7 +396,7 @@ img{max-width:100%;display:block}a{color:inherit}.i{width:22px;height:22px;flex:
 .far{margin:10px 0 0;font-weight:600;min-height:1.6em}
 .spots{list-style:none;margin:0;padding:0;counter-reset:s}.spots li{display:grid;grid-template-columns:34px 1fr;gap:10px;padding:10px 0;border-bottom:1px dashed var(--line)}
 .spots li::before{counter-increment:s;content:counter(s);display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:var(--accent);color:var(--on-accent);font-weight:800;font-size:15px}
-.spots b{display:block}.spots small{color:var(--mute);font-size:15px}.spots button{border:0;background:none;color:var(--acc-ink);font:600 14px var(--body);padding:4px 0;cursor:pointer;text-decoration:underline}
+.spots b{display:block}.spots small{color:var(--mute);font-size:15px}.spots button,.spots a{border:0;background:none;color:var(--acc-ink);font:600 14px var(--body);padding:4px 0;cursor:pointer;text-decoration:underline}
 .qty{display:inline-flex;align-items:center;gap:6px;margin-left:4px}.qty button{width:38px;height:38px;border-radius:50%;border:2px solid currentColor;background:transparent;color:inherit;font:700 20px/1 system-ui;cursor:pointer}
 .qty b{min-width:1.4em;text-align:center}.qty.on b{color:var(--acc-ink)}.btn.order{position:sticky;bottom:12px;margin-top:16px;z-index:5;box-shadow:0 6px 20px rgba(0,0,0,.25)}
 .top .cta{display:inline-flex;margin-top:18px;min-height:58px;padding:12px 28px;font-size:19px}.top .cta .i{width:24px;height:24px}
@@ -570,7 +585,7 @@ export function render(site, opt = {}) {
 
   // head
   const desc = (L && L.note.slice(0, 160)) || (Wk && (Wk.note.slice(0, 160) || [Wk.client, Wk.year].filter(Boolean).join(' · '))) || (Am && amuletDesc(Am, lang)) || d.tagline || d.about.slice(0, 160) || name
-  const card = L && L.photos[0] ? origin + img(L.photos[0]) : Wk && Wk.photos[0] ? origin + img(Wk.photos[0]) : Am && Am.photos[0] ? origin + img(Am.photos[0]) : d.card ? `${origin}/img/${d.card}.jpg` : d.cover ? origin + img(d.cover) : `${origin}/s/card.jpg`
+  const card = L && L.photos[0] ? origin + img(L.photos[0]) : Wk && Wk.card ? `${origin}/img/${Wk.card}.jpg` : Wk && Wk.photos[0] ? origin + img(Wk.photos[0]) : Am && Am.photos[0] ? origin + img(Am.photos[0]) : d.card ? `${origin}/img/${d.card}.jpg` : d.cover ? origin + img(d.cover) : `${origin}/s/card.jpg`
   out.push(`<!doctype html><html lang="${lang}" data-look="${lookId}" translate="no" class="notranslate"><head><meta charset="utf-8"><meta name="google" content="notranslate">`,
     opt.nonce ? `<script nonce="${opt.nonce}">if(/[.]translate[.]goog$/.test(location.hostname))location.replace("https://"+location.hostname.slice(0,-15).replace(/--/g,"~").replace(/-/g,".").replace(/~/g,"-")+location.pathname+location.search.replace(/([?&])_x_tr_[^&]*/g,"$1").replace(/[?&]+$/,"").replace(/[?]&+/,"?")+location.hash)</script>` : '',
     `<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">`,
@@ -634,6 +649,7 @@ export function render(site, opt = {}) {
   if (d.order.lineman) reach.push(`<a class="btn line" data-t="lineman" href="${esc(d.order.lineman)}" rel="nofollow noopener">${icon('food')}${W('lineman')}</a>`)
   if (gold && d.ota.agoda) reach.push(otaBtn('agoda', d.ota.agoda, W))
   if (gold && d.ota.booking) reach.push(otaBtn('booking', d.ota.booking, W))
+  if (gold && d.give) reach.unshift(giveBtn(d.give, W))
   if (c.whatsapp && !c.phone) reach.push(`<a class="btn" data-t="whatsapp" href="${esc(waHref(c.whatsapp))}" rel="nofollow noopener">${icon('chat')}WhatsApp</a>`)
   if (d.msg && !reach.length) reach.push(`<a class="btn" data-t="msg" href="#message">${icon('mail')}${W('msg')}</a>`)
   if (reach.length) out.push(`<nav class="reach">${reach.join('')}</nav>`)
@@ -774,12 +790,7 @@ export function render(site, opt = {}) {
     out.push('</div></section>')
   }
 
-  if (gold && d.video) {
-    const v = d.video
-    const thumb = v.kind === 'youtube' ? `https://i.ytimg.com/vi/${v.id}/hqdefault.jpg` : ''
-    out.push(`<section class="card rise">${H2('video', W('video'))}<button class="video" data-t="video" data-kind="${v.kind}" data-id="${esc(v.id)}" aria-label="${W('video')}">`,
-      thumb ? `<img src="${thumb}" alt="" loading="lazy">` : '', `<span class="play"><svg viewBox="0 0 24 24" width="34" height="34" aria-hidden="true"><path d="M8 5v14l11-7z" fill="currentColor"/></svg></span></button></section>`)
-  }
+  if (gold && d.video) out.push(videoBlock(d.video, d.vposter, H2, W, img))
 
   if (hasPin || pl.addr) {
     out.push(`<section class="card mapcard rise" id="where">${H2('where', W('where'))}`)
@@ -803,7 +814,7 @@ export function render(site, opt = {}) {
 
   if (d.spots.length) {
     out.push(`<section class="card rise">${H2('spots', W('spots'))}<ol class="spots">`)
-    d.spots.slice(0, gold ? MAX.spotsGold : MAX.spotsFree).forEach((x, i) => out.push(`<li><span><b>${esc(x.n)}</b>${x.note ? `<small>${esc(x.note)}</small>` : ''}<br><button data-spot="${i}" data-lat="${x.lat}" data-lng="${x.lng}">${W('spotsMap')}</button></span></li>`))
+    d.spots.slice(0, gold ? MAX.spotsGold : MAX.spotsFree).forEach((x, i) => out.push(`<li><span><b>${esc(x.n)}</b>${x.note ? `<small>${esc(x.note)}</small>` : ''}<br>${hasPin ? `<button data-spot="${i}" data-lat="${x.lat}" data-lng="${x.lng}">${W('spotsMap')}</button>` : `<a data-t="map" href="${esc(dirHref(x.lat, x.lng))}" rel="nofollow noopener">${W('spotsMap')}</a>`}</span></li>`))
     out.push('</ol></section>')
   }
 
@@ -904,12 +915,13 @@ function workBody(x, { site, d, W, H2, img, gold }) {
   if (x.tags) out.push(`<p class="wtags">${tagsOf(x).map((t) => `<a href="/${esc(site.name)}?tag=${encodeURIComponent(t)}#works">${esc(t)}</a>`).join('')}</p>`)
   if (x.u) out.push(`<div class="tools-row"><a class="btn" data-t="worklink" href="${esc(x.u)}" rel="ugc nofollow noopener">${icon('link')}${W('w_see')}</a></div>`)
   out.push('</section>')
+  if (gold && x.video) out.push(videoBlock(x.video, x.photos[0], H2, W, img))
   if (x.note) out.push(`<section class="card rise">${H2('about', W('about'))}${paras(x.note)}</section>`)
   if (x.photos.length > 1) out.push(`<section class="card rise">${H2('photos', W('photos'))}<div class="wshots">${x.photos.map((p) => `<button data-t="photo" data-big="${esc(img(p))}"><img src="${esc(img(p))}" alt="" loading="lazy"></button>`).join('')}</div></section>`)
   const others = d.works.slice(0, gold ? MAX.works : MAX.worksFree).filter((y) => y.id !== x.id).slice(0, 6)
   if (others.length) out.push(`<section class="card rise">${H2('works', W('w_more'))}<div class="wgrid">${others.map((y) => workCard(y, { site, img })).join('')}</div>`,
     `<div class="tools-row"><a class="btn ghost" href="/${esc(site.name)}#works">${icon('list')}${W('w_all')}</a></div></section>`)
-  if (d.msg) out.push(`<section class="card rise"><div class="tools-row"><a class="btn" href="/${esc(site.name)}#message">${icon('mail')}${W('w_ask')}</a></div></section>`)
+  if ((gold && d.give) || d.msg) out.push(`<section class="card rise"><div class="tools-row">${gold && d.give ? giveBtn(d.give, W) : ''}${d.msg ? `<a class="btn" href="/${esc(site.name)}#message">${icon('mail')}${W('w_ask')}</a>` : ''}</div></section>`)
   return out.join('')
 }
 
