@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { pick, cleanLink, cleanCard, cleanLine, lineUrl, vcard, cardOf, near, front, arrival, ownerPage } from '../src/tap.mjs'
+import { readLimited, pick, cleanLink, cleanCard, cleanLine, lineUrl, vcard, cardOf, near, front, arrival, ownerPage } from '../src/tap.mjs'
 
 test('two knocks pair inside the window, nearest in time', () => {
   const me = { id: 'a', t: 10_000, lat: null, lng: null, net: 'x' }
@@ -62,4 +62,25 @@ test('LINE takes an id or an add-friend link', () => {
   assert.equal(cleanLine('https://evil.com/x'), '')
   assert.equal(cleanLine('http://line.me/ti/p/x'), '')
   assert.match(arrival(cardOf({ id: 'abcdefgh', name: 'NaN', line: 'https://line.me/ti/p/UyvWa-rWeT', give: 'card' }), 'en', 'n'), /href="https:\/\/line.me\/ti\/p\/UyvWa-rWeT"/)
+})
+
+test('the contact carries the picture, folded, and where they met', () => {
+  const photo = 'A'.repeat(300)
+  const v = vcard(cardOf({ id: 'abcdefgh', name: 'NaN', line: 'https://line.me/ti/p/UyvWa-rWeT', photo: 'v1', give: 'card' }), 'u', { photo, met: 'Met Sun, 19 Oct 2026, 19:42' })
+  assert.match(v, /NOTE:Met Sun\\, 19 Oct 2026\\, 19:42 · motdang tap\\nLINE https:\/\/line.me/)
+  assert.match(v, /PHOTO;ENCODING=b;TYPE=JPEG:A+\r\n A+/)
+  assert.ok(v.split('\r\n').filter((l) => /^( |PHOTO)/.test(l)).every((l) => l.length <= 75))
+  assert.match(arrival(cardOf({ id: 'abcdefgh', name: 'NaN', photo: 'v1', give: 'card' }), 'en', 'n'), /src="\/tap\/abcdefgh.jpg\?v=v1"/)
+})
+
+test('every page script parses', () => {
+  const pages = [arrival(cardOf({ id: 'abcdefgh', name: 'N', give: 'card' }), 'en', 'x'), front('th', 'x'), ownerPage('en', 'x')]
+  for (const h of pages) for (const [, js] of h.matchAll(/<script nonce="x">([\s\S]*?)<\/script>/g)) assert.doesNotThrow(() => new Function(js))
+})
+
+test('an upload stops reading past its limit, chunked or not', async () => {
+  const body = (n) => new ReadableStream({ start(c) { for (let i = 0; i < n; i++) c.enqueue(new Uint8Array(1000)); c.close() } })
+  assert.equal((await readLimited(new Request('https://x/', { method: 'POST', body: body(3), duplex: 'half' }), 5000)).length, 3000)
+  assert.equal(await readLimited(new Request('https://x/', { method: 'POST', body: body(9), duplex: 'half' }), 5000), null)
+  assert.equal(await readLimited(new Request('https://x/', { method: 'POST', body: 'x', headers: { 'content-length': '999999' } }), 5000), null)
 })
