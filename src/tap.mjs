@@ -54,17 +54,20 @@ export function cleanLine(v) {
 /** Where the LINE button goes: the link as given, or the id's add-friend page. */
 export const lineUrl = (v) => (/^https:\/\//.test(v) ? v : `https://line.me/ti/p/~${encodeURIComponent(v)}`)
 
+/** The addresses in an email field: one, or two for a team card ("eng@…, sales@…"). */
+export const emailsOf = (v) => String(v || '').split(/[\s,;]+/).filter((e) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)).slice(0, 2)
+
 /** The card's fields, trimmed; a field that does not fit its shape is dropped. */
 export function cleanCard(o = {}) {
   const phone = cut(o.phone, 24).replace(/[^\d+ -]/g, '')
-  const email = cut(o.email, 120)
+  const email = emailsOf(cut(o.email, 120)).join(', ')
   const line = cleanLine(o.line)
   const site = cut(o.site, 30).toLowerCase()
   return {
     name: cut(o.name, 60),
     role: cut(o.role, 80),
     phone: /\d{6,}/.test(phone.replace(/\D/g, '')) ? phone : '',
-    email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : '',
+    email,
     line,
     site: /^[a-z0-9-]{3,30}$/.test(site) ? site : '',
   }
@@ -82,7 +85,7 @@ export function vcard(c, url, { photo, met } = {}) {
   const l = ['BEGIN:VCARD', 'VERSION:3.0', `FN:${e(c.name)}`, `N:;${e(c.name)};;;`]
   if (c.role) l.push(`TITLE:${e(c.role)}`)
   if (c.phone) l.push(`TEL;TYPE=CELL:${c.phone.replace(/[^\d+]/g, '')}`)
-  if (c.email) l.push(`EMAIL:${e(c.email)}`)
+  for (const m of emailsOf(c.email)) l.push(`EMAIL:${e(m)}`)
   if (c.site) l.push(`URL:${HOME}/${c.site}`)
   else if (c.link) l.push(`URL:${e(c.link)}`)
   else if (url) l.push(`URL:${url}`)
@@ -365,6 +368,7 @@ main{position:relative;z-index:1;max-width:520px;margin:0 auto;padding:52px 16px
 .hello{margin:0 0 2px;font-size:15px;font-weight:700;color:#8a6d14;letter-spacing:.02em}
 .name{font-size:clamp(32px,10vw,44px);line-height:1.04;margin:0;letter-spacing:-.5px;overflow-wrap:anywhere}
 .name .ch{display:inline-block;white-space:pre}
+.name .w{white-space:nowrap}
 .role{margin:0 0 12px;font-size:17px;color:#4a4458}
 .met{margin:12px 0 0;font-size:14px;color:#7a6420;text-align:center}
 .btn,button,summary{display:block;width:100%;font:inherit;font-weight:800;font-size:19px;padding:15px 16px;border-radius:14px;border:2px solid var(--ink);cursor:pointer;background:var(--gold);color:#000;text-decoration:none;text-align:center;margin:8px 0 0}
@@ -435,7 +439,8 @@ export function face(c, { save } = {}) {
   const chips = []
   if (c.line) chips.push(`<a class="ln" href="${esc(lineUrl(c.line))}">LINE</a>`)
   if (c.phone) chips.push(`<a href="tel:${esc(c.phone.replace(/[^\d+]/g, ''))}">${t('โทร', 'Call')}</a>`)
-  if (c.email) chips.push(`<a href="mailto:${esc(c.email)}">${t('อีเมล', 'Email')}</a>`)
+  const mails = emailsOf(c.email)
+  for (const m of mails) chips.push(`<a href="mailto:${esc(m)}">${mails.length > 1 ? esc(m.split('@')[0]) + '@' : t('อีเมล', 'Email')}</a>`)
   if (c.site) chips.push(`<a href="${HOME}/${esc(c.site)}">${t('หน้าเว็บ', 'Page')}</a>`)
   let i = 0
   const r = (cls) => `class="rise${cls ? ' ' + cls : ''}" style="--i:${i++}"`
@@ -466,7 +471,7 @@ x.globalAlpha=1;if(run&&!document.hidden&&(!STILL||sparks.length))requestAnimati
 function wake(){if(!run){run=true;last=performance.now();requestAnimationFrame(frame)}}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)wake()});wake()
 return{burst}})()
-function split(){document.querySelectorAll('.name').forEach(h=>{if(h.dataset.s)return;h.dataset.s=1;const t=h.textContent;const seg=window.Intl&&Intl.Segmenter?[...new Intl.Segmenter(undefined,{granularity:'grapheme'}).segment(t)].map(s=>s.segment):[t];h.textContent='';seg.forEach((g,i)=>{const s=document.createElement('span');s.className='ch';s.style.setProperty('--i',i);s.textContent=g;h.appendChild(s)})})}
+function split(){const S=window.Intl&&Intl.Segmenter;const words=t=>S?[...new Intl.Segmenter(undefined,{granularity:'word'}).segment(t)].map(s=>s.segment):t.split(/(\\s+)/);const chars=t=>S?[...new Intl.Segmenter(undefined,{granularity:'grapheme'}).segment(t)].map(s=>s.segment):[...t];document.querySelectorAll('.name').forEach(h=>{if(h.dataset.s)return;h.dataset.s=1;const t=h.textContent;h.textContent='';let i=0;words(t).forEach(w=>{if(/^\\s+$/.test(w)){h.appendChild(document.createTextNode(' '));return}const cs=chars(w);const box=cs.length>12?h:h.appendChild(document.createElement('span'));if(box!==h)box.className='w';cs.forEach(g=>{const s=document.createElement('span');s.className='ch';s.style.setProperty('--i',i++);s.textContent=g;box.appendChild(s)})})})}
 function hello(){const hr=new Date().getHours();const k=hr<5?2:hr<12?0:hr<17?1:2;document.querySelectorAll('[data-hello]').forEach(e=>e.textContent=[W('สวัสดีตอนเช้า','Good morning'),W('สวัสดีตอนบ่าย','Good afternoon'),W('สวัสดีตอนเย็น','Good evening')][k]+' ✦')}
 function met(){const d=new Date();const day=d.toLocaleDateString(L==='th'?'th-TH':'en-GB',{weekday:'long',day:'numeric',month:'long'});const tm=d.toLocaleTimeString(L==='th'?'th-TH':'en-GB',{hour:'numeric',minute:'2-digit'});const note=d.toLocaleString('en-GB',{weekday:'short',day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});document.querySelectorAll('[data-met]').forEach(e=>{e.hidden=false;e.textContent=W('เจอกัน '+day+' · '+tm,'Met '+day+' · '+tm)});document.querySelectorAll('[data-save]').forEach(a=>{const u=new URL(a.getAttribute('href'),location.href);u.searchParams.set('m',note);a.href=u.pathname+u.search})}
 let ready=0
@@ -488,11 +493,12 @@ async function knock(){last=now();const t=last;navigator.vibrate&&navigator.vibr
 function got(p){navigator.vibrate&&navigator.vibrate([30,50,120]);if(p&&!p.none)p.metAt=stamp();hit&&hit(p)}
 async function arm(g,h,s){give=g;hit=h;say=s;let ok=true;if(typeof DeviceMotionEvent!=='undefined'&&typeof DeviceMotionEvent.requestPermission==='function'){try{ok=(await DeviceMotionEvent.requestPermission())!=='denied'}catch(e){ok=!/iP(hone|ad|od)/.test(navigator.userAgent)}}if(typeof DeviceOrientationEvent!=='undefined'&&typeof DeviceOrientationEvent.requestPermission==='function'){DeviceOrientationEvent.requestPermission().catch(()=>{})}sync();where();if(!on&&ok){addEventListener('devicemotion',motion);on=true}s&&s(ok?'armed':'nomotion')}
 return{arm,knock,sync}})()
-function vcf(c){const e=s=>String(s).replace(/([,;\\\\])/g,'\\\\$1');const l=['BEGIN:VCARD','VERSION:3.0','FN:'+e(c.name),'N:;'+e(c.name)+';;;'];if(c.role)l.push('TITLE:'+e(c.role));if(c.phone)l.push('TEL;TYPE=CELL:'+c.phone.replace(/[^\\d+]/g,''));if(c.email)l.push('EMAIL:'+e(c.email));const nt=[c.metAt?'Met '+c.metAt+' · motdang tap':'',c.line?'LINE '+c.line:''].filter(Boolean);if(nt.length)l.push('NOTE:'+e(nt.join('\\n')));l.push('END:VCARD');return URL.createObjectURL(new Blob([l.join('\\r\\n')+'\\r\\n'],{type:'text/vcard'}))}
+const ML=v=>String(v||'').split(/[\\s,;]+/).filter(m=>m.includes('@')).slice(0,2)
+function vcf(c){const e=s=>String(s).replace(/([,;\\\\])/g,'\\\\$1');const l=['BEGIN:VCARD','VERSION:3.0','FN:'+e(c.name),'N:;'+e(c.name)+';;;'];if(c.role)l.push('TITLE:'+e(c.role));if(c.phone)l.push('TEL;TYPE=CELL:'+c.phone.replace(/[^\\d+]/g,''));ML(c.email).forEach(m=>l.push('EMAIL:'+e(m)));const nt=[c.metAt?'Met '+c.metAt+' · motdang tap':'',c.line?'LINE '+c.line:''].filter(Boolean);if(nt.length)l.push('NOTE:'+e(nt.join('\\n')));l.push('END:VCARD');return URL.createObjectURL(new Blob([l.join('\\r\\n')+'\\r\\n'],{type:'text/vcard'}))}
 const stamp=()=>new Date().toLocaleString('en-GB',{weekday:'short',day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})
 const LU=v=>/^https:\\/\\//.test(v)?v:'https://line.me/ti/p/~'+encodeURIComponent(v)
 const H=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c])
-function peerCard(p){if(!p||p.none)return '<p class="small">'+W('ชนติดแล้ว อีกเครื่องไม่ได้ใส่นามบัตร','Bumped. The other phone gave no card.')+'</p>';const ch=[];if(p.line)ch.push('<a class="ln" href="'+H(LU(p.line))+'">LINE</a>');if(p.phone)ch.push('<a href="tel:'+H(p.phone.replace(/[^\\d+]/g,''))+'">'+W('โทร','Call')+'</a>');if(p.email)ch.push('<a href="mailto:'+H(p.email)+'">'+W('อีเมล','Email')+'</a>');const save=p.id?'/tap/'+p.id+'.vcf'+(p.metAt?'?m='+encodeURIComponent(p.metAt):''):vcf(p);return '<div class="go"><div class="card"><div class="top">'+(p.photo?'<div class="portrait"><img src="'+H(p.photo)+'" alt="" width="72" height="72"></div>':'')+'<div><p class="hello">'+W('ได้มาจากการชน','From a bump')+' ✦</p><h2 class="name" style="font-size:32px">'+H(p.name)+'</h2></div></div>'+(p.role?'<p class="role">'+H(p.role)+'</p>':'')+(p.link?'<a class="btn dark" href="'+H(p.link)+'">'+(p.label?H(p.label):W('เปิดลิงก์','Open the link'))+' →</a>':'')+'<a class="btn" href="'+save+'" download="'+H(p.name)+'.vcf">'+W('บันทึกรายชื่อ','Save contact')+'</a>'+(ch.length?'<div class="chips">'+ch.join('')+'</div>':'')+(p.metAt?'<p class="met">'+H(W('เจอกัน ','Met ')+p.metAt)+'</p>':'')+'</div></div>'}
+function peerCard(p){if(!p||p.none)return '<p class="small">'+W('ชนติดแล้ว อีกเครื่องไม่ได้ใส่นามบัตร','Bumped. The other phone gave no card.')+'</p>';const ch=[];if(p.line)ch.push('<a class="ln" href="'+H(LU(p.line))+'">LINE</a>');if(p.phone)ch.push('<a href="tel:'+H(p.phone.replace(/[^\\d+]/g,''))+'">'+W('โทร','Call')+'</a>');const ms=ML(p.email);ms.forEach(m=>ch.push('<a href="mailto:'+H(m)+'">'+(ms.length>1?H(m.split('@')[0])+'@':W('อีเมล','Email'))+'</a>'));const save=p.id?'/tap/'+p.id+'.vcf'+(p.metAt?'?m='+encodeURIComponent(p.metAt):''):vcf(p);return '<div class="go"><div class="card"><div class="top">'+(p.photo?'<div class="portrait"><img src="'+H(p.photo)+'" alt="" width="72" height="72"></div>':'')+'<div><p class="hello">'+W('ได้มาจากการชน','From a bump')+' ✦</p><h2 class="name" style="font-size:32px">'+H(p.name)+'</h2></div></div>'+(p.role?'<p class="role">'+H(p.role)+'</p>':'')+(p.link?'<a class="btn dark" href="'+H(p.link)+'">'+(p.label?H(p.label):W('เปิดลิงก์','Open the link'))+' →</a>':'')+'<a class="btn" href="'+save+'" download="'+H(p.name)+'.vcf">'+W('บันทึกรายชื่อ','Save contact')+'</a>'+(ch.length?'<div class="chips">'+ch.join('')+'</div>':'')+(p.metAt?'<p class="met">'+H(W('เจอกัน ','Met ')+p.metAt)+'</p>':'')+'</div></div>'}
 function sayer(el,wrap){return s=>{el.className='st';const m={armed:W('เคาะมือถือเข้าหากันเบาๆ ได้เลย','Knock phones together, gently'),nomotion:W('เครื่องนี้ไม่ให้อ่านการเคลื่อนไหว กดปุ่มด้านล่างพร้อมกันแทน','This phone keeps motion closed. Press the button below at the same moment instead.'),knock:W('ชน… กำลังหาอีกเครื่อง','Bump… finding the other phone'),miss:W('ไม่ติด เคาะอีกที พร้อมกันทั้งสองเครื่อง','Missed. Knock again, both at once.')};el.textContent=m[s]||'';if(wrap)wrap.classList.toggle('armed',s!=='miss')}}
 document.getElementById('card')&&document.getElementById('card').addEventListener('click',e=>{if(!e.target.closest('a'))land()})`
 
@@ -566,7 +572,7 @@ export function ownerPage(lang, nonce) {
 <label>${t('รูป', 'Picture')}</label><div class="pic"><div class="portrait"><img id="pv" alt="" hidden></div><button class="press" id="pick" type="button" style="margin:0">${t('เลือกรูป', 'Choose a picture')}</button><input id="pf" type="file" accept="image/*" hidden></div>
 <label for="n">${t('ชื่อ', 'Name')}</label><input id="n" maxlength="60"><label for="r">${t('บรรทัดใต้ชื่อ', 'Under the name')}</label><input id="r" maxlength="80">
 <div class="row2"><div><label for="p">${t('เบอร์โทร', 'Phone')}</label><input id="p" type="tel" maxlength="24"></div><div><label for="l">${t('ไอดีหรือลิงก์ไลน์', 'LINE ID or link')}</label><input id="l" maxlength="120" autocapitalize="off"></div></div>
-<label for="e">${t('อีเมล', 'Email')}</label><input id="e" type="email" maxlength="120"><label for="s">${t('หน้าบน sites.motdang.net', 'Page on sites.motdang.net')}</label><input id="s" maxlength="30" placeholder="name" autocapitalize="off">
+<label for="e">${t('อีเมล', 'Email')}</label><input id="e" type="email" multiple maxlength="120"><label for="s">${t('หน้าบน sites.motdang.net', 'Page on sites.motdang.net')}</label><input id="s" maxlength="30" placeholder="name" autocapitalize="off">
 <button id="save" type="button">${t('บันทึก', 'Save')}</button><p class="st" id="sst"></p></section>
 <section class="panel"><h2>${t('สติกเกอร์', 'Sticker')}</h2><p>${t('สติกเกอร์เก็บที่อยู่นี้', 'The sticker holds this address')}</p><div class="addr" id="addr"></div>
 <button id="nfc" type="button" hidden>${t('เขียนสติกเกอร์', 'Write a sticker')}</button><button class="press" id="copy" type="button">${t('คัดลอกที่อยู่', 'Copy the address')}</button>
