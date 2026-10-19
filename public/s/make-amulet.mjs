@@ -14,7 +14,7 @@ const UI = {
     st: 'Status', st_open: 'Available', st_reserved: 'Reserved', st_sold: 'Gone', st_show: 'On show', p: 'Price', pHint: 'Empty: the page says "Ask the price"', form: 'Kind', none: '—',
     temple: 'Temple', maker: 'Monk or maker', year: 'Year (BE or CE)', mat: 'Material', mould: 'Mould', size: 'Size', sizeEx: '2.4 × 3.6 cm', cond: 'Condition', frame: 'Frame or case', cert: 'Certificate (issuer, number)',
     certEx: 'Association card no. 12345', note: 'More about it', add: 'Add an amulet', open: 'Open its page', front: 'Front', back: 'Back', terms: 'Guarantee and delivery (on every amulet page)',
-    termsEx: 'Refund within 7 days if not genuine. EMS across Thailand.', tap_amulet: 'Amulet pages', tap_reserve: 'Reserve on LINE' },
+    termsEx: 'Refund within 7 days if not genuine. EMS across Thailand.', tap_amulet: 'Amulet pages', tap_reserve: 'Reserve on LINE', line: 'Your LINE, for the Reserve button', lineHint: 'Each amulet page has a Reserve on LINE button that messages you here. With no LINE, the button does not show.' },
   th: { cam: 'กล้องพระ', cam_pick: 'หรือเลือกรูป', cam_hint: 'ถ่ายหนึ่งรูป ได้พระหนึ่งองค์ขึ้นบนสุดของหน้า ตัดพื้นหลังให้ รูปเก็บไว้ในเครื่องจนกว่าจะขึ้นหน้าเว็บ แอปปิดหรือเน็ตหลุดก็ไม่หาย', cam_gold: 'หน้าทอง: กล้องพระ ถ่ายหนึ่งรูป ได้พระหนึ่งองค์ ตัดพื้นหลังให้',
     cam_wait: 'รอคิว', cam_cut: 'กำลังตัดพื้นหลัง', cam_send: 'กำลังขึ้นหน้าเว็บ', cam_net: 'ไม่มีเน็ต เก็บไว้ในเครื่องแล้ว', cam_refused: 'รูปนี้ไม่ผ่าน', cam_retry: 'ลองอีกครั้ง', cam_getting: 'กำลังโหลดเครื่องมือตัด {a} จาก {b} MB', cam_nokeep: 'เครื่องเก็บรูปไม่ได้ เปิดหน้านี้ไว้จนกว่ารูปจะขึ้น', cam_dropq: 'ลบรูปนี้ออกจากเครื่อง?', cam_full: 'หน้าเต็มแล้ว ลบพระออกก่อนหนึ่งองค์',
     auto_t: 'พระองค์ที่', lens: 'ค้นหา', post: 'โพสต์', post_done: 'คัดลอกข้อความแล้ว วางในโพสต์ได้เลย', post_tail: 'ให้เช่าบูชา ทักแชทได้เลย',
@@ -23,7 +23,7 @@ const UI = {
     st: 'สถานะ', st_open: 'พร้อมเช่า', st_reserved: 'จองแล้ว', st_sold: 'เช่าแล้ว', st_show: 'พระโชว์', p: 'ราคาเช่า', pHint: 'เว้นว่างไว้ หน้าเว็บจะขึ้นว่า "สอบถามราคา"', form: 'ประเภท', none: '—',
     temple: 'วัด', maker: 'เกจิ · ผู้สร้าง', year: 'ปี (พ.ศ. หรือ ค.ศ.)', mat: 'เนื้อ', mould: 'พิมพ์', size: 'ขนาด', sizeEx: '2.4 × 3.6 ซม.', cond: 'สภาพ', frame: 'กรอบ · เลี่ยม', cert: 'บัตรรับรอง (ที่ออก เลขที่)',
     certEx: 'บัตรสมาคมฯ เลขที่ 12345', note: 'รายละเอียด', add: 'เพิ่มพระ', open: 'เปิดหน้าองค์นี้', front: 'หน้า', back: 'หลัง', terms: 'การรับประกันและการจัดส่ง (แสดงทุกองค์)',
-    termsEx: 'รับประกันพระแท้ ไม่แท้คืนเงินภายใน 7 วัน · ส่ง EMS ทั่วประเทศ', tap_amulet: 'หน้าพระแต่ละองค์', tap_reserve: 'จองทางไลน์' },
+    termsEx: 'รับประกันพระแท้ ไม่แท้คืนเงินภายใน 7 วัน · ส่ง EMS ทั่วประเทศ', tap_amulet: 'หน้าพระแต่ละองค์', tap_reserve: 'จองทางไลน์', line: 'ไลน์ของคุณ สำหรับปุ่มจอง', lineHint: 'หน้าพระแต่ละองค์มีปุ่ม "จองทางไลน์" ลูกค้ากดแล้วทักมาที่ไลน์นี้ ถ้าไม่ใส่ไลน์ ปุ่มจะไม่ขึ้น' },
   zh: { cam: '佛牌相机', cam_pick: '或选照片', cam_hint: '每拍一张，网页顶部就多一尊佛牌，背景自动去除。照片留在这部手机上，直到上了网页，闪退或断网都不会丢。', cam_gold: '金卡：佛牌相机。每张照片成为一尊新佛牌，背景自动去除。',
     cam_wait: '排队中', cam_cut: '正在去除背景', cam_send: '正在放上网页', cam_net: '没有网络，已存在手机上', cam_refused: '这张照片未通过', cam_retry: '再试一次', cam_getting: '正在下载去背工具 {a} / {b} MB', cam_nokeep: '手机无法保存照片。请保持此页打开，直到上传完成。', cam_dropq: '从手机删除这张照片？', cam_full: '网页已满，请先删除一尊',
     auto_t: '佛牌', lens: '搜索', post: '发帖', post_done: '文字已复制，贴到帖子里。', post_tail: '可请供，欢迎私信。',
@@ -32,7 +32,7 @@ const UI = {
     st: '状态', st_open: '可请', st_reserved: '已预订', st_sold: '已请走', st_show: '仅展示', p: '请供价', pHint: '留空：网页显示“询价”', form: '类别', none: '—',
     temple: '寺庙', maker: '师父 · 制作', year: '年份（佛历或公历）', mat: '材质', mould: '模版', size: '尺寸', sizeEx: '2.4 × 3.6 厘米', cond: '品相', frame: '外壳', cert: '鉴定卡（机构、编号）',
     certEx: '协会鉴定卡 12345', note: '介绍', add: '添加佛牌', open: '打开这一页', front: '正面', back: '背面', terms: '保证和寄送（每尊都显示）',
-    termsEx: '保真，不真 7 天内退款 · EMS 寄送', tap_amulet: '佛牌页面', tap_reserve: '在 LINE 预订' },
+    termsEx: '保真，不真 7 天内退款 · EMS 寄送', tap_amulet: '佛牌页面', tap_reserve: '在 LINE 预订', line: '你的 LINE，预订按钮用', lineHint: '每尊佛牌的网页都有“在 LINE 预订”按钮，买家会发信息到这里。不填 LINE，按钮不会出现。' },
 }
 export const amUi = (lang, k) => (UI[lang] && UI[lang][k]) || UI.en[k] || k
 
@@ -59,7 +59,7 @@ const CSS = `<style>.am{min-width:0}.am>summary{display:flex;align-items:center;
 
 /** The section's form. h = make.js's helpers: S, T, val, esc, icon, imgUrl, photoPick, rowX, seg, isGold, lang. */
 export function amuletsSec(h) {
-  const { S, val, esc, icon, imgUrl, photoPick, rowX, seg, isGold, lang } = h
+  const { S, val, esc, icon, imgUrl, photoPick, rowX, seg, isGold, lineHref, lang } = h
   const A = (k) => esc(amUi(lang, k))
   const cap = isGold() ? AM_MAX.gold : AM_MAX.free
   const list = (id, rows) => `<datalist id="${id}">${rows.map((r) => `<option value="${esc(amLabel(rows, r[0], lang))}">`).join('')}</datalist>`
@@ -96,7 +96,8 @@ export function amuletsSec(h) {
     ? `<div class="amcam"><label class="shoot">${icon('camera')}${A('cam')}<input type="file" accept="image/*" capture="environment" data-amcam></label>
       <label class="shoot ghost">${A('cam_pick')}<input type="file" accept="image/*" multiple data-amcam></label><p class="hint">${A('cam_hint')}</p>${amcamTray()}</div>`
     : `<p class="hint">${A('cam_gold')}</p>`
-  return `${CSS}${camera}<p class="hint">${A('hint')}${isGold() ? '' : ' ' + A('free')}</p>${list('am-mat', AM_MATERIALS)}${list('am-cond', AM_CONDS)}<div class="rows">${rows.join('')}</div>
+  const lineF = `<label class="field"><span>${A('line')}</span><input data-k="contact.line" value="${val(S.d.contact.line)}" autocapitalize="off" placeholder="@myshop"></label>${lineHref(S.d.contact.line) ? '' : `<p class="hint" style="margin-top:-4px">${A('lineHint')}</p>`}`
+  return `${CSS}${camera}${lineF}<p class="hint">${A('hint')}${isGold() ? '' : ' ' + A('free')}</p>${list('am-mat', AM_MATERIALS)}${list('am-cond', AM_CONDS)}<div class="rows">${rows.join('')}</div>
     ${S.d.amulets.length < AM_MAX.gold ? `<button class="go ghost" data-addrow="amulets">${icon('plus')}${A('add')}</button>` : ''}
     <label class="field" style="margin-top:16px"><span>${A('terms')}</span><textarea data-k="amterms" maxlength="600" style="min-height:70px" placeholder="${A('termsEx')}">${val(S.d.amterms)}</textarea></label>`
 }
