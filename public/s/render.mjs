@@ -556,7 +556,9 @@ export function render(site, opt = {}) {
   const look = LOOKS[lookId]
   const accent = d.accent || look.accent
   const dl = DING_LOOK[lookId] || 'ink'
-  const W = (k, v) => esc(word(lang, k, v))
+  // a group's page (a club, a school, a program) names its parts as a group's, not a business's
+  const GW = site.kind === 'group' ? { works: 'g_works', quotes: 'g_quotes', w_client: 'g_client', w_more: 'g_more', w_all: 'g_all', w_ask: 'g_ask', spots: 'g_spots' } : {}
+  const W = (k, v) => esc(word(lang, GW[k] || k, v))
   const img = opt.img || ((id, small) => `/img/${id}${small ? '-s' : ''}.webp`)
   const origin = opt.origin || HOME
   const url = opt.base || `${origin}/${site.name}`
@@ -721,7 +723,7 @@ export function render(site, opt = {}) {
 
   if (d.items.length) {
     const oa = lineOa(c.line), pp = !!d.pay.pp
-    out.push(`<section class="card rise" id="menu">${H2(site.kind === 'food' ? 'menu' : 'prices', W(site.kind === 'food' ? 'menu' : 'prices'))}<ul class="menu${oa || pp ? ' orderable' : ''}">`)
+    out.push(`<section class="card rise" id="menu">${H2(site.kind === 'food' ? 'menu' : 'prices', W(site.kind === 'food' ? 'menu' : gold && d.give ? 'giveList' : 'prices'))}<ul class="menu${oa || pp ? ' orderable' : ''}">`)
     d.items.forEach((it, i) => out.push(`<li><span class="n">${esc(it.n)}${it.note ? `<small>${esc(it.note)}</small>` : ''}</span><span class="p">${esc(price(it.p, cur))}</span>` +
       (oa || pp ? `<span class="qty" data-i="${i}" data-n="${esc(it.n)}" data-p="${amountOf(it.p)}"><button aria-label="−">−</button><b>0</b><button aria-label="+">+</button></span>` : '') + '</li>'))
     out.push('</ul>')

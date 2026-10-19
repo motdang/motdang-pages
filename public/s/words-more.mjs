@@ -5,7 +5,7 @@
 export const Y = {
   en: {
     works: 'Work', quotes: 'What clients say', w_client: 'Client', w_year: 'Year', w_role: 'Role', w_see: 'See the project', w_more: 'More work', w_all: 'All the work', w_ask: 'Ask about work like this',
-    give: 'Give', otaAgoda: 'Book on Agoda', otaBooking: 'Book on Booking.com',
+    g_works: 'Projects', g_quotes: 'In their words', g_client: 'For', g_more: 'More projects', g_all: 'All the projects', g_ask: 'Ask about this project', g_spots: 'Places', giveList: 'Ways to give', give: 'Give', otaAgoda: 'Book on Agoda', otaBooking: 'Book on Booking.com',
     roomWeekend: 'Fri–Sat {p}', roomMin: 'At least {n} nights', roomLeft: '{n} left', bookRef: 'Booking', payNow: 'Pay now {p} by PromptPay', payHotel: 'Pay at the hotel', payLink: 'Pay the hotel', yourBooking: 'Your booking',
     cal: 'Calendar', calEvery: 'Every {d}', calMonthly: 'Every month', calFollow: 'Follow this calendar', calMore: 'More dates',
     camp: 'Offer', campEnds: 'Ends {t}', campCode: 'Code', campCopy: 'Copy the code',
@@ -21,7 +21,7 @@ export const Y = {
   },
   th: {
     works: 'ผลงาน', quotes: 'ลูกค้าว่าอย่างไร', w_client: 'ลูกค้า', w_year: 'ปี', w_role: 'หน้าที่', w_see: 'ดูโปรเจกต์', w_more: 'ผลงานอื่น', w_all: 'ผลงานทั้งหมด', w_ask: 'สอบถามงานแบบนี้',
-    give: 'ร่วมบริจาค', otaAgoda: 'จองผ่าน Agoda', otaBooking: 'จองผ่าน Booking.com',
+    g_works: 'โครงการ', g_quotes: 'คำบอกเล่า', g_client: 'สำหรับ', g_more: 'โครงการอื่น', g_all: 'โครงการทั้งหมด', g_ask: 'สอบถามเรื่องโครงการนี้', g_spots: 'สถานที่', giveList: 'ร่วมสนับสนุน', give: 'ร่วมบริจาค', otaAgoda: 'จองผ่าน Agoda', otaBooking: 'จองผ่าน Booking.com',
     roomWeekend: 'ศ.–ส. {p}', roomMin: 'พักอย่างน้อย {n} คืน', roomLeft: 'เหลือ {n}', bookRef: 'การจอง', payNow: 'จ่ายตอนนี้ {p} ผ่านพร้อมเพย์', payHotel: 'จ่ายที่โรงแรม', payLink: 'จ่ายกับโรงแรม', yourBooking: 'การจองของคุณ',
     cal: 'ปฏิทิน', calEvery: 'ทุก{d}', calMonthly: 'ทุกเดือน', calFollow: 'ติดตามปฏิทินนี้', calMore: 'วันอื่น ๆ',
     camp: 'โปรโมชั่น', campEnds: 'หมดเขต {t}', campCode: 'โค้ด', campCopy: 'คัดลอกโค้ด',
@@ -37,7 +37,7 @@ export const Y = {
   },
   my: {
     works: 'လက်ရာများ', quotes: 'ဖောက်သည်များ၏ အမြင်', w_client: 'ဖောက်သည်', w_year: 'ခုနှစ်', w_role: 'တာဝန်', w_see: 'ပရောဂျက်ကို ကြည့်ရန်', w_more: 'နောက်ထပ် လက်ရာများ', w_all: 'လက်ရာ အားလုံး', w_ask: 'ဒီလို အလုပ်အကြောင်း မေးရန်',
-    give: 'လှူဒါန်းရန်', otaAgoda: 'Agoda တွင် ကြိုတင်မှာရန်', otaBooking: 'Booking.com တွင် ကြိုတင်မှာရန်',
+    g_works: 'စီမံကိန်းများ', g_quotes: 'သူတို့၏စကား', g_client: 'အတွက်', g_more: 'နောက်ထပ်စီမံကိန်းများ', g_all: 'စီမံကိန်းအားလုံး', g_ask: 'ဤစီမံကိန်းအကြောင်း မေးရန်', g_spots: 'နေရာများ', giveList: 'လှူဒါန်းနိုင်သည့်နည်းလမ်းများ', give: 'လှူဒါန်းရန်', otaAgoda: 'Agoda တွင် ကြိုတင်မှာရန်', otaBooking: 'Booking.com တွင် ကြိုတင်မှာရန်',
     roomWeekend: 'သောကြာ–စနေ {p}', roomMin: 'အနည်းဆုံး {n} ည', roomLeft: '{n} ခန်းကျန်', bookRef: 'ကြိုတင်မှာယူမှု', payNow: 'PromptPay ဖြင့် ယခု {p} ပေးရန်', payHotel: 'ဟိုတယ်တွင်ပေးရန်', payLink: 'ဟိုတယ်ကို ပေးရန်', yourBooking: 'သင့်ကြိုတင်မှာယူမှု',
     cal: 'ပြက္ခဒိန်', calEvery: '{d} တိုင်း', calMonthly: 'လစဉ်', calFollow: 'ဤပြက္ခဒိန်ကို လိုက်ရန်', calMore: 'နောက်ထပ်ရက်များ',
     camp: 'အထူးလျှော့ဈေး', campEnds: '{t} တွင်ကုန်မည်', campCode: 'ကုဒ်', campCopy: 'ကုဒ်ကူးရန်',
@@ -53,7 +53,7 @@ export const Y = {
   },
   zh: {
     works: '作品', quotes: '客户评价', w_client: '客户', w_year: '年份', w_role: '角色', w_see: '查看项目', w_more: '更多作品', w_all: '全部作品', w_ask: '咨询类似的工作',
-    give: '捐款', otaAgoda: '在 Agoda 预订', otaBooking: '在 Booking.com 预订',
+    g_works: '项目', g_quotes: '他们说', g_client: '对象', g_more: '更多项目', g_all: '全部项目', g_ask: '询问这个项目', g_spots: '地点', giveList: '捐助方式', give: '捐款', otaAgoda: '在 Agoda 预订', otaBooking: '在 Booking.com 预订',
     roomWeekend: '周五、周六 {p}', roomMin: '至少住 {n} 晚', roomLeft: '剩 {n} 间', bookRef: '预订号', payNow: '现在用 PromptPay 付 {p}', payHotel: '到店付款', payLink: '付款给酒店', yourBooking: '你的预订',
     cal: '日历', calEvery: '每{d}', calMonthly: '每月', calFollow: '订阅这个日历', calMore: '更多日期',
     camp: '优惠', campEnds: '{t} 结束', campCode: '优惠码', campCopy: '复制优惠码',
@@ -69,7 +69,7 @@ export const Y = {
   },
   ja: {
     works: '作品', quotes: 'お客様の声', w_client: 'クライアント', w_year: '年', w_role: '担当', w_see: 'プロジェクトを見る', w_more: 'ほかの作品', w_all: 'すべての作品', w_ask: 'このような仕事について問い合わせる',
-    give: '寄付する', otaAgoda: 'Agoda で予約', otaBooking: 'Booking.com で予約',
+    g_works: 'プロジェクト', g_quotes: '関係者の声', g_client: '対象', g_more: 'ほかのプロジェクト', g_all: 'すべてのプロジェクト', g_ask: 'このプロジェクトについて問い合わせる', g_spots: '場所', giveList: '寄付の方法', give: '寄付する', otaAgoda: 'Agoda で予約', otaBooking: 'Booking.com で予約',
     roomWeekend: '金・土 {p}', roomMin: '{n}泊以上', roomLeft: '残り{n}室', bookRef: '予約番号', payNow: 'PromptPay で今 {p}', payHotel: 'ホテルで支払い', payLink: 'ホテルに支払う', yourBooking: 'あなたの予約',
     cal: 'カレンダー', calEvery: '毎週{d}', calMonthly: '毎月', calFollow: 'このカレンダーを購読', calMore: 'ほかの日程',
     camp: 'キャンペーン', campEnds: '{t} まで', campCode: 'コード', campCopy: 'コードをコピー',
@@ -85,7 +85,7 @@ export const Y = {
   },
   ko: {
     works: '작업', quotes: '고객 후기', w_client: '클라이언트', w_year: '연도', w_role: '역할', w_see: '프로젝트 보기', w_more: '다른 작업', w_all: '모든 작업', w_ask: '이런 작업 문의하기',
-    give: '기부하기', otaAgoda: 'Agoda에서 예약', otaBooking: 'Booking.com에서 예약',
+    g_works: '프로젝트', g_quotes: '그들의 말', g_client: '대상', g_more: '다른 프로젝트', g_all: '모든 프로젝트', g_ask: '이 프로젝트 문의하기', g_spots: '장소', giveList: '기부 방법', give: '기부하기', otaAgoda: 'Agoda에서 예약', otaBooking: 'Booking.com에서 예약',
     roomWeekend: '금·토 {p}', roomMin: '최소 {n}박', roomLeft: '{n}실 남음', bookRef: '예약 번호', payNow: 'PromptPay로 지금 {p}', payHotel: '호텔에서 결제', payLink: '호텔에 결제', yourBooking: '내 예약',
     cal: '일정', calEvery: '매주 {d}', calMonthly: '매달', calFollow: '이 일정 구독하기', calMore: '다른 날짜',
     camp: '이벤트', campEnds: '{t} 종료', campCode: '코드', campCopy: '코드 복사',
@@ -101,7 +101,7 @@ export const Y = {
   },
   vi: {
     works: 'Tác phẩm', quotes: 'Khách hàng nói gì', w_client: 'Khách hàng', w_year: 'Năm', w_role: 'Vai trò', w_see: 'Xem dự án', w_more: 'Tác phẩm khác', w_all: 'Tất cả tác phẩm', w_ask: 'Hỏi về công việc như thế này',
-    give: 'Quyên góp', otaAgoda: 'Đặt trên Agoda', otaBooking: 'Đặt trên Booking.com',
+    g_works: 'Dự án', g_quotes: 'Lời của họ', g_client: 'Dành cho', g_more: 'Dự án khác', g_all: 'Tất cả dự án', g_ask: 'Hỏi về dự án này', g_spots: 'Địa điểm', giveList: 'Cách đóng góp', give: 'Quyên góp', otaAgoda: 'Đặt trên Agoda', otaBooking: 'Đặt trên Booking.com',
     roomWeekend: 'T6–T7 {p}', roomMin: 'Ít nhất {n} đêm', roomLeft: 'Còn {n}', bookRef: 'Mã đặt phòng', payNow: 'Trả ngay {p} qua PromptPay', payHotel: 'Trả tại khách sạn', payLink: 'Trả cho khách sạn', yourBooking: 'Đặt phòng của bạn',
     cal: 'Lịch', calEvery: 'Mỗi {d}', calMonthly: 'Hằng tháng', calFollow: 'Theo dõi lịch này', calMore: 'Thêm ngày',
     camp: 'Ưu đãi', campEnds: 'Kết thúc {t}', campCode: 'Mã', campCopy: 'Sao chép mã',
@@ -117,7 +117,7 @@ export const Y = {
   },
   km: {
     works: 'ស្នាដៃ', quotes: 'អតិថិជននិយាយអ្វី', w_client: 'អតិថិជន', w_year: 'ឆ្នាំ', w_role: 'តួនាទី', w_see: 'មើលគម្រោង', w_more: 'ស្នាដៃផ្សេងទៀត', w_all: 'ស្នាដៃទាំងអស់', w_ask: 'សួរអំពីការងារបែបនេះ',
-    give: 'បរិច្ចាគ', otaAgoda: 'កក់តាម Agoda', otaBooking: 'កក់តាម Booking.com',
+    g_works: 'គម្រោង', g_quotes: 'សម្ដីរបស់ពួកគេ', g_client: 'សម្រាប់', g_more: 'គម្រោងផ្សេងទៀត', g_all: 'គម្រោងទាំងអស់', g_ask: 'សួរអំពីគម្រោងនេះ', g_spots: 'ទីកន្លែង', giveList: 'វិធីបរិច្ចាគ', give: 'បរិច្ចាគ', otaAgoda: 'កក់តាម Agoda', otaBooking: 'កក់តាម Booking.com',
     cal: 'ប្រតិទិន', calEvery: 'រៀងរាល់{d}', calMonthly: 'រៀងរាល់ខែ', calFollow: 'តាមដានប្រតិទិននេះ', calMore: 'ថ្ងៃផ្សេងទៀត',
     camp: 'ការផ្តល់ជូនពិសេស', campEnds: 'ផុតកំណត់ {t}', campCode: 'លេខកូដ', campCopy: 'ចម្លងលេខកូដ',
     book: 'កក់', bookPick: 'ជ្រើសម៉ោង', bookNone: 'ថ្ងៃនេះគ្មានម៉ោងទំនេរ', bookMins: '{m} នាទី',
@@ -132,7 +132,7 @@ export const Y = {
   },
   lo: {
     works: 'ຜົນງານ', quotes: 'ລູກຄ້າເວົ້າແນວໃດ', w_client: 'ລູກຄ້າ', w_year: 'ປີ', w_role: 'ໜ້າທີ່', w_see: 'ເບິ່ງໂຄງການ', w_more: 'ຜົນງານອື່ນ', w_all: 'ຜົນງານທັງໝົດ', w_ask: 'ສອບຖາມວຽກແບບນີ້',
-    give: 'ບໍລິຈາກ', otaAgoda: 'ຈອງຜ່ານ Agoda', otaBooking: 'ຈອງຜ່ານ Booking.com',
+    g_works: 'ໂຄງການ', g_quotes: 'ຄຳເວົ້າຂອງພວກເຂົາ', g_client: 'ສຳລັບ', g_more: 'ໂຄງການອື່ນ', g_all: 'ໂຄງການທັງໝົດ', g_ask: 'ຖາມກ່ຽວກັບໂຄງການນີ້', g_spots: 'ສະຖານທີ່', giveList: 'ວິທີບໍລິຈາກ', give: 'ບໍລິຈາກ', otaAgoda: 'ຈອງຜ່ານ Agoda', otaBooking: 'ຈອງຜ່ານ Booking.com',
     cal: 'ປະຕິທິນ', calEvery: 'ທຸກ{d}', calMonthly: 'ທຸກເດືອນ', calFollow: 'ຕິດຕາມປະຕິທິນນີ້', calMore: 'ວັນອື່ນໆ',
     camp: 'ໂປຣໂມຊັ່ນ', campEnds: 'ໝົດເຂດ {t}', campCode: 'ໂຄດ', campCopy: 'ສຳເນົາໂຄດ',
     book: 'ຈອງ', bookPick: 'ເລືອກເວລາ', bookNone: 'ມື້ນີ້ບໍ່ມີເວລາວ່າງ', bookMins: '{m} ນາທີ',
@@ -147,7 +147,7 @@ export const Y = {
   },
   id: {
     works: 'Karya', quotes: 'Kata klien', w_client: 'Klien', w_year: 'Tahun', w_role: 'Peran', w_see: 'Lihat proyek', w_more: 'Karya lain', w_all: 'Semua karya', w_ask: 'Tanya tentang pekerjaan seperti ini',
-    give: 'Donasi', otaAgoda: 'Pesan di Agoda', otaBooking: 'Pesan di Booking.com',
+    g_works: 'Proyek', g_quotes: 'Kata mereka', g_client: 'Untuk', g_more: 'Proyek lain', g_all: 'Semua proyek', g_ask: 'Tanya tentang proyek ini', g_spots: 'Tempat', giveList: 'Cara berdonasi', give: 'Donasi', otaAgoda: 'Pesan di Agoda', otaBooking: 'Pesan di Booking.com',
     roomWeekend: 'Jum–Sab {p}', roomMin: 'Minimal {n} malam', roomLeft: 'Sisa {n}', bookRef: 'Pesanan', payNow: 'Bayar sekarang {p} lewat PromptPay', payHotel: 'Bayar di hotel', payLink: 'Bayar ke hotel', yourBooking: 'Pesanan Anda',
     cal: 'Kalender', calEvery: 'Setiap {d}', calMonthly: 'Setiap bulan', calFollow: 'Ikuti kalender ini', calMore: 'Tanggal lain',
     camp: 'Promo', campEnds: 'Berakhir {t}', campCode: 'Kode', campCopy: 'Salin kode',
@@ -163,7 +163,7 @@ export const Y = {
   },
   es: {
     works: 'Trabajos', quotes: 'Lo que dicen los clientes', w_client: 'Cliente', w_year: 'Año', w_role: 'Papel', w_see: 'Ver el proyecto', w_more: 'Más trabajos', w_all: 'Todos los trabajos', w_ask: 'Preguntar por un trabajo así',
-    give: 'Donar', otaAgoda: 'Reservar en Agoda', otaBooking: 'Reservar en Booking.com',
+    g_works: 'Proyectos', g_quotes: 'En sus palabras', g_client: 'Para', g_more: 'Más proyectos', g_all: 'Todos los proyectos', g_ask: 'Preguntar por este proyecto', g_spots: 'Lugares', giveList: 'Formas de donar', give: 'Donar', otaAgoda: 'Reservar en Agoda', otaBooking: 'Reservar en Booking.com',
     roomWeekend: 'Vie–sáb {p}', roomMin: 'Mínimo {n} noches', roomLeft: 'Quedan {n}', bookRef: 'Reserva', payNow: 'Paga ahora {p} por PromptPay', payHotel: 'Pagas en el hotel', payLink: 'Pagar al hotel', yourBooking: 'Tu reserva',
     cal: 'Calendario', calEvery: 'Cada {d}', calMonthly: 'Cada mes', calFollow: 'Seguir este calendario', calMore: 'Más fechas',
     camp: 'Oferta', campEnds: 'Termina {t}', campCode: 'Código', campCopy: 'Copiar el código',
@@ -179,7 +179,7 @@ export const Y = {
   },
   fr: {
     works: 'Travaux', quotes: 'Ce qu’en disent les clients', w_client: 'Client', w_year: 'Année', w_role: 'Rôle', w_see: 'Voir le projet', w_more: 'Autres travaux', w_all: 'Tous les travaux', w_ask: 'Demander un travail comme celui-ci',
-    give: 'Faire un don', otaAgoda: 'Réserver sur Agoda', otaBooking: 'Réserver sur Booking.com',
+    g_works: 'Projets', g_quotes: 'Dans leurs mots', g_client: 'Pour', g_more: 'Autres projets', g_all: 'Tous les projets', g_ask: 'Poser une question sur ce projet', g_spots: 'Lieux', giveList: 'Comment donner', give: 'Faire un don', otaAgoda: 'Réserver sur Agoda', otaBooking: 'Réserver sur Booking.com',
     roomWeekend: 'Ven–sam {p}', roomMin: 'Au moins {n} nuits', roomLeft: 'Encore {n}', bookRef: 'Réservation', payNow: 'Payer {p} maintenant par PromptPay', payHotel: 'Paiement à l’hôtel', payLink: 'Payer l’hôtel', yourBooking: 'Votre réservation',
     cal: 'Calendrier', calEvery: 'Chaque {d}', calMonthly: 'Chaque mois', calFollow: 'Suivre ce calendrier', calMore: 'Autres dates',
     camp: 'Offre', campEnds: 'Jusqu’au {t}', campCode: 'Code', campCopy: 'Copier le code',

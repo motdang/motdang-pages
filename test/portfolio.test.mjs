@@ -86,3 +86,13 @@ test('a Gold page with somewhere to give shows the give button first; a free pag
   assert.ok(!/btn give/.test(render({ ...base, tier: 'free', d: { ...d, give: 'https://www.cmirotary.org/donate' } })))
   assert.equal(normalize({ give: 'javascript:alert(1)' }).give, '')
 })
+
+test('a group page names its projects, quotes and places as a group, and its list as ways to give', () => {
+  const html = render({ ...base, kind: 'group', d: { ...d, give: 'https://www.cmirotary.org/donate', items: [{ n: 'One medal', p: '30' }], spots: [{ n: 'A school', lat: 18.79, lng: 98.97 }] } })
+  assert.match(html, />Projects</)
+  assert.match(html, />In their words</)
+  assert.match(html, />Ways to give</)
+  assert.match(html, />Places</)
+  assert.ok(!/What clients say/.test(html))
+  assert.match(render({ ...base, d }), />What clients say</)
+})
