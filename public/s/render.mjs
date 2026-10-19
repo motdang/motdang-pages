@@ -625,7 +625,7 @@ export function render(site, opt = {}) {
   if (d.dings.length) out.push(`<p class="dings">${d.dings.map((n) => ding(n, dl)).join('')}</p>`)
   out.push(`<span id="st">${badge(lang, st)}</span>`)
   const cta = !L && !Wk ? leadButton(site, d, gold, line) : null
-  if (cta) out.push(`<a class="btn cta" data-t="cta" href="${esc(cta[0])}"${/^https?:/.test(cta[0]) ? ' rel="nofollow noopener"' : ''}>${icon(cta[2])}${W(cta[1])}</a>`)
+  if (cta) out.push(`<a class="btn cta${cta[1] === 'give' ? ' give' : ''}" data-t="${cta[1] === 'give' ? 'give' : 'cta'}" href="${esc(cta[0])}"${/^https?:/.test(cta[0]) ? ' rel="nofollow noopener"' : ''}>${icon(cta[2])}${W(cta[1])}</a>`)
   out.push('</div>')
   out.push(`<button class="tshare" data-t="share" aria-label="${W('share')}" title="${W('share')}">${icon('share')}</button>`)
   if (gold) out.push(`<span class="seal" role="img" aria-label="${W('gold')}" title="${W('gold')}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 18.5h18l1.2-11-5.7 4.2L12 4.5l-4.5 7.2L1.8 7.5z" fill="currentColor"/></svg></span>`)
@@ -649,7 +649,7 @@ export function render(site, opt = {}) {
   if (d.order.lineman) reach.push(`<a class="btn line" data-t="lineman" href="${esc(d.order.lineman)}" rel="nofollow noopener">${icon('food')}${W('lineman')}</a>`)
   if (gold && d.ota.agoda) reach.push(otaBtn('agoda', d.ota.agoda, W))
   if (gold && d.ota.booking) reach.push(otaBtn('booking', d.ota.booking, W))
-  if (gold && d.give) reach.unshift(giveBtn(d.give, W))
+  if (gold && d.give && cta?.[1] !== 'give') reach.unshift(giveBtn(d.give, W))
   if (c.whatsapp && !c.phone) reach.push(`<a class="btn" data-t="whatsapp" href="${esc(waHref(c.whatsapp))}" rel="nofollow noopener">${icon('chat')}WhatsApp</a>`)
   if (d.msg && !reach.length) reach.push(`<a class="btn" data-t="msg" href="#message">${icon('mail')}${W('msg')}</a>`)
   if (reach.length) out.push(`<nav class="reach">${reach.join('')}</nav>`)
@@ -943,6 +943,7 @@ function leadButton(site, d, gold, line) {
   if (k === 'event' && pp && amountOf(d.pay.price)) return ['#pay', 'ctaTicket', 'coin']
   if ((k === 'me' || k === 'group') && pp && d.pay.tips) return ['#pay', k === 'group' ? 'ctaDues' : 'ctaTip', 'heart']
   if (k === 'work') return [d.msg ? '#message' : line || (c.phone ? telHref(c.phone) : '#message'), 'ctaHire', 'mail']
+  if (gold && d.give) return [d.give, 'give', 'heart']
   if (k === 'group' && (line || d.msg)) return [line || '#message', 'ctaJoin', 'people']
   if (k === 'event') return [`/${site.name}/event.ics`, 'addCal', 'cal']
   if (line) return [line, 'line', 'chat']
