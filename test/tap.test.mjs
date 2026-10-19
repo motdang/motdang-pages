@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { readLimited, pick, cleanLink, cleanCard, cleanLine, lineUrl, vcard, cardOf, near, front, arrival, ownerPage } from '../src/tap.mjs'
+import { readLimited, pick, cleanLink, cleanCard, cleanLine, lineUrl, vcard, cardOf, near, front, arrival, ownerPage, face } from '../src/tap.mjs'
 
 test('two knocks pair inside the window, nearest in time', () => {
   const me = { id: 'a', t: 10_000, lat: null, lng: null, net: 'x' }
@@ -83,4 +83,15 @@ test('an upload stops reading past its limit, chunked or not', async () => {
   assert.equal((await readLimited(new Request('https://x/', { method: 'POST', body: body(3), duplex: 'half' }), 5000)).length, 3000)
   assert.equal(await readLimited(new Request('https://x/', { method: 'POST', body: body(9), duplex: 'half' }), 5000), null)
   assert.equal(await readLimited(new Request('https://x/', { method: 'POST', body: 'x', headers: { 'content-length': '999999' } }), 5000), null)
+})
+
+test('a team card carries two addresses: both saved, both chips', () => {
+  const c = cleanCard({ name: 'Mot Dang team', email: 'eng@motdang.net, sales@motdang.net, x@y.z', line: 'https://line.me/R/ti/p/@964yxgnk' })
+  assert.equal(c.email, 'eng@motdang.net, sales@motdang.net')
+  assert.equal(cleanCard({ name: 'a', email: 'not an address' }).email, '')
+  const v = vcard(cardOf({ id: 'abcdefgh', name: c.name, email: c.email, line: c.line, give: 'card' }), 'https://sites.motdang.net/tap/abcdefgh')
+  assert.match(v, /EMAIL:eng@motdang\.net\r\nEMAIL:sales@motdang\.net\r\n/)
+  const f = face({ ...cardOf({ id: 'abcdefgh', name: c.name, email: c.email, give: 'card' }) })
+  assert.match(f, /mailto:eng@motdang\.net">eng@</)
+  assert.match(f, /mailto:sales@motdang\.net">sales@</)
 })

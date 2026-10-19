@@ -54,17 +54,20 @@ export function cleanLine(v) {
 /** Where the LINE button goes: the link as given, or the id's add-friend page. */
 export const lineUrl = (v) => (/^https:\/\//.test(v) ? v : `https://line.me/ti/p/~${encodeURIComponent(v)}`)
 
+/** The addresses in an email field: one, or two for a team card ("eng@…, sales@…"). */
+export const emailsOf = (v) => String(v || '').split(/[\s,;]+/).filter((e) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)).slice(0, 2)
+
 /** The card's fields, trimmed; a field that does not fit its shape is dropped. */
 export function cleanCard(o = {}) {
   const phone = cut(o.phone, 24).replace(/[^\d+ -]/g, '')
-  const email = cut(o.email, 120)
+  const email = emailsOf(cut(o.email, 120)).join(', ')
   const line = cleanLine(o.line)
   const site = cut(o.site, 30).toLowerCase()
   return {
     name: cut(o.name, 60),
     role: cut(o.role, 80),
     phone: /\d{6,}/.test(phone.replace(/\D/g, '')) ? phone : '',
-    email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : '',
+    email,
     line,
     site: /^[a-z0-9-]{3,30}$/.test(site) ? site : '',
   }
@@ -82,7 +85,7 @@ export function vcard(c, url, { photo, met } = {}) {
   const l = ['BEGIN:VCARD', 'VERSION:3.0', `FN:${e(c.name)}`, `N:;${e(c.name)};;;`]
   if (c.role) l.push(`TITLE:${e(c.role)}`)
   if (c.phone) l.push(`TEL;TYPE=CELL:${c.phone.replace(/[^\d+]/g, '')}`)
-  if (c.email) l.push(`EMAIL:${e(c.email)}`)
+  for (const m of emailsOf(c.email)) l.push(`EMAIL:${e(m)}`)
   if (c.site) l.push(`URL:${HOME}/${c.site}`)
   else if (c.link) l.push(`URL:${e(c.link)}`)
   else if (url) l.push(`URL:${url}`)
@@ -435,7 +438,8 @@ export function face(c, { save } = {}) {
   const chips = []
   if (c.line) chips.push(`<a class="ln" href="${esc(lineUrl(c.line))}">LINE</a>`)
   if (c.phone) chips.push(`<a href="tel:${esc(c.phone.replace(/[^\d+]/g, ''))}">${t('โทร', 'Call')}</a>`)
-  if (c.email) chips.push(`<a href="mailto:${esc(c.email)}">${t('อีเมล', 'Email')}</a>`)
+  const mails = emailsOf(c.email)
+  for (const m of mails) chips.push(`<a href="mailto:${esc(m)}">${mails.length > 1 ? esc(m.split('@')[0]) + '@' : t('อีเมล', 'Email')}</a>`)
   if (c.site) chips.push(`<a href="${HOME}/${esc(c.site)}">${t('หน้าเว็บ', 'Page')}</a>`)
   let i = 0
   const r = (cls) => `class="rise${cls ? ' ' + cls : ''}" style="--i:${i++}"`
@@ -566,7 +570,7 @@ export function ownerPage(lang, nonce) {
 <label>${t('รูป', 'Picture')}</label><div class="pic"><div class="portrait"><img id="pv" alt="" hidden></div><button class="press" id="pick" type="button" style="margin:0">${t('เลือกรูป', 'Choose a picture')}</button><input id="pf" type="file" accept="image/*" hidden></div>
 <label for="n">${t('ชื่อ', 'Name')}</label><input id="n" maxlength="60"><label for="r">${t('บรรทัดใต้ชื่อ', 'Under the name')}</label><input id="r" maxlength="80">
 <div class="row2"><div><label for="p">${t('เบอร์โทร', 'Phone')}</label><input id="p" type="tel" maxlength="24"></div><div><label for="l">${t('ไอดีหรือลิงก์ไลน์', 'LINE ID or link')}</label><input id="l" maxlength="120" autocapitalize="off"></div></div>
-<label for="e">${t('อีเมล', 'Email')}</label><input id="e" type="email" maxlength="120"><label for="s">${t('หน้าบน sites.motdang.net', 'Page on sites.motdang.net')}</label><input id="s" maxlength="30" placeholder="name" autocapitalize="off">
+<label for="e">${t('อีเมล', 'Email')}</label><input id="e" type="email" multiple maxlength="120"><label for="s">${t('หน้าบน sites.motdang.net', 'Page on sites.motdang.net')}</label><input id="s" maxlength="30" placeholder="name" autocapitalize="off">
 <button id="save" type="button">${t('บันทึก', 'Save')}</button><p class="st" id="sst"></p></section>
 <section class="panel"><h2>${t('สติกเกอร์', 'Sticker')}</h2><p>${t('สติกเกอร์เก็บที่อยู่นี้', 'The sticker holds this address')}</p><div class="addr" id="addr"></div>
 <button id="nfc" type="button" hidden>${t('เขียนสติกเกอร์', 'Write a sticker')}</button><button class="press" id="copy" type="button">${t('คัดลอกที่อยู่', 'Copy the address')}</button>
