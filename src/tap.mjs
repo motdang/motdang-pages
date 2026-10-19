@@ -42,11 +42,23 @@ export function cleanLink(u) {
   return ok ? x.href.slice(0, 300) : null
 }
 
+/** A LINE id, or a line.me / lin.ee add-friend link kept whole. */
+export function cleanLine(v) {
+  const s = cut(v, 120)
+  if (/^https?:\/\//i.test(s)) {
+    try { const x = new URL(s); return x.protocol === 'https:' && /^(line\.me|lin\.ee)$/.test(x.hostname.toLowerCase()) ? x.href : '' } catch { return '' }
+  }
+  return s.slice(0, 40).replace(/[^\w.@-]/g, '')
+}
+
+/** Where the LINE button goes: the link as given, or the id's add-friend page. */
+export const lineUrl = (v) => (/^https:\/\//.test(v) ? v : `https://line.me/ti/p/~${encodeURIComponent(v)}`)
+
 /** The card's fields, trimmed; a field that does not fit its shape is dropped. */
 export function cleanCard(o = {}) {
   const phone = cut(o.phone, 24).replace(/[^\d+ -]/g, '')
   const email = cut(o.email, 120)
-  const line = cut(o.line, 40).replace(/[^\w.@-]/g, '')
+  const line = cleanLine(o.line)
   const site = cut(o.site, 30).toLowerCase()
   return {
     name: cut(o.name, 60),
@@ -74,7 +86,7 @@ export function vcard(c, url) {
   if (c.site) l.push(`URL:${HOME}/${c.site}`)
   else if (c.link) l.push(`URL:${e(c.link)}`)
   else if (url) l.push(`URL:${url}`)
-  if (c.line) l.push(`X-SOCIALPROFILE;TYPE=line:https://line.me/ti/p/~${encodeURIComponent(c.line)}`, `NOTE:LINE ${e(c.line)}`)
+  if (c.line) l.push(`X-SOCIALPROFILE;TYPE=line:${lineUrl(c.line)}`, `NOTE:LINE ${e(c.line)}`)
   l.push('END:VCARD')
   return l.join('\r\n') + '\r\n'
 }
@@ -328,7 +340,7 @@ const langLink = (lang) => `<a class="lang" href="?l=${lang === 'th' ? 'en' : 't
 /** The card's face, the same on every page that shows one. */
 function face(c, { save } = {}) {
   const chips = []
-  if (c.line) chips.push(`<a class="ln" href="https://line.me/ti/p/~${encodeURIComponent(c.line)}">LINE</a>`)
+  if (c.line) chips.push(`<a class="ln" href="${esc(lineUrl(c.line))}">LINE</a>`)
   if (c.phone) chips.push(`<a href="tel:${esc(c.phone.replace(/[^\d+]/g, ''))}">${t('โทร', 'Call')}</a>`)
   if (c.email) chips.push(`<a href="mailto:${esc(c.email)}">${t('อีเมล', 'Email')}</a>`)
   if (c.site) chips.push(`<a href="${HOME}/${esc(c.site)}">${t('หน้าเว็บ', 'Page')}</a>`)
@@ -354,8 +366,9 @@ async function arm(g,h,s){give=g;hit=h;say=s;let ok=true;if(typeof DeviceMotionE
 function setGive(g){give=g}
 return{arm,knock,sync,setGive}})()
 function vcf(c){const e=s=>String(s).replace(/([,;\\\\])/g,'\\\\$1');const l=['BEGIN:VCARD','VERSION:3.0','FN:'+e(c.name),'N:;'+e(c.name)+';;;'];if(c.role)l.push('TITLE:'+e(c.role));if(c.phone)l.push('TEL;TYPE=CELL:'+c.phone.replace(/[^\\d+]/g,''));if(c.email)l.push('EMAIL:'+e(c.email));if(c.line)l.push('NOTE:LINE '+e(c.line));l.push('END:VCARD');return URL.createObjectURL(new Blob([l.join('\\r\\n')+'\\r\\n'],{type:'text/vcard'}))}
+const LU=v=>/^https:\/\//.test(v)?v:'https://line.me/ti/p/~'+encodeURIComponent(v)
 const H=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c])
-function peerCard(p){if(!p||p.none)return '<p class="small">'+W('ชนติดแล้ว อีกเครื่องไม่ได้ใส่นามบัตร','Bumped. The other phone gave no card.')+'</p>';const ch=[];if(p.line)ch.push('<a class="ln" href="https://line.me/ti/p/~'+encodeURIComponent(p.line)+'">LINE</a>');if(p.phone)ch.push('<a href="tel:'+H(p.phone.replace(/[^\\d+]/g,''))+'">'+W('โทร','Call')+'</a>');if(p.email)ch.push('<a href="mailto:'+H(p.email)+'">'+W('อีเมล','Email')+'</a>');const save=p.id?'/tap/'+p.id+'.vcf':vcf(p);return '<div class="card" style="animation:drop .85s cubic-bezier(.2,1.25,.35,1) both"><p class="from">'+W('ได้มาจากการชน','from a bump')+'</p><h1>'+H(p.name)+'</h1>'+(p.role?'<p class="role">'+H(p.role)+'</p>':'')+(p.link?'<a class="btn dark" href="'+H(p.link)+'">'+(p.label?H(p.label):W('เปิดลิงก์','Open the link'))+' →</a>':'')+'<a class="btn" href="'+save+'" download="'+H(p.name)+'.vcf">'+W('บันทึกรายชื่อ','Save contact')+'</a>'+(ch.length?'<div class="chips">'+ch.join('')+'</div>':'')+'</div>'}
+function peerCard(p){if(!p||p.none)return '<p class="small">'+W('ชนติดแล้ว อีกเครื่องไม่ได้ใส่นามบัตร','Bumped. The other phone gave no card.')+'</p>';const ch=[];if(p.line)ch.push('<a class="ln" href="'+H(LU(p.line))+'">LINE</a>');if(p.phone)ch.push('<a href="tel:'+H(p.phone.replace(/[^\\d+]/g,''))+'">'+W('โทร','Call')+'</a>');if(p.email)ch.push('<a href="mailto:'+H(p.email)+'">'+W('อีเมล','Email')+'</a>');const save=p.id?'/tap/'+p.id+'.vcf':vcf(p);return '<div class="card" style="animation:drop .85s cubic-bezier(.2,1.25,.35,1) both"><p class="from">'+W('ได้มาจากการชน','from a bump')+'</p><h1>'+H(p.name)+'</h1>'+(p.role?'<p class="role">'+H(p.role)+'</p>':'')+(p.link?'<a class="btn dark" href="'+H(p.link)+'">'+(p.label?H(p.label):W('เปิดลิงก์','Open the link'))+' →</a>':'')+'<a class="btn" href="'+save+'" download="'+H(p.name)+'.vcf">'+W('บันทึกรายชื่อ','Save contact')+'</a>'+(ch.length?'<div class="chips">'+ch.join('')+'</div>':'')+'</div>'}
 function sayer(el,wrap){return s=>{el.className='st';const m={armed:W('เคาะมือถือเข้าหากันเบาๆ ได้เลย','Knock phones together, gently'),nomotion:W('เครื่องนี้ไม่ให้อ่านการเคลื่อนไหว กดปุ่มด้านล่างพร้อมกันแทน','This phone keeps motion closed. Press the button below at the same moment instead.'),knock:W('ชน… กำลังหาอีกเครื่อง','Bump… finding the other phone'),miss:W('ไม่ติด เคาะอีกที พร้อมกันทั้งสองเครื่อง','Missed. Knock again, both at once.')};el.textContent=m[s]||'';if(wrap)wrap.classList.toggle('armed',s!=='miss')}}`
 
 /** /tap/<id>: what a touch opens. */
@@ -363,7 +376,7 @@ export function arrival(c, lang, nonce) {
   const body = `<main>${langLink(lang)}<a class="home" href="/tap">motdang</a>
 ${stage(face(c, { save: `/tap/${c.id}.vcf` }))}
 <section class="panel" id="back"><h2>${t('ชนกลับ', 'Bump back')}</h2><p>${t('ใส่ชื่อกับเบอร์หรือไลน์ กด พร้อม แล้วเคาะมือถือเข้าหากันเบาๆ ' + esc(c.name) + ' ได้นามบัตรของคุณทันที', 'Type a name and a phone or LINE, press Ready, then knock phones together gently. ' + esc(c.name) + ' gets your card.')}</p>
-<form id="mine"><div class="row2"><div><label for="mn">${t('ชื่อ', 'Name')}</label><input id="mn" autocomplete="name" maxlength="60"></div><div><label for="ml">${t('ไอดีไลน์', 'LINE ID')}</label><input id="ml" maxlength="40" autocapitalize="off"></div></div>
+<form id="mine"><div class="row2"><div><label for="mn">${t('ชื่อ', 'Name')}</label><input id="mn" autocomplete="name" maxlength="60"></div><div><label for="ml">${t('ไอดีหรือลิงก์ไลน์', 'LINE ID or link')}</label><input id="ml" maxlength="120" autocapitalize="off"></div></div>
 <label for="mp">${t('เบอร์โทร', 'Phone')}</label><input id="mp" type="tel" autocomplete="tel" maxlength="24">
 <button class="ready" type="submit">${t('พร้อม', 'Ready')}</button></form>
 <button class="press" id="press" type="button" hidden>${t('หรือกดปุ่มนี้พร้อมกันทั้งสองเครื่อง', 'Or press this on both phones at the same moment')}</button>
@@ -396,7 +409,7 @@ ${stage(face(demo, { save: '#make' }))}
 <section class="panel" id="make"><h2>${t('ทำของคุณ', 'Make yours')}</h2><p>${t('ฟรี ไม่ต้องสมัคร ลิงก์หน้าของคุณคือกุญแจ', 'Free, no sign-up. Your page link is the key.')}</p>
 <form id="nf"><label for="n">${t('ชื่อ', 'Name')}</label><input id="n" required maxlength="60" autocomplete="name">
 <label for="r">${t('บรรทัดใต้ชื่อ', 'Under the name')}</label><input id="r" maxlength="80" placeholder="${lang === 'th' ? 'ร้าน งาน หรือคำสั้นๆ' : 'shop, work, a few words'}">
-<div class="row2"><div><label for="p">${t('เบอร์โทร', 'Phone')}</label><input id="p" type="tel" maxlength="24" autocomplete="tel"></div><div><label for="l">${t('ไอดีไลน์', 'LINE ID')}</label><input id="l" maxlength="40" autocapitalize="off"></div></div>
+<div class="row2"><div><label for="p">${t('เบอร์โทร', 'Phone')}</label><input id="p" type="tel" maxlength="24" autocomplete="tel"></div><div><label for="l">${t('ไอดีหรือลิงก์ไลน์', 'LINE ID or link')}</label><input id="l" maxlength="120" autocapitalize="off"></div></div>
 <label for="e">${t('อีเมล', 'Email')}</label><input id="e" type="email" maxlength="120" autocomplete="email">
 <label for="k">${t('ลิงก์ motdang (ถ้ามี)', 'A motdang link (if any)')}</label><input id="k" type="url" maxlength="300" placeholder="https://motdang.net/…">
 <button type="submit">${t('ทำนามบัตร', 'Make my card')}</button><p class="st" id="st"></p></form></section>
@@ -424,7 +437,7 @@ ${stage('<div id="face"></div>')}
 <div class="seg"><button type="button" data-g="card">${t('นามบัตร', 'My card')}</button><button type="button" data-g="link">${t('ลิงก์', 'A link')}</button></div>
 <div id="lk"><label for="k">${t('ลิงก์ motdang', 'motdang link')}</label><input id="k" type="url" maxlength="300" placeholder="https://motdang.net/…"><label for="kl">${t('ชื่อปุ่ม', 'Button words')}</label><input id="kl" maxlength="60"></div>
 <label for="n">${t('ชื่อ', 'Name')}</label><input id="n" maxlength="60"><label for="r">${t('บรรทัดใต้ชื่อ', 'Under the name')}</label><input id="r" maxlength="80">
-<div class="row2"><div><label for="p">${t('เบอร์โทร', 'Phone')}</label><input id="p" type="tel" maxlength="24"></div><div><label for="l">${t('ไอดีไลน์', 'LINE ID')}</label><input id="l" maxlength="40" autocapitalize="off"></div></div>
+<div class="row2"><div><label for="p">${t('เบอร์โทร', 'Phone')}</label><input id="p" type="tel" maxlength="24"></div><div><label for="l">${t('ไอดีหรือลิงก์ไลน์', 'LINE ID or link')}</label><input id="l" maxlength="120" autocapitalize="off"></div></div>
 <label for="e">${t('อีเมล', 'Email')}</label><input id="e" type="email" maxlength="120"><label for="s">${t('หน้าบน sites.motdang.net', 'Page on sites.motdang.net')}</label><input id="s" maxlength="30" placeholder="name" autocapitalize="off">
 <button id="save" type="button">${t('บันทึก', 'Save')}</button><p class="st" id="sst"></p></section>
 <section class="panel"><h2>${t('สติกเกอร์', 'Sticker')}</h2><p>${t('สติกเกอร์เก็บที่อยู่นี้', 'The sticker holds this address')}</p><div class="addr" id="addr"></div>
@@ -435,7 +448,7 @@ ${stage('<div id="face"></div>')}
 <script nonce="${nonce}">${JS_CORE}
 let key=(location.hash||'').slice(1);try{if(key)localStorage.setItem('tap-own',key);else key=localStorage.getItem('tap-own')||''}catch(e){}
 const $=id=>document.getElementById(id);let me=null,give='card'
-function faceHtml(c){const ch=[];if(c.line)ch.push('<a class="ln" href="https://line.me/ti/p/~'+encodeURIComponent(c.line)+'">LINE</a>');if(c.phone)ch.push('<a href="tel:'+H(c.phone)+'">'+W('โทร','Call')+'</a>');if(c.email)ch.push('<a href="mailto:'+H(c.email)+'">'+W('อีเมล','Email')+'</a>');if(c.site)ch.push('<a href="${HOME}/'+H(c.site)+'">'+W('หน้าเว็บ','Page')+'</a>');return '<p class="from">motdang · '+W('แตะ','tap')+'</p><h1>'+H(c.name)+'</h1>'+(c.role?'<p class="role">'+H(c.role)+'</p>':'')+(c.give==='link'&&c.link?'<a class="btn dark" href="'+H(c.link)+'">'+(c.label?H(c.label):W('เปิดลิงก์','Open the link'))+' →</a>':'')+'<a class="btn" href="/tap/'+c.id+'.vcf">'+W('บันทึกรายชื่อ','Save contact')+'</a>'+(ch.length?'<div class="chips">'+ch.join('')+'</div>':'')}
+function faceHtml(c){const ch=[];if(c.line)ch.push('<a class="ln" href="'+H(LU(c.line))+'">LINE</a>');if(c.phone)ch.push('<a href="tel:'+H(c.phone)+'">'+W('โทร','Call')+'</a>');if(c.email)ch.push('<a href="mailto:'+H(c.email)+'">'+W('อีเมล','Email')+'</a>');if(c.site)ch.push('<a href="${HOME}/'+H(c.site)+'">'+W('หน้าเว็บ','Page')+'</a>');return '<p class="from">motdang · '+W('แตะ','tap')+'</p><h1>'+H(c.name)+'</h1>'+(c.role?'<p class="role">'+H(c.role)+'</p>':'')+(c.give==='link'&&c.link?'<a class="btn dark" href="'+H(c.link)+'">'+(c.label?H(c.label):W('เปิดลิงก์','Open the link'))+' →</a>':'')+'<a class="btn" href="/tap/'+c.id+'.vcf">'+W('บันทึกรายชื่อ','Save contact')+'</a>'+(ch.length?'<div class="chips">'+ch.join('')+'</div>':'')}
 function show(c){me=c;give=c.give;$('face').innerHTML=faceHtml(c);$('addr').textContent=c.url;$('n').value=c.name;$('r').value=c.role;$('p').value=c.phone;$('l').value=c.line;$('e').value=c.email;$('s').value=c.site;$('k').value=c.link;$('kl').value=c.label;seg();
 const today=new Date().toISOString().slice(0,10);let td=0,wk=0;(c.days||[]).forEach(d=>{wk+=d.taps;if(d.day===today)td=d.taps});$('nt').textContent=td;$('nw').textContent=wk;$('nb').textContent=c.bumps}
 function seg(){document.querySelectorAll('.seg button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.g===give));$('lk').hidden=give!=='link'}

@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { pick, cleanLink, cleanCard, vcard, cardOf, near, front, arrival, ownerPage } from '../src/tap.mjs'
+import { pick, cleanLink, cleanCard, cleanLine, lineUrl, vcard, cardOf, near, front, arrival, ownerPage } from '../src/tap.mjs'
 
 test('two knocks pair inside the window, nearest in time', () => {
   const me = { id: 'a', t: 10_000, lat: null, lng: null, net: 'x' }
@@ -53,4 +53,13 @@ test('pages render in both languages with the name escaped', () => {
   assert.match(a, /บันทึกรายชื่อ/)
   assert.match(front('en', 'n'), /Touch phones/)
   assert.match(ownerPage('en', 'n'), /Bump mode/)
+})
+
+test('LINE takes an id or an add-friend link', () => {
+  assert.equal(cleanLine('https://line.me/ti/p/UyvWa-rWeT'), 'https://line.me/ti/p/UyvWa-rWeT')
+  assert.equal(lineUrl('https://line.me/ti/p/UyvWa-rWeT'), 'https://line.me/ti/p/UyvWa-rWeT')
+  assert.equal(lineUrl('defiant.to'), 'https://line.me/ti/p/~defiant.to')
+  assert.equal(cleanLine('https://evil.com/x'), '')
+  assert.equal(cleanLine('http://line.me/ti/p/x'), '')
+  assert.match(arrival(cardOf({ id: 'abcdefgh', name: 'NaN', line: 'https://line.me/ti/p/UyvWa-rWeT', give: 'card' }), 'en', 'n'), /href="https:\/\/line.me\/ti\/p\/UyvWa-rWeT"/)
 })
