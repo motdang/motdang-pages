@@ -59,7 +59,7 @@ const CSS = `<style>.am{min-width:0}.am>summary{display:flex;align-items:center;
 
 /** The section's form. h = make.js's helpers: S, T, val, esc, icon, imgUrl, photoPick, rowX, seg, isGold, lang. */
 export function amuletsSec(h) {
-  const { S, val, esc, icon, imgUrl, photoPick, rowX, seg, isGold, lang } = h
+  const { S, val, esc, icon, imgUrl, photoPick, rowX, seg, isGold, lineHref, lang } = h
   const A = (k) => esc(amUi(lang, k))
   const cap = isGold() ? AM_MAX.gold : AM_MAX.free
   const list = (id, rows) => `<datalist id="${id}">${rows.map((r) => `<option value="${esc(amLabel(rows, r[0], lang))}">`).join('')}</datalist>`
@@ -96,7 +96,7 @@ export function amuletsSec(h) {
     ? `<div class="amcam"><label class="shoot">${icon('camera')}${A('cam')}<input type="file" accept="image/*" capture="environment" data-amcam></label>
       <label class="shoot ghost">${A('cam_pick')}<input type="file" accept="image/*" multiple data-amcam></label><p class="hint">${A('cam_hint')}</p>${amcamTray()}</div>`
     : `<p class="hint">${A('cam_gold')}</p>`
-  const lineF = `<label class="field"><span>${A('line')}</span><input data-k="contact.line" value="${val(S.d.contact.line)}" autocapitalize="off" placeholder="@myshop"></label>${S.d.contact.line ? '' : `<p class="hint" style="margin-top:-4px">${A('lineHint')}</p>`}`
+  const lineF = `<label class="field"><span>${A('line')}</span><input data-k="contact.line" value="${val(S.d.contact.line)}" autocapitalize="off" placeholder="@myshop"></label>${lineHref(S.d.contact.line) ? '' : `<p class="hint" style="margin-top:-4px">${A('lineHint')}</p>`}`
   return `${CSS}${camera}${lineF}<p class="hint">${A('hint')}${isGold() ? '' : ' ' + A('free')}</p>${list('am-mat', AM_MATERIALS)}${list('am-cond', AM_CONDS)}<div class="rows">${rows.join('')}</div>
     ${S.d.amulets.length < AM_MAX.gold ? `<button class="go ghost" data-addrow="amulets">${icon('plus')}${A('add')}</button>` : ''}
     <label class="field" style="margin-top:16px"><span>${A('terms')}</span><textarea data-k="amterms" maxlength="600" style="min-height:70px" placeholder="${A('termsEx')}">${val(S.d.amterms)}</textarea></label>`
