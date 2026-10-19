@@ -97,6 +97,25 @@ export function vcard(c, url, { photo, met } = {}) {
 /** vCard 3.0 folds long lines at 75 octets: CRLF and a space. */
 const fold = (line) => line.match(/.{1,74}/g).join('\r\n ')
 
+/** The body, or null once it passes `max` bytes; the stream is cancelled there. */
+export async function readLimited(request, max) {
+  if (Number(request.headers.get('content-length') || 0) > max) return null
+  if (!request.body) return new Uint8Array(0)
+  const reader = request.body.getReader(), parts = []
+  let n = 0
+  for (;;) {
+    const { done, value } = await reader.read()
+    if (done) break
+    n += value.length
+    if (n > max) { await reader.cancel().catch(() => {}); return null }
+    parts.push(value)
+  }
+  const out = new Uint8Array(n)
+  let at = 0
+  for (const v of parts) { out.set(v, at); at += v.length }
+  return out
+}
+
 const b64 = (u8) => { let s = ''; for (let i = 0; i < u8.length; i += 0x8000) s += String.fromCharCode(...u8.subarray(i, i + 0x8000)); return btoa(s) }
 
 // ---- bumps -------------------------------------------------------------------------
@@ -205,6 +224,11 @@ async function owner(request, env, d) {
   return row && row.key_sha === await d.sha(key) ? row : null
 }
 
+async function daysOf(env, id) {
+  const since = new Date(Date.now() - 6 * 864e5).toISOString().slice(0, 10)
+  return (await env.DB.prepare('SELECT day, taps, bumps FROM tap_day WHERE id = ? AND day >= ? ORDER BY day').bind(id, since).all()).results || []
+}
+
 function ownView(row, days) {
   const c = cardOf(row)
   return { ...c, give: row.give, link: row.link || '', label: row.link_label || '', taps: row.taps, bumps: row.bumps, days, url: `${HOME}/tap/${row.id}`, stage: ownStage(cardOf(row)) }
@@ -244,9 +268,7 @@ async function api(request, env, p, url, d) {
           b.give === 'link' && link ? 'link' : 'card', link, cut(b.label, 60) || null, new Date().toISOString(), row.id).run()
       Object.assign(row, { ...c, give: b.give === 'link' && link ? 'link' : 'card', link, link_label: cut(b.label, 60) || null })
     }
-    const since = new Date(Date.now() - 6 * 864e5).toISOString().slice(0, 10)
-    const days = (await env.DB.prepare('SELECT day, taps, bumps FROM tap_day WHERE id = ? AND day >= ? ORDER BY day').bind(row.id, since).all()).results || []
-    return J(ownView(row, days))
+    return J(ownView(row, await daysOf(env, row.id)))
   }
 
   if (p === 'photo' && m === 'POST') {
@@ -254,7 +276,9 @@ async function api(request, env, p, url, d) {
     if (!row) return J({ error: 'key' }, 403)
     if (!d.sameOrigin(request, url)) return J({ error: 'origin' }, 403)
     if (!await d.take(env, await d.sender(request, env), 'tapsave')) return J({ error: 'quota' }, 429)
-    const pic = d.clean(await request.arrayBuffer(), 400_000)
+    const raw = await readLimited(request, 400_000)
+    if (!raw) return J({ error: 'photo' }, 413)
+    const pic = d.clean(raw.buffer, 400_000)
     if (pic.error || pic.kind !== 'jpeg') return J({ error: 'photo' }, 400)
     const seen = await d.look(env.AI, pic.bytes, pic.kind)
     if (seen.verdict === 'refuse') return J({ error: 'refused' }, 422)
@@ -263,7 +287,7 @@ async function api(request, env, p, url, d) {
     await env.MEDIA.put(`tap/${row.id}.jpg`, pic.bytes, { httpMetadata: { contentType: 'image/jpeg' } })
     await env.DB.prepare('UPDATE tap SET photo = ?, changed = ? WHERE id = ?').bind(v, new Date().toISOString(), row.id).run()
     row.photo = v
-    return J(ownView(row, []))
+    return J(ownView(row, await daysOf(env, row.id)))
   }
 
   if (p === 'bump' && m === 'POST') {
@@ -461,13 +485,14 @@ async function sync(){try{const a=Date.now();const j=await(await fetch('/tap/api
 function where(){if(!navigator.geolocation)return;navigator.geolocation.getCurrentPosition(p=>{pos={lat:p.coords.latitude,lng:p.coords.longitude}},()=>{},{maximumAge:60000,timeout:9000})}
 function motion(e){let m;const a=e.acceleration;if(a&&a.x!=null)m=Math.hypot(a.x,a.y,a.z);else{const g=e.accelerationIncludingGravity;if(!g||g.x==null)return;m=Math.abs(Math.hypot(g.x,g.y,g.z)-9.81)}const j=Math.abs(m-prev);prev=m;if((m>14||j>18)&&now()-last>2500)knock()}
 async function knock(){last=now();const t=last;navigator.vibrate&&navigator.vibrate(35);say&&say('knock');try{const r=await fetch('/tap/api/bump',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({t,lat:pos&&pos.lat,lng:pos&&pos.lng,give})});const j=await r.json();if(j.peer)return got(j.peer);if(!j.id)return say&&say('miss');for(let i=0;i<10;i++){await new Promise(r=>setTimeout(r,350));const k=await(await fetch('/tap/api/bump/'+j.id,{cache:'no-store'})).json();if(k.peer)return got(k.peer)}say&&say('miss')}catch(e){say&&say('miss')}}
-function got(p){navigator.vibrate&&navigator.vibrate([30,50,120]);hit&&hit(p)}
+function got(p){navigator.vibrate&&navigator.vibrate([30,50,120]);if(p&&!p.none)p.metAt=stamp();hit&&hit(p)}
 async function arm(g,h,s){give=g;hit=h;say=s;let ok=true;if(typeof DeviceMotionEvent!=='undefined'&&typeof DeviceMotionEvent.requestPermission==='function'){try{ok=(await DeviceMotionEvent.requestPermission())!=='denied'}catch(e){ok=!/iP(hone|ad|od)/.test(navigator.userAgent)}}if(typeof DeviceOrientationEvent!=='undefined'&&typeof DeviceOrientationEvent.requestPermission==='function'){DeviceOrientationEvent.requestPermission().catch(()=>{})}sync();where();if(!on&&ok){addEventListener('devicemotion',motion);on=true}s&&s(ok?'armed':'nomotion')}
 return{arm,knock,sync}})()
-function vcf(c){const e=s=>String(s).replace(/([,;\\\\])/g,'\\\\$1');const l=['BEGIN:VCARD','VERSION:3.0','FN:'+e(c.name),'N:;'+e(c.name)+';;;'];if(c.role)l.push('TITLE:'+e(c.role));if(c.phone)l.push('TEL;TYPE=CELL:'+c.phone.replace(/[^\\d+]/g,''));if(c.email)l.push('EMAIL:'+e(c.email));if(c.line)l.push('NOTE:LINE '+e(c.line));l.push('END:VCARD');return URL.createObjectURL(new Blob([l.join('\\r\\n')+'\\r\\n'],{type:'text/vcard'}))}
+function vcf(c){const e=s=>String(s).replace(/([,;\\\\])/g,'\\\\$1');const l=['BEGIN:VCARD','VERSION:3.0','FN:'+e(c.name),'N:;'+e(c.name)+';;;'];if(c.role)l.push('TITLE:'+e(c.role));if(c.phone)l.push('TEL;TYPE=CELL:'+c.phone.replace(/[^\\d+]/g,''));if(c.email)l.push('EMAIL:'+e(c.email));const nt=[c.metAt?'Met '+c.metAt+' · motdang tap':'',c.line?'LINE '+c.line:''].filter(Boolean);if(nt.length)l.push('NOTE:'+e(nt.join('\\n')));l.push('END:VCARD');return URL.createObjectURL(new Blob([l.join('\\r\\n')+'\\r\\n'],{type:'text/vcard'}))}
+const stamp=()=>new Date().toLocaleString('en-GB',{weekday:'short',day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})
 const LU=v=>/^https:\\/\\//.test(v)?v:'https://line.me/ti/p/~'+encodeURIComponent(v)
 const H=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c])
-function peerCard(p){if(!p||p.none)return '<p class="small">'+W('ชนติดแล้ว อีกเครื่องไม่ได้ใส่นามบัตร','Bumped. The other phone gave no card.')+'</p>';const ch=[];if(p.line)ch.push('<a class="ln" href="'+H(LU(p.line))+'">LINE</a>');if(p.phone)ch.push('<a href="tel:'+H(p.phone.replace(/[^\\d+]/g,''))+'">'+W('โทร','Call')+'</a>');if(p.email)ch.push('<a href="mailto:'+H(p.email)+'">'+W('อีเมล','Email')+'</a>');const save=p.id?'/tap/'+p.id+'.vcf':vcf(p);return '<div class="go"><div class="card"><p class="hello">'+W('ได้มาจากการชน','From a bump')+' ✦</p><h2 class="name" style="font-size:32px">'+H(p.name)+'</h2>'+(p.role?'<p class="role">'+H(p.role)+'</p>':'')+(p.link?'<a class="btn dark" href="'+H(p.link)+'">'+(p.label?H(p.label):W('เปิดลิงก์','Open the link'))+' →</a>':'')+'<a class="btn" href="'+save+'" download="'+H(p.name)+'.vcf">'+W('บันทึกรายชื่อ','Save contact')+'</a>'+(ch.length?'<div class="chips">'+ch.join('')+'</div>':'')+'</div></div>'}
+function peerCard(p){if(!p||p.none)return '<p class="small">'+W('ชนติดแล้ว อีกเครื่องไม่ได้ใส่นามบัตร','Bumped. The other phone gave no card.')+'</p>';const ch=[];if(p.line)ch.push('<a class="ln" href="'+H(LU(p.line))+'">LINE</a>');if(p.phone)ch.push('<a href="tel:'+H(p.phone.replace(/[^\\d+]/g,''))+'">'+W('โทร','Call')+'</a>');if(p.email)ch.push('<a href="mailto:'+H(p.email)+'">'+W('อีเมล','Email')+'</a>');const save=p.id?'/tap/'+p.id+'.vcf'+(p.metAt?'?m='+encodeURIComponent(p.metAt):''):vcf(p);return '<div class="go"><div class="card"><div class="top">'+(p.photo?'<div class="portrait"><img src="'+H(p.photo)+'" alt="" width="72" height="72"></div>':'')+'<div><p class="hello">'+W('ได้มาจากการชน','From a bump')+' ✦</p><h2 class="name" style="font-size:32px">'+H(p.name)+'</h2></div></div>'+(p.role?'<p class="role">'+H(p.role)+'</p>':'')+(p.link?'<a class="btn dark" href="'+H(p.link)+'">'+(p.label?H(p.label):W('เปิดลิงก์','Open the link'))+' →</a>':'')+'<a class="btn" href="'+save+'" download="'+H(p.name)+'.vcf">'+W('บันทึกรายชื่อ','Save contact')+'</a>'+(ch.length?'<div class="chips">'+ch.join('')+'</div>':'')+(p.metAt?'<p class="met">'+H(W('เจอกัน ','Met ')+p.metAt)+'</p>':'')+'</div></div>'}
 function sayer(el,wrap){return s=>{el.className='st';const m={armed:W('เคาะมือถือเข้าหากันเบาๆ ได้เลย','Knock phones together, gently'),nomotion:W('เครื่องนี้ไม่ให้อ่านการเคลื่อนไหว กดปุ่มด้านล่างพร้อมกันแทน','This phone keeps motion closed. Press the button below at the same moment instead.'),knock:W('ชน… กำลังหาอีกเครื่อง','Bump… finding the other phone'),miss:W('ไม่ติด เคาะอีกที พร้อมกันทั้งสองเครื่อง','Missed. Knock again, both at once.')};el.textContent=m[s]||'';if(wrap)wrap.classList.toggle('armed',s!=='miss')}}
 document.getElementById('card')&&document.getElementById('card').addEventListener('click',e=>{if(!e.target.closest('a'))land()})`
 
@@ -551,14 +576,14 @@ export function ownerPage(lang, nonce) {
 <script nonce="${nonce}">${JS_CORE}
 let key=(location.hash||'').slice(1);try{if(key)localStorage.setItem('tap-own',key);else key=localStorage.getItem('tap-own')||''}catch(e){}
 const $=id=>document.getElementById(id);let me=null,give='card'
-function show(c,again){me=c;give=c.give;$('stagebox').innerHTML=c.stage;$('card').addEventListener('click',e=>{if(!e.target.closest('a'))land()});$('addr').textContent=c.url;$('n').value=c.name;$('r').value=c.role;$('p').value=c.phone;$('l').value=c.line;$('e').value=c.email;$('s').value=c.site;$('k').value=c.link;$('kl').value=c.label;if(c.photo){$('pv').src=c.photo;$('pv').hidden=false}seg();
+function show(c,keep){me=c;$('stagebox').innerHTML=c.stage;$('card').addEventListener('click',e=>{if(!e.target.closest('a'))land()});$('addr').textContent=c.url;if(!keep){give=c.give;$('n').value=c.name;$('r').value=c.role;$('p').value=c.phone;$('l').value=c.line;$('e').value=c.email;$('s').value=c.site;$('k').value=c.link;$('kl').value=c.label}if(c.photo){$('pv').src=c.photo;$('pv').hidden=false}seg();
 const today=new Date().toISOString().slice(0,10);let td=0,wk=0;(c.days||[]).forEach(d=>{wk+=d.taps;if(d.day===today)td=d.taps});$('nt').textContent=td;$('nw').textContent=wk;$('nb').textContent=c.bumps;hello();met();land()}
 function seg(){document.querySelectorAll('.seg button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.g===give));$('lk').hidden=give!=='link'}
 document.querySelectorAll('.seg button').forEach(b=>b.addEventListener('click',()=>{give=b.dataset.g;seg()}))
 async function load(){if(!/^[a-z0-9]{8}\\.[a-z0-9]+$/.test(key)){$('none').hidden=false;return}const r=await fetch('/tap/api/own',{headers:{'x-tap':key}});if(!r.ok){$('none').hidden=false;return}$('own').hidden=false;show(await r.json());history.replaceState(null,'','/tap/me')}
 $('save').addEventListener('click',async()=>{const b={name:$('n').value,role:$('r').value,phone:$('p').value,line:$('l').value,email:$('e').value,site:$('s').value,give,link:$('k').value.trim(),label:$('kl').value};const r=await fetch('/tap/api/own',{method:'PUT',headers:{'content-type':'application/json','x-tap':key},body:JSON.stringify(b)});const j=await r.json().catch(()=>({}));const s=$('sst');if(r.ok){show(j);s.className='st ok';s.textContent=W('บันทึกแล้ว ✓','Saved ✓')}else{s.className='st';s.textContent=j.error==='link'?W('ลิงก์ต้องเป็น motdang.net hongdam.net wichaa.net หรือ LINE','The link must be on motdang.net, hongdam.net, wichaa.net or LINE'):j.error==='name'?W('ใส่ชื่อก่อน','A name first'):W('ยังไม่ผ่าน ลองอีกที','That did not go through. Try again.')}})
 $('pick').addEventListener('click',()=>$('pf').click())
-$('pf').addEventListener('change',async()=>{const f=$('pf').files[0];if(!f)return;const s=$('sst');s.className='st';s.textContent='…';try{const bm=await createImageBitmap(f);const n=480,c=document.createElement('canvas');c.width=c.height=n;const k=Math.max(n/bm.width,n/bm.height);c.getContext('2d').drawImage(bm,(n-bm.width*k)/2,(n-bm.height*k)/2,bm.width*k,bm.height*k);const blob=await new Promise(r=>c.toBlob(r,'image/jpeg',.86));const r=await fetch('/tap/api/photo',{method:'POST',headers:{'content-type':'image/jpeg','x-tap':key},body:blob});const j=await r.json().catch(()=>({}));if(r.ok){show(j);s.className='st ok';s.textContent=W('ใส่รูปแล้ว ✓','Picture on ✓')}else s.textContent=j.error==='refused'?W('รูปนี้ใช้ไม่ได้','This picture cannot go on a card'):W('ยังไม่ผ่าน ลองอีกที','That did not go through. Try again.')}catch(e){s.textContent=W('ยังไม่ผ่าน ลองอีกที','That did not go through. Try again.')}$('pf').value=''})
+$('pf').addEventListener('change',async()=>{const f=$('pf').files[0];if(!f)return;const s=$('sst');s.className='st';s.textContent='…';try{const bm=await createImageBitmap(f);const n=480,c=document.createElement('canvas');c.width=c.height=n;const k=Math.max(n/bm.width,n/bm.height);c.getContext('2d').drawImage(bm,(n-bm.width*k)/2,(n-bm.height*k)/2,bm.width*k,bm.height*k);const blob=await new Promise(r=>c.toBlob(r,'image/jpeg',.86));const r=await fetch('/tap/api/photo',{method:'POST',headers:{'content-type':'image/jpeg','x-tap':key},body:blob});const j=await r.json().catch(()=>({}));if(r.ok){show(j,true);s.className='st ok';s.textContent=W('ใส่รูปแล้ว ✓','Picture on ✓')}else s.textContent=j.error==='refused'?W('รูปนี้ใช้ไม่ได้','This picture cannot go on a card'):W('ยังไม่ผ่าน ลองอีกที','That did not go through. Try again.')}catch(e){s.textContent=W('ยังไม่ผ่าน ลองอีกที','That did not go through. Try again.')}$('pf').value=''})
 let mets=[];try{mets=JSON.parse(localStorage.getItem('tap-met')||'[]')}catch(e){}
 function drawMet(){$('metp').hidden=!mets.length;$('met').innerHTML=mets.map(peerCard).join('')}drawMet()
 $('arm').addEventListener('click',async()=>{await B.arm({tap:me.id},p=>{$('peer').innerHTML=peerCard(p);$('st').className='st ok';$('st').textContent=W('ชนติด ✓ เขาได้นามบัตรของคุณแล้ว','Bumped ✓ They have your card');$('bumpp').classList.remove('armed');if(p&&!p.none){mets.unshift(p);mets=mets.slice(0,30);try{localStorage.setItem('tap-met',JSON.stringify(mets))}catch(e){}drawMet()}$('nb').textContent=+$('nb').textContent+1},sayer($('st'),$('bumpp')));$('press').hidden=false})

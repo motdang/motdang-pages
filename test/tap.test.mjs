@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { pick, cleanLink, cleanCard, cleanLine, lineUrl, vcard, cardOf, near, front, arrival, ownerPage } from '../src/tap.mjs'
+import { readLimited, pick, cleanLink, cleanCard, cleanLine, lineUrl, vcard, cardOf, near, front, arrival, ownerPage } from '../src/tap.mjs'
 
 test('two knocks pair inside the window, nearest in time', () => {
   const me = { id: 'a', t: 10_000, lat: null, lng: null, net: 'x' }
@@ -76,4 +76,11 @@ test('the contact carries the picture, folded, and where they met', () => {
 test('every page script parses', () => {
   const pages = [arrival(cardOf({ id: 'abcdefgh', name: 'N', give: 'card' }), 'en', 'x'), front('th', 'x'), ownerPage('en', 'x')]
   for (const h of pages) for (const [, js] of h.matchAll(/<script nonce="x">([\s\S]*?)<\/script>/g)) assert.doesNotThrow(() => new Function(js))
+})
+
+test('an upload stops reading past its limit, chunked or not', async () => {
+  const body = (n) => new ReadableStream({ start(c) { for (let i = 0; i < n; i++) c.enqueue(new Uint8Array(1000)); c.close() } })
+  assert.equal((await readLimited(new Request('https://x/', { method: 'POST', body: body(3), duplex: 'half' }), 5000)).length, 3000)
+  assert.equal(await readLimited(new Request('https://x/', { method: 'POST', body: body(9), duplex: 'half' }), 5000), null)
+  assert.equal(await readLimited(new Request('https://x/', { method: 'POST', body: 'x', headers: { 'content-length': '999999' } }), 5000), null)
 })
