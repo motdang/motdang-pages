@@ -63,3 +63,17 @@ test('LINE takes an id or an add-friend link', () => {
   assert.equal(cleanLine('http://line.me/ti/p/x'), '')
   assert.match(arrival(cardOf({ id: 'abcdefgh', name: 'NaN', line: 'https://line.me/ti/p/UyvWa-rWeT', give: 'card' }), 'en', 'n'), /href="https:\/\/line.me\/ti\/p\/UyvWa-rWeT"/)
 })
+
+test('the contact carries the picture, folded, and where they met', () => {
+  const photo = 'A'.repeat(300)
+  const v = vcard(cardOf({ id: 'abcdefgh', name: 'NaN', line: 'https://line.me/ti/p/UyvWa-rWeT', photo: 'v1', give: 'card' }), 'u', { photo, met: 'Met Sun, 19 Oct 2026, 19:42' })
+  assert.match(v, /NOTE:Met Sun\\, 19 Oct 2026\\, 19:42 · motdang tap\\nLINE https:\/\/line.me/)
+  assert.match(v, /PHOTO;ENCODING=b;TYPE=JPEG:A+\r\n A+/)
+  assert.ok(v.split('\r\n').filter((l) => /^( |PHOTO)/.test(l)).every((l) => l.length <= 75))
+  assert.match(arrival(cardOf({ id: 'abcdefgh', name: 'NaN', photo: 'v1', give: 'card' }), 'en', 'n'), /src="\/tap\/abcdefgh.jpg\?v=v1"/)
+})
+
+test('every page script parses', () => {
+  const pages = [arrival(cardOf({ id: 'abcdefgh', name: 'N', give: 'card' }), 'en', 'x'), front('th', 'x'), ownerPage('en', 'x')]
+  for (const h of pages) for (const [, js] of h.matchAll(/<script nonce="x">([\s\S]*?)<\/script>/g)) assert.doesNotThrow(() => new Function(js))
+})

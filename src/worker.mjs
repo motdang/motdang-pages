@@ -130,7 +130,7 @@ async function route(request, env, ctx) {
     if (r) return r
   }
   if (path === '/tap' || path.startsWith('/tap/')) {
-    const r = await tap.route(request, env, path, url, { html, sha, rand, sameOrigin, take, sender })
+    const r = await tap.route(request, env, path, url, { html, sha, rand, sameOrigin, take, sender, clean, look })
     if (r) return r
   }
   if (/^\/(founders\/?$|fm\/|g\/)/.test(path)) {
