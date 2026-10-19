@@ -154,6 +154,13 @@ async function netOf(request, sha, secret) {
   return (await sha((secret || 'dev') + '|net|' + n)).slice(0, 16)
 }
 
+/** One event line per knock: how far in time from the nearest other knock, same network or not, how hard. */
+async function knockLog(env, me, peak, hit, now) {
+  const near = hit || await env.DB.prepare('SELECT t, net FROM bump WHERE id != ? AND made > ? ORDER BY ABS(t - ?) LIMIT 1').bind(me.id, now - 20000, me.t).first()
+  const note = `${hit ? 'paired' : 'waiting'} dt=${near ? Math.round(me.t - near.t) : '-'} net=${near ? (near.net === me.net ? 'same' : 'other') : '-'} peak=${Math.round(peak)} placed=${me.lat != null ? 1 : 0}`
+  await env.DB.prepare('INSERT INTO event (at, site_id, what, note) VALUES (?,?,?,?)').bind(new Date(now).toISOString(), 'tap', 'knock', note).run()
+}
+
 async function giveCard(env, give) {
   if (give?.tap) {
     const row = await env.DB.prepare('SELECT * FROM tap WHERE id = ?').bind(String(give.tap)).first()
@@ -314,6 +321,7 @@ async function api(request, env, p, url, d) {
     const rows = (await env.DB.prepare('SELECT id, t, lat, lng, net, give FROM bump WHERE t BETWEEN ? AND ? AND id != ? AND peer IS NULL AND made > ?')
       .bind(me.t - WINDOW, me.t + WINDOW, me.id, now - 20000).all()).results || []
     const hit = pick(me, rows)
+    await knockLog(env, me, Number(b.p) || 0, hit, now).catch(() => {})
     if (!hit) return J({ id: me.id })
     const r = await env.DB.prepare('UPDATE bump SET peer = ? WHERE id = ? AND peer IS NULL').bind(me.id, hit.id).run()
     if (!r.meta?.changes) return J({ id: me.id })
@@ -484,15 +492,23 @@ addEventListener('pointermove',e=>{if(e.pointerType==='mouse')set((.5-e.clientY/
 return{set}})()
 document.addEventListener('pointerdown',e=>{if(e.target.closest('a,button,input,summary,label'))return;Sky.burst(e.clientX,e.clientY,10,150)})
 document.addEventListener('click',e=>{const a=e.target.closest('[data-save]');if(!a)return;const r=a.getBoundingClientRect();Sky.burst(r.left+r.width/2,r.top+r.height/2,24,220);navigator.vibrate&&navigator.vibrate(18)})
-const B=(()=>{let off=0,on=false,last=0,give=null,hit=null,say=null,pos=null,prev=0
+// A knock is a sharp jump between two raw readings; a swing changes them slowly. Android's smoothed
+// acceleration flattens a gentle knock, so the reading with gravity is the one read (NaN 2026-10-19,
+// "doesn't work between my android and michael's android"). free(): motion is open without a press —
+// no requestPermission (older Chrome), or the sensors already allowed (Chrome 151+, Allow by default).
+const B=(()=>{let off=0,on=false,last=0,give=null,hit=null,say=null,pos=null,pa=null,open=false,peak=0,peakT=0
+const KN=7
+async function free(){if(typeof DeviceMotionEvent==='undefined')return false;if(typeof DeviceMotionEvent.requestPermission!=='function')return true;try{return(await navigator.permissions.query({name:'accelerometer'})).state==='granted'}catch(e){return false}}
 const now=()=>Date.now()+off
 async function sync(){try{const a=Date.now();const j=await(await fetch('/tap/api/time',{cache:'no-store'})).json();const b=Date.now();off=j.now-(a+b)/2}catch(e){}}
 function where(){if(!navigator.geolocation)return;navigator.geolocation.getCurrentPosition(p=>{pos={lat:p.coords.latitude,lng:p.coords.longitude}},()=>{},{maximumAge:60000,timeout:9000})}
-function motion(e){let m;const a=e.acceleration;if(a&&a.x!=null)m=Math.hypot(a.x,a.y,a.z);else{const g=e.accelerationIncludingGravity;if(!g||g.x==null)return;m=Math.abs(Math.hypot(g.x,g.y,g.z)-9.81)}const j=Math.abs(m-prev);prev=m;if((m>14||j>18)&&now()-last>2500)knock()}
-async function knock(){last=now();const t=last;navigator.vibrate&&navigator.vibrate(35);say&&say('knock');try{const r=await fetch('/tap/api/bump',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({t,lat:pos&&pos.lat,lng:pos&&pos.lng,give})});const j=await r.json();if(j.peer)return got(j.peer);if(!j.id)return say&&say('miss');for(let i=0;i<10;i++){await new Promise(r=>setTimeout(r,350));const k=await(await fetch('/tap/api/bump/'+j.id,{cache:'no-store'})).json();if(k.peer)return got(k.peer)}say&&say('miss')}catch(e){say&&say('miss')}}
+function motion(e){const g=e.accelerationIncludingGravity;const a=g&&g.x!=null?g:e.acceleration;if(!a||a.x==null)return;const v=[a.x,a.y,a.z||0],q=pa;pa=v;if(!q)return;const j=Math.hypot(v[0]-q[0],v[1]-q[1],v[2]-q[2]);const t=now();if(open){if(j>peak){peak=j;peakT=t}return}if(j>KN&&t-last>1200){open=true;peak=j;peakT=t;setTimeout(()=>{open=false;knock(peakT,peak)},150)}}
+async function knock(at,pk){last=now();const t=at||last;navigator.vibrate&&navigator.vibrate(35);say&&say('knock');try{const r=await fetch('/tap/api/bump',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({t,lat:pos&&pos.lat,lng:pos&&pos.lng,give,p:Math.round(pk||0)})});const j=await r.json();if(j.peer)return got(j.peer);if(!j.id)return say&&say('miss');for(let i=0;i<10;i++){await new Promise(r=>setTimeout(r,350));const k=await(await fetch('/tap/api/bump/'+j.id,{cache:'no-store'})).json();if(k.peer)return got(k.peer)}say&&say('miss')}catch(e){say&&say('miss')}}
 function got(p){navigator.vibrate&&navigator.vibrate([30,50,120]);if(p&&!p.none)p.metAt=stamp();hit&&hit(p)}
-async function arm(g,h,s){give=g;hit=h;say=s;let ok=true;if(typeof DeviceMotionEvent!=='undefined'&&typeof DeviceMotionEvent.requestPermission==='function'){try{ok=(await DeviceMotionEvent.requestPermission())!=='denied'}catch(e){ok=!/iP(hone|ad|od)/.test(navigator.userAgent)}}if(typeof DeviceOrientationEvent!=='undefined'&&typeof DeviceOrientationEvent.requestPermission==='function'){DeviceOrientationEvent.requestPermission().catch(()=>{})}sync();where();if(!on&&ok){addEventListener('devicemotion',motion);on=true}s&&s(ok?'armed':'nomotion')}
-return{arm,knock,sync}})()
+async function arm(g,h,s,quiet){give=g;hit=h;say=s;let ok=true;if(typeof DeviceMotionEvent!=='undefined'&&typeof DeviceMotionEvent.requestPermission==='function'){try{ok=(await DeviceMotionEvent.requestPermission())!=='denied'}catch(e){ok=!/iP(hone|ad|od)/.test(navigator.userAgent)}}if(typeof DeviceOrientationEvent!=='undefined'&&typeof DeviceOrientationEvent.requestPermission==='function'){DeviceOrientationEvent.requestPermission().catch(()=>{})}sync();if(!quiet)where();else if(navigator.permissions)navigator.permissions.query({name:'geolocation'}).then(r=>{if(r.state==='granted')where()}).catch(()=>{});if(!on&&ok){addEventListener('devicemotion',motion);on=true}s&&s(ok?'armed':'nomotion')}
+return{arm,knock:()=>knock(),sync,free}})()
+// The card this phone owns, if its owner page was ever opened here.
+function own(){try{const k=localStorage.getItem('tap-own')||'';return k.indexOf('.')===8?k.slice(0,8):''}catch(e){return ''}}
 const ML=v=>String(v||'').split(/[\\s,;]+/).filter(m=>m.includes('@')).slice(0,2)
 function vcf(c){const e=s=>String(s).replace(/([,;\\\\])/g,'\\\\$1');const l=['BEGIN:VCARD','VERSION:3.0','FN:'+e(c.name),'N:;'+e(c.name)+';;;'];if(c.role)l.push('TITLE:'+e(c.role));if(c.phone)l.push('TEL;TYPE=CELL:'+c.phone.replace(/[^\\d+]/g,''));ML(c.email).forEach(m=>l.push('EMAIL:'+e(m)));const nt=[c.metAt?'Met '+c.metAt+' · motdang tap':'',c.line?'LINE '+c.line:''].filter(Boolean);if(nt.length)l.push('NOTE:'+e(nt.join('\\n')));l.push('END:VCARD');return URL.createObjectURL(new Blob([l.join('\\r\\n')+'\\r\\n'],{type:'text/vcard'}))}
 const stamp=()=>new Date().toLocaleString('en-GB',{weekday:'short',day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})
@@ -512,7 +528,8 @@ ${stage(face(c, { save: `/tap/${c.id}.vcf` }))}
 <label for="mp">${t('เบอร์โทร', 'Phone')}</label><input id="mp" type="tel" autocomplete="tel" maxlength="24">
 <button class="ready" type="submit">${t('พร้อม', 'Ready')}</button></form>
 <button class="press" id="press" type="button" hidden>${t('หรือกดปุ่มนี้พร้อมกันทั้งสองเครื่อง', 'Or press this on both phones at the same moment')}</button>
-<p class="st" id="st"></p></section></details>
+<button class="ready" id="armo" type="button" hidden>${t('โหมดชน', 'Bump mode')}</button>
+<p class="st" id="st"></p><div class="peer" id="peer"></div></section></details>
 <p class="foot"><a href="/tap">${t('ทำของคุณเอง ฟรี', 'Make your own, free')}</a></p></main>
 <script nonce="${nonce}">${JS_CORE}
 const NM=${JSON.stringify(c.name).replace(/</g, '\\u003c')}
@@ -520,7 +537,12 @@ hello();met();land()
 const f=document.getElementById('mine'),st=document.getElementById('st'),back=document.getElementById('back');let saved={};try{saved=JSON.parse(localStorage.getItem('tap-mine')||'{}')}catch(e){}
 ['mn','ml','mp'].forEach((k,i)=>{const v=[saved.name,saved.line,saved.phone][i];if(v)document.getElementById(k).value=v})
 f.addEventListener('submit',async e=>{e.preventDefault();const card={name:mn.value.trim(),line:ml.value.trim(),phone:mp.value.trim()};try{localStorage.setItem('tap-mine',JSON.stringify(card))}catch(e){}
-const give=card.name&&(card.line||card.phone)?{card}:null;await B.arm(give,()=>{st.className='st ok';st.textContent=W('ส่งแล้ว ✓ '+NM+' ได้นามบัตรของคุณ','Sent ✓ '+NM+' has your card');back.classList.remove('armed');land()},sayer(st,back));document.getElementById('press').hidden=false})
+listen(card.name&&(card.line||card.phone)?{card}:null)})
+const ID=${JSON.stringify(c.id)},OWN=own()
+async function listen(give,quiet){await B.arm(give,p=>{st.className='st ok';const theirs=p&&!p.none&&p.id!==ID;st.textContent=theirs?W('ชนติด ✓ แลกนามบัตรกันแล้ว','Bumped ✓ Cards swapped'):W('ส่งแล้ว ✓ '+NM+' ได้นามบัตรของคุณ','Sent ✓ '+NM+' has your card');document.getElementById('peer').innerHTML=theirs?peerCard(p):'';back.classList.remove('armed');if(!theirs)land()},sayer(st,back),quiet);document.getElementById('press').hidden=false}
+const armo=document.getElementById('armo');armo.addEventListener('click',()=>{armo.hidden=true;listen({tap:OWN})})
+if(OWN){back.open=true;f.hidden=true}
+if(OWN||saved.name&&(saved.line||saved.phone))B.free().then(y=>{if(y){back.open=true;listen(OWN?{tap:OWN}:{card:saved},true)}else if(OWN)armo.hidden=false})
 document.getElementById('press').addEventListener('click',()=>B.knock())
 </script>`
   return shell({ lang, title: `${c.name} · motdang`, desc: lang === 'th' ? 'แตะแล้วได้นามบัตร' : 'A card from a tap', body, nonce })
@@ -531,6 +553,9 @@ export function front(lang, nonce) {
   const demo = { name: lang === 'th' ? 'ชื่อของคุณ' : 'Your name', role: 'motdang.net', line: 'you', phone: '0800000000' }
   const body = `<main>${langLink(lang)}<a class="home" href="${HOME}">motdang</a>
 ${stage(face(demo, { save: '#make' }))}
+<section class="panel" id="bumpp" hidden><p><a href="/tap/me">${t('นามบัตรของคุณ', 'Your card')} →</a></p><button class="ready" id="arm" type="button" hidden>${t('โหมดชน', 'Bump mode')}</button>
+<button class="press" id="press" type="button" hidden>${t('หรือกดปุ่มนี้พร้อมกันทั้งสองเครื่อง', 'Or press this on both phones at the same moment')}</button>
+<p class="st" id="st"></p><div class="peer" id="peer"></div></section>
 <p class="lede"><b>${t('แตะมือถือกัน นามบัตรของคุณไปโผล่บนเครื่องเขา', 'Touch phones. Your card lands on theirs.')}</b></p>
 <ol class="steps">
 <li>${t('ทำนามบัตรด้านล่าง ชื่อ เบอร์ ไลน์ รูป หรือลิงก์ motdang', 'Make your card below: name, phone, LINE, a picture, or a motdang link')}</li>
@@ -548,6 +573,7 @@ ${stage(face(demo, { save: '#make' }))}
 <p class="foot small">${t('รูปกับหน้าเว็บบน sites.motdang.net ใส่ได้ในหน้าของคุณ', 'Add a picture and your sites.motdang.net page on your tap page.')}</p></main>
 <script nonce="${nonce}">${JS_CORE}
 hello();land()
+{const OWN=own(),bp=document.getElementById('bumpp'),st=document.getElementById('st');if(OWN){bp.hidden=false;const go=quiet=>B.arm({tap:OWN},p=>{document.getElementById('peer').innerHTML=peerCard(p);st.className='st ok';st.textContent=W('ชนติด ✓ แลกนามบัตรกันแล้ว','Bumped ✓ Cards swapped');bp.classList.remove('armed')},sayer(st,bp),quiet).then(()=>{document.getElementById('arm').hidden=true;document.getElementById('press').hidden=false});document.getElementById('arm').addEventListener('click',()=>go());document.getElementById('press').addEventListener('click',()=>B.knock());B.free().then(y=>y?go(true):document.getElementById('arm').hidden=false)}}
 document.querySelector('[data-save]').addEventListener('click',e=>{e.preventDefault();document.getElementById('make').scrollIntoView({behavior:'smooth'})})
 document.getElementById('nf').addEventListener('submit',async ev=>{ev.preventDefault();const st=document.getElementById('st');const link=k.value.trim();const b={name:n.value,role:r.value,phone:p.value,line:l.value,email:e.value,link,give:link?'link':'card',lang:L};st.textContent='…'
 const res=await fetch('/tap/api/new',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(b)});const j=await res.json().catch(()=>({}))
@@ -586,13 +612,14 @@ function show(c,keep){me=c;$('stagebox').innerHTML=c.stage;$('card').addEventLis
 const today=new Date().toISOString().slice(0,10);let td=0,wk=0;(c.days||[]).forEach(d=>{wk+=d.taps;if(d.day===today)td=d.taps});$('nt').textContent=td;$('nw').textContent=wk;$('nb').textContent=c.bumps;hello();met();land()}
 function seg(){document.querySelectorAll('.seg button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.g===give));$('lk').hidden=give!=='link'}
 document.querySelectorAll('.seg button').forEach(b=>b.addEventListener('click',()=>{give=b.dataset.g;seg()}))
-async function load(){if(!/^[a-z0-9]{8}\\.[a-z0-9]+$/.test(key)){$('none').hidden=false;return}const r=await fetch('/tap/api/own',{headers:{'x-tap':key}});if(!r.ok){$('none').hidden=false;return}$('own').hidden=false;show(await r.json());history.replaceState(null,'','/tap/me')}
+async function load(){if(!/^[a-z0-9]{8}\\.[a-z0-9]+$/.test(key)){$('none').hidden=false;return}const r=await fetch('/tap/api/own',{headers:{'x-tap':key}});if(!r.ok){$('none').hidden=false;return}$('own').hidden=false;show(await r.json());history.replaceState(null,'','/tap/me');if(await B.free())bump(true)}
 $('save').addEventListener('click',async()=>{const b={name:$('n').value,role:$('r').value,phone:$('p').value,line:$('l').value,email:$('e').value,site:$('s').value,give,link:$('k').value.trim(),label:$('kl').value};const r=await fetch('/tap/api/own',{method:'PUT',headers:{'content-type':'application/json','x-tap':key},body:JSON.stringify(b)});const j=await r.json().catch(()=>({}));const s=$('sst');if(r.ok){show(j);s.className='st ok';s.textContent=W('บันทึกแล้ว ✓','Saved ✓')}else{s.className='st';s.textContent=j.error==='link'?W('ลิงก์ต้องเป็น motdang.net hongdam.net wichaa.net หรือ LINE','The link must be on motdang.net, hongdam.net, wichaa.net or LINE'):j.error==='name'?W('ใส่ชื่อก่อน','A name first'):W('ยังไม่ผ่าน ลองอีกที','That did not go through. Try again.')}})
 $('pick').addEventListener('click',()=>$('pf').click())
 $('pf').addEventListener('change',async()=>{const f=$('pf').files[0];if(!f)return;const s=$('sst');s.className='st';s.textContent='…';try{const bm=await createImageBitmap(f);const n=480,c=document.createElement('canvas');c.width=c.height=n;const k=Math.max(n/bm.width,n/bm.height);c.getContext('2d').drawImage(bm,(n-bm.width*k)/2,(n-bm.height*k)/2,bm.width*k,bm.height*k);const blob=await new Promise(r=>c.toBlob(r,'image/jpeg',.86));const r=await fetch('/tap/api/photo',{method:'POST',headers:{'content-type':'image/jpeg','x-tap':key},body:blob});const j=await r.json().catch(()=>({}));if(r.ok){show(j,true);s.className='st ok';s.textContent=W('ใส่รูปแล้ว ✓','Picture on ✓')}else s.textContent=j.error==='refused'?W('รูปนี้ใช้ไม่ได้','This picture cannot go on a card'):W('ยังไม่ผ่าน ลองอีกที','That did not go through. Try again.')}catch(e){s.textContent=W('ยังไม่ผ่าน ลองอีกที','That did not go through. Try again.')}$('pf').value=''})
 let mets=[];try{mets=JSON.parse(localStorage.getItem('tap-met')||'[]')}catch(e){}
 function drawMet(){$('metp').hidden=!mets.length;$('met').innerHTML=mets.map(peerCard).join('')}drawMet()
-$('arm').addEventListener('click',async()=>{await B.arm({tap:me.id},p=>{$('peer').innerHTML=peerCard(p);$('st').className='st ok';$('st').textContent=W('ชนติด ✓ เขาได้นามบัตรของคุณแล้ว','Bumped ✓ They have your card');$('bumpp').classList.remove('armed');if(p&&!p.none){mets.unshift(p);mets=mets.slice(0,30);try{localStorage.setItem('tap-met',JSON.stringify(mets))}catch(e){}drawMet()}$('nb').textContent=+$('nb').textContent+1},sayer($('st'),$('bumpp')));$('press').hidden=false})
+async function bump(quiet){await B.arm({tap:me.id},p=>{$('peer').innerHTML=peerCard(p);$('st').className='st ok';$('st').textContent=W('ชนติด ✓ เขาได้นามบัตรของคุณแล้ว','Bumped ✓ They have your card');$('bumpp').classList.remove('armed');if(p&&!p.none){mets.unshift(p);mets=mets.slice(0,30);try{localStorage.setItem('tap-met',JSON.stringify(mets))}catch(e){}drawMet()}$('nb').textContent=+$('nb').textContent+1},sayer($('st'),$('bumpp')),quiet);$('arm').hidden=true;$('press').hidden=false}
+$('arm').addEventListener('click',()=>bump())
 $('press').addEventListener('click',()=>B.knock())
 $('copy').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(me.url);$('nst').className='st ok';$('nst').textContent=W('คัดลอกแล้ว','Copied')}catch(e){}})
 if('NDEFReader' in window){$('nfc').hidden=false;$('nfch').hidden=true;$('nfc').addEventListener('click',async()=>{const s=$('nst');s.className='st';s.textContent=W('แตะสติกเกอร์เปล่าที่หลังมือถือเครื่องนี้','Touch a blank sticker to the back of this phone');try{await new NDEFReader().write({records:[{recordType:'url',data:me.url}]});s.className='st ok';s.textContent=W('เขียนแล้ว ✓ ลองแตะด้วยมือถืออีกเครื่อง','Written ✓ Try it with another phone');navigator.vibrate&&navigator.vibrate([30,50,120])}catch(e){s.textContent=W('เขียนไม่ได้: ','Not written: ')+(e&&e.message||e)}})}
