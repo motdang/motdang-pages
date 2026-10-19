@@ -64,3 +64,22 @@ test('initials come from the name', () => {
   assert.equal(initials('หงส์ดำ'), 'ห')
   assert.equal(initials(''), '')
 })
+
+test('a Drive video plays on the page and on a project page; a project card is its share picture', () => {
+  const drive = 'https://drive.google.com/file/d/1hsinVGuEZQDoQ3_IE1OJLBpmBZ0vuKGP/view?pli=1'
+  const n = normalize({ video: drive, works: [{ id: 'lice', t: 'Lice', video: drive, card: Q, photos: [P] }] })
+  assert.deepEqual(n.video, { kind: 'drive', id: '1hsinVGuEZQDoQ3_IE1OJLBpmBZ0vuKGP' })
+  assert.equal(n.works[0].card, Q)
+  const html = render({ ...base, d: { ...d, video: drive, vposter: P, works: n.works } }, { work: 'lice' })
+  assert.match(html, /data-kind="drive" data-id="1hsinVGuEZQDoQ3_IE1OJLBpmBZ0vuKGP"/)
+  assert.match(html, new RegExp(`og:image" content="[^"]*/img/${Q}\\.jpg"`))
+  const free = render({ ...base, tier: 'free', d: { ...d, works: n.works } }, { work: 'lice' })
+  assert.ok(!/class="video"/.test(free))
+})
+
+test('a Gold page with somewhere to give shows the give button first; a free page does not', () => {
+  const html = render({ ...base, d: { ...d, give: 'https://www.cmirotary.org/donate', contact: { phone: '0812345678' } } })
+  assert.match(html, /<nav class="reach"><a class="btn give" data-t="give" href="https:\/\/www.cmirotary.org\/donate"/)
+  assert.ok(!/btn give/.test(render({ ...base, tier: 'free', d: { ...d, give: 'https://www.cmirotary.org/donate' } })))
+  assert.equal(normalize({ give: 'javascript:alert(1)' }).give, '')
+})

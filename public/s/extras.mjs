@@ -5,6 +5,8 @@
 // listings. render.mjs calls these; the Worker uses the same time and slot
 // arithmetic, so the page and the server agree on what a free time is.
 
+import { videoUrl } from './render.mjs'
+
 const str = (v, n) => String(v ?? '').replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, '').trim().slice(0, n)
 const ID = /^[a-z0-9]{4,12}$/
 const PHOTO_ID = /^[a-z0-9]{12,24}$/
@@ -90,6 +92,7 @@ export function normalizeExtras(d, o) {
     tags: tagList(str(x?.tags, 120)),
     note: str(x?.note, 2000), u: safeHttps(x?.u),
     photos: (Array.isArray(x?.photos) ? x.photos : []).filter((p) => PHOTO_ID.test(p)).slice(0, 24),
+    video: videoUrl(x?.video), card: PHOTO_ID.test(x?.card || '') ? x.card : '',
   })).filter((x) => x.t).slice(0, MAX.works))
   o.quotes = (Array.isArray(d.quotes) ? d.quotes : []).map((x) => ({ q: str(x?.q, 400), who: str(x?.who, 80) })).filter((x) => x.q).slice(0, MAX.quotes)
   return o

@@ -834,7 +834,7 @@ const SEC = {
   },
   video() {
     const v = S.d.video
-    const shown = v ? (v.kind === 'youtube' ? 'https://youtu.be/' + v.id : 'https://vimeo.com/' + v.id) : ''
+    const shown = v ? (v.kind === 'youtube' ? 'https://youtu.be/' + v.id : v.kind === 'drive' ? 'https://drive.google.com/file/d/' + v.id + '/view' : 'https://vimeo.com/' + v.id) : ''
     return field('video', T('videoUrl'), shown, 'url', 'placeholder="https://youtu.be/…"')
   },
   spots() {
