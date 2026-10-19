@@ -8,6 +8,7 @@
 //   /api/…                the builder's and the pages' calls    /img/…  photos    /s/…  static files
 //   /admin                held and reported pages, Gold slips, sellers
 //   /x/<link>             a translator's page check: the maker's words beside the machine's (trcheck.mjs)
+//   /tap                  touch phones, a card lands on the other one; /tap/<id> what an NFC sticker opens (tap.mjs)
 //   /support              Use · Volunteer · Pay · Invest, for people far away who back Mot Dang (support.mjs)
 //   /sell                 sell pages for Mot Dang: the work, the pay, the sign-up; /sell/<id>.<tok> a seller's kit (sell.mjs)
 //   /name/calendar.ics    the page's calendar to follow    /name/l/<id>  a listing    /name/w/<id>  a portfolio project    /name/a/<id>  an amulet    /name/room/<id>.ics  a room's taken nights
@@ -40,12 +41,13 @@ import * as sell from './sell.mjs'
 import * as deals from './deals.mjs'
 import * as founding from './founding.mjs'
 import * as support from './support.mjs'
+import * as tap from './tap.mjs'
 import { readCalendars, monthly, trialNotes } from './cron.mjs'
 import { calIcs, roomIcs, addDays } from '../public/s/extras.mjs'
 import { guestPage } from './guest.mjs'
 import { doodleRoute } from './doodle.mjs'
 
-const QUOTA = { site: 3, photo: 200, save: 400, report: 20, msg: 12, pd: 200, notify: 3, slip: 10, book: 10, domain: 6, lister: 3, deal: 40, terms: 10, join: 3, founding: 5, gift: 20, backer: 5 }
+const QUOTA = { site: 3, photo: 200, save: 400, report: 20, msg: 12, pd: 200, notify: 3, slip: 10, book: 10, domain: 6, lister: 3, deal: 40, terms: 10, join: 3, founding: 5, gift: 20, backer: 5, tap: 3, tapsave: 60, bump: 300 }
 const TRIAL_DAYS = 30 // Nan 2026-10-14: a new page is Gold for its first 30 days
 const MAIN = 'https://motdang.net'
 const PASS = /^\/(vendor|fonts|tiles|data|front)\/|^\/sites\/doodle-map\//
@@ -125,6 +127,10 @@ async function route(request, env, ctx) {
   if (path === '/support' || path.startsWith('/support/')) {
     const r = await support.route(request, env, path, url, { html, rand, sameOrigin, take, sender, log,
       post: { people: (c) => postTo(env.DISCORD_PEOPLE, 'motdang people', c), core: (c) => postTo(env.DISCORD_CORE_PLAN, 'motdang plan', c) } })
+    if (r) return r
+  }
+  if (path === '/tap' || path.startsWith('/tap/')) {
+    const r = await tap.route(request, env, path, url, { html, sha, rand, sameOrigin, take, sender })
     if (r) return r
   }
   if (/^\/(founders\/?$|fm\/|g\/)/.test(path)) {
@@ -944,6 +950,7 @@ async function tidy(env) {
   const day = (n) => new Date(Date.now() - n * 864e5).toISOString().slice(0, 10)
   await env.DB.prepare('DELETE FROM quota WHERE day < ?').bind(day(3)).run()
   await env.DB.prepare('DELETE FROM seen WHERE day < ?').bind(day(2)).run()
+  await env.DB.prepare('DELETE FROM bump WHERE made < ?').bind(Date.now() - 60000).run().catch(() => {})
   await env.DB.prepare("DELETE FROM pay WHERE status = 'open' AND COALESCE(plan, '') NOT IN ('fee', 'founding') AND created < ?").bind(new Date(Date.now() - 14 * 864e5).toISOString()).run()
   // 2026-10-14: room calendars, translations, the monthly note, the trial's end note
   const job = async (name, f) => { try { done[name] = await f() } catch (e) { done[name] = 'error: ' + String(e?.message || e).slice(0, 300); console.error(name, e?.stack || e) } }

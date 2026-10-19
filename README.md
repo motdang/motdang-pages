@@ -10,6 +10,7 @@ sites.motdang.net — anyone makes their own page on Mot Dang, from a phone, in 
 | `/all` · `/random` | every live page (Gold first) · one at random |
 | `/map?pin=lat,lng&pn=name&embed=1` | a page's drawn map: motdang.net's doodle-map engine on the world tiles, base href motdang.net |
 | `/feed.json` · `/api/find?q=` | live pages as data for motdang.net (search, place pages, maps) |
+| `/tap` · `/tap/<id>` · `/tap/me` | touch phones: an NFC sticker opens `/tap/<id>` (the card drops in, Save contact, LINE, a link); two phones on a tap page knock together and swap cards; the owner's page writes the sticker (`tap.mjs`) |
 | `/admin` | held and reported pages, held photos, Gold slips, page checks (Basic auth, `ADMIN_KEY`) |
 | `/x/<link>` | a translator's page check: the maker's words beside the machine's, a fix per line (`src/trcheck.mjs`) |
 | `motdang.net/~…` | the first address (2026-10-12): 301 to the same page here |
