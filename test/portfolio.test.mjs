@@ -80,6 +80,9 @@ test('a Drive video plays on the page and on a project page; a project card is i
 test('a Gold page with somewhere to give shows the give button first; a free page does not', () => {
   const html = render({ ...base, d: { ...d, give: 'https://www.cmirotary.org/donate', contact: { phone: '0812345678' } } })
   assert.match(html, /<nav class="reach"><a class="btn give" data-t="give" href="https:\/\/www.cmirotary.org\/donate"/)
+  const group = render({ ...base, kind: 'group', d: { ...d, give: 'https://www.cmirotary.org/donate' } })
+  assert.match(group, /<a class="btn cta give" data-t="give" href="https:\/\/www.cmirotary.org\/donate"/)
+  assert.equal((group.match(/btn[^"]* give"/g) || []).length, 1)
   assert.ok(!/btn give/.test(render({ ...base, tier: 'free', d: { ...d, give: 'https://www.cmirotary.org/donate' } })))
   assert.equal(normalize({ give: 'javascript:alert(1)' }).give, '')
 })
