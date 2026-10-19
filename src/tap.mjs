@@ -368,6 +368,7 @@ main{position:relative;z-index:1;max-width:520px;margin:0 auto;padding:52px 16px
 .hello{margin:0 0 2px;font-size:15px;font-weight:700;color:#8a6d14;letter-spacing:.02em}
 .name{font-size:clamp(32px,10vw,44px);line-height:1.04;margin:0;letter-spacing:-.5px;overflow-wrap:anywhere}
 .name .ch{display:inline-block;white-space:pre}
+.name .w{white-space:nowrap}
 .role{margin:0 0 12px;font-size:17px;color:#4a4458}
 .met{margin:12px 0 0;font-size:14px;color:#7a6420;text-align:center}
 .btn,button,summary{display:block;width:100%;font:inherit;font-weight:800;font-size:19px;padding:15px 16px;border-radius:14px;border:2px solid var(--ink);cursor:pointer;background:var(--gold);color:#000;text-decoration:none;text-align:center;margin:8px 0 0}
@@ -470,7 +471,7 @@ x.globalAlpha=1;if(run&&!document.hidden&&(!STILL||sparks.length))requestAnimati
 function wake(){if(!run){run=true;last=performance.now();requestAnimationFrame(frame)}}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)wake()});wake()
 return{burst}})()
-function split(){document.querySelectorAll('.name').forEach(h=>{if(h.dataset.s)return;h.dataset.s=1;const t=h.textContent;const seg=window.Intl&&Intl.Segmenter?[...new Intl.Segmenter(undefined,{granularity:'grapheme'}).segment(t)].map(s=>s.segment):[t];h.textContent='';seg.forEach((g,i)=>{const s=document.createElement('span');s.className='ch';s.style.setProperty('--i',i);s.textContent=g;h.appendChild(s)})})}
+function split(){const S=window.Intl&&Intl.Segmenter;const words=t=>S?[...new Intl.Segmenter(undefined,{granularity:'word'}).segment(t)].map(s=>s.segment):t.split(/(\\s+)/);const chars=t=>S?[...new Intl.Segmenter(undefined,{granularity:'grapheme'}).segment(t)].map(s=>s.segment):[...t];document.querySelectorAll('.name').forEach(h=>{if(h.dataset.s)return;h.dataset.s=1;const t=h.textContent;h.textContent='';let i=0;words(t).forEach(w=>{if(/^\\s+$/.test(w)){h.appendChild(document.createTextNode(' '));return}const cs=chars(w);const box=cs.length>12?h:h.appendChild(document.createElement('span'));if(box!==h)box.className='w';cs.forEach(g=>{const s=document.createElement('span');s.className='ch';s.style.setProperty('--i',i++);s.textContent=g;box.appendChild(s)})})})}
 function hello(){const hr=new Date().getHours();const k=hr<5?2:hr<12?0:hr<17?1:2;document.querySelectorAll('[data-hello]').forEach(e=>e.textContent=[W('สวัสดีตอนเช้า','Good morning'),W('สวัสดีตอนบ่าย','Good afternoon'),W('สวัสดีตอนเย็น','Good evening')][k]+' ✦')}
 function met(){const d=new Date();const day=d.toLocaleDateString(L==='th'?'th-TH':'en-GB',{weekday:'long',day:'numeric',month:'long'});const tm=d.toLocaleTimeString(L==='th'?'th-TH':'en-GB',{hour:'numeric',minute:'2-digit'});const note=d.toLocaleString('en-GB',{weekday:'short',day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});document.querySelectorAll('[data-met]').forEach(e=>{e.hidden=false;e.textContent=W('เจอกัน '+day+' · '+tm,'Met '+day+' · '+tm)});document.querySelectorAll('[data-save]').forEach(a=>{const u=new URL(a.getAttribute('href'),location.href);u.searchParams.set('m',note);a.href=u.pathname+u.search})}
 let ready=0
