@@ -43,7 +43,7 @@ test('eleven pages asking for ten seats at once: ten payments, one full', async 
 
 test('a month that filled its seats moves the next one up a rung; an empty one down', async () => {
   const env = { DB: d1() }
-  const now = new Date()
+  const now = new Date(Date.now() + 7 * 3600e3) // Bangkok's calendar
   const last = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 15, 5)).toISOString()
   const lastMonth = last.slice(0, 7)
   env.DB.raw.prepare('INSERT INTO sian_month (month, price, seats) VALUES (?,?,?)').run(lastMonth, sian.START, 10)
@@ -52,6 +52,17 @@ test('a month that filled its seats moves the next one up a rung; an empty one d
   const quiet = { DB: d1() }
   quiet.DB.raw.prepare('INSERT INTO sian_month (month, price, seats) VALUES (?,?,?)').run(lastMonth, sian.START, 10)
   assert.equal((await sian.thisMonth(quiet)).price, 7999)
+})
+
+test('a page whose own unpaid payment is two days old gets a new one that holds a seat', async () => {
+  const env = { DB: d1(), PROMPTPAY: '0812345678' }
+  const [id] = sites(env, 1)
+  const old = new Date(Date.now() - 3 * 864e5).toISOString()
+  env.DB.raw.prepare("INSERT INTO pay (id, site_id, amount, status, created, updated, months, plan) VALUES ('old',?,'9999.42','open',?,?,12,'sian')").run(id, old, old)
+  const r = await sian.reserve(env, id, rand)
+  assert.ok(r.amount)
+  assert.equal(env.DB.raw.prepare("SELECT COUNT(*) AS n FROM pay WHERE id = 'old'").get().n, 0)
+  assert.equal((await sian.thisMonth(env)).left, 9)
 })
 
 test('/sian shows the price, the seats and the ladder', async () => {

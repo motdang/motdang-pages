@@ -32,6 +32,11 @@ const heldArgs = (month, t = Date.now()) => [...bounds(month), new Date(t - 7 * 
 async function taken(env, month) {
   return (await env.DB.prepare(`SELECT COUNT(*) AS n FROM pay WHERE ${HELD}`).bind(...heldArgs(month)).first())?.n || 0
 }
+// what a month sold, for the step: paid only
+async function paid(env, month) {
+  const [a, b] = bounds(month)
+  return (await env.DB.prepare("SELECT COUNT(*) AS n FROM pay WHERE plan = 'sian' AND status = 'paid' AND updated >= ? AND updated < ?").bind(a, b).first())?.n || 0
+}
 
 /** This month's price and seats left; a new month steps the price from the one before. */
 export async function thisMonth(env, t = Date.now()) {
@@ -41,7 +46,7 @@ export async function thisMonth(env, t = Date.now()) {
   const last = await env.DB.prepare('SELECT * FROM sian_month WHERE month < ? ORDER BY month DESC LIMIT 1').bind(month).first()
   let price = START
   if (last) {
-    price = step(LADDER, last.price, (await taken(env, last.month)) / last.seats)
+    price = step(LADDER, last.price, (await paid(env, last.month)) / last.seats)
     for (let m = nextMonth(last.month); m < month; m = nextMonth(m)) price = step(LADDER, price, 0) // months nobody opened
   }
   await env.DB.prepare('INSERT OR IGNORE INTO sian_month (month, price, seats) VALUES (?,?,?)').bind(month, price, SEATS).run()
@@ -62,12 +67,15 @@ export async function plan(env) {
 export async function reserve(env, siteId, rand) {
   const pl = await plan(env)
   if (pl.left <= 0) return { full: true }
+  const month = bkkMonth(), args = heldArgs(month)
+  // an open payment of this page's that no longer holds a seat goes first, so gold.start makes one that does
+  await env.DB.prepare("DELETE FROM pay WHERE site_id = ? AND plan = 'sian' AND status = 'open' AND created < ?").bind(siteId, args[3]).run()
   const r = await gold.start(env, siteId, rand, pl)
-  const month = bkkMonth()
-  const ids = (await env.DB.prepare(`SELECT id, site_id FROM pay WHERE ${HELD} ORDER BY created, id`).bind(...heldArgs(month)).all()).results
+  // insertion order: what an earlier request read is the start of what a later one reads
+  const ids = (await env.DB.prepare(`SELECT id, site_id FROM pay WHERE ${HELD} ORDER BY rowid`).bind(...args).all()).results
   const mine = ids.findIndex((x) => x.site_id === siteId)
   const seats = (await env.DB.prepare('SELECT seats FROM sian_month WHERE month = ?').bind(month).first())?.seats || SEATS
-  if (mine >= seats) {
+  if (mine < 0 || mine >= seats) {
     await env.DB.prepare("DELETE FROM pay WHERE site_id = ? AND plan = 'sian' AND status = 'open'").bind(siteId).run()
     return { full: true }
   }
