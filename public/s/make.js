@@ -16,6 +16,9 @@ import { amuletsSec, amToggle, amUi, newAmulet } from './make-amulet.mjs'
 import { amcamInit, amcamTake, amcamClick, amLens, amPost } from './make-amcam.mjs'
 import { AM_MAX } from './amulet.mjs'
 import { drawCard, cardKey, CARD } from './card.mjs'
+import { dynFields, itemPhotos, pricesTab, startDyn, DYN_CSS, pw } from './make-prices.mjs'
+import { bahtOf, step as ladderStep } from './shoup.mjs'
+import { marketStep, mw, MARKETS } from './make-market.mjs'
 import { loadFaces } from './mark.mjs'
 
 const $ = (s, el = document) => el.querySelector(s)
@@ -191,6 +194,8 @@ $('#langs').addEventListener('click', (e) => {
 
 function draw() {
   langs()
+  app.oninput = app.onchange = null
+  if (/^m[123]$/.test(S.step)) return drawMarket()
   if (S.step !== 'edit') return drawTry()
   return drawEdit()
 }
@@ -561,18 +566,102 @@ async function create(look, btn) {
   if (S.kind === 'amulet') S.d.amulets = [NEW_ROW.amulets()]
   S.pageLang = PAGE_LANGS[S.lang] ? S.lang : 'en'
   try {
-    const r = await call('POST', 'sites', { name: S.addr, kind: S.kind, look, lang: S.pageLang, d: S.d, by: new URLSearchParams(location.search).get('by') || '' })
+    const r = await call('POST', 'sites', { name: S.addr, kind: S.kind, look, lang: S.pageLang, d: S.d, by: new URLSearchParams(location.search).get('by') || '', m: S.market || '' })
     S.token = r.token; S.name = r.name; S.status = r.status; S.tier = r.tier || 'gold'; S.goldUntil = r.gold_until || ''; S.trial = !!r.trial; S.hotel = !!r.trial
-    history.replaceState(null, '', '/make#t=' + S.token)
+    history.replaceState(null, '', '/make#t=' + S.token + (S.market ? `&m=${S.market}&ms=2` : ''))
     remember()
     camStart()
     S.open = new Set(DEFAULT_OPEN[S.kind]); S.part = ''
-    S.step = 'edit'
+    S.step = S.market ? 'm2' : 'edit'
     draw()
-    if (KPIC[S.kind] || exOf(S.kind, S.look)) starterPic(S.kind)
+    if (!S.market && (KPIC[S.kind] || exOf(S.kind, S.look))) starterPic(S.kind) // at the market the seller's own first photo is the cover
   } catch (e) {
     toast(ui(S.lang, e.message === 'quota' ? 'e_quota' : e.message === 'name' ? 'e_name' : 'e_net'))
-    if (e.message === 'name') { S.step = 'name'; draw() }
+    if (e.message === 'name') { S.step = S.market ? 'm1' : 'name'; draw() }
+  }
+}
+
+// ---- a page made at the stall (make-market.mjs): name, LINE, the first thing, online ------------
+
+/** A free web address from the name: the name's own, or with -2 … -9 after it. */
+async function freeAddr(base) {
+  for (const tail of ['', '-2', '-3', '-4', '-5', '-6', '-7', '-8', '-9']) {
+    const n = (base.slice(0, 30 - tail.length) + tail).replace(/^-+/, '')
+    try { if ((await call('GET', 'name?n=' + encodeURIComponent(n))).ok) return n } catch {}
+  }
+  return slugify('', S.kind)
+}
+
+function firstThing() {
+  const am = S.kind === 'amulet'
+  if (am) {
+    if (!S.d.amulets.length) S.d.amulets = [NEW_ROW.amulets()]
+    const x = S.d.amulets[0]
+    x.dyn = x.dyn || { on: true, fall: false }
+    return x
+  }
+  if (!S.d.items.length) S.d.items = [{ id: rid(), n: '', p: '', note: '', photos: [] }]
+  const x = S.d.items[0]
+  x.photos = x.photos || []
+  x.dyn = x.dyn || { on: true, per: 10, low: 0 }
+  return x
+}
+
+function drawMarket() {
+  const n = +S.step.slice(1)
+  const x = n === 3 ? firstThing() : null
+  app.innerHTML = marketStep(n, { lang: S.lang, esc, val, icon, d: S.d, kind: S.kind, x, img: (id) => imgUrl(id, true), busy: S.busy > 0 || S.mBusy })
+  const go = (k) => { S.step = k; if (S.token) history.replaceState(null, '', `/make#t=${S.token}&m=${S.market}&ms=${k.slice(1)}`); draw(); window.scrollTo(0, 0) }
+  const back = $('[data-mback]')
+  if (back) back.onclick = () => go('m' + (n - 1))
+  app.oninput = (e) => {
+    const t = e.target
+    if (t.dataset.mk) { setPath(S.d, t.dataset.mk, t.value.trim()); changed() }
+    if (t.dataset.mx && x) { setPath(x, t.dataset.mx, t.value.trim()); changed() }
+  }
+  app.onchange = async (e) => {
+    const t = e.target
+    if (t.dataset.mkshot === undefined || !t.files[0]) return
+    S.mBusy = true; drawMarket()
+    try {
+      const before = new Set(S.d.photos)
+      if (S.kind === 'amulet') { await addFiles([t.files[0]]); const ph = S.d.photos.filter((id) => !before.has(id)); if (ph.length) S.d.amulets[0].photos = [...ph, ...S.d.amulets[0].photos].slice(0, AM_MAX.photos) }
+      else await itFiles(0, [t.files[0]])
+      const fresh = S.d.photos.find((id) => !before.has(id))
+      if (fresh && (!S.d.cover || before.size === 0)) S.d.cover = fresh
+      changed()
+    } finally { S.mBusy = false; drawMarket() }
+  }
+  const nx = $('[data-mnext]')
+  if (!nx) return
+  if (n === 1) $('#mkname').onkeydown = (e) => { if (e.key === 'Enter') nx.click() }
+  nx.onclick = async () => {
+    if (n === 1) {
+      const name = $('#mkname').value.trim()
+      if (!name) return toast(mw(S.lang, 'needName'))
+      nx.disabled = true
+      S.name = name
+      if (S.token) { S.d.name = name; changed(); return go('m2') }
+      S.addr = await freeAddr(slugify(name, S.kind))
+      return create(S.look, nx)
+    }
+    if (n === 2) {
+      if (!S.d.contact.line && !S.d.contact.phone) return toast(mw(S.lang, 'needReach'))
+      return go('m3')
+    }
+    const p = bahtOf(x.p)
+    if (!p || !(x.t || x.n)) return toast(mw(S.lang, 'needT'))
+    x.dyn.open = p
+    if (S.kind !== 'amulet') { x.dyn.per = Math.max(1, Math.round(Number(x.dyn.per) || 10)); x.dyn.low = bahtOf(x.dyn.low) || ladderStep(p, -2) }
+    S.mBusy = true; drawMarket()
+    try {
+      await makeCard().catch(() => {})
+      await save({ publish: true })
+    } finally { S.mBusy = false }
+    S.step = 'edit'; S.tab = 'edit'
+    history.replaceState(null, '', '/make#t=' + S.token)
+    draw()
+    done()
   }
 }
 
@@ -596,7 +685,8 @@ function hasData(id) {
 function tabs() {
   const t = (id, label, extra = '') => `<button data-tab="${id}"${S.tab === id ? ' class="on"' : ''}>${label}${extra}</button>`
   const bk = S.d && (S.d.svc.length || S.d.rooms.length) ? t('book', T('t_book'), S.asks ? `<span class="dot">${S.asks}</span>` : '') : ''
-  return `<nav class="tabs">${t('edit', T('t_edit'))}${t('msgs', T('t_msgs'), S.unread ? `<span class="dot">${S.unread}</span>` : '')}${bk}${t('stats', T('t_stats'))}${t('gold', (isGold() ? '★ ' : '') + T('t_gold'))}</nav>`
+  const pz = S.d && (S.d.items.length || S.d.amulets.length) && ['shop', 'food', 'amulet', 'service'].includes(S.kind) ? t('prices', esc(pw(S.lang, 'tab'))) : ''
+  return `<nav class="tabs">${t('edit', T('t_edit'))}${pz}${t('msgs', T('t_msgs'), S.unread ? `<span class="dot">${S.unread}</span>` : '')}${bk}${t('stats', T('t_stats'))}${t('gold', (isGold() ? '★ ' : '') + T('t_gold'))}</nav>`
 }
 
 // The editor is the page and six parts under it (Nan 2026-10-15: lead with why, try it, be not afraid,
@@ -764,9 +854,11 @@ const SEC = {
   },
   items() {
     const cur = S.d.currency || currencyFor(S.d.place.cc, S.pageLang)
-    return `<div class="items">${S.d.items.map((it, i) => `<div class="it"><input data-k="items.${i}.n" placeholder="${T('item')}" value="${val(it.n)}" maxlength="80">
+    const sells = ['shop', 'food', 'service'].includes(S.kind)
+    return `${sells ? DYN_CSS : ''}<div class="items">${S.d.items.map((it, i) => `<div class="it"><input data-k="items.${i}.n" placeholder="${T('item')}" value="${val(it.n)}" maxlength="80">
       <input data-k="items.${i}.p" placeholder="${T('price')}" value="${val(it.p)}" maxlength="24" inputmode="decimal"><button class="x" data-rmitem="${i}" aria-label="${T('remove')}">×</button>
-      <input data-k="items.${i}.note" placeholder="${T('details')}" value="${val(it.note)}" maxlength="160"></div>`).join('')}</div>
+      <input data-k="items.${i}.note" placeholder="${T('details')}" value="${val(it.note)}" maxlength="160">
+      ${sells ? itemPhotos(i, it, { lang: S.lang, esc, icon, imgUrl }) + dynFields(`items.${i}`, it, { lang: S.lang, val }) : ''}</div>`).join('')}</div>
       <div class="row"><button class="go ghost" id="additem">${icon('plus')}${T('addItem')}</button>
       <label style="flex:1;min-width:150px"><select data-k="currency">${Object.entries(CURRENCY).map(([k, v]) => `<option value="${k}"${k === cur ? ' selected' : ''}>${k} ${esc(v.trim())}</option>`).join('')}</select></label></div>`
   },
@@ -1113,6 +1205,9 @@ function bindEdit() {
     let v = e.target.type === 'checkbox' ? e.target.checked : e.target.value
     if (k === 'event.start' || k === 'event.end') { S.d.event = S.d.event || { start: '', end: '', tz: TZ }; S.d.event.tz = TZ }
     setPath(S.d, k, v)
+    const pm = /^(items|amulets)\.(\d+)\.p$/.exec(k)
+    if (pm) { const x = S.d[pm[1]][+pm[2]]; if (x?.dyn?.on) { x.dyn.open = bahtOf(v); if (S.nowP) delete S.nowP[x.id] } } // a new price opens there
+    if (/^amulets\.\d+\.dyn\.fall$/.test(k)) redrawSec('amulets')
     if (k === 'hours.on' || k === 'hours.always' || k === 'place.cc') redrawSec(k.split('.')[0] === 'place' ? 'items' : 'hours')
     if (k === 'drawing') { redrawSec('drawing') }
     if (k === 'msg') redrawSec('msg')
@@ -1133,6 +1228,11 @@ function bindEdit() {
     const t = e.target
     if (t.id === 'files') addFiles([...t.files])
     if (t.dataset.amfile !== undefined) amFiles(+t.dataset.amfile, [...t.files])
+    if (t.dataset.itfile !== undefined) itFiles(+t.dataset.itfile, [...t.files])
+    if (t.dataset.dyn) {
+      const [k, i] = t.dataset.dyn.split('.'), x = S.d[k][+i]
+      if (x) { x.dyn = t.checked ? { ...startDyn(x, k === 'amulets'), ...(x.dyn || {}), on: true } : { ...(x.dyn || {}), on: false }; if (t.checked && !bahtOf(x.p)) toast(pw(S.lang, 'noPrice')); redrawSec(k); changed() }
+    }
     if (t.dataset.amcam !== undefined) { camStart(); amcamTake([...t.files]); t.value = '' }
     if (t.id === 'avfile' && t.files[0]) createImageBitmap(t.files[0], { imageOrientation: 'from-image' }).then((bmp) => avatarStudio(bmp)).catch(() => toast(ui(S.lang, 'e_net')))
     if (t.id === 'avround') { S.d.avround = t.checked; changed() }
@@ -1160,7 +1260,7 @@ function bindEdit() {
     }
     if (b.dataset.cover) { S.d.cover = b.dataset.cover; redrawSec('photos'); changed() }
     if (b.dataset.rm) { S.d.photos = S.d.photos.filter((x) => x !== b.dataset.rm); if (S.d.cover === b.dataset.rm) S.d.cover = S.d.photos[0] || ''; redrawSec('photos'); changed() }
-    if (b.id === 'additem') { S.d.items.push({ n: '', p: '', note: '' }); redrawSec('items'); $(`[data-k="items.${S.d.items.length - 1}.n"]`).focus() }
+    if (b.id === 'additem') { S.d.items.push({ id: rid(), n: '', p: '', note: '', photos: [] }); redrawSec('items'); $(`[data-k="items.${S.d.items.length - 1}.n"]`).focus() }
     if (b.dataset.rmitem) { S.d.items.splice(+b.dataset.rmitem, 1); redrawSec('items'); changed() }
     if (b.id === 'addlink') { S.d.links.push({ t: '', u: '' }); redrawSec('links'); $(`[data-k="links.${S.d.links.length - 1}.t"]`).focus() }
     if (b.dataset.rmlink) { S.d.links.splice(+b.dataset.rmlink, 1); redrawSec('links'); changed() }
@@ -1187,6 +1287,7 @@ function bindEdit() {
     if (b.dataset.rmrate) { const [i, k] = b.dataset.rmrate.split('.').map(Number); S.d.rooms[i].rates.splice(k, 1); redrawSec('rooms'); changed() }
     if (b.dataset.seg === 'stay.pay') redrawSec('rooms')
     if (b.dataset.seg?.startsWith('amulets.')) redrawSec('amulets')
+    if (b.dataset.itrm) { const [i, k] = b.dataset.itrm.split('.').map(Number); S.d.items[i]?.photos?.splice(k, 1); redrawSec('items'); changed() }
     if (b.dataset.amrm) { const [i, k] = b.dataset.amrm.split('.').map(Number); S.d.amulets[i]?.photos.splice(k, 1); redrawSec('amulets'); changed() }
     if (b.dataset.pp) {
       const path = b.closest('.pickph').dataset.path, [k, i] = path.split('.'), item = S.d[k][+i]
@@ -1347,7 +1448,7 @@ function openPart(id) {
   if (SEC[id]) S.open.add(id)
   S.part = g
   // an empty menu opens on a blank line to type into
-  if (g === 'offer' && S.open.has('items') && !S.d.items.length) S.d.items.push({ n: '', p: '', note: '' })
+  if (g === 'offer' && S.open.has('items') && !S.d.items.length) S.d.items.push({ id: rid(), n: '', p: '', note: '', photos: [] })
   drawParts()
   const card = $(`[data-grp="${g}"]`)
   if (!card) return
@@ -1430,13 +1531,21 @@ function wireFrame(f) {
 function imgUrl(id, small) { return S.local.get(id) || `/img/${id}${small ? '-s' : ''}.webp` }
 
 let pvTimer = 0
+/** The page's data with each moving piece at the price buyers see today (/api/prices, Monday's move). */
+function atNow(d) {
+  const now = S.nowP || {}
+  if (!Object.keys(now).length) return d
+  const at = (x) => (x.dyn?.on && now[x.id] ? { ...x, p: new Intl.NumberFormat('en').format(now[x.id]) } : x)
+  return { ...d, items: d.items.map(at), amulets: d.amulets.map(at) }
+}
+
 function preview(now) {
   clearTimeout(pvTimer)
   pvTimer = setTimeout(() => {
     const f = $('#frame')
     if (!f) return
     if (S.inline) return
-    const html = render({ name: S.name, look: S.look, lang: S.pageLang, kind: S.kind, d: S.d, views: S.views || 1234, status: 'live', tier: S.tier }, { preview: true, img: imgUrl, origin: location.origin, hotel: S.hotel })
+    const html = render({ name: S.name, look: S.look, lang: S.pageLang, kind: S.kind, d: atNow(S.d), views: S.views || 1234, status: 'live', tier: S.tier }, { preview: true, img: imgUrl, origin: location.origin, hotel: S.hotel })
     const y = f.contentWindow?.scrollY || 0
     f.srcdoc = html
     f.onload = () => { try { f.contentWindow.scrollTo(0, y) } catch {} ; f.contentDocument?.querySelectorAll('a[href]').forEach((a) => a.setAttribute('target', '_blank')); try { wireFrame(f); lightPart(false) } catch {} }
@@ -1537,6 +1646,51 @@ async function amFiles(i, files) {
   if (!x) return
   x.photos = [...x.photos, ...S.d.photos.filter((id) => !before.has(id))].slice(0, AM_MAX.photos)
   redrawSec('amulets'); changed()
+}
+
+/** A photo taken for one thing a shop sells: it joins the page's photos and that thing's. */
+async function itFiles(i, files) {
+  const before = new Set(S.d.photos), cover = S.d.cover
+  await addFiles(files)
+  const x = S.d.items[i]
+  if (!x) return
+  if (cover) S.d.cover = cover // a thing's photo is not the cover when the page has one
+  x.photos = [...(x.photos || []), ...S.d.photos.filter((id) => !before.has(id))].slice(0, 4)
+  redrawSec('items'); changed()
+}
+
+// ---- the Prices tab (make-prices.mjs): one tap a sale or an ask, and what Monday will do -----
+
+async function drawPrices() {
+  const tb = $('#tb')
+  const paint = (v) => {
+    tb.innerHTML = pricesTab(v, S.d, { lang: S.lang, esc, imgUrl, sym: (CURRENCY[S.d.currency || currencyFor(S.d.place.cc, S.pageLang)] || '฿').trim() })
+  }
+  let v = null
+  const keep = (x) => { if (x?.pieces) S.nowP = Object.fromEntries(x.pieces.filter((p) => p.moving && p.now !== p.opened).map((p) => [p.id, p.now])); return x }
+  try { v = keep(await call('GET', 'prices')) } catch { toast(ui(S.lang, 'e_net')) }
+  paint(v)
+  tb.onclick = async (e) => {
+    const b = e.target.closest('button')
+    if (!b || b.disabled) return
+    b.disabled = true
+    try {
+      if (b.dataset.mark) {
+        const [item, kind, qty] = b.dataset.mark.split('|')
+        v = keep(await call('POST', 'mark', { item, kind, qty: +qty }))
+        if (+qty > 0 && navigator.vibrate) navigator.vibrate(30)
+      }
+      if (b.dataset.pstart) {
+        const [k, i] = b.dataset.pstart.split('.'), x = S.d[k][+i]
+        if (x) { x.dyn = { ...startDyn(x, k === 'amulets'), on: true }; await save(); v = keep(await call('GET', 'prices')) }
+      }
+      if (b.dataset.pgone !== undefined) {
+        const x = S.d.amulets[+b.dataset.pgone]
+        if (x) { x.status = 'sold'; await save(); v = keep(await call('GET', 'prices')) }
+      }
+    } catch { toast(ui(S.lang, 'e_net')) }
+    paint(v)
+  }
 }
 
 // ---- the amulet camera (make-amcam.mjs): each photo a new amulet at the top -------------------
@@ -1765,6 +1919,7 @@ function drawTab() {
   if (S.tab === 'msgs') return drawMsgs()
   if (S.tab === 'stats') return drawStats()
   if (S.tab === 'book') return drawBookings()
+  if (S.tab === 'prices') return drawPrices()
   return drawGold()
 }
 
@@ -2088,11 +2243,16 @@ function done() {
     <div class="key"><span class="kd">${ding('key', 'paper')}</span><div><b>${T('d_key')}</b><p>${T('d_keyHint')}</p>
       <div class="grid2"><a class="go line" href="${esc(lineShare(edit))}" target="_blank" rel="noopener">${icon('chat')}${T('sendSelf')}</a><button class="go ghost" id="cpedit">${T('copy')}</button></div>
       <details><summary>${T('d_show')}</summary><code>${esc(edit)}</code></details></div></div>
+    ${S.market ? `<div class="grid2" style="margin-top:14px"><button class="go ink" data-dnext="prices">${esc(mw(S.lang, 'prices'))}</button><button class="go ghost" data-dnext="more">${esc(mw(S.lang, 'more'))}</button></div>` : ''}
     <p class="dkeep"><button class="go ghost" id="closesheet">${T('d_keep')}</button></p></div>`
   document.body.appendChild(box)
   dingbats(live ? ['faces', 'classic', 'lanna', 'signals', 'curious'] : ['signals', 'curious'])
   const im = box.querySelector('.dcard img'); if (im) im.onerror = () => im.closest('figure').remove()
   box.querySelector('#closesheet').onclick = () => box.remove()
+  box.querySelectorAll('[data-dnext]').forEach((b) => (b.onclick = () => {
+    box.remove(); S.market = ''
+    if (b.dataset.dnext === 'prices') { S.tab = 'prices'; draw() } else { S.tab = 'edit'; draw(); openPart(S.kind === 'amulet' ? 'amulets' : 'items') }
+  }))
   box.addEventListener('click', (e) => { if (e.target === box) box.remove() })
   box.querySelector('#sh').onclick = () => (navigator.share ? navigator.share({ title: S.d.name, url }).catch(() => {}) : copy(url))
   box.querySelector('#cpurl').onclick = () => copy(url)
@@ -2133,10 +2293,11 @@ async function boot() {
       Object.assign(S, { name: r.name, kind: r.kind, look: lookOf(r.look), pageLang: r.lang, status: r.status, views: r.views, d: normalize(r.d), step: 'edit',
         tier: r.tier, goldUntil: r.gold_until || '', notifyEmail: r.notify_email, notifyOk: r.notify_ok, unread: r.unread,
         trial: !!r.trial, asks: r.asks || 0, domain: r.domain || '', domainState: r.domain_state || '', domains: !!r.domains, price: r.price || 3000,
-        plan: r.plan || 'gold', hotel: !!r.hotel, plans: r.plans || null, founders: r.founders || null, cardUrl: '' })
+        plan: r.plan || 'gold', hotel: !!r.hotel, plans: r.plans || null, founders: r.founders || null, cardUrl: '', nowP: r.now || {} })
       S.d.event = S.d.event || undefined
       S.open = new Set(DEFAULT_OPEN[S.kind]); S.part = ''
       if (h.get('tab')) S.tab = h.get('tab')
+      if (h.get('m') && /^[23]$/.test(h.get('ms') || '') && S.status === 'draft') { S.market = h.get('m'); S.step = 'm' + h.get('ms') }
       remember()
       camStart()
     } catch (e) {
@@ -2148,6 +2309,12 @@ async function boot() {
       toast(ui(S.lang, e.status === 403 ? 'e_link' : 'e_net'))
       return
     }
+  } else if (h.get('m')) {
+    S.market = /^[a-z0-9-]{2,24}$/.test(h.get('m')) ? h.get('m') : 'market'
+    S.kind = KINDS.includes(h.get('kind')) ? h.get('kind') : MARKETS[S.market] || 'shop'
+    S.look = LOOK_FOR[S.kind]
+    if (!store.get('lang', '')) S.lang = 'th'
+    S.step = 'm1'
   } else if (h.get('pin') || h.get('tel') || h.get('hrs')) {
     S.pre = prefill(h)
     if (h.get('title')) { S.name = h.get('title').slice(0, 60); S.addr = slugify(S.name, h.get('kind') || 'shop') }

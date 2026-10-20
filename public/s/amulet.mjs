@@ -6,6 +6,7 @@
 // follow its value_factors.json. render.mjs passes its helpers in, so this file imports none of it.
 
 import { money } from './extras.mjs'
+import { dynOf } from './shoup.mjs'
 
 const str = (v, n) => String(v ?? '').replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, '').trim().slice(0, n)
 const ID = /^[a-z0-9]{4,12}$/
@@ -55,6 +56,7 @@ export function normalizeAmulets(d, o) {
       size: str(x?.size, 40), cond: idFrom(AM_CONDS, x?.cond, 40), cert: str(x?.cert, 120), frame: str(x?.frame, 60),
       p: str(x?.p, 24), status: AM_STATUS.includes(x?.status) ? x.status : 'open', note: str(x?.note, 2000),
       photos: (Array.isArray(x?.photos) ? x.photos : []).filter((p) => PHOTO_ID.test(p)).slice(0, AM_MAX.photos),
+      ...(dynOf(x?.dyn) ? { dyn: dynOf(x.dyn) } : {}),
     }
   }).filter((x) => x.t).slice(0, AM_MAX.gold)
   o.amterms = str(d.amterms, 600)
@@ -152,7 +154,7 @@ export function amuletBody(x, h) {
   if (sells(x) && line) {
     const text = amAsk(lang, x, url)
     const href = oa ? `https://line.me/R/oaMessage/${encodeURIComponent(oa)}/?${encodeURIComponent(text)}` : line
-    out.push(`<div class="tools-row"><a class="btn line" id="amreserve" data-t="reserve"${oa ? '' : ` data-copy="${esc(text)}" data-done="${A('copied')}"`} href="${esc(href)}" rel="nofollow noopener">${icon('chat')}${A('reserve')}</a></div>`)
+    out.push(`<div class="tools-row"><a class="btn line" id="amreserve" data-t="reserve" data-item="${esc(x.id)}"${oa ? '' : ` data-copy="${esc(text)}" data-done="${A('copied')}"`} href="${esc(href)}" rel="nofollow noopener">${icon('chat')}${A('reserve')}</a></div>`)
   }
   out.push('</section>')
   if (x.note) out.push(`<section class="card rise">${H2('about', A('detail'))}${paras(x.note)}</section>`)

@@ -4,6 +4,7 @@
 
 import { AM_FORMS, AM_MATERIALS, AM_CONDS, AM_STATUS, AM_MAX, amLabel } from './amulet.mjs'
 import { amcamTray } from './make-amcam.mjs'
+import { dynFields, DYN_CSS } from './make-prices.mjs'
 
 const UI = {
   en: { cam: 'Amulet camera', cam_pick: 'Or pick photos', cam_hint: 'Each photo becomes a new amulet at the top of your page, background removed. The photo stays on this phone until it is on the page, so a crash or a lost signal loses nothing.', cam_gold: 'Gold: the amulet camera. Each photo becomes a new amulet, background removed.',
@@ -80,6 +81,7 @@ export function amuletsSec(h) {
       <div class="grid2f"><label class="mini"><span>${A('p')}</span><input data-k="amulets.${i}.p" value="${val(x.p)}" maxlength="24" inputmode="decimal"></label>
       <label class="mini"><span>${A('form')}</span><select data-k="amulets.${i}.form"><option value="">${A('none')}</option>${AM_FORMS.map((f) => `<option value="${f[0]}"${f[0] === x.form ? ' selected' : ''}>${esc(amLabel(AM_FORMS, f[0], lang))}</option>`).join('')}</select></label></div>
       <p class="hint" style="margin-top:-4px">${A('pHint')}</p>
+      ${dynFields(`amulets.${i}`, x, { lang, val, amulet: true })}
       <div class="grid2f"><label class="mini"><span>${A('temple')}</span><input data-k="amulets.${i}.temple" value="${val(x.temple)}" maxlength="80"></label>
       <label class="mini"><span>${A('maker')}</span><input data-k="amulets.${i}.maker" value="${val(x.maker)}" maxlength="80"></label></div>
       <div class="grid3f"><label class="mini"><span>${A('year')}</span><input data-k="amulets.${i}.year" value="${val(x.year)}" maxlength="12" inputmode="numeric" placeholder="2517"></label>
@@ -97,7 +99,7 @@ export function amuletsSec(h) {
       <label class="shoot ghost">${A('cam_pick')}<input type="file" accept="image/*" multiple data-amcam></label><p class="hint">${A('cam_hint')}</p>${amcamTray()}</div>`
     : `<p class="hint">${A('cam_gold')}</p>`
   const lineF = `<label class="field"><span>${A('line')}</span><input data-k="contact.line" value="${val(S.d.contact.line)}" autocapitalize="off" placeholder="@myshop"></label>${lineHref(S.d.contact.line) ? '' : `<p class="hint" style="margin-top:-4px">${A('lineHint')}</p>`}`
-  return `${CSS}${camera}${lineF}<p class="hint">${A('hint')}${isGold() ? '' : ' ' + A('free')}</p>${list('am-mat', AM_MATERIALS)}${list('am-cond', AM_CONDS)}<div class="rows">${rows.join('')}</div>
+  return `${CSS}${DYN_CSS}${camera}${lineF}<p class="hint">${A('hint')}${isGold() ? '' : ' ' + A('free')}</p>${list('am-mat', AM_MATERIALS)}${list('am-cond', AM_CONDS)}<div class="rows">${rows.join('')}</div>
     ${S.d.amulets.length < AM_MAX.gold ? `<button class="go ghost" data-addrow="amulets">${icon('plus')}${A('add')}</button>` : ''}
     <label class="field" style="margin-top:16px"><span>${A('terms')}</span><textarea data-k="amterms" maxlength="600" style="min-height:70px" placeholder="${A('termsEx')}">${val(S.d.amterms)}</textarea></label>`
 }

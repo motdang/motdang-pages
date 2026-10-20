@@ -44,12 +44,13 @@ import * as founding from './founding.mjs'
 import * as support from './support.mjs'
 import * as tap from './tap.mjs'
 import * as events from './events.mjs'
+import * as prices from './prices.mjs'
 import { readCalendars, monthly, trialNotes } from './cron.mjs'
 import { calIcs, roomIcs, addDays, upcoming, utcOf } from '../public/s/extras.mjs'
 import { guestPage } from './guest.mjs'
 import { doodleRoute } from './doodle.mjs'
 
-const QUOTA = { site: 3, photo: 200, save: 400, report: 20, msg: 12, pd: 200, notify: 3, slip: 10, book: 10, domain: 6, lister: 3, deal: 40, terms: 10, join: 3, founding: 5, gift: 20, backer: 5, tap: 3, tapsave: 60, bump: 300 }
+const QUOTA = { site: 3, photo: 200, save: 400, report: 20, msg: 12, pd: 200, notify: 3, slip: 10, book: 10, domain: 6, lister: 3, deal: 40, terms: 10, join: 3, founding: 5, gift: 20, backer: 5, tap: 3, tapsave: 60, bump: 300, mark: 600 }
 const TRIAL_DAYS = 30 // Nan 2026-10-14: a new page is Gold for its first 30 days
 const MAIN = 'https://motdang.net'
 const PASS = /^\/(vendor|fonts|tiles|data|front)\/|^\/sites\/doodle-map\//
@@ -171,6 +172,7 @@ async function page(request, env, ctx, name, sub, url, origin, base) {
   const s = await env.DB.prepare('SELECT * FROM site WHERE name = ?').bind(name).first()
   if (!s || s.status === 'removed' || s.status === 'draft') return html(notFound(s ? null : name, request, s?.status), s?.status === 'removed' ? 410 : 404)
   const site = { ...s, d: JSON.parse(s.d), tier: gold.isGold(s) ? 'gold' : 'free', hotel: gold.isHotel(s) }
+  site.d = await prices.live(env, s.id, site.d).catch(() => site.d) // pieces whose price follows demand, at today's price
   if (sub === '/contact.vcf') {
     if (s.status !== 'live') return new Response('', { status: 404 })
     return new Response(vcard(site), { headers: { 'content-type': 'text/vcard; charset=utf-8', 'content-disposition': `attachment; filename="${name}.vcf"` } })
@@ -230,7 +232,7 @@ async function page(request, env, ctx, name, sub, url, origin, base) {
     opt.langs = await tr.langsOf(env, s, d)
     const hl = url.searchParams.get('hl') || ''
     if (hl && hl !== s.lang && opt.langs.includes(hl)) {
-      const td = await tr.read(env, s, d, hl)
+      const td = await tr.read(env, s, d, hl).then((t) => t && prices.live(env, s.id, t))
       if (td) return html(render({ ...site, lang: hl, d: td }, { ...opt, hl, home: s.lang }), 200, { nonce })
     }
   }
@@ -363,6 +365,12 @@ async function api(request, env, ctx, p, url, origin) {
     const b = await body(request)
     const s = await env.DB.prepare("SELECT id FROM site WHERE name = ? AND status = 'live'").bind(String(b.n || '')).first()
     if (s) ctx.waitUntil(stats.tap(env, request, s.id, String(b.k || '')))
+    // a Reserve tap on an amulet is an ask, which moves the price of a piece that follows demand
+    if (s && b.k === 'reserve' && b.i && !stats.isMachine(request)) {
+      const day = new Date().toISOString().slice(0, 10)
+      const who = (await sha(`${env.SESSION_SECRET || 'dev'}|${s.id}|${b.i}|${day}|${request.headers.get('cf-connecting-ip') || 'local'}|${request.headers.get('user-agent') || ''}`)).slice(0, 20)
+      ctx.waitUntil(prices.pageAsk(env, s.id, String(b.i), who).catch((e) => console.error(e)))
+    }
     return new Response(null, { status: 204 })
   }
 
@@ -487,7 +495,8 @@ ${s ? `<p>ข้อความถึง ${escHtml(title)} จะส่งสำ
       if (/UNIQUE/i.test(String(e))) return J({ error: 'name', why: 'taken' }, 409)
       throw e
     }
-    await log(env, id, 'create', name)
+    const mk = /^[a-z0-9-]{2,24}$/.test(String(b.m || '')) ? b.m : '' // made at a market stall (make-market.mjs)
+    await log(env, id, 'create', mk ? `${name} @${mk}` : name)
     return J({ id, name, token, status: 'draft', tier: 'gold', gold_until: new Date(Date.now() + TRIAL_DAYS * 864e5).toISOString().slice(0, 10), trial: true })
   }
 
@@ -505,7 +514,8 @@ ${s ? `<p>ข้อความถึง ${escHtml(title)} จะส่งสำ
       asks: (await env.DB.prepare("SELECT COUNT(*) AS n FROM booking WHERE site_id = ? AND status = 'new'").bind(s.id).first())?.n || 0,
       domain: s.domain || '', domain_state: s.domain_state || '', domains: dom.on(env), price: Number(env.GOLD_THB) || gold.GOLD_THB,
       plan: s.plan || 'gold', hotel: gold.isHotel(s), plans: gold.PLANS(env),
-      founders: await founding.thisMonth(env).then((f) => ({ price: f.price, left: f.left })).catch(() => null) })
+      founders: await founding.thisMonth(env).then((f) => ({ price: f.price, left: f.left })).catch(() => null),
+      now: Object.fromEntries(await prices.nowPrices(env, s.id).catch(() => new Map())) })
   }
 
   if (p === 'site' && m === 'PUT') {
@@ -537,8 +547,10 @@ ${s ? `<p>ข้อความถึง ${escHtml(title)} จะส่งสำ
       for (const [id, c] of ok) if (c) { try { d.credits[id] = JSON.parse(c) } catch {} }
     }
     const pool = new Set(d.photos)
-    for (const x of [...(d.rooms || []), ...(d.lists || []), ...(d.works || []), ...(d.amulets || [])]) if (Array.isArray(x.photos)) x.photos = x.photos.filter((id) => pool.has(id))
+    for (const x of [...(d.rooms || []), ...(d.lists || []), ...(d.works || []), ...(d.amulets || []), ...(d.items || [])]) if (Array.isArray(x.photos)) x.photos = x.photos.filter((id) => pool.has(id))
     const nd = normalize(d)
+    const oldD = normalize(JSON.parse(s.d))
+    prices.stamp(oldD, nd)
     let status = s.status, held = null
     const publish = b.publish === true || s.status !== 'draft'
     if (publish) {
@@ -560,6 +572,8 @@ ${s ? `<p>ข้อความถึง ${escHtml(title)} จะส่งสำ
       throw e
     }
     if (status !== s.status) await log(env, s.id, status, held || '')
+    const pq = prices.afterSave(env, s.id, oldD, nd)
+    if (pq.length) await env.DB.batch(pq)
     return J({ status, name, d: nd, look: lookId })
   }
 
@@ -622,6 +636,19 @@ ${s ? `<p>ข้อความถึง ${escHtml(title)} จะส่งสำ
     const r = await pd.take(url.searchParams.get('id'))
     if (r.error) return J({ error: r.error }, 400)
     return new Response(r.bytes, { headers: { 'content-type': 'application/octet-stream', 'cache-control': 'no-store' } })
+  }
+
+  // prices that follow demand: the numbers, and a sale or an ask the seller marks
+  if (p === 'prices' && m === 'GET') return J(await prices.view(env, s.id, normalize(JSON.parse(s.d))), 200, { 'cache-control': 'no-store' })
+  if (p === 'mark' && m === 'POST') {
+    const who = await sender(request, env)
+    if (!(await take(env, who, 'mark'))) return J({ error: 'quota' }, 429)
+    const b = await body(request)
+    const d = normalize(JSON.parse(s.d))
+    const item = String(b.item || ''), kind = b.kind === 'ask' ? 'ask' : 'sold', qty = Number(b.qty) < 0 ? -1 : 1
+    if (![...d.items, ...d.amulets].some((x) => x.id === item)) return J({ error: 'not-found' }, 404)
+    const ok = await prices.mark(env, s.id, item, kind, qty)
+    return J({ ok, ...(await prices.view(env, s.id, d)) }, 200, { 'cache-control': 'no-store' })
   }
 
   if (p === 'stats' && m === 'GET') {
@@ -969,6 +996,7 @@ async function tidy(env) {
   await job('sellers', () => sellers.monthEnd(env, (c) => gold.postSales(env, c), (id) => sell.beerLink(env, sha, HOME, 'p', id, 60), (t) => tellBeer(env, t)))
   await job('deals', () => deals.monthly(env, (c) => gold.postSales(env, c)))
   await job('founding', async () => (await founding.thisMonth(env, Date.now(), (c) => gold.postSales(env, c))).price)
+  await job('prices', () => prices.weekly(env, normalize))
   await env.DB.prepare("UPDATE site SET trial = 0 WHERE trial = 1 AND gold_until < ?").bind(new Date().toISOString().slice(0, 10)).run()
   return done
 }
