@@ -84,15 +84,15 @@ const AW = {
   en: { amulets: 'Amulets', all: 'All', avail: 'Available', st_open: 'Available', st_reserved: 'Reserved', st_sold: 'Gone', st_show: 'On show', ask: 'Ask the price', price: 'Price',
     temple: 'Temple', maker: 'Maker', year: 'Year', mat: 'Material', mould: 'Mould', size: 'Size', cond: 'Condition', cert: 'Certificate', frame: 'Frame', form: 'Kind',
     front: 'Front', back: 'Back', reserve: 'Reserve on LINE', copied: 'Message copied. Paste it in LINE.', terms: 'Guarantee · delivery', more: 'More amulets',
-    allBtn: 'All the amulets', detail: 'Details', askAbout: 'Ask about this amulet', goneAsk: 'Ask for one like it', be: 'BE', askHi: 'I would like to reserve', sian: 'Sala Sian', market: 'Market prices', marketHint: 'Close sales at auction and asking prices online, from the Mot Dang price guide' },
+    allBtn: 'All the amulets', detail: 'Details', askAbout: 'Ask about this amulet', goneAsk: 'Ask for one like it', be: 'BE', askHi: 'I would like to reserve', mkt: 'Amulet market', sian: 'Sala Sian', market: 'Market prices', marketHint: 'Close sales at auction and asking prices online, from the Mot Dang price guide' },
   th: { amulets: 'พระเครื่อง', all: 'ทั้งหมด', avail: 'พร้อมเช่า', st_open: 'พร้อมเช่า', st_reserved: 'จองแล้ว', st_sold: 'เช่าแล้ว', st_show: 'พระโชว์', ask: 'สอบถามราคา', price: 'ราคาเช่า',
     temple: 'วัด', maker: 'เกจิ · ผู้สร้าง', year: 'ปี', mat: 'เนื้อ', mould: 'พิมพ์', size: 'ขนาด', cond: 'สภาพ', cert: 'บัตรรับรอง', frame: 'กรอบ · เลี่ยม', form: 'ประเภท',
     front: 'ด้านหน้า', back: 'ด้านหลัง', reserve: 'จององค์นี้ทางไลน์', copied: 'คัดลอกข้อความแล้ว วางในไลน์ได้เลย', terms: 'การรับประกัน · การจัดส่ง', more: 'พระองค์อื่น',
-    allBtn: 'พระทั้งหมด', detail: 'รายละเอียด', askAbout: 'สอบถามองค์นี้', goneAsk: 'ถามหาองค์แบบนี้', be: 'พ.ศ.', askHi: 'สนใจเช่าบูชา', sian: 'ศาลาเซียน', market: 'ราคาตลาด', marketHint: 'ราคาประมูลที่ปิดแล้วและราคาตั้งขายออนไลน์ที่ใกล้เคียง จากราคากลางของ Mot Dang' },
+    allBtn: 'พระทั้งหมด', detail: 'รายละเอียด', askAbout: 'สอบถามองค์นี้', goneAsk: 'ถามหาองค์แบบนี้', be: 'พ.ศ.', askHi: 'สนใจเช่าบูชา', mkt: 'ตลาดพระ', sian: 'ศาลาเซียน', market: 'ราคาตลาด', marketHint: 'ราคาประมูลที่ปิดแล้วและราคาตั้งขายออนไลน์ที่ใกล้เคียง จากราคากลางของ Mot Dang' },
   zh: { amulets: '佛牌', all: '全部', avail: '可请', st_open: '可请', st_reserved: '已预订', st_sold: '已请走', st_show: '仅展示', ask: '询价', price: '请供价',
     temple: '寺庙', maker: '师父 · 制作', year: '年份', mat: '材质', mould: '模版', size: '尺寸', cond: '品相', cert: '鉴定卡', frame: '外壳', form: '类别',
     front: '正面', back: '背面', reserve: '在 LINE 预订', copied: '信息已复制，请粘贴到 LINE。', terms: '保证 · 寄送', more: '更多佛牌',
-    allBtn: '全部佛牌', detail: '介绍', askAbout: '询问这尊佛牌', goneAsk: '询问类似的佛牌', be: '佛历', askHi: '我想请这尊', sian: 'Sala Sian', market: '市场价', marketHint: '相近的拍卖成交价和网上标价，来自 Mot Dang 行情' },
+    allBtn: '全部佛牌', detail: '介绍', askAbout: '询问这尊佛牌', goneAsk: '询问类似的佛牌', be: '佛历', askHi: '我想请这尊', mkt: '佛牌夜市', sian: 'Sala Sian', market: '市场价', marketHint: '相近的拍卖成交价和网上标价，来自 Mot Dang 行情' },
 }
 export const aw = (lang, k) => (AW[lang] && AW[lang][k]) || AW.en[k] || k
 
@@ -133,7 +133,7 @@ export function amuletSection(list, h) {
   if (list.some((x) => x.status !== 'open') && list.some((x) => x.status === 'open')) btns.push(`<button data-af="st:open">${esc(aw(lang, 'avail'))}</button>`)
   if (forms.length > 1) for (const f of forms) btns.push(`<button data-af="${f[0]}">${esc(amLabel(AM_FORMS, f[0], lang))}</button>`)
   if (btns.length > 1) out.push(`<div class="lfilter afilter" role="group">${btns.join('')}</div>`)
-  out.push(`<div class="agrid">${list.map((x) => amuletCard(x, h)).join('')}</div></section>`)
+  out.push(`<div class="agrid">${list.map((x) => amuletCard(x, h)).join('')}</div><p style="margin:14px 0 0"><a href="https://sites.motdang.net/amulets">${esc(aw(lang, 'mkt'))} →</a></p></section>`)
   return out.join('')
 }
 

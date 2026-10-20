@@ -134,7 +134,7 @@ export function lookupPage(lang, nonce, built) {
 <div class="chips">${['สมเด็จวัดระฆัง', 'หลวงปู่ทวด วัดช้างให้', 'หลวงพ่อคูณ', 'หลวงปู่ทิม', 'นางกวัก', 'ท้าวเวสสุวรรณ', 'พญาเต่าเรือน', 'ตะกรุด'].map((x) => `<button type="button" data-q="${esc(x)}">${esc(x)}</button>`).join('')}</div>
 <div id="apout" class="apout" aria-live="polite"></div>
 ${built ? `<p class="note">${esc(T.updated.replace('{d}', built.slice(0, 10)))}</p>` : ''}
-<nav class="cta"><a class="btn" href="/make#kind=amulet">${esc(T.make)}</a><a class="btn ghost" href="/sian">${esc(T.sian)}</a></nav></main>
+<nav class="cta"><a class="btn" href="/amulets?hl=${lang}">${lang === 'th' ? 'ตลาดพระ' : 'Amulet market'} →</a><a class="btn ghost" href="/make#kind=amulet">${esc(T.make)}</a><a class="btn ghost" href="/sian">${esc(T.sian)}</a></nav></main>
 <script type="module" nonce="${nonce}">import { drawGuide } from '/s/amprice-ui.mjs'
 const out = document.getElementById('apout'), qi = document.getElementById('apq'), lang = ${JSON.stringify(lang)}
 async function run(t) { if (!t.trim()) return; out.innerHTML = '<p class="wait">…</p>'; history.replaceState(null, '', '?q=' + encodeURIComponent(t) + '&hl=' + lang)
