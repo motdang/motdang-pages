@@ -44,7 +44,7 @@ const t = (th, en) => `<span class="th">${th}</span><span class="en">${en}</span
 const cut = (s, n) => String(s ?? '').replace(/\s+/g, ' ').trim().slice(0, n)
 const nowIso = () => new Date().toISOString()
 /** An http(s) address, or null: a feed's URL never reaches an href unchecked. */
-export const safe = (u) => { try { const x = new URL(String(u || '').trim()); return /^https?:$/.test(x.protocol) ? x.href.slice(0, 500) : null } catch { return null } }
+export const safe = (u) => { try { const x = new URL(String(u || '').trim()); return /^https?:$/.test(x.protocol) && x.href.length <= 2000 ? x.href : null } catch { return null } }
 /** Monday 00:00 in Bangkok of the week `n` weeks from the one holding `ms`, as UTC ms. */
 export function weekStart(ms, n = 0) {
   const b = new Date(ms + 7 * 3600e3)
