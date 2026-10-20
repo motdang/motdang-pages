@@ -43,7 +43,7 @@ export function ogOf(site, d, t = '', x = null) {
   const o = { t, id: x ? x.id : '', path, title: x ? String(x.t || name) : g.title || name, tagline: x ? name : g.line || d.tagline || '', photo, gold,
     look: site.look, accent: g.accent || d.accent || '', avatar: d.avatar || '', round: d.avround, dings: d.dings || [],
     layout: g.layout || '', font: g.font || '', fx: x ? 0.5 : g.fx ?? 0.5, fy: x ? 0.5 : g.fy ?? 0.5 }
-  o.key = fnv(JSON.stringify(['v3', o.title, o.tagline, o.photo, o.gold, o.look, o.accent, o.avatar, o.round, o.layout, o.font, o.fx, o.fy, path]))
+  o.key = fnv(JSON.stringify(['v4', o.title, o.tagline, o.photo, o.gold, o.look, o.accent, o.avatar, o.round, o.layout, o.font, o.fx, o.fy, path]))
   return o
 }
 
