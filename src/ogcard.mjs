@@ -88,8 +88,21 @@ async function fitted(env, bytes) {
   return new Uint8Array(await r.response().arrayBuffer())
 }
 
-/** The card library's drawing of a spec, as JPEG bytes. */
+/** A photo's bytes from R2, as the library takes them, or null. */
+async function own(env, pic) {
+  const id = /\/img\/([a-z0-9]{12,24})\.webp$/.exec(pic?.url || '')?.[1]
+  const o = id && (await env.MEDIA.get(`p/${id}`))
+  if (!o || o.customMetadata?.v !== 'ok') return null
+  const b = new Uint8Array(await o.arrayBuffer())
+  let s = ''
+  for (let i = 0; i < b.length; i += 0x8000) s += String.fromCharCode.apply(null, b.subarray(i, i + 0x8000))
+  return { b64: btoa(s) }
+}
+
+/** The card library's drawing of a spec, as JPEG bytes. The page's photos go as bytes, read here from R2. */
 async function draw(env, spec) {
+  const [image, avatar] = await Promise.all([own(env, spec.image), own(env, spec.avatar)])
+  spec = { ...spec, image, avatar, layout: image ? spec.layout : 'plain' }
   const r = await env.CARDS.fetch('https://cards/draw', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(spec) })
   if (!r.ok) throw new Error('cards ' + r.status)
   return new Uint8Array(await r.arrayBuffer())

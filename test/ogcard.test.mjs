@@ -78,7 +78,7 @@ test('with the card library bound, the card is drawn from the page and the maker
   const item = await serveCard(e, 'tonpho/a/som1.jpg', 'https://sites.motdang.net')
   assert.equal(item.status, 200)
   assert.equal(spec.title, 'พระสมเด็จ'); assert.equal(spec.sub, 'ต้นโพธิ์'); assert.equal(spec.layout, 'band')
-  assert.match(spec.image.url, /\/img\/aaaaaaaaaaaaaaaa\.webp$/)
+  assert.equal(spec.image.b64, Buffer.from([0xff, 0xd8, 0xff, 1, 2, 3]).toString('base64'))
 })
 
 test('the builder\'s preview leaves out a picture that is not the page\'s own', async () => {
