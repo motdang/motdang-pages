@@ -21,7 +21,7 @@
   document.addEventListener('click', function (e) {
     var a = e.target.closest && e.target.closest('[data-t]')
     if (!a || pd.preview) return
-    var body = JSON.stringify({ n: pd.name, k: a.getAttribute('data-t') })
+    var body = JSON.stringify({ n: pd.name, k: a.getAttribute('data-t'), i: a.getAttribute('data-item') || undefined })
     try { if (!(navigator.sendBeacon && navigator.sendBeacon('/api/hit', new Blob([body], { type: 'application/json' })))) fetch('/api/hit', { method: 'POST', body: body, keepalive: true, headers: { 'content-type': 'application/json' } }) } catch (x) {}
   }, true)
 

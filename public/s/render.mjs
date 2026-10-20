@@ -8,6 +8,7 @@ import { encodeQr } from './qr.mjs'
 import { DINGBATS } from './db/names.mjs'
 import { normalizeExtras, upcoming, campsNow, utcOf, money, MAP_NEAR, MAX, UNIT_LABEL, tagsOf } from './extras.mjs'
 import { normalizeAmulets, amuletSection, amuletBody, amuletLd, amuletDesc, AM_CSS, AM_MAX } from './amulet.mjs'
+import { dynOf } from './shoup.mjs'
 import { LOOKS, LOOK_IDS, GOLD_LOOKS, LOOK_ALIAS, lookOf, HERO_CSS, F_THAI } from './looks.mjs'
 
 export { LOOKS, LOOK_IDS, GOLD_LOOKS, LOOK_ALIAS, lookOf }
@@ -77,6 +78,7 @@ export function currencyFor(cc, lang) {
 
 const str = (v, n) => String(v ?? '').replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, '').trim().slice(0, n)
 const PHOTO_ID = /^[a-z0-9]{12,24}$/
+export const ITEM_PHOTOS = 4 // photos of one thing a shop sells (2026-10-20)
 const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/
 const LOCAL_DT = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/
 
@@ -133,8 +135,17 @@ export function normalize(d = {}) {
   o.spots = (Array.isArray(d.spots) ? d.spots : []).map((x) => ({ n: str(x?.n, 60), note: str(x?.note, 160), lat: Number(x?.lat), lng: Number(x?.lng) }))
     .filter((x) => x.n && Number.isFinite(x.lat) && Number.isFinite(x.lng) && Math.abs(x.lat) <= 85 && Math.abs(x.lng) <= 180)
     .map((x) => ({ ...x, lat: Math.round(x.lat * 1e6) / 1e6, lng: Math.round(x.lng * 1e6) / 1e6 })).slice(0, 20)
-  o.items = (Array.isArray(d.items) ? d.items : []).map((i) => ({ n: str(i?.n, 80), p: str(i?.p, 24), note: str(i?.note, 160) }))
-    .filter((i) => i.n || i.p).slice(0, 60)
+  const itemIds = new Set()
+  o.items = (Array.isArray(d.items) ? d.items : []).map((i, k) => {
+    let id = /^[a-z0-9]{4,12}$/.test(i?.id || '') ? i.id : 'i' + k.toString(36).padStart(3, '0')
+    while (itemIds.has(id)) id = 'i' + (k + itemIds.size).toString(36) + 'z'
+    itemIds.add(id)
+    const it = { id, n: str(i?.n, 80), p: str(i?.p, 24), note: str(i?.note, 160) }
+    it.photos = (Array.isArray(i?.photos) ? i.photos : []).filter((x) => PHOTO_ID.test(x)).slice(0, ITEM_PHOTOS)
+    const dyn = dynOf(i?.dyn)
+    if (dyn) it.dyn = dyn
+    return it
+  }).filter((i) => i.n || i.p).slice(0, 60)
   o.links = (Array.isArray(d.links) ? d.links : []).map((l) => ({ t: str(l?.t, 50), u: safeUrl(l?.u) }))
     .filter((l) => l.u).slice(0, 12)
   const c = d.contact || {}
@@ -377,7 +388,7 @@ img{max-width:100%;display:block}a{color:inherit}.i{width:22px;height:22px;flex:
 .card h2 [data-dingbat]{font-size:1.5em;letter-spacing:0;flex:none}
 .card p{margin:0 0 12px}.card p:last-child{margin:0}
 .menu{list-style:none;margin:0;padding:0}.menu li{display:flex;gap:12px;align-items:baseline;padding:11px 0;border-bottom:1px dashed var(--line)}
-.menu li:last-child{border:0}.menu .n{flex:1;font-weight:600}.menu .n small{display:block;font-weight:400;color:var(--mute);font-size:15px}.menu .p{font-weight:700;white-space:nowrap}
+.menu li:last-child{border:0}.menu li.ph{display:grid;grid-template-columns:64px 1fr auto;column-gap:12px;row-gap:4px;align-items:center}.menu li.ph .ith{grid-row:span 2}.menu li.ph .n{grid-column:2/4}.menu li.ph .qty{justify-self:end}.menu .ith{flex:none;width:64px;height:64px;padding:0;border:0;border-radius:calc(var(--r)/2 + 2px);overflow:hidden;background:var(--line);cursor:zoom-in}.menu .ith img{width:100%;height:100%;object-fit:cover}.menu .n{flex:1;font-weight:600}.menu .n small{display:block;font-weight:400;color:var(--mute);font-size:15px}.menu .p{font-weight:700;white-space:nowrap}
 .hours{width:100%;border-collapse:collapse}.hours td{padding:7px 0;border-bottom:1px dashed var(--line)}.hours td+td{text-align:right}.hours tr.today td{font-weight:700;color:var(--acc-ink)}
 .gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
 .gallery figure{margin:0;position:relative}.gallery button{display:block;width:100%;padding:0;border:0;background:var(--line);border-radius:calc(var(--r)/2);overflow:hidden;aspect-ratio:1;cursor:zoom-in}
@@ -724,7 +735,7 @@ export function render(site, opt = {}) {
   if (d.items.length) {
     const oa = lineOa(c.line), pp = !!d.pay.pp
     out.push(`<section class="card rise" id="menu">${H2(site.kind === 'food' ? 'menu' : 'prices', W(site.kind === 'food' ? 'menu' : gold && d.give ? 'giveList' : 'prices'))}<ul class="menu${oa || pp ? ' orderable' : ''}">`)
-    d.items.forEach((it, i) => out.push(`<li><span class="n">${esc(it.n)}${it.note ? `<small>${esc(it.note)}</small>` : ''}</span><span class="p">${esc(price(it.p, cur))}</span>` +
+    d.items.forEach((it, i) => out.push(`<li${it.photos.length ? ' class="ph"' : ''}>${it.photos.length ? `<button class="ith" data-t="photo" data-big="${esc(img(it.photos[0]))}"><img src="${esc(img(it.photos[0], true))}" alt="${esc(it.n)}" loading="lazy"></button>` : ''}<span class="n">${esc(it.n)}${it.note ? `<small>${esc(it.note)}</small>` : ''}</span><span class="p">${esc(price(it.p, cur))}</span>` +
       (oa || pp ? `<span class="qty" data-i="${i}" data-n="${esc(it.n)}" data-p="${amountOf(it.p)}"><button aria-label="−">−</button><b>0</b><button aria-label="+">+</button></span>` : '') + '</li>'))
     out.push('</ul>')
     if (oa || pp) out.push('<div class="orderrow">')
