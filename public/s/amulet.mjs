@@ -114,11 +114,18 @@ export const AM_CSS = `.agrid{display:grid;grid-template-columns:repeat(auto-fil
 .amkt .apg-out{min-height:60px}.amkt .hint{color:var(--mute);font-size:13px;margin:0 0 10px}
 .afacts dt{font-size:13px;color:var(--mute)}.afacts dd{margin:0;font-size:18px;font-weight:800;overflow-wrap:anywhere}.afacts .cert{grid-column:1/-1}`
 
+/** An amulet photo's alt text: its name, then temple, maker, year, material and kind, then which side and the shop. */
+export function amAlt(x, lang, side, shop) {
+  const bits = [x.temple, x.maker, amYear(x.year, lang), x.mat && amLabel(AM_MATERIALS, x.mat, lang), x.form && amLabel(AM_FORMS, x.form, lang)].filter(Boolean).join(' · ')
+  const s = side ? aw(lang, side) : ''
+  return [s ? `${s}: ${x.t}` : x.t, bits, shop].filter(Boolean).join(' — ')
+}
+
 /** One amulet in the grid: front photo, status, price, temple and year. */
 export function amuletCard(x, { site, img, lang, sym, esc, ding }) {
   const sub = [x.temple, amYear(x.year, lang)].filter(Boolean).join(' · ')
   return `<a class="acard${x.status !== 'open' ? ' gone' : ''}" href="/${esc(site.name)}/a/${esc(x.id)}" data-form="${esc(x.form)}" data-st="${x.status}" data-t="amulet"><figure>` +
-    (x.photos[0] ? `<img src="${esc(img(x.photos[0], true))}" alt="${esc(x.t)}" loading="lazy">` : `<span class="noimg">${ding('lotus', 'paper')}</span>`) +
+    (x.photos[0] ? `<img src="${esc(img(x.photos[0], true))}" alt="${esc(amAlt(x, lang, 'front', site.d?.name || site.name))}" loading="lazy">` : `<span class="noimg">${ding('lotus', 'paper')}</span>`) +
     `${x.status !== 'open' ? `<span class="st st-${x.status}">${esc(aw(lang, 'st_' + x.status))}</span>` : ''}</figure>` +
     `<b>${esc(x.t)}</b>${sells(x) ? `<span class="pr">${esc(x.p ? money(x.p, sym) : aw(lang, 'ask'))}</span>` : ''}${sub ? `<small>${esc(sub)}</small>` : ''}</a>`
 }
@@ -146,7 +153,8 @@ export function amuletBody(x, h) {
     out.push('<section class="card rise"><div class="ashots">')
     x.photos.forEach((p, i) => {
       const cap = x.photos.length > 1 && i < 2 ? `<figcaption>${A(i ? 'back' : 'front')}</figcaption>` : ''
-      out.push(`<figure${x.photos.length === 1 ? ' class="wide"' : ''}><button data-t="photo" data-big="${esc(img(p))}"><img src="${esc(img(p))}" alt="${esc(x.t)}${cap ? ' · ' + A(i ? 'back' : 'front') : ''}" loading="${i < 2 ? 'eager' : 'lazy'}"></button>${cap}</figure>`)
+      const alt = amAlt(x, lang, i === 0 ? 'front' : i === 1 && x.photos.length > 1 ? 'back' : '', site.d?.name || site.name) + (i > 1 ? ` (${i + 1}/${x.photos.length})` : '')
+      out.push(`<figure${x.photos.length === 1 ? ' class="wide"' : ''}><button data-t="photo" data-big="${esc(img(p))}"><img src="${esc(img(p))}" alt="${esc(alt)}" loading="${i < 2 ? 'eager' : 'lazy'}"></button>${cap}</figure>`)
     })
     out.push('</div></section>')
   }

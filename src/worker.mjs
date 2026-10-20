@@ -125,8 +125,9 @@ async function route(request, env, ctx) {
     const nonce = rand(16)
     return html(guestPage(bk, s, origin, nonce), 200, { nonce })
   }
-  if (path === '/robots.txt') return new Response(`User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /make\nDisallow: /admin\nSitemap: ${origin}/sitemap.xml\n`, { headers: { 'content-type': 'text/plain' } })
+  if (path === '/robots.txt') return new Response(`User-agent: *\nAllow: /\nAllow: /api/amulet-price\nDisallow: /api/\nDisallow: /make\nDisallow: /admin\nSitemap: ${origin}/sitemap.xml\n`, { headers: { 'content-type': 'text/plain' } })
   if (path === '/sitemap.xml') return sitemap(env, origin)
+  if (path === '/llms.txt') return new Response(llms(origin), { headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'public, max-age=3600' } })
   if (path === '/favicon.ico') return asset(request, env, '/s/ant.svg')
   if (path === '/admin' || path.startsWith('/admin/')) return admin(request, env, path.slice(6), url)
   if (path.startsWith('/q/')) return slipPage(request, env, path, url, origin)
@@ -148,7 +149,10 @@ async function route(request, env, ctx) {
     return html(amprice.lookupPage(lang, nonce, P?.built), 200, { nonce })
   }
   if (path === '/sian' || path === '/sian/') return sian.route(request, env, path, url, { html })
-  if (path === '/amulets' || path === '/amulets/') return market.route(request, env, path, url, origin, { rand })
+  if (path === '/amulets' || path.startsWith('/amulets/') || path === '/amulets.json') {
+    const r = await market.route(request, env, path, url, origin, { rand })
+    if (r) return r
+  }
   if (path === '/tap' || path.startsWith('/tap/')) {
     const r = await tap.route(request, env, path, url, { html, sha, rand, sameOrigin, take, sender, clean, look })
     if (r) return r
@@ -336,10 +340,34 @@ async function find(env, url, origin) {
   }).sort((a, b) => b.score - a.score).slice(0, 10)
 }
 
+/** For AI readers: what the site holds and where the data is. */
+function llms(origin) {
+  return `# sites.motdang.net
+
+> People's own pages on Mot Dang (Chiang Mai): shops, food, stays, services, portfolios and amulet sellers, each at ${origin}/<name>. Thai first, English and more.
+
+## Amulets
+- [Amulet market](${origin}/amulets): Mot Dang sellers' amulets, and the market by kind as stalls with closed G-Pra auctions (hammer prices) and Lazada listings ฿20–7,000 (asking prices), each linked to its source. One page per stall at ${origin}/amulets/<kind>.
+- [Market data, JSON](${origin}/amulets.json): every stall with its counts, middle prices and range.
+- [Amulet price guide](${origin}/amulet-price?q=): close sales and listings for an amulet described in words. API: ${origin}/api/amulet-price?t=<words>&temple=&maker=&year=
+- [Sala Sian](${origin}/sian): the amulet sellers' membership and its members.
+
+## Pages
+- [Every live page](${origin}/all)
+- [Live pages as data](${origin}/feed.json)
+- [Sitemap](${origin}/sitemap.xml)
+`
+}
+
 async function sitemap(env, origin) {
   const rows = (await env.DB.prepare("SELECT name, updated, tier, gold_until, d FROM site WHERE status='live'").all()).results.filter((r) => gold.isGold(r))
   const loc = (u, day) => `<url><loc>${u}</loc><lastmod>${day}</lastmod></url>`
-  const body = `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>${origin}/</loc></url><url><loc>${origin}/support</loc></url>` +
+  // the amulet market, its stalls, the price guide and Sala Sian (market.mjs, amprice.mjs, sian.mjs)
+  const P = await amprice.load(env).catch(() => null)
+  const today = new Date().toISOString().slice(0, 10)
+  const mk = [`${origin}/amulets`, `${origin}/amulet-price`, `${origin}/sian`, ...(P ? market.front(P).stalls.map((x) => `${origin}/amulets/${x.slug}`) : [])]
+    .map((u) => `<url><loc>${u}</loc><lastmod>${today}</lastmod></url>`).join('')
+  const body = `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>${origin}/</loc></url><url><loc>${origin}/support</loc></url>${mk}` +
     rows.map((r) => { const day = r.updated.slice(0, 10); let works = [], ams = []; try { const n = normalize(JSON.parse(r.d)); works = n.works; ams = n.amulets } catch {} return loc(`${origin}/${r.name}`, day) + works.map((x) => loc(`${origin}/${r.name}/w/${x.id}`, day)).join('') + ams.map((x) => loc(`${origin}/${r.name}/a/${x.id}`, day)).join('') }).join('') + '</urlset>'
   return new Response(body, { headers: { 'content-type': 'application/xml', 'cache-control': 'public, max-age=3600' } })
 }

@@ -11,6 +11,7 @@
 import { step } from './deals.mjs'
 import * as gold from './gold.mjs'
 import { GUIDE_CSS } from '../public/s/amprice-ui.mjs'
+import { shareLinks } from './amprice.mjs'
 
 export const LADDER = [5999, 7999, 9999, 12999, 15999] // baht a year
 export const START = 9999
@@ -119,15 +120,17 @@ const W = {
 export function page(env, lang, month, list, nonce) {
   const T = W[lang] || W.en
   const rung = LADDER.map((p) => `<li${p === month.price ? ' class="on"' : ''}>฿${nf(p)}</li>`).join('')
-  const card = (m) => `<a class="mem" href="/${esc(m.name)}">${m.cover ? `<img src="/img/${esc(m.cover)}-s.webp" alt="" loading="lazy">` : '<span class="noimg">🪷</span>'}<b>${esc(m.title)}</b><small>${esc(T.open.replace('{n}', m.open))}</small></a>`
+  const card = (m) => `<a class="mem" href="/${esc(m.name)}">${m.cover ? `<img src="/img/${esc(m.cover)}-s.webp" alt="${esc((lang === 'th' ? 'รูปหน้าร้าน ' : 'Cover photo of ') + m.title + (lang === 'th' ? ` ร้านพระในศาลาเซียน มี ${m.open} องค์พร้อมเช่า` : `, an amulet shop in Sala Sian with ${m.open} available`))}" loading="lazy">` : '<span class="noimg" aria-hidden="true">🪷</span>'}<b>${esc(m.title)}</b><small>${esc(T.open.replace('{n}', m.open))}</small></a>`
   return `<!doctype html><html lang="${lang}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${esc(T.title)} · Mot Dang</title><meta name="description" content="${esc(T.lead)}"><meta property="og:title" content="${esc(T.title)}"><meta property="og:description" content="${esc(T.lead)}">
-<meta property="og:image" content="https://sites.motdang.net/s/card.jpg"><link rel="icon" href="/s/ant.svg"><link rel="stylesheet" href="/s/amprice.css"><link rel="stylesheet" href="/s/sian.css"><style>${GUIDE_CSS}</style></head>
+<meta property="og:image" content="https://sites.motdang.net/amulets/card/sian.jpg"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="${esc(lang === 'th' ? 'การ์ดศาลาเซียน: ชื่อศาลาเซียนตัวทองบนกำมะหยี่สีแดงเข้ม เชือกกำมะหยี่แดงขึงระหว่างเสาทองเหลืองสองต้น ใต้ชื่อเขียนว่า ห้องรับรองของคนขายพระ' : 'Sala Sian card: the name in gold on deep red velvet, a red velvet rope between two brass posts, and the line: the amulet sellers’ room')}">
+<meta property="og:type" content="website"><meta property="og:url" content="https://sites.motdang.net/sian"><meta name="twitter:card" content="summary_large_image"><link rel="canonical" href="https://sites.motdang.net/sian${lang === 'th' ? '' : '?hl=en'}"><link rel="icon" href="/s/ant.svg"><link rel="stylesheet" href="/s/amprice.css"><link rel="stylesheet" href="/s/sian.css"><style>${GUIDE_CSS}</style></head>
 <body class="sian"><header class="rope"><p class="kick"><a href="/">sites.motdang.net</a> · <a href="?hl=${lang === 'th' ? 'en' : 'th'}">${lang === 'th' ? 'English' : 'ไทย'}</a></p>
 <p class="k2">${esc(T.kick)}</p><h1>${esc(T.title)}</h1><p class="lead">${esc(T.lead)}</p>
 <div class="ticket"><p class="pr">${esc(T.price.replace('{p}', nf(month.price)))}</p><p class="seats">${esc(month.left > 0 ? T.left.replace('{n}', month.left).replace('{s}', month.seats) : T.full)}</p>
 <ol class="ladder" aria-label="price ladder">${rung}</ol><p class="shoup">${esc(T.shoup)}</p>
-<p class="how">${esc(T.joinHow)}</p><nav class="cta"><a class="btn" href="/make">${esc(T.join)}</a><a class="btn ghost" href="/make#kind=amulet">${esc(T.make)}</a></nav></div></header>
+<p class="how">${esc(T.joinHow)}</p><nav class="cta" style="margin:0 0 10px">${shareLinks(lang === 'th' ? 'ศาลาเซียน ห้องรับรองของคนขายพระบน Mot Dang' : 'Sala Sian, the amulet sellers’ room on Mot Dang', 'https://sites.motdang.net/sian')}</nav><nav class="cta"><a class="btn" href="/make">${esc(T.join)}</a><a class="btn ghost" href="/make#kind=amulet">${esc(T.make)}</a></nav></div></header>
 <main><h2>${esc(T.inside)}</h2><ul class="perks">${T.b.map(([h, p]) => `<li><b>${esc(h)}</b><span>${esc(p)}</span></li>`).join('')}</ul>
 <p class="cta"><a class="btn" href="/amulets?hl=${lang}">${lang === 'th' ? 'ตลาดพระ' : 'Amulet market'} →</a><a class="btn ghost" href="/amulet-price?hl=${lang}">${esc(T.try)} →</a></p>
 ${list.length ? `<h2>${esc(T.wall)}</h2><div class="wall">${list.map(card).join('')}</div>` : ''}</main></body></html>`
