@@ -52,7 +52,8 @@ export async function serveCard(env, rest, origin) {
   if (drawn) return jpg(drawn.body, 86400)
   if (env.CARDS) {
     try {
-      const bytes = await draw(env, specOf(c.o, { img: (id) => `${origin}/img/${id}.webp`, host: new URL(origin).host, lang: c.site.lang }))
+      const { bytes, whole } = await draw(env, specOf(c.o, { img: (id) => `${origin}/img/${id}.webp`, host: new URL(origin).host, lang: c.site.lang }))
+      if (!whole) return jpg(bytes, 300) // a photo it names is not readable yet: drawn without it, asked again soon
       await env.MEDIA.put(c.base + '.jpg', bytes, { httpMetadata: { contentType: 'image/jpeg' } })
       return jpg(bytes, 86400)
     } catch (e) { console.error('card draw', String(e?.message || e)) }
@@ -90,22 +91,29 @@ async function fitted(env, bytes) {
 
 /** A photo's bytes from R2, as the library takes them, or null. */
 async function own(env, pic) {
-  const id = /\/img\/([a-z0-9]{12,24})\.webp$/.exec(pic?.url || '')?.[1]
-  const o = id && (await env.MEDIA.get(`p/${id}`))
-  if (!o || o.customMetadata?.v !== 'ok') return null
-  const b = new Uint8Array(await o.arrayBuffer())
-  let s = ''
-  for (let i = 0; i < b.length; i += 0x8000) s += String.fromCharCode.apply(null, b.subarray(i, i + 0x8000))
-  return { b64: btoa(s) }
+  try {
+    const id = /\/img\/([a-z0-9]{12,24})\.webp$/.exec(pic?.url || '')?.[1]
+    const o = id && (await env.MEDIA.get(`p/${id}`))
+    if (!o || o.customMetadata?.v !== 'ok') return null
+    const b = new Uint8Array(await o.arrayBuffer())
+    let s = ''
+    for (let i = 0; i < b.length; i += 0x8000) s += String.fromCharCode.apply(null, b.subarray(i, i + 0x8000))
+    return { b64: btoa(s) }
+  } catch { return null }
 }
 
-/** The card library's drawing of a spec, as JPEG bytes. The page's photos go as bytes, read here from R2. */
+/**
+ * The card library's drawing of a spec, as JPEG bytes. The page's photos go as bytes, read here from R2.
+ * whole: false when a photo the card names could not be read (held for a look, or a failed read), so the
+ * card is drawn without it and not kept.
+ */
 async function draw(env, spec) {
   const [image, avatar] = await Promise.all([own(env, spec.image), own(env, spec.avatar)])
+  const whole = !!image === !!spec.image && !!avatar === !!spec.avatar
   spec = { ...spec, image, avatar, layout: image ? spec.layout : 'plain' }
   const r = await env.CARDS.fetch('https://cards/draw', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(spec) })
   if (!r.ok) throw new Error('cards ' + r.status)
-  return new Uint8Array(await r.arrayBuffer())
+  return { bytes: new Uint8Array(await r.arrayBuffer()), whole }
 }
 
 /**
@@ -125,7 +133,7 @@ export async function preview(env, s, b, origin) {
   if (!own.has(o.photo)) o.photo = ''
   if (!own.has(o.avatar)) o.avatar = ''
   try {
-    const bytes = await draw(env, specOf(o, { img: (id) => `${origin}/img/${id}.webp`, host: new URL(origin).host, lang: s.lang }))
+    const { bytes } = await draw(env, specOf(o, { img: (id) => `${origin}/img/${id}.webp`, host: new URL(origin).host, lang: s.lang }))
     return new Response(bytes, { headers: { 'content-type': 'image/jpeg', 'cache-control': 'no-store' } })
   } catch (e) {
     console.error('card preview', String(e?.message || e))

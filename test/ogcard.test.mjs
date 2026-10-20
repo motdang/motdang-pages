@@ -93,3 +93,13 @@ test('the builder\'s preview leaves out a picture that is not the page\'s own', 
   assert.equal(spec.image, null)
   assert.equal(spec.layout, 'plain')
 })
+
+test('a card whose photo is held for a look is drawn without it and not kept', async () => {
+  const e = env([site()])
+  e.r2.set('p/aaaaaaaaaaaaaaaa', { bytes: JPG, meta: { v: 'hold' } })
+  e.CARDS = { fetch: async () => new Response(new Uint8Array([0xff, 0xd8, 5])) }
+  const r = await serveCard(e, 'tonpho/a/som1.jpg', 'https://sites.motdang.net')
+  assert.equal(r.status, 200)
+  assert.match(r.headers.get('cache-control'), /max-age=300/)
+  assert.ok(![...e.r2.keys()].some((k) => k.startsWith('og/')))
+})
