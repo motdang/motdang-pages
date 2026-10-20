@@ -1,7 +1,6 @@
 // og.mjs — which card a page or an item page shows, and the key that changes when the card would.
 // NaN 2026-10-20: "All sites made by me and all 'gold' level sites should include unique share cards."
-// The worker serves /card/<name>[/<t>/<id>].jpg: the drawn card when tools/og-cards.mjs has made one
-// for this key, else the item's own photo fitted to 1200×630.
+// The worker serves /card/<name>[/<t>/<id>].jpg (src/ogcard.mjs).
 
 const fnv = (s) => { let h = 0x811c9dc5; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193) } return (h >>> 0).toString(36) }
 

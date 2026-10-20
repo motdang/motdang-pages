@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { serveCard, todo, keep } from '../src/ogcard.mjs'
+import { serveCard, cardOf } from '../src/ogcard.mjs'
 import { render } from '../public/s/render.mjs'
 
 const JPG = new Uint8Array([0xff, 0xd8, 0xff, 1, 2, 3])
@@ -32,14 +32,12 @@ test('an amulet page has a card of its own, made from its photo, and kept', asyn
   assert.ok([...e.r2.keys()].some((k) => /^og\/site1\/a-som1-[a-z0-9]+-c\.jpg$/.test(k)))
 })
 
-test('a drawn card wins over the fitted photo, and the fitted one goes', async () => {
+test('a drawn card kept under the current key wins over the fitted photo', async () => {
   const e = env([site()])
-  await serveCard(e, 'tonpho/a/som1.jpg', 'https://sites.motdang.net')
-  const want = (await todo(e)).find((x) => x.path === 'tonpho/a/som1.jpg')
-  assert.ok(want, 'the amulet is on the list to draw')
-  assert.equal(await keep(e, want.base, JPG), true)
-  assert.ok(e.r2.has(want.base + '.jpg') && !e.r2.has(want.base + '-c.jpg'))
-  assert.ok(!(await todo(e)).some((x) => x.path === 'tonpho/a/som1.jpg'))
+  const c = await cardOf(e, 'tonpho/a/som1.jpg')
+  e.r2.set(c.base + '.jpg', { bytes: new Uint8Array([0xff, 0xd8, 9]), meta: {} })
+  const r = await serveCard(e, 'tonpho/a/som1.jpg', 'https://sites.motdang.net')
+  assert.deepEqual([...new Uint8Array(await r.arrayBuffer())], [0xff, 0xd8, 9])
 })
 
 test('an item without a photo shows the page card until one is drawn; unknown items and other files are refused', async () => {
@@ -50,8 +48,6 @@ test('an item without a photo shows the page card until one is drawn; unknown it
   assert.equal((await serveCard(e, 'tonpho/a/nope.jpg', 'https://sites.motdang.net')).status, 404)
   assert.equal((await serveCard(e, 'tonpho/x/som1.jpg', 'https://sites.motdang.net')).status, 404)
   assert.equal((await serveCard(env([site({ status: 'held' })]), 'tonpho.jpg', 'https://sites.motdang.net')).status, 404)
-  assert.equal(await keep(e, '../p/aaaaaaaaaaaaaaaa', JPG), false)
-  assert.equal(await keep(e, 'og/site1/a-som1-abc', new Uint8Array([1, 2, 3])), false)
 })
 
 test('listings are Gold only', async () => {
@@ -65,6 +61,5 @@ test('the page names the same card the route serves', async () => {
   const s = site()
   const html = render({ ...s, d: JSON.parse(s.d) }, { amulet: 'som1' })
   const k = /card\/tonpho\/a\/som1\.jpg\?k=([a-z0-9]+)/.exec(html)[1]
-  const want = (await todo(env([s]))).find((x) => x.path === 'tonpho/a/som1.jpg')
-  assert.equal(want.key, k)
+  assert.equal((await cardOf(env([s]), 'tonpho/a/som1.jpg')).o.key, k)
 })

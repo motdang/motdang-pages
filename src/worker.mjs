@@ -875,8 +875,6 @@ async function admin(request, env, rest, url) {
     return o ? new Response(o.body, { headers: { 'content-type': o.httpMetadata?.contentType || 'image/jpeg', 'cache-control': 'no-store' } }) : new Response('', { status: 404 })
   }
   if (request.method === 'POST' && rest === '/run' && sameOrigin(request, url)) return J(await tidy(env))
-  if (request.method === 'GET' && rest === '/og') return J(await og.todo(env)) // tools/og-cards.mjs: the cards still to draw
-  if (request.method === 'PUT' && rest.startsWith('/og/')) return J({ ok: await og.keep(env, rest.slice(4), new Uint8Array(await request.arrayBuffer())) })
   if (request.method === 'POST' && rest === '/gig' && sameOrigin(request, url)) { // a page check to send out on LINE
     const f = await request.formData()
     const r = await trcheck.mint(env, homeOf(url, env), { name: f.get('name'), lang: f.get('lang'), who: f.get('who') }, { sha, rand })

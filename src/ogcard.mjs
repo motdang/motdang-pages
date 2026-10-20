@@ -1,8 +1,8 @@
 // ogcard.mjs — /card/<name>.jpg and /card/<name>/<a|w|l>/<id>.jpg: each page's and each item page's
 // own 1200×630 share card (NaN 2026-10-20: "All sites made by me and all 'gold' level sites should
-// include unique share cards"). The drawn card when tools/og-cards.mjs has made one for the current
-// key (public/s/og.mjs), else the item's own photo fitted to the card through the Images binding:
-// a wide photo fills it, a tall one (an amulet) sits whole on a blurred copy of itself.
+// include unique share cards"). A drawn card kept under the current key (public/s/og.mjs) when there is
+// one, else the item's own photo fitted to the card through the Images binding: a wide photo fills it,
+// a tall one (an amulet) sits whole on a blurred copy of itself.
 
 import { normalize } from '../public/s/render.mjs'
 import { amCap } from '../public/s/amulet.mjs'
@@ -59,7 +59,7 @@ export async function serveCard(env, rest, origin) {
       return jpg(out, 3600)
     } catch (e) { console.error('card fit', String(e?.message || e)) }
   }
-  // no photo of its own: the page's drawn card until tools/og-cards.mjs draws this one
+  // no photo of its own: the page's drawn card
   return Response.redirect(c.d.card ? `${origin}/img/${c.d.card}.jpg` : `${origin}/s/card.jpg`, 302)
 }
 
@@ -77,31 +77,4 @@ async function fitted(env, bytes) {
       .output({ format: 'image/jpeg', quality: 85 })
   }
   return new Uint8Array(await r.response().arrayBuffer())
-}
-
-/** For tools/og-cards.mjs (admin): live pages and item pages whose drawn card is missing, `max` at a time. */
-export async function todo(env, max = 25) {
-  const rows = (await env.DB.prepare("SELECT * FROM site WHERE status = 'live'").all()).results
-  const out = []
-  let looked = 0
-  for (const s of rows) {
-    const site = siteOf(s), d = normalize(JSON.parse(s.d || '{}'))
-    const cards = d.card ? [] : [card(site, d, '', null)]
-    for (const t of ['l', 'w', 'a']) for (const x of itemsOf(site, d, t)) if (!(t === 'w' && x.card)) cards.push(card(site, d, t, x))
-    for (const c of cards) {
-      if (out.length >= max || looked >= 400) return out // the rest on the next call, inside the subrequest limit
-      looked++
-      if (!(await env.MEDIA.head(c.base + '.jpg'))) out.push({ ...c.o, path: c.o.path + '.jpg', base: c.base, name: s.name, kind: s.kind })
-    }
-  }
-  return out
-}
-
-/** A drawn card, kept under its key; the photo fitted for the same key goes. */
-export async function keep(env, base, bytes) {
-  if (!/^og\/[a-z0-9]+\/[alwp](-[a-z0-9-]+)?-[a-z0-9]+$/.test(base)) return false
-  if (!(bytes[0] === 0xff && bytes[1] === 0xd8)) return false
-  await env.MEDIA.put(base + '.jpg', bytes, { httpMetadata: { contentType: 'image/jpeg' } })
-  await env.MEDIA.delete(base + '-c.jpg')
-  return true
 }
