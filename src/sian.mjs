@@ -26,9 +26,9 @@ export const isSian = (s) => gold.isGold(s) && s?.plan === 'sian'
 
 // a Bangkok month as UTC bounds, for pay.updated
 const bounds = (m) => [new Date(Date.parse(`${m}-01T00:00:00+07:00`)).toISOString(), new Date(Date.parse(`${nextMonth(m)}-01T00:00:00+07:00`)).toISOString()]
-// the seats a month counts: paid in it, open from the last two days, a slip sent in the last seven
-const HELD = "plan = 'sian' AND ((status = 'paid' AND updated >= ? AND updated < ?) OR (status = 'slip' AND updated >= ?) OR (status = 'open' AND created >= ?))"
-const heldArgs = (month, t = Date.now()) => [...bounds(month), new Date(t - 7 * 864e5).toISOString(), new Date(t - 2 * 864e5).toISOString()]
+// the seats a month counts: paid in it, and its own holds: open from the last two days, a slip sent in the last seven
+const HELD = "plan = 'sian' AND ((status = 'paid' AND updated >= ? AND updated < ?) OR (seat_month = ? AND ((status = 'slip' AND updated >= ?) OR (status = 'open' AND created >= ?))))"
+const heldArgs = (month, t = Date.now()) => [...bounds(month), month, new Date(t - 7 * 864e5).toISOString(), new Date(t - 2 * 864e5).toISOString()]
 async function taken(env, month) {
   return (await env.DB.prepare(`SELECT COUNT(*) AS n FROM pay WHERE ${HELD}`).bind(...heldArgs(month)).first())?.n || 0
 }
@@ -69,8 +69,9 @@ export async function reserve(env, siteId, rand) {
   if (pl.left <= 0) return { full: true }
   const month = bkkMonth(), args = heldArgs(month)
   // an open payment of this page's that no longer holds a seat goes first, so gold.start makes one that does
-  await env.DB.prepare("DELETE FROM pay WHERE site_id = ? AND plan = 'sian' AND status = 'open' AND created < ?").bind(siteId, args[3]).run()
+  await env.DB.prepare("DELETE FROM pay WHERE site_id = ? AND plan = 'sian' AND status = 'open' AND (created < ? OR COALESCE(seat_month, '') != ?)").bind(siteId, args[4], month).run()
   const r = await gold.start(env, siteId, rand, pl)
+  await env.DB.prepare("UPDATE pay SET seat_month = ? WHERE site_id = ? AND plan = 'sian' AND status = 'open' AND seat_month IS NULL").bind(month, siteId).run()
   // insertion order: what an earlier request read is the start of what a later one reads
   const ids = (await env.DB.prepare(`SELECT id, site_id FROM pay WHERE ${HELD} ORDER BY rowid`).bind(...args).all()).results
   const mine = ids.findIndex((x) => x.site_id === siteId)
