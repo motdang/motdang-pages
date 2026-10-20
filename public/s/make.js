@@ -566,7 +566,7 @@ async function create(look, btn) {
   if (S.kind === 'amulet') S.d.amulets = [NEW_ROW.amulets()]
   S.pageLang = PAGE_LANGS[S.lang] ? S.lang : 'en'
   try {
-    const r = await call('POST', 'sites', { name: S.addr, kind: S.kind, look, lang: S.pageLang, d: S.d, by: new URLSearchParams(location.search).get('by') || '' })
+    const r = await call('POST', 'sites', { name: S.addr, kind: S.kind, look, lang: S.pageLang, d: S.d, by: new URLSearchParams(location.search).get('by') || '', m: S.market || '' })
     S.token = r.token; S.name = r.name; S.status = r.status; S.tier = r.tier || 'gold'; S.goldUntil = r.gold_until || ''; S.trial = !!r.trial; S.hotel = !!r.trial
     history.replaceState(null, '', '/make#t=' + S.token + (S.market ? `&m=${S.market}&ms=2` : ''))
     remember()

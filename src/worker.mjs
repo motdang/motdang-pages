@@ -495,7 +495,8 @@ ${s ? `<p>ข้อความถึง ${escHtml(title)} จะส่งสำ
       if (/UNIQUE/i.test(String(e))) return J({ error: 'name', why: 'taken' }, 409)
       throw e
     }
-    await log(env, id, 'create', name)
+    const mk = /^[a-z0-9-]{2,24}$/.test(String(b.m || '')) ? b.m : '' // made at a market stall (make-market.mjs)
+    await log(env, id, 'create', mk ? `${name} @${mk}` : name)
     return J({ id, name, token, status: 'draft', tier: 'gold', gold_until: new Date(Date.now() + TRIAL_DAYS * 864e5).toISOString().slice(0, 10), trial: true })
   }
 
