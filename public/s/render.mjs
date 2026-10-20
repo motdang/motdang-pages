@@ -871,6 +871,7 @@ export function render(site, opt = {}) {
   }
   if (lookId === 'lanna') out.push('<div class="kranok"></div>')
   if (lookId === 'gold') out.push('<div class="goldrule"></div>')
+  if (opt.events) out.push(opt.events) // what its linked calendars have coming (src/events.mjs)
   out.push('</main>', foot(site, d, lang, url, { ...opt, home, langs: gold ? langs : [] }, false, gold, dl))
   const pd = {
     lang, name: site.name, title: name, tagline: d.tagline, url, accent, preview: !!opt.preview, gold, look: lookId, main: '',

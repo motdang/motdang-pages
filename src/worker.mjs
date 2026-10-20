@@ -12,6 +12,7 @@
 //   /support              Use · Volunteer · Pay · Invest, for people far away who back Mot Dang (support.mjs)
 //   /sell                 sell pages for Mot Dang: the work, the pay, the sign-up; /sell/<id>.<tok> a seller's kit (sell.mjs)
 //   /name/calendar.ics    the page's calendar to follow    /name/l/<id>  a listing    /name/w/<id>  a portfolio project    /name/a/<id>  an amulet    /name/room/<id>.ics  a room's taken nights
+//   motdang.net/tech/     tech and AI events, live; /tech/events.json .ics w.js (events.mjs); /events → there
 //   yourshop.com/         a Gold page at its own address (Cloudflare for SaaS, domain.mjs)
 //   /vendor/ /fonts/ /tiles/ /data/ /front/ /sites/doodle-map/   read from motdang.net, so a page asks one host
 //
@@ -42,8 +43,9 @@ import * as deals from './deals.mjs'
 import * as founding from './founding.mjs'
 import * as support from './support.mjs'
 import * as tap from './tap.mjs'
+import * as events from './events.mjs'
 import { readCalendars, monthly, trialNotes } from './cron.mjs'
-import { calIcs, roomIcs, addDays } from '../public/s/extras.mjs'
+import { calIcs, roomIcs, addDays, upcoming, utcOf } from '../public/s/extras.mjs'
 import { guestPage } from './guest.mjs'
 import { doodleRoute } from './doodle.mjs'
 
@@ -86,6 +88,10 @@ async function route(request, env, ctx) {
   if (path === '/~' || path.startsWith('/~')) {
     const rest = path === '/~' || path === '/~/' ? '/all' : path.startsWith('/~/') ? '/' + path.slice(3) : '/' + path.slice(2)
     return new Response(null, { status: 301, headers: { location: origin + rest.replace(/^\/make\/$/, '/make') + url.search, 'cache-control': 'public, max-age=86400' } })
+  }
+  if (path === '/tech' || path.startsWith('/tech/') || path === '/events' || path === '/events/') {
+    const r = await events.route(request, env, path, url, { langOf: tap.langOf })
+    if (r) return r
   }
   if (!env.DEV_ORIGIN && (url.hostname === 'motdang.net' || url.hostname === 'www.motdang.net')) return new Response('', { status: 404 })
 
@@ -203,6 +209,7 @@ async function page(request, env, ctx, name, sub, url, origin, base) {
     site.views = s.views + 1
   }
   const opt = { origin, nonce, ...(base ? { base } : {}) }
+  if (s.status === 'live' && !sub) opt.events = await events.siteSection(env, s, s.kind).catch(() => '')
   if (sub.startsWith('/l/')) {
     const id = sub.slice(3)
     if (site.tier !== 'gold' || !normalize(site.d).lists.some((x) => x.id === id)) return html(notFound(null, request), 404)
@@ -955,6 +962,7 @@ async function tidy(env) {
   // 2026-10-14: room calendars, translations, the monthly note, the trial's end note
   const job = async (name, f) => { try { done[name] = await f() } catch (e) { done[name] = 'error: ' + String(e?.message || e).slice(0, 300); console.error(name, e?.stack || e) } }
   await job('calendars', () => readCalendars(env, gold.isGold, normalize))
+  await job('events', () => events.refresh(env, { normalize, upcoming, utcOf }))
   await job('translate', () => tr.catchUp(env, gold.isGold, normalize))
   await job('monthly', () => monthly(env, gold.isGold, HOME))
   await job('trial', () => trialNotes(env, HOME, (d) => gold.planOf(env, d)))

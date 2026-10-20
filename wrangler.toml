@@ -58,6 +58,11 @@ custom_domain = true
 pattern = "motdang.net/~*"
 zone_name = "motdang.net"
 
+# motdang.net/tech/ — tech and AI events, live (src/events.mjs, NaN 2026-10-20)
+[[routes]]
+pattern = "motdang.net/tech*"
+zone_name = "motdang.net"
+
 # Gold: the year's price in baht. PROMPTPAY (her phone's PromptPay) is a secret.
 [vars]
 GOLD_THB = "3000"
