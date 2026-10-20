@@ -35,7 +35,8 @@ const DATA = {
 }
 const P = prepare(DATA)
 const J = (o, status = 200) => new Response(JSON.stringify(o), { status, headers: { 'content-type': 'application/json' } })
-const deps = { J, take: async () => true, sender: async () => 'tester-1234567890', body: async (r) => r.json() }
+let who = 'tester-1234567890'
+const deps = { J, take: async () => true, sender: async () => who, body: async (r) => r.json() }
 const call = (env, p, init) => market.api(new Request('http://x/api/' + p, init), env, p, new URL('http://x/api/' + p))
 
 test('stalls gather a kind or a concept, with middles and a photo credited to its site', () => {
@@ -65,8 +66,12 @@ test('a guess returns the hammer and the crowd before it; the board needs three'
   const media = () => ({ get: async () => ({ json: async () => DATA }) })
   let r = await (await g(11, 1000, '0.0.42')).json()
   assert.equal(r.price, 900); assert.equal(r.crowd.n, 0); assert.equal(r.score, 90)
+  r = await (await g(11, 900, '0.0.42')).json() // the same player again: the first guess stands
+  assert.equal(r.again, true); assert.equal(r.guess, 1000); assert.equal(r.score, 90)
+  who = 'someone-else-0001'
   r = await (await g(11, 500, '1.1.7')).json()
   assert.deepEqual(r.crowd, { n: 1, median: 1000 })
+  who = 'tester-1234567890'
   await g(12, 13000, '0.0.42'); await g(13, 1000, '0.0.42')
   assert.equal((await g(99, 10, '')).status, 400)
   const b = await (await market.api(new Request('http://x/api/market/board?hl=th'), env, 'market/board', new URL('http://x/api/market/board?hl=th'), deps)).json()
@@ -84,6 +89,9 @@ test('a made-up name only: two lists and a number', () => {
 test('สาธุ counts on a seller amulet; who is here counts the last three minutes', async () => {
   const env = { DB: d1() }
   const s = (site, id) => market.api(new Request('http://x', { method: 'POST', body: JSON.stringify({ site, id }) }), env, 'market/sadhu', new URL('http://x'), deps)
+  const now = new Date().toISOString()
+  env.DB.raw.prepare("INSERT INTO site (id, name, edit_hash, status, kind, look, lang, d, created, updated) VALUES ('d1','amulet-demo','h','live','amulet','poster','th',?,?,?)").run(JSON.stringify({ amulets: [{ id: 'a000', t: 'x' }] }), now, now)
+  assert.equal((await s('amulet-demo', 'zzzz')).status, 404) // no such amulet
   assert.equal((await (await s('amulet-demo', 'a000')).json()).n, 1)
   assert.equal((await (await s('amulet-demo', 'a000')).json()).n, 2)
   assert.equal((await s('../x', 'a000')).status, 400)

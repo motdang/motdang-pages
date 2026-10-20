@@ -185,7 +185,7 @@ async function guess(g) {
   store.set('streak', streak)
   const body = $('.gbody', game)
   body.innerHTML = `<h3>${esc(R.title)}</h3><p class="real">${esc(T.real)} <b id="hammer">฿0</b></p>
-    <p class="you">${esc(T.you)} ${B(g)} · <b class="sc">${esc(t('score', { s: r.score }))}</b>${streak > 1 ? ` · 🔥 ${esc(t('streak', { n: streak }))}` : ''}</p>
+    <p class="you">${esc(T.you)} ${B(r.guess ?? g)} · <b class="sc">${esc(t('score', { s: r.score }))}</b>${streak > 1 ? ` · 🔥 ${esc(t('streak', { n: streak }))}` : ''}</p>
     <p class="crowd">${r.crowd.n ? `${esc(t('crowd', { n: nf(r.crowd.n) }))}: <b>${B(r.crowd.median)}</b>` : esc(T.first)}</p>
     <p class="meta">${esc(t('bids', { n: r.bids }))} · ${esc(t('bidders', { n: r.bidders }))} · ${esc(r.closed)} · <a href="${esc(r.url)}" target="_blank" rel="nofollow noopener">${esc(T.open)} →</a></p>
     <button class="btn go" id="gn">${esc(T.next)} →</button>`

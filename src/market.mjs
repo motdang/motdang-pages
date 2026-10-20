@@ -106,22 +106,27 @@ const score = (guess, price) => Math.round(100 * Math.exp(-Math.abs(Math.log(gue
 /** Mot Dang sellers' amulets that can be had: Sala Sian pages first, newest pages next. */
 export async function shelf(env, P, origin, lang) {
   const rows = (await env.DB.prepare("SELECT name, kind, d, tier, gold_until, plan, updated FROM site WHERE status = 'live' AND (kind = 'amulet' OR d LIKE '%\"amulets\":[{%') ORDER BY updated DESC LIMIT 200").all()).results
-  const taps = new Map((await env.DB.prepare('SELECT site, amulet, n FROM market_sadhu').all()).results.map((r) => [`${r.site}/${r.amulet}`, r.n]))
-  const out = []
+  const cand = []
   for (const s of rows) {
     let d
     try { d = normalize(JSON.parse(s.d)) } catch { continue }
     const sian = isSian(s)
     for (const x of d.amulets.slice(0, amCap(isGold(s), sian))) {
-      if (!(x.status === 'open' || x.status === 'reserved') || !x.photos.length) continue
-      const g = P ? guide(P, { t: x.t, temple: x.temple, maker: x.maker, year: x.year, mould: x.mould, cert: x.cert },
-        { labels: { mat: x.mat ? amLabel(AM_MATERIALS, x.mat, 'th') : '', form: x.form ? amLabel(AM_FORMS, x.form, 'th') : '' } }) : null
-      const band = g?.auction ? [g.auction.low, g.auction.high, 'g'] : g?.online ? [g.online.low, g.online.high, 'l'] : null
-      out.push({ site: s.name, shop: d.name || s.name, id: x.id, t: x.t, p: x.p, status: x.status, pic: `${origin}/img/${x.photos[0]}-s.webp`,
-        url: `${origin}/${s.name}/a/${x.id}`, sian, band, sadhu: taps.get(`${s.name}/${x.id}`) || 0, temple: x.temple, year: x.year })
+      if ((x.status === 'open' || x.status === 'reserved') && x.photos.length) cand.push({ s, d, x, sian })
     }
   }
-  return out.sort((a, b) => b.sian - a.sian).slice(0, 120)
+  const pick = cand.sort((a, b) => b.sian - a.sian).slice(0, 120) // newest pages first within each group, as read
+  const taps = new Map()
+  for (const name of [...new Set(pick.map((c) => c.s.name))]) {
+    for (const r of (await env.DB.prepare('SELECT amulet, n FROM market_sadhu WHERE site = ?').bind(name).all()).results) taps.set(`${name}/${r.amulet}`, r.n)
+  }
+  return pick.map(({ s, d, x, sian }) => {
+    const g = P ? guide(P, { t: x.t, temple: x.temple, maker: x.maker, year: x.year, mould: x.mould, cert: x.cert },
+      { labels: { mat: x.mat ? amLabel(AM_MATERIALS, x.mat, 'th') : '', form: x.form ? amLabel(AM_FORMS, x.form, 'th') : '' } }) : null
+    const band = g?.auction ? [g.auction.low, g.auction.high, 'g'] : g?.online ? [g.online.low, g.online.high, 'l'] : null
+    return { site: s.name, shop: d.name || s.name, id: x.id, t: x.t, p: x.p, status: x.status, pic: `${origin}/img/${x.photos[0]}-s.webp`,
+      url: `${origin}/${s.name}/a/${x.id}`, sian, band, sadhu: taps.get(`${s.name}/${x.id}`) || 0, temple: x.temple, year: x.year }
+  })
 }
 
 /** The /api/market/… calls. deps: J, take, sender, body. */
@@ -146,10 +151,13 @@ export async function api(request, env, p, url, { J, take, sender, body }) {
     const guess = Math.round(Number(b.guess))
     if (!r || !(guess >= 1 && guess <= 1e8)) return J({ error: 'guess' }, 400)
     const handle = handleOk(b.handle) ? String(b.handle) : ''
-    const crowd = (await env.DB.prepare('SELECT guess FROM market_guess WHERE aid = ?').bind(r.aid).all()).results.map((x) => x.guess) // the others, before this one
-    await env.DB.prepare('INSERT INTO market_guess (aid, guess, price, handle, who, day, at) VALUES (?,?,?,?,?,?,?)')
-      .bind(r.aid, guess, r.price, handle, who.slice(0, 16), bkkDay(), new Date().toISOString()).run()
-    return J({ aid: r.aid, price: r.price, bids: r.bids, bidders: r.bidders, closed: r.closed, card: !!r.card, url: gUrl(r), score: score(guess, r.price),
+    const w = who.slice(0, 16)
+    // one guess a player an auction: a second one shows the hammer and keeps the first
+    const ins = await env.DB.prepare('INSERT INTO market_guess (aid, guess, price, handle, who, day, at) VALUES (?,?,?,?,?,?,?) ON CONFLICT(aid, who) DO NOTHING')
+      .bind(r.aid, guess, r.price, handle, w, bkkDay(), new Date().toISOString()).run()
+    const mine = (await env.DB.prepare('SELECT guess FROM market_guess WHERE aid = ? AND who = ?').bind(r.aid, w).first())?.guess ?? guess
+    const crowd = (await env.DB.prepare('SELECT guess FROM market_guess WHERE aid = ? AND who != ?').bind(r.aid, w).all()).results.map((x) => x.guess)
+    return J({ aid: r.aid, price: r.price, bids: r.bids, bidders: r.bidders, closed: r.closed, card: !!r.card, url: gUrl(r), score: score(mine, r.price), guess: mine, again: !ins.meta.changes,
       crowd: { n: crowd.length, median: median(crowd) } })
   }
   if (p === 'market/board' && m === 'GET') {
@@ -162,6 +170,7 @@ export async function api(request, env, p, url, { J, take, sender, body }) {
     return J({ day: bkkDay(), board, guesses: rows.length }, 200, { 'cache-control': 'public, max-age=30' })
   }
   if (p === 'market/here' && m === 'POST') {
+    if (!(await take(env, await sender(request, env), 'here'))) return J({ error: 'quota' }, 429)
     const b = await body(request)
     const id = /^[a-z0-9]{8,24}$/.test(String(b.id || '')) ? String(b.id) : null
     const now = new Date(), cut = new Date(now - 3 * 60e3).toISOString()
@@ -177,6 +186,10 @@ export async function api(request, env, p, url, { J, take, sender, body }) {
     const b = await body(request)
     const site = String(b.site || ''), id = String(b.id || '')
     if (!/^[a-z0-9-]{3,40}$/.test(site) || !/^[a-z0-9]{4,12}$/.test(id)) return J({ error: 'which' }, 400)
+    const s = await env.DB.prepare("SELECT d FROM site WHERE name = ? AND status = 'live'").bind(site).first()
+    let real = false
+    try { real = !!s && normalize(JSON.parse(s.d)).amulets.some((x) => x.id === id) } catch {}
+    if (!real) return J({ error: 'which' }, 404)
     const r = await env.DB.prepare('INSERT INTO market_sadhu (site, amulet, n) VALUES (?,?,1) ON CONFLICT(site, amulet) DO UPDATE SET n = n + 1 RETURNING n').bind(site, id).first()
     return J({ n: r?.n || 1 })
   }

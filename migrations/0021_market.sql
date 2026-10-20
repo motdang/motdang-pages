@@ -10,5 +10,6 @@ CREATE TABLE IF NOT EXISTS market_guess (
 );
 CREATE INDEX IF NOT EXISTS market_guess_aid ON market_guess (aid);
 CREATE INDEX IF NOT EXISTS market_guess_day ON market_guess (day);
+CREATE UNIQUE INDEX IF NOT EXISTS market_guess_one ON market_guess (aid, who); -- one guess a player an auction
 CREATE TABLE IF NOT EXISTS market_here (id TEXT PRIMARY KEY, at TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS market_sadhu (site TEXT NOT NULL, amulet TEXT NOT NULL, n INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (site, amulet));
