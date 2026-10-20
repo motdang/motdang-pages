@@ -2,13 +2,14 @@
 // into it (front, then back), the facts a buyer asks about, a status a tap changes, and the
 // seller's guarantee and delivery words. make.js calls amuletsSec with its own helpers.
 
-import { AM_FORMS, AM_MATERIALS, AM_CONDS, AM_STATUS, AM_MAX, amLabel } from './amulet.mjs'
+import { AM_FORMS, AM_MATERIALS, AM_CONDS, AM_STATUS, AM_MAX, amLabel, amCap } from './amulet.mjs'
 import { amcamTray } from './make-amcam.mjs'
 
 const UI = {
-  en: { cam: 'Amulet camera', cam_pick: 'Or pick photos', cam_hint: 'Each photo becomes a new amulet at the top of your page, background removed. The photo stays on this phone until it is on the page, so a crash or a lost signal loses nothing.', cam_gold: 'Gold: the amulet camera. Each photo becomes a new amulet, background removed.',
+  en: { cam: 'Amulet camera', cam_pick: 'Or pick photos', cam_hint: 'Each photo becomes a new amulet at the top of your page, background removed. This phone keeps each photo until it is on the page, through a crash or a lost signal.', cam_gold: 'Gold: the amulet camera. Each photo becomes a new amulet, background removed.',
     cam_wait: 'Waiting', cam_cut: 'Removing the background', cam_send: 'Putting it on your page', cam_net: 'No signal. Kept on this phone', cam_refused: 'This photo was refused', cam_retry: 'Try again', cam_getting: 'Getting the cutting tool, {a} of {b} MB', cam_nokeep: 'This phone could not keep the photo. Keep the page open until it is up.', cam_dropq: 'Remove this photo from the phone?', cam_full: 'Your page is full: remove an amulet first',
-    auto_t: 'Amulet', lens: 'Search', post: 'Post', post_done: 'Caption copied. Paste it into the post.', post_tail: 'For rent to keep. Message me.',
+    auto_t: 'Amulet', lens: 'Search', post: 'Post', sian_join: 'Join Sala Sian · ฿{p} a year', sian_member: '◆ Sala Sian until {d}', sian_full: 'Sala Sian is full this month. Seats open on the 1st.', sian_pay: 'Sala Sian · ฿{p} a year, Gold included', guide: 'Price guide', guideName: 'Give it a name (temple, monk, year help) and the guide finds close sales.', pair: 'Front and back: every second photo is the back of the one before',
+    sian_h: 'Sala Sian · ฿{p} a year', sian_p: 'Every comparable in the guide, market prices under each amulet, 500 amulets, the Sala Sian mark.', sian_left: '{n} seats left this month', sian_go: 'See Sala Sian', amkt: 'Show market prices under each amulet (Sala Sian)', sian_on: '◆ Sala Sian', post_done: 'Caption copied. Paste it into the post.', post_tail: 'For rent to keep. Message me.',
     hint: 'Each amulet gets its own page to share, with a LINE reserve button.', free: 'Free pages show 6 amulets; Gold shows 120.', t: 'Name', tEx: 'Phra Somdej Wat Rakhang, large mould',
     shoot: 'Take photos', shootHint: 'Front first, then back. Close-ups help: the year stamp, the edge, beside a ruler. Daylight, no flash.', pick: 'Or pick from your photos', fix: 'Fix',
     st: 'Status', st_open: 'Available', st_reserved: 'Reserved', st_sold: 'Gone', st_show: 'On show', p: 'Price', pHint: 'Empty: the page says "Ask the price"', form: 'Kind', none: '—',
@@ -17,7 +18,8 @@ const UI = {
     termsEx: 'Refund within 7 days if not genuine. EMS across Thailand.', tap_amulet: 'Amulet pages', tap_reserve: 'Reserve on LINE', line: 'Your LINE, for the Reserve button', lineHint: 'Each amulet page has a Reserve on LINE button that messages you here. With no LINE, the button does not show.' },
   th: { cam: 'กล้องพระ', cam_pick: 'หรือเลือกรูป', cam_hint: 'ถ่ายหนึ่งรูป ได้พระหนึ่งองค์ขึ้นบนสุดของหน้า ตัดพื้นหลังให้ รูปเก็บไว้ในเครื่องจนกว่าจะขึ้นหน้าเว็บ แอปปิดหรือเน็ตหลุดก็ไม่หาย', cam_gold: 'หน้าทอง: กล้องพระ ถ่ายหนึ่งรูป ได้พระหนึ่งองค์ ตัดพื้นหลังให้',
     cam_wait: 'รอคิว', cam_cut: 'กำลังตัดพื้นหลัง', cam_send: 'กำลังขึ้นหน้าเว็บ', cam_net: 'ไม่มีเน็ต เก็บไว้ในเครื่องแล้ว', cam_refused: 'รูปนี้ไม่ผ่าน', cam_retry: 'ลองอีกครั้ง', cam_getting: 'กำลังโหลดเครื่องมือตัด {a} จาก {b} MB', cam_nokeep: 'เครื่องเก็บรูปไม่ได้ เปิดหน้านี้ไว้จนกว่ารูปจะขึ้น', cam_dropq: 'ลบรูปนี้ออกจากเครื่อง?', cam_full: 'หน้าเต็มแล้ว ลบพระออกก่อนหนึ่งองค์',
-    auto_t: 'พระองค์ที่', lens: 'ค้นหา', post: 'โพสต์', post_done: 'คัดลอกข้อความแล้ว วางในโพสต์ได้เลย', post_tail: 'ให้เช่าบูชา ทักแชทได้เลย',
+    auto_t: 'พระองค์ที่', lens: 'ค้นหา', post: 'โพสต์', sian_join: 'เข้าศาลาเซียน · ฿{p} ต่อปี', sian_member: '◆ ศาลาเซียน ถึง {d}', sian_full: 'ศาลาเซียนเต็มแล้วเดือนนี้ เปิดใหม่วันที่ 1', sian_pay: 'ศาลาเซียน · ฿{p} ต่อปี รวมทอง', guide: 'ราคากลาง', guideName: 'ตั้งชื่อพระก่อน (ใส่วัด เกจิ ปี ช่วยได้) แล้วดูราคาที่ใกล้เคียง', pair: 'หน้า-หลัง: รูปที่สองเป็นด้านหลังขององค์ก่อน',
+    sian_h: 'ศาลาเซียน · ฿{p} ต่อปี', sian_p: 'ราคากลางเต็มทุกรายการ ราคาตลาดใต้พระทุกองค์ ลงได้ 500 องค์ ตราศาลาเซียน', sian_left: 'เหลือ {n} ที่ในเดือนนี้', sian_go: 'ดูศาลาเซียน', amkt: 'แสดงราคาตลาดใต้พระทุกองค์ (ศาลาเซียน)', sian_on: '◆ ศาลาเซียน', post_done: 'คัดลอกข้อความแล้ว วางในโพสต์ได้เลย', post_tail: 'ให้เช่าบูชา ทักแชทได้เลย',
     hint: 'พระแต่ละองค์มีหน้าของตัวเอง แชร์ได้ พร้อมปุ่มจองทางไลน์', free: 'หน้าฟรีแสดง 6 องค์ หน้าทองแสดง 120', t: 'ชื่อพระ', tEx: 'พระสมเด็จวัดระฆัง พิมพ์ใหญ่',
     shoot: 'ถ่ายรูป', shootHint: 'ด้านหน้าก่อน แล้วด้านหลัง ถ่ายใกล้ ๆ ช่วยได้มาก: โค้ดหรือปี ขอบ วางข้างไม้บรรทัด ใช้แสงธรรมชาติ ไม่เปิดแฟลช', pick: 'หรือเลือกจากรูปของคุณ', fix: 'แต่งรูป',
     st: 'สถานะ', st_open: 'พร้อมเช่า', st_reserved: 'จองแล้ว', st_sold: 'เช่าแล้ว', st_show: 'พระโชว์', p: 'ราคาเช่า', pHint: 'เว้นว่างไว้ หน้าเว็บจะขึ้นว่า "สอบถามราคา"', form: 'ประเภท', none: '—',
@@ -26,7 +28,8 @@ const UI = {
     termsEx: 'รับประกันพระแท้ ไม่แท้คืนเงินภายใน 7 วัน · ส่ง EMS ทั่วประเทศ', tap_amulet: 'หน้าพระแต่ละองค์', tap_reserve: 'จองทางไลน์', line: 'ไลน์ของคุณ สำหรับปุ่มจอง', lineHint: 'หน้าพระแต่ละองค์มีปุ่ม "จองทางไลน์" ลูกค้ากดแล้วทักมาที่ไลน์นี้ ถ้าไม่ใส่ไลน์ ปุ่มจะไม่ขึ้น' },
   zh: { cam: '佛牌相机', cam_pick: '或选照片', cam_hint: '每拍一张，网页顶部就多一尊佛牌，背景自动去除。照片留在这部手机上，直到上了网页，闪退或断网都不会丢。', cam_gold: '金卡：佛牌相机。每张照片成为一尊新佛牌，背景自动去除。',
     cam_wait: '排队中', cam_cut: '正在去除背景', cam_send: '正在放上网页', cam_net: '没有网络，已存在手机上', cam_refused: '这张照片未通过', cam_retry: '再试一次', cam_getting: '正在下载去背工具 {a} / {b} MB', cam_nokeep: '手机无法保存照片。请保持此页打开，直到上传完成。', cam_dropq: '从手机删除这张照片？', cam_full: '网页已满，请先删除一尊',
-    auto_t: '佛牌', lens: '搜索', post: '发帖', post_done: '文字已复制，贴到帖子里。', post_tail: '可请供，欢迎私信。',
+    auto_t: '佛牌', lens: '搜索', post: '发帖', sian_join: '加入 Sala Sian · 每年 ฿{p}', sian_member: '◆ Sala Sian 至 {d}', sian_full: '本月 Sala Sian 已满，1 号再开。', sian_pay: 'Sala Sian · 每年 ฿{p}，含金卡', guide: '行情', guideName: '先填名称（寺庙、师父、年份有帮助），再看相近成交。', pair: '正反面：第二张是上一尊的背面',
+    sian_h: 'Sala Sian · 每年 ฿{p}', sian_p: '完整行情、每尊下方的市场价、500 尊、Sala Sian 标志。', sian_left: '本月还剩 {n} 位', sian_go: '看 Sala Sian', amkt: '在每尊下方显示市场价（Sala Sian）', sian_on: '◆ Sala Sian', post_done: '文字已复制，贴到帖子里。', post_tail: '可请供，欢迎私信。',
     hint: '每尊佛牌都有自己的网页，可以分享，带 LINE 预订按钮。', free: '免费网页显示 6 尊；金卡显示 120 尊。', t: '名称', tEx: '崇迪佛 大模',
     shoot: '拍照', shootHint: '先拍正面，再拍背面。近拍很有用：年份印记、边缘、放在尺子旁。用自然光，不开闪光灯。', pick: '或从你的照片中选', fix: '美化',
     st: '状态', st_open: '可请', st_reserved: '已预订', st_sold: '已请走', st_show: '仅展示', p: '请供价', pHint: '留空：网页显示“询价”', form: '类别', none: '—',
@@ -55,13 +58,15 @@ const CSS = `<style>.am{min-width:0}.am>summary{display:flex;align-items:center;
 .am details.more>summary{cursor:pointer;font-weight:700;margin:8px 0}.amcam{margin:0 0 14px}.amcam .shoot{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:64px;border-radius:14px;font-size:18px;font-weight:800;cursor:pointer;background:var(--ink);color:#fff}.amcam .shoot input{display:none}.amcam .shoot.ghost{min-height:48px;margin-top:8px;font-size:16px;background:#fff;color:var(--ink);box-shadow:inset 0 0 0 2px var(--line)}
 .amtray{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px;margin:10px 0 0}.amtray:empty{display:none}.amtray figure{position:relative;margin:0}.amtray img{display:block;width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:10px;background:#141210}.amtray figure.cut img,.amtray figure.send img,.amtray figure.wait img{opacity:.6}
 .amtray figcaption{font:600 12px/1.3 system-ui;margin-top:4px}.amtray .net figcaption,.amtray .refused figcaption{color:#b3261e}.amtray button{margin:4px 4px 0 0;padding:6px 10px;border:0;border-radius:8px;background:#fff;box-shadow:inset 0 0 0 2px var(--line);font:700 13px system-ui;cursor:pointer}
+.amguide:empty{display:none}.amguide{margin:0 0 12px}.amguide .apg-mid{font-size:24px}.amsian{margin:0 0 14px;padding:14px 16px;border-radius:16px;background:radial-gradient(120% 120% at 50% 0%,#7a1f2b,#2a070e);color:#f7ead2}.amsian b{color:#f3d48a;font-size:17px}.amsian p{margin:4px 0}.amsian a{color:#f3d48a;font-weight:800}.amcam .check{margin:8px 0 0}
 .am .act{display:flex;gap:8px;margin:0 0 10px}.am .act button{flex:1;min-height:48px;border:0;border-radius:12px;background:#fff;box-shadow:inset 0 0 0 2px var(--line);font:800 15px system-ui;cursor:pointer}.am .seg{margin:0 0 4px}.am .seg button{padding:10px 12px}.am .over{opacity:.5}</style>`
 
 /** The section's form. h = make.js's helpers: S, T, val, esc, icon, imgUrl, photoPick, rowX, seg, isGold, lang. */
 export function amuletsSec(h) {
   const { S, val, esc, icon, imgUrl, photoPick, rowX, seg, isGold, lineHref, lang } = h
+  const isSian = !!(h.isSian && h.isSian())
   const A = (k) => esc(amUi(lang, k))
-  const cap = isGold() ? AM_MAX.gold : AM_MAX.free
+  const cap = amCap(isGold(), isSian)
   const list = (id, rows) => `<datalist id="${id}">${rows.map((r) => `<option value="${esc(amLabel(rows, r[0], lang))}">`).join('')}</datalist>`
   const shown = (rows, v) => (rows.some((r) => r[0] === v) ? amLabel(rows, v, lang) : v)
   const rows = S.d.amulets.map((x, i) => {
@@ -72,7 +77,8 @@ export function amuletsSec(h) {
     return `<details class="rowc am${i >= cap ? ' over' : ''}" data-am="${esc(x.id)}"${isOpen ? ' open' : ''}>${rowX('amulets', i)}
       <summary><span class="th">${x.photos[0] ? `<img src="${esc(imgUrl(x.photos[0], true))}" alt="">` : '🪷'}</span><span class="sm"><b>${esc(x.t) || A('t')}</b><small>${esc(sub)}</small></span></summary>
       ${x.photos.length ? `<div class="chosen">${chosen}</div>` : ''}
-      ${x.photos.length ? `<div class="act"><button type="button" data-amlens="${i}">🔍 ${A('lens')}</button><button type="button" data-ampost="${i}">📣 ${A('post')}</button></div>` : ''}
+      <div class="act">${x.photos.length ? `<button type="button" data-amlens="${i}">🔍 ${A('lens')}</button><button type="button" data-ampost="${i}">📣 ${A('post')}</button>` : ''}<button type="button" data-amguide="${i}">฿ ${A('guide')}</button></div>
+      <div class="amguide" id="amg-${esc(x.id)}"></div>
       ${x.photos.length < AM_MAX.photos ? `<label class="shoot">${icon('camera')}${A('shoot')}<input type="file" accept="image/*" multiple data-amfile="${i}"></label><p class="hint">${A('shootHint')}</p>` : ''}
       ${S.d.photos.length ? `<details class="more"><summary>${A('pick')}</summary>${photoPick(`amulets.${i}.photos`, x.photos)}</details>` : ''}
       <label class="field"><span>${A('t')}</span><input data-k="amulets.${i}.t" value="${val(x.t)}" maxlength="100" placeholder="${A('tEx')}"></label>
@@ -94,10 +100,20 @@ export function amuletsSec(h) {
   })
   const camera = isGold()
     ? `<div class="amcam"><label class="shoot">${icon('camera')}${A('cam')}<input type="file" accept="image/*" capture="environment" data-amcam></label>
-      <label class="shoot ghost">${A('cam_pick')}<input type="file" accept="image/*" multiple data-amcam></label><p class="hint">${A('cam_hint')}</p>${amcamTray()}</div>`
+      <label class="shoot ghost">${A('cam_pick')}<input type="file" accept="image/*" multiple data-amcam></label><p class="hint">${A('cam_hint')}</p>
+      <label class="check"><input type="checkbox" class="sw" data-ampair ${h.pairOn && h.pairOn() ? 'checked' : ''}>${A('pair')}</label>${amcamTray()}</div>`
     : `<p class="hint">${A('cam_gold')}</p>`
   const lineF = `<label class="field"><span>${A('line')}</span><input data-k="contact.line" value="${val(S.d.contact.line)}" autocapitalize="off" placeholder="@myshop"></label>${lineHref(S.d.contact.line) ? '' : `<p class="hint" style="margin-top:-4px">${A('lineHint')}</p>`}`
-  return `${CSS}${camera}${lineF}<p class="hint">${A('hint')}${isGold() ? '' : ' ' + A('free')}</p>${list('am-mat', AM_MATERIALS)}${list('am-cond', AM_CONDS)}<div class="rows">${rows.join('')}</div>
-    ${S.d.amulets.length < AM_MAX.gold ? `<button class="go ghost" data-addrow="amulets">${icon('plus')}${A('add')}</button>` : ''}
+  const si = S.sian
+  const nf = new Intl.NumberFormat(lang)
+  const sianBox = isSian
+    ? `<label class="check"><input type="checkbox" class="sw" data-k="amkt" ${S.d.amkt ? 'checked' : ''}>${A('amkt')}</label><p class="hint"><a href="/sian" target="_blank">${A('sian_on')}</a></p>`
+    : si ? `<div class="amsian"><b>${esc(amUi(lang, 'sian_h').replace('{p}', nf.format(si.price)))}</b><p>${A('sian_p')}</p><p>${esc(amUi(lang, 'sian_left').replace('{n}', nf.format(si.left)))} · <a href="/sian" target="_blank">${A('sian_go')} →</a></p></div>` : ''
+  return `${CSS}${sianBox}${camera}${lineF}<p class="hint">${A('hint')}${isGold() ? '' : ' ' + A('free')}</p>${list('am-mat', AM_MATERIALS)}${list('am-cond', AM_CONDS)}<div class="rows">${rows.join('')}</div>
+    ${S.d.amulets.length < amCap(true, isSian) ? `<button class="go ghost" data-addrow="amulets">${icon('plus')}${A('add')}</button>` : ''}
     <label class="field" style="margin-top:16px"><span>${A('terms')}</span><textarea data-k="amterms" maxlength="600" style="min-height:70px" placeholder="${A('termsEx')}">${val(S.d.amterms)}</textarea></label>`
 }
+
+/** The price guide's query for one amulet: its fields, with the material and kind in Thai for the matcher. */
+export const amGuideQuery = (x) => new URLSearchParams(Object.entries({ t: x.t, temple: x.temple, maker: x.maker, year: x.year, mould: x.mould, cert: x.cert,
+  matl: x.mat ? amLabel(AM_MATERIALS, x.mat, 'th') : '', forml: x.form ? amLabel(AM_FORMS, x.form, 'th') : '' }).filter(([, v]) => v)).toString()

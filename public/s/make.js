@@ -12,9 +12,10 @@ import { exifBlock, readExif } from './exif.mjs'
 import { openStudio } from './studio-ui.mjs'
 import { openAvatar } from './avatar-ui.mjs'
 import { openDoodle } from './doodle-ui.mjs'
-import { amuletsSec, amToggle, amUi, newAmulet } from './make-amulet.mjs'
+import { amuletsSec, amToggle, amUi, newAmulet, amGuideQuery } from './make-amulet.mjs'
+import { drawGuide, GUIDE_CSS } from './amprice-ui.mjs'
 import { amcamInit, amcamTake, amcamClick, amLens, amPost } from './make-amcam.mjs'
-import { AM_MAX } from './amulet.mjs'
+import { AM_MAX, amCap } from './amulet.mjs'
 import { drawCard, cardKey, CARD } from './card.mjs'
 import { loadFaces } from './mark.mjs'
 
@@ -24,6 +25,8 @@ const store = {
   get(k, d) { try { const v = localStorage.getItem('mdp:' + k); return v === null ? d : JSON.parse(v) } catch { return d } },
   set(k, v) { try { localStorage.setItem('mdp:' + k, JSON.stringify(v)) } catch {} },
 }
+// the amulet camera's front-and-back switch; pair.open is the amulet waiting for its back
+const pair = { on: store.get('amPair', false), open: '' }
 const icon = (id) => `<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><use href="/s/icons.svg#i-${id}"/></svg>`
 const KIND_ICON = { shop: 'shop', food: 'food', service: 'gear', work: 'star', amulet: 'flower', stay: 'moon', homes: 'tag', me: 'me', event: 'party', group: 'people' }
 const TZ = (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone } catch { return 'Asia/Bangkok' } })()
@@ -963,7 +966,7 @@ const NEW_ROW = {
 // ---- the parts added 2026-10-15: an avatar, a portfolio, the picture studio ---------------
 
 Object.assign(SEC, {
-  amulets() { return amuletsSec({ S, val, esc, icon, imgUrl, photoPick, rowX, seg, isGold, lineHref, lang: S.lang }) },
+  amulets() { return amuletsSec({ S, val, esc, icon, imgUrl, photoPick, rowX, seg, isGold, lineHref, lang: S.lang, isSian, pairOn: () => pair.on }) },
   face() {
     const a = S.d.avatar
     return `<p class="hint">${T('face_hint')}</p><div class="avrow">${a ? `<img class="avpv${S.d.avround ? ' round' : ''}" src="${esc(imgUrl(a, true))}" alt="">` : `<span class="avpv none">${ding('smile', 'paper')}</span>`}
@@ -1134,6 +1137,7 @@ function bindEdit() {
     if (t.id === 'files') addFiles([...t.files])
     if (t.dataset.amfile !== undefined) amFiles(+t.dataset.amfile, [...t.files])
     if (t.dataset.amcam !== undefined) { camStart(); amcamTake([...t.files]); t.value = '' }
+    if (t.dataset.ampair !== undefined) { pair.on = t.checked; pair.open = ''; store.set('amPair', pair.on) }
     if (t.id === 'avfile' && t.files[0]) createImageBitmap(t.files[0], { imageOrientation: 'from-image' }).then((bmp) => avatarStudio(bmp)).catch(() => toast(ui(S.lang, 'e_net')))
     if (t.id === 'avround') { S.d.avround = t.checked; changed() }
     if (t.id === 'plang') { S.pageLang = t.value; changed() }
@@ -1149,6 +1153,8 @@ function bindEdit() {
     if (!b) return
     if (amcamClick(b)) { e.preventDefault(); return }
     if (b.dataset.amlens !== undefined || b.dataset.ampost !== undefined) { e.preventDefault(); amAct(b); return }
+    if (b.dataset.amguide !== undefined) { e.preventDefault(); amGuide(+b.dataset.amguide); return }
+    if (b.dataset.apuse !== undefined) { e.preventDefault(); amUse(b); return }
     if (b.dataset.tab) { e.preventDefault(); S.tab = b.dataset.tab; draw(); return }
     if (b.dataset.pg !== undefined) { e.preventDefault(); if (b.dataset.pg && S.part !== b.dataset.pg) openPart(b.dataset.pg); else closePart(); return }
     if (b.dataset.add) {
@@ -1558,14 +1564,54 @@ function camStart() {
     },
     made: (id) => {
       S.d.amulets = S.d.amulets.filter((a) => a.t || a.photos.length) // the empty starter row goes
+      // front and back: the second photo of a pair is the back of the amulet the first one made
+      const front = pair.on && pair.open && S.d.amulets.find((a) => a.id === pair.open && a.photos.length === 1)
+      if (front) {
+        front.photos = [...front.photos, id]
+        pair.open = ''
+        if (S.open.has('amulets')) redrawSec('amulets')
+        changed()
+        return
+      }
       const x = newAmulet(rid)
       x.t = `${amUi(S.lang, 'auto_t')} ${S.d.amulets.length + 1}`
       x.photos = [id]
-      S.d.amulets = [x, ...S.d.amulets].slice(0, AM_MAX.gold)
+      if (pair.on) pair.open = x.id
+      S.d.amulets = [x, ...S.d.amulets].slice(0, amCap(true, isSian()))
       if (S.open.has('amulets')) redrawSec('amulets')
       changed()
     },
   })
+}
+
+/** Sala Sian: this page is a member today. */
+function isSian() { return !!(S.sian && S.sian.member) && isGold() }
+
+/** The price guide for one amulet, drawn under its buttons (amprice-ui.mjs; a Sala Sian page sees every comparable). */
+async function amGuide(i) {
+  const x = S.d.amulets[i]
+  const box = x && document.getElementById('amg-' + x.id)
+  if (!box) return
+  if (box.innerHTML && box.dataset.q === amGuideQuery(x)) { box.innerHTML = ''; return } // a second tap folds it
+  if (!document.getElementById('apgcss')) { const st = document.createElement('style'); st.id = 'apgcss'; st.textContent = GUIDE_CSS; document.head.append(st) }
+  const auto = !x.t || x.t.startsWith(amUi(S.lang, 'auto_t') + ' ')
+  if (auto && !x.temple && !x.maker) { box.innerHTML = `<p class="hint">${esc(amUi(S.lang, 'guideName'))}</p>`; return }
+  box.dataset.q = amGuideQuery(x)
+  box.innerHTML = '<p class="hint">…</p>'
+  const g = await fetch('/api/amulet-price?' + box.dataset.q, { headers: S.token ? { 'x-edit': S.token } : {} }).then((r) => (r.ok ? r.json() : null)).catch(() => null)
+  box.innerHTML = drawGuide(g, S.lang, { use: x.status !== 'show' })
+  box.dataset.i = i
+}
+
+/** "Use ฿X": the guide's suggestion becomes the amulet's price. */
+function amUse(b) {
+  const box = b.closest('.amguide'), x = box && S.d.amulets[+box.dataset.i]
+  if (!x) return
+  x.p = new Intl.NumberFormat('en').format(+b.dataset.apuse)
+  const inp = document.querySelector(`[data-k="amulets.${box.dataset.i}.p"]`)
+  if (inp) inp.value = x.p
+  changed()
+  toast('฿' + x.p)
 }
 
 /** Search (Google Lens) or Post (Facebook groups) on an amulet's front photo. */
@@ -1966,6 +2012,13 @@ async function drawGold() {
   }
   const rooms = S.d.rooms.length > 0
   const want = S.payPlan || (rooms && (S.trial || S.plan === 'hotel') ? 'hotel' : 'gold')
+  // Sala Sian (src/sian.mjs): an amulet page's velvet rope, a Gold year with more, priced on a Shoup ladder
+  const AU = (k, v = {}) => esc(Object.entries(v).reduce((t, [a, b]) => t.replace('{' + a + '}', b), amUi(S.lang, k)))
+  const sianBox = !S.sian ? '' : isSian() ? `<p class="goldon">${AU('sian_member', { d: S.goldUntil || '' })} · <a href="/sian" target="_blank">/sian</a></p>`
+    : `<section class="gfound amsian"><h3>${AU('sian_h', { p: new Intl.NumberFormat(S.lang).format(S.sian.price) })}</h3><p>${AU('sian_p')}</p>
+      <p class="left">${S.sian.left > 0 ? AU('sian_left', { n: S.sian.left }) : AU('sian_full')}</p>
+      ${S.sian.left > 0 && want !== 'sian' ? `<button class="go" id="tosian">${AU('sian_join', { p: new Intl.NumberFormat(S.lang).format(S.sian.price) })}</button>` : ''} <a href="/sian" target="_blank" rel="noopener">${AU('sian_go')} →</a></section>`
+  const bindSian = () => { const b = $('#tosian'); if (b) b.onclick = () => { S.payPlan = 'sian'; drawGold() } }
   const needHotel = rooms && S.plan !== 'hotel'
   // founding membership (src/founding.mjs): two Gold years for one payment, while this month has seats.
   // Not for a page with rooms: a Gold code gives the Gold year, not the hotel plan.
@@ -1974,21 +2027,22 @@ async function drawGold() {
     <p>${esc(ui(S.lang, 'g_fmP').replace('{p}', nfL.format(fm.price)))}</p><p class="hint">${T('g_fmHow')}</p>
     <p class="left">${esc(ui(S.lang, 'g_fmLeft').replace('{n}', nfL.format(fm.left)))}</p>
     <a class="go" href="/founders" target="_blank" rel="noopener">${T('g_fmGo')} →</a></section>` : ''
-  if (isGold() && !S.trial && !(needHotel && /^hotel/.test(S.payPlan || ''))) {
-    tb.innerHTML = head + `<p class="goldon">★ ${esc(ui(S.lang, 'g_on').replace('{d}', S.goldUntil || ''))}</p>` +
+  if (isGold() && !S.trial && !(needHotel && /^hotel/.test(S.payPlan || '')) && want !== 'sian') {
+    tb.innerHTML = head + `<p class="goldon">★ ${esc(ui(S.lang, 'g_on').replace('{d}', S.goldUntil || ''))}</p>` + sianBox +
       (needHotel ? `<p style="text-align:center"><button class="go" id="tohotel">${esc(ui(S.lang, 'g_hotelGo').replace('{p}', new Intl.NumberFormat(S.lang).format(S.plans?.hotel?.baht || 555)))}</button></p>` : '') + domainBox() + list
     after()
     dingbats(['signals', 'classic', 'curious'])
     bindDomain()
     const th = $('#tohotel'); if (th) th.onclick = () => { S.payPlan = 'hotel'; drawGold() }
+    bindSian()
     return
   }
   const pick = rooms && S.plans ? `<div class="field" style="text-align:center">${seg('payplan', want, [['gold', esc(ui(S.lang, 'g_planGold').replace('{p}', new Intl.NumberFormat(S.lang).format(S.plans.gold.baht)))], ['hotel', esc(ui(S.lang, 'g_planHotel').replace('{p}', new Intl.NumberFormat(S.lang).format(S.plans.hotel.baht)))], ...(S.plans.hotelyear ? [['hotelyear', esc(ui(S.lang, 'g_planHotelYear').replace('{p}', new Intl.NumberFormat(S.lang).format(S.plans.hotelyear.baht)))]] : [])])}</div>` : ''
-  try { r = await call('POST', 'gold', { plan: want }) } catch { tb.innerHTML = head + `<p class="hint">${T('e_net')}</p>` + list; after(); return }
-  if (r.tier === 'gold' && !S.trial) { S.tier = 'gold'; S.goldUntil = r.gold_until; return drawGold() }
+  try { r = await call('POST', 'gold', { plan: want }) } catch (e) { tb.innerHTML = head + `<p class="hint">${e.message === 'full' ? AU('sian_full') : T('e_net')}</p>` + list; after(); S.payPlan = ''; return }
+  if (r.tier === 'gold' && !S.trial && want !== 'sian') { S.tier = 'gold'; S.goldUntil = r.gold_until; return drawGold() }
   const tail = String(r.amount).split('.')[1] || '00'
   const nf = new Intl.NumberFormat(S.lang)
-  tb.innerHTML = head + (S.trial ? `<p class="goldon">★ ${esc(ui(S.lang, 'g_trial').replace('{d}', S.goldUntil || ''))}</p>` : '') + pick + `<section class="goldpay"><p class="price">${esc(ui(S.lang, r.months === 1 ? 'g_priceMonth' : 'g_price').replace('{p}', nf.format(r.baht)))}</p>${r.hotel ? `<p class="hint">${T(r.months === 1 ? 'g_hotelWhy' : 'g_hotelYearWhy')}</p>` : ''}
+  tb.innerHTML = head + (S.trial ? `<p class="goldon">★ ${esc(ui(S.lang, 'g_trial').replace('{d}', S.goldUntil || ''))}</p>` : '') + pick + (want === 'sian' ? '' : sianBox) + `<section class="goldpay"><p class="price">${want === 'sian' ? AU('sian_pay', { p: nf.format(r.baht) }) : esc(ui(S.lang, r.months === 1 ? 'g_priceMonth' : 'g_price').replace('{p}', nf.format(r.baht)))}</p>${r.hotel ? `<p class="hint">${T(r.months === 1 ? 'g_hotelWhy' : 'g_hotelYearWhy')}</p>` : ''}
     ${r.payload ? `<div class="ppqr">${qrSvg(r.payload, { dark: '#0e3d78', light: '#ffffff', label: 'PromptPay' })}<b>฿${esc(nf.format(Number(r.amount)))}</b><span>PromptPay</span></div>
       <p class="hint">${esc(ui(S.lang, 'g_scan').replace('{s}', tail))}</p>
       <label class="pick goldslip">${icon('download')}${T('g_slip')}<input type="file" accept="image/*" id="slip"></label><p id="slipstate" class="pinstate"></p>` : `<p class="hint">${T('g_nopp')}</p>`}</section>` + fmBox + list + (isGold() ? domainBox() : '')
@@ -1996,6 +2050,7 @@ async function drawGold() {
   dingbats(['signals', 'classic', 'curious'])
   bindDomain()
   tb.querySelectorAll('[data-seg="payplan"]').forEach((b) => (b.onclick = () => { S.payPlan = b.dataset.v; drawGold() }))
+  bindSian()
   const slip = $('#slip')
   if (slip) slip.onchange = async () => {
     const f = slip.files[0]; if (!f) return
@@ -2003,7 +2058,7 @@ async function drawGold() {
     const fd = new FormData(); fd.append('slip', f, 'slip.jpg')
     try {
       const res = await call('POST', 'gold/slip', fd, true)
-      if (res.tier === 'gold') { S.tier = 'gold'; S.goldUntil = res.gold_until; S.trial = false; S.plan = want === 'gold' ? 'gold' : 'hotel'; S.hotel = want !== 'gold'; S.payPlan = ''; toast(ui(S.lang, 'g_thanks')); drawGold() }
+      if (res.tier === 'gold') { S.tier = 'gold'; S.goldUntil = res.gold_until; S.trial = false; S.plan = want === 'sian' ? 'sian' : want === 'gold' ? 'gold' : 'hotel'; S.hotel = !/^(gold|sian)$/.test(want); if (want === 'sian' && S.sian) S.sian.member = true; S.payPlan = ''; toast(ui(S.lang, 'g_thanks')); drawGold() }
       else { st.className = 'pinstate ok'; st.innerHTML = `${icon('check')}${T('g_wait')}` }
     } catch { st.textContent = ui(S.lang, 'e_net') }
   }
@@ -2133,7 +2188,7 @@ async function boot() {
       Object.assign(S, { name: r.name, kind: r.kind, look: lookOf(r.look), pageLang: r.lang, status: r.status, views: r.views, d: normalize(r.d), step: 'edit',
         tier: r.tier, goldUntil: r.gold_until || '', notifyEmail: r.notify_email, notifyOk: r.notify_ok, unread: r.unread,
         trial: !!r.trial, asks: r.asks || 0, domain: r.domain || '', domainState: r.domain_state || '', domains: !!r.domains, price: r.price || 3000,
-        plan: r.plan || 'gold', hotel: !!r.hotel, plans: r.plans || null, founders: r.founders || null, cardUrl: '' })
+        plan: r.plan || 'gold', hotel: !!r.hotel, plans: r.plans || null, founders: r.founders || null, sian: r.sian || null, cardUrl: '' })
       S.d.event = S.d.event || undefined
       S.open = new Set(DEFAULT_OPEN[S.kind]); S.part = ''
       if (h.get('tab')) S.tab = h.get('tab')

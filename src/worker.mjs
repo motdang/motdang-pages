@@ -10,6 +10,7 @@
 //   /x/<link>             a translator's page check: the maker's words beside the machine's (trcheck.mjs)
 //   /tap                  touch phones, a card lands on the other one; /tap/<id> what an NFC sticker opens (tap.mjs)
 //   /support              Use · Volunteer · Pay · Invest, for people far away who back Mot Dang (support.mjs)
+//   /amulet-price         the amulet price guide (amprice.mjs)    /sian  Sala Sian, the amulet sellers' velvet rope (sian.mjs)
 //   /sell                 sell pages for Mot Dang: the work, the pay, the sign-up; /sell/<id>.<tok> a seller's kit (sell.mjs)
 //   /name/calendar.ics    the page's calendar to follow    /name/l/<id>  a listing    /name/w/<id>  a portfolio project    /name/a/<id>  an amulet    /name/room/<id>.ics  a room's taken nights
 //   motdang.net/tech/     tech and AI events, live; /tech/events.json .ics w.js (events.mjs); /events → there
@@ -21,7 +22,7 @@
 
 import { promptPayPayload } from './promptpay.mjs'
 import { render, qrSvg, normalize, vcard, ics, sign, KINDS, LOOK_IDS, GOLD_LOOKS, MAX_PHOTOS, photoMax, sceneOf, HOME } from '../public/s/render.mjs'
-import { AM_MAX } from '../public/s/amulet.mjs'
+import { AM_MAX, amCap } from '../public/s/amulet.mjs'
 import { PAGE_LANGS } from '../public/s/words.mjs'
 import { nameProblem, screen } from './screen.mjs'
 import { clean, look, typeOf, MAX_BIG, MAX_SMALL } from './photo.mjs'
@@ -48,6 +49,8 @@ import { readCalendars, monthly, trialNotes } from './cron.mjs'
 import { calIcs, roomIcs, addDays, upcoming, utcOf } from '../public/s/extras.mjs'
 import { guestPage } from './guest.mjs'
 import { doodleRoute } from './doodle.mjs'
+import * as amprice from './amprice.mjs'
+import * as sian from './sian.mjs'
 
 const QUOTA = { site: 3, photo: 200, save: 400, report: 20, msg: 12, pd: 200, notify: 3, slip: 10, book: 10, domain: 6, lister: 3, deal: 40, terms: 10, join: 3, founding: 5, gift: 20, backer: 5, tap: 3, tapsave: 60, bump: 300 }
 const TRIAL_DAYS = 30 // Nan 2026-10-14: a new page is Gold for its first 30 days
@@ -135,6 +138,14 @@ async function route(request, env, ctx) {
       post: { people: (c) => postTo(env.DISCORD_PEOPLE, 'motdang people', c), core: (c) => postTo(env.DISCORD_CORE_PLAN, 'motdang plan', c) } })
     if (r) return r
   }
+  if (path === '/amulet-price' || path === '/amulet-price/') {
+    const nonce = rand(16)
+    const al = (request.headers.get('accept-language') || '').slice(0, 2)
+    const lang = ['th', 'en', 'zh'].includes(url.searchParams.get('hl')) ? url.searchParams.get('hl') : al === 'th' || !al ? 'th' : al === 'zh' ? 'zh' : 'en'
+    const P = await amprice.load(env).catch(() => null)
+    return html(amprice.lookupPage(lang, nonce, P?.built), 200, { nonce })
+  }
+  if (path === '/sian' || path === '/sian/') return sian.route(request, env, path, url, { html })
   if (path === '/tap' || path.startsWith('/tap/')) {
     const r = await tap.route(request, env, path, url, { html, sha, rand, sameOrigin, take, sender, clean, look })
     if (r) return r
@@ -170,7 +181,7 @@ async function passThrough(request, env, url) {
 async function page(request, env, ctx, name, sub, url, origin, base) {
   const s = await env.DB.prepare('SELECT * FROM site WHERE name = ?').bind(name).first()
   if (!s || s.status === 'removed' || s.status === 'draft') return html(notFound(s ? null : name, request, s?.status), s?.status === 'removed' ? 410 : 404)
-  const site = { ...s, d: JSON.parse(s.d), tier: gold.isGold(s) ? 'gold' : 'free', hotel: gold.isHotel(s) }
+  const site = { ...s, d: JSON.parse(s.d), tier: gold.isGold(s) ? 'gold' : 'free', hotel: gold.isHotel(s), sian: sian.isSian(s) }
   if (sub === '/contact.vcf') {
     if (s.status !== 'live') return new Response('', { status: 404 })
     return new Response(vcard(site), { headers: { 'content-type': 'text/vcard; charset=utf-8', 'content-disposition': `attachment; filename="${name}.vcf"` } })
@@ -222,7 +233,7 @@ async function page(request, env, ctx, name, sub, url, origin, base) {
   }
   if (sub.startsWith('/a/')) {
     const id = sub.slice(3)
-    if (!normalize(site.d).amulets.slice(0, site.tier === 'gold' ? AM_MAX.gold : AM_MAX.free).some((x) => x.id === id)) return html(notFound(null, request), 404)
+    if (!normalize(site.d).amulets.slice(0, amCap(site.tier === 'gold', site.sian)).some((x) => x.id === id)) return html(notFound(null, request), 404)
     opt.amulet = id
   }
   if (site.tier === 'gold' && s.status === 'live') {
@@ -355,6 +366,19 @@ async function api(request, env, ctx, p, url, origin) {
     const latest = (await env.DB.prepare("SELECT name, kind, look, d, tier, gold_until FROM site WHERE status='live' ORDER BY published DESC LIMIT 12").all()).results
       .map((r) => { const d = JSON.parse(r.d); return { name: r.name, kind: r.kind, look: r.look, title: d.name || r.name, tagline: d.tagline || '', cover: d.cover ? `/img/${d.cover}-s.webp` : '', card: d.card ? `/img/${d.card}.jpg` : '', gold: gold.isGold(r) } })
     return J({ live: r?.n || 0, countries: r?.cc || 0, gold: g?.n || 0, latest, price: Number(env.GOLD_THB) || gold.GOLD_THB, hotel: Number(env.HOTEL_THB) || gold.HOTEL_THB, hotelYear: Number(env.HOTEL_YEAR_THB) || gold.HOTEL_YEAR_THB }, 200, { 'cache-control': 'public, max-age=120' })
+  }
+
+  // the amulet price guide: open to anyone; a Sala Sian page's builder (x-edit) gets every comparable
+  if (p === 'amulet-price' && m === 'GET') {
+    const P = await amprice.load(env)
+    if (!P) return J({ error: 'nodata' }, 503)
+    const q = {}
+    for (const k of ['t', 'temple', 'maker', 'year', 'mat', 'mould', 'form', 'cert']) q[k] = String(url.searchParams.get(k) || '').slice(0, 160)
+    const labels = { mat: String(url.searchParams.get('matl') || '').slice(0, 60), form: String(url.searchParams.get('forml') || '').slice(0, 60) }
+    const tok = request.headers.get('x-edit') || ''
+    const s = tok ? await env.DB.prepare('SELECT tier, gold_until, plan FROM site WHERE edit_hash = ?').bind(await sha(tok)).first() : null
+    const full = sian.isSian(s)
+    return J(amprice.guide(P, q, { labels, full }), 200, full ? {} : { 'cache-control': 'public, max-age=3600', 'access-control-allow-origin': '*' })
   }
 
   if (p === 'find' && m === 'GET') return J({ results: await find(env, url, origin) }, 200, { 'access-control-allow-origin': '*', 'cache-control': 'public, max-age=60' })
@@ -505,6 +529,7 @@ ${s ? `<p>ข้อความถึง ${escHtml(title)} จะส่งสำ
       asks: (await env.DB.prepare("SELECT COUNT(*) AS n FROM booking WHERE site_id = ? AND status = 'new'").bind(s.id).first())?.n || 0,
       domain: s.domain || '', domain_state: s.domain_state || '', domains: dom.on(env), price: Number(env.GOLD_THB) || gold.GOLD_THB,
       plan: s.plan || 'gold', hotel: gold.isHotel(s), plans: gold.PLANS(env),
+      sian: s.kind === 'amulet' || normalize(JSON.parse(s.d)).amulets.length ? await sian.thisMonth(env).then((x) => ({ price: x.price, left: x.left, seats: x.seats, member: sian.isSian(s) })).catch(() => null) : null,
       founders: await founding.thisMonth(env).then((f) => ({ price: f.price, left: f.left })).catch(() => null) })
   }
 
@@ -720,6 +745,11 @@ ${s ? `<p>ข้อความถึง ${escHtml(title)} จะส่งสำ
 
   if (p === 'gold' && m === 'POST') {
     const want = String((await body(request)).plan || '')
+    if (want === 'sian') {
+      const pl = await sian.plan(env)
+      if (pl.left <= 0 && !sian.isSian(s)) return J({ error: 'full' }, 409)
+      return J({ ...(await gold.start(env, s.id, rand, pl)), plan: 'sian', tier: isGold ? 'gold' : 'free', gold_until: s.gold_until, member: sian.isSian(s) })
+    }
     return J({ ...(await gold.start(env, s.id, rand, gold.planOf(env, normalize(JSON.parse(s.d)), want))), tier: isGold ? 'gold' : 'free', gold_until: s.gold_until })
   }
   if (p === 'gold/slip' && m === 'POST') {

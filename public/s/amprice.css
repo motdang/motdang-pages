@@ -1,0 +1,12 @@
+/* /amulet-price and /sian: one column, Thai first, readable on a phone at a stall */
+:root{--ink:#1c1712;--mute:#6b6257;--soft:#f6f1e7;--line:#e5dccb;--bg:#fff;--acc:#7a1f2b;--gold:#b8860b;--body:"Prompt","Noto Sans Thai","Leelawadee UI",Tahoma,system-ui,sans-serif;--display:var(--body)}
+@media (prefers-color-scheme:dark){:root{--ink:#f3ece0;--mute:#b9ad9c;--soft:#2a231d;--line:#3b322a;--bg:#1a1511}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 var(--body)}
+main{max-width:720px;margin:0 auto;padding:24px 16px 64px}a{color:var(--acc)}
+.kick{font:700 13px var(--body);color:var(--mute);margin:0 0 18px}.kick a{color:inherit}
+h1{font:800 clamp(30px,8vw,46px)/1.1 var(--display);margin:0 0 10px}.lead{font-size:18px;margin:0 0 18px;color:var(--mute)}
+.apf{display:flex;gap:8px;margin:0 0 10px}.apf input{flex:1;min-width:0;min-height:54px;padding:0 16px;border:2px solid var(--line);border-radius:14px;font:600 18px var(--body);background:var(--bg);color:var(--ink)}
+.apf button,.btn{display:inline-flex;align-items:center;justify-content:center;min-height:54px;padding:0 20px;border:0;border-radius:14px;background:var(--ink);color:var(--bg);font:800 17px var(--body);text-decoration:none;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 2px var(--line)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 20px}.chips button{padding:8px 12px;border:0;border-radius:99px;background:var(--soft);color:var(--ink);font:700 14px var(--body);cursor:pointer}
+.apout{min-height:40px}.wait{color:var(--mute)}.note{color:var(--mute);font-size:14px;margin:18px 0}.cta{display:flex;flex-wrap:wrap;gap:10px}
