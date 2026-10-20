@@ -86,3 +86,19 @@ input[type=range]{width:100%;accent-color:var(--gold);height:36px}.who{color:var
 .board ol{margin:0;padding-left:22px}.board li{display:flex;gap:8px;padding:4px 0}.board li span{flex:1}.board li b{color:var(--gold)}.board li small{color:var(--mute)}.board li.me span{color:var(--jade);font-weight:800}
 .note{color:var(--mute);font-size:13px;margin:30px 0 10px}.cta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 40px}.wait{color:var(--mute)}
 @media (prefers-reduced-motion:reduce){.sky i,.lanterns li,.run{animation:none}.sky i{opacity:.6}}
+/* stalls are links now (a stall has its own page); the ticker's second copy sits in line */
+a.stall{color:var(--ink);text-decoration:none}.run .dup{display:contents}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0 0}
+.sh{border:0;border-radius:99px;padding:6px 12px;background:rgba(111,211,168,.14);color:var(--jade);font-weight:800;cursor:pointer}
+.btn.sh{background:var(--jade);color:#06231a}.btn.ghost.sh{background:transparent;color:var(--jade);box-shadow:inset 0 0 0 2px rgba(111,211,168,.5)}
+.tr header .sh{margin-left:auto;margin-right:8px}
+.crumb{margin:0 0 6px;font-size:14px}.stallpage h2 small{font-size:16px;color:var(--mute);font-weight:600}
+/* the share sheet */
+.sharebox{width:min(520px,100vw);margin:auto auto 0;border-radius:22px 22px 0 0;background:var(--night2);box-shadow:0 -10px 40px rgba(0,0,0,.6)}
+@media(min-width:620px){.sharebox{margin:auto;border-radius:22px}}
+.sb{padding:14px 16px 22px}.sb header{display:flex;justify-content:space-between;align-items:center;margin:0 0 10px}.sb header b{font-size:18px;color:var(--gold)}
+.sbcard{display:block;width:100%;height:auto;border-radius:12px;background:#000;margin:0 0 8px}.sbtext{color:var(--mute);font-size:14px;margin:0 0 12px}
+.chs{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px}
+.ch{display:flex;align-items:center;justify-content:center;min-height:48px;border:0;border-radius:14px;font:800 15px var(--body);text-decoration:none;color:#fff;cursor:pointer;background:#333}
+.ch.line{background:#06c755}.ch.facebook{background:#1877f2}.ch.x{background:#000;box-shadow:inset 0 0 0 1px #444}.ch.whatsapp{background:#25d366}.ch.messenger{background:#0084ff}
+.ch.copy,.ch.native{background:rgba(255,255,255,.1);color:var(--ink)}

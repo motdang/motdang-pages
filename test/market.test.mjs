@@ -53,8 +53,9 @@ test('stalls gather a kind or a concept, with middles and a photo credited to it
   assert.equal(market.stall(P, 'nope'), null)
 })
 
-test('a round carries no price', () => {
-  const r = market.round(P, () => 0)
+test("a round carries no price, and the bell's auctions never come up at random", () => {
+  assert.equal(market.round(P, () => 0), null) // all three sample auctions are in the bell
+  const r = market.round(P, () => 0, 11) // a challenge link asks for one by name
   assert.equal(r.aid, 11)
   assert.equal(r.price, undefined)
   assert.ok(!JSON.stringify(r).includes('900'))
@@ -114,4 +115,54 @@ test('the shelf shows sellers\' available amulets with a photo, Sala Sian first'
   const html = market.page('th', 'n0nce', market.front(P), rows, 'https://sites.motdang.net')
   assert.match(html, /<script type="application\/json" id="mkdata">/)
   assert.ok(!/<\/script><script>/.test(html.split('mkdata')[1].split('</script>')[0])) // the data cannot close its script
+})
+
+test('the page is whole HTML: stalls as links, cards, schema.org, alt text on every photo', async () => {
+  const F = market.front(P)
+  const rows = [{ site: 'velvet', shop: 'ร้าน velvet', id: 'a001', t: 'นางกวัก', p: '500', status: 'open', pic: 'https://sites.motdang.net/img/abcdefghijkn-s.webp', url: 'https://sites.motdang.net/velvet/a/a001', sian: true, band: [100, 300, 'l'], sadhu: 2, temple: 'วัดบ้านไร่', maker: '', year: '2536', mat: 'เนื้อผง', form: '' }]
+  const h = market.page('th', 'n', F, rows, 'https://sites.motdang.net')
+  assert.match(h, /<a class="stall" href="\/amulets\/lp-liu"/)
+  assert.match(h, /<meta property="og:image" content="https:\/\/sites\.motdang\.net\/amulets\/card\/market\.jpg">/)
+  assert.match(h, /<meta name="twitter:card" content="summary_large_image">/)
+  assert.match(h, /<meta property="og:image:alt" content="[^"]{20,}">/)
+  const ldj = JSON.parse(/<script type="application\/ld\+json">(.*?)<\/script>/s.exec(h)[1])
+  assert.equal(ldj['@type'], 'CollectionPage')
+  assert.equal(ldj.hasPart[1].itemListElement[0].item.offers.price, 500)
+  const imgs = [...h.matchAll(/<img [^>]*>/g)].map((m) => m[0])
+  assert.ok(imgs.length >= 3)
+  for (const i of imgs) assert.match(i, /alt="[^"]{12,}"/, i) // no photo without words
+  assert.match(h, /alt="ด้านหน้าของนางกวัก \(วัดบ้านไร่ · 2536 · เนื้อผง\) จากร้าน ร้าน velvet บน Mot Dang"/)
+  assert.match(h, /data-share="am:velvet\/a001"/)
+})
+
+test('a stall page has its own title, card and list; a challenge link its own card', () => {
+  const F = market.front(P)
+  const st = market.stall(P, 'nang-kwak')
+  assert.equal(st.slug, 'nang-kwak')
+  const h = market.page('en', 'n', F, [], 'https://sites.motdang.net', { stall: st })
+  assert.match(h, /<title>Nang Kwak stall · market prices · Mot Dang<\/title>/)
+  assert.match(h, /amulets\/card\/stall-nang-kwak\.jpg/)
+  assert.match(h, /<link rel="canonical" href="https:\/\/sites\.motdang\.net\/amulets\/nang-kwak\?hl=en">/)
+  assert.match(h, /Seller’s photo on Lazada: นางกวัก กวักเงินทอง, listed at ฿259, 594 sold/)
+  const g = market.round(P, Math.random, 13)
+  assert.equal(g.aid, 13)
+  const gh = market.page('th', 'n', F, [], 'https://sites.motdang.net', { game: g })
+  assert.match(gh, /amulets\/card\/g-13\.jpg/)
+  assert.ok(!gh.includes('view.php?aid=13')) // the challenge's own auction is out of the bell, so its hammer stays hidden
+})
+
+test('the market as JSON for bots and others', () => {
+  const j = market.feedJson(P, 'https://sites.motdang.net')
+  const liu = j.stalls.find((s) => s.name_en === 'LP Liu')
+  assert.equal(liu.url, 'https://sites.motdang.net/amulets/lp-liu')
+  assert.equal(liu.auction_median_thb, 1050)
+})
+
+test('cards upload only with the admin key, only as JPEG', async () => {
+  const env = { DB: d1(), ADMIN_KEY: 'k', MEDIA: { put: async (k, v) => { env.put = k } } }
+  const put = (auth, bytes) => market.api(new Request('http://x/api/market/card/stall-lp-liu.jpg', { method: 'PUT', headers: auth ? { authorization: 'Basic ' + btoa('a:' + auth) } : {}, body: bytes }), env, 'market/card/stall-lp-liu.jpg', new URL('http://x'), deps)
+  assert.equal((await put('', new Uint8Array([255, 216, 255, 1]))).status, 401)
+  assert.equal((await put('k', new Uint8Array([1, 2, 3]))).status, 400)
+  assert.equal((await put('k', new Uint8Array([255, 216, 255, 1]))).status, 200)
+  assert.equal(env.put, 'market/card/stall-lp-liu.jpg')
 })

@@ -122,11 +122,21 @@ export function guide(P, q, { labels, full = false } = {}) {
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c])
 
+/** LINE, Facebook and X share links, no script. */
+export function shareLinks(text, url) {
+  const e = encodeURIComponent
+  return [['LINE', `https://line.me/R/share?text=${e(text + '\n' + url)}`], ['Facebook', `https://www.facebook.com/sharer/sharer.php?u=${e(url)}`], ['X', `https://x.com/intent/post?text=${e(text)}&url=${e(url)}`]]
+    .map(([n, h]) => `<a class="btn ghost" href="${h}" target="_blank" rel="noopener">📣 ${n}</a>`).join('')
+}
+
 export function lookupPage(lang, nonce, built) {
   const T = GUIDE_WORDS[lang] || GUIDE_WORDS.en
   return `<!doctype html><html lang="${lang}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${esc(T.title)} · Mot Dang</title><meta name="description" content="${esc(T.lead)}">
-<meta property="og:title" content="${esc(T.title)}"><meta property="og:description" content="${esc(T.lead)}"><meta property="og:image" content="https://sites.motdang.net/s/card.jpg">
+<meta property="og:type" content="website"><meta property="og:site_name" content="Mot Dang"><meta property="og:url" content="https://sites.motdang.net/amulet-price">
+<meta property="og:title" content="${esc(T.title)}"><meta property="og:description" content="${esc(T.lead)}"><meta property="og:image" content="https://sites.motdang.net/amulets/card/guide.jpg">
+<meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:image:alt" content="${esc(lang === 'th' ? 'การ์ดราคากลางพระเครื่องของ Mot Dang: ชื่อตัวทองบนพื้นกลางคืน ราคาประมูลกลางของแผงตัวอย่าง และรูปพระสี่รูปจากผู้ขาย' : 'Mot Dang amulet price guide card: the title in gold on a night sky, sample auction middle prices for three kinds, and four sellers’ amulet photos')}">
+<meta name="twitter:card" content="summary_large_image"><link rel="canonical" href="https://sites.motdang.net/amulet-price${lang === 'th' ? '' : '?hl=' + lang}">
 <link rel="icon" href="/s/ant.svg"><link rel="stylesheet" href="/s/amprice.css"><style>${GUIDE_CSS}</style></head>
 <body class="apg"><main><p class="kick"><a href="/">sites.motdang.net</a> · <a href="?hl=${lang === 'th' ? 'en' : 'th'}">${lang === 'th' ? 'English' : 'ไทย'}</a></p>
 <h1>${esc(T.title)}</h1><p class="lead">${esc(T.lead)}</p>
@@ -134,6 +144,7 @@ export function lookupPage(lang, nonce, built) {
 <div class="chips">${['สมเด็จวัดระฆัง', 'หลวงปู่ทวด วัดช้างให้', 'หลวงพ่อคูณ', 'หลวงปู่ทิม', 'นางกวัก', 'ท้าวเวสสุวรรณ', 'พญาเต่าเรือน', 'ตะกรุด'].map((x) => `<button type="button" data-q="${esc(x)}">${esc(x)}</button>`).join('')}</div>
 <div id="apout" class="apout" aria-live="polite"></div>
 ${built ? `<p class="note">${esc(T.updated.replace('{d}', built.slice(0, 10)))}</p>` : ''}
+<nav class="cta share">${shareLinks(lang === 'th' ? 'ราคากลางพระเครื่อง: ประมูลที่ปิดแล้วและราคาออนไลน์ ทุกรายการมีลิงก์' : 'Amulet price guide: closed auctions and online prices, each linked', 'https://sites.motdang.net/amulet-price')}</nav>
 <nav class="cta"><a class="btn" href="/amulets?hl=${lang}">${lang === 'th' ? 'ตลาดพระ' : 'Amulet market'} →</a><a class="btn ghost" href="/make#kind=amulet">${esc(T.make)}</a><a class="btn ghost" href="/sian">${esc(T.sian)}</a></nav></main>
 <script type="module" nonce="${nonce}">import { drawGuide } from '/s/amprice-ui.mjs'
 const out = document.getElementById('apout'), qi = document.getElementById('apq'), lang = ${JSON.stringify(lang)}
