@@ -26,11 +26,11 @@ export const isSian = (s) => gold.isGold(s) && s?.plan === 'sian'
 
 // a Bangkok month as UTC bounds, for pay.updated
 const bounds = (m) => [new Date(Date.parse(`${m}-01T00:00:00+07:00`)).toISOString(), new Date(Date.parse(`${nextMonth(m)}-01T00:00:00+07:00`)).toISOString()]
+// the seats a month counts: paid in it, open from the last two days, a slip sent in the last seven
+const HELD = "plan = 'sian' AND ((status = 'paid' AND updated >= ? AND updated < ?) OR (status = 'slip' AND updated >= ?) OR (status = 'open' AND created >= ?))"
+const heldArgs = (month, t = Date.now()) => [...bounds(month), new Date(t - 7 * 864e5).toISOString(), new Date(t - 2 * 864e5).toISOString()]
 async function taken(env, month) {
-  const [a, b] = bounds(month)
-  // paid this month, plus payments still open from the last two days or waiting on a slip: those seats are held
-  const held = new Date(Date.now() - 2 * 864e5).toISOString()
-  return (await env.DB.prepare("SELECT COUNT(*) AS n FROM pay WHERE plan = 'sian' AND ((status = 'paid' AND updated >= ? AND updated < ?) OR status = 'slip' OR (status = 'open' AND created >= ?))").bind(a, b, held).first())?.n || 0
+  return (await env.DB.prepare(`SELECT COUNT(*) AS n FROM pay WHERE ${HELD}`).bind(...heldArgs(month)).first())?.n || 0
 }
 
 /** This month's price and seats left; a new month steps the price from the one before. */
@@ -52,6 +52,26 @@ export async function thisMonth(env, t = Date.now()) {
 export async function plan(env) {
   const m = await thisMonth(env)
   return { plan: 'sian', baht: m.price, months: 12, hotel: false, left: m.left }
+}
+
+/**
+ * A seat and its payment: the payment is made, then the month's held seats are read in the order
+ * they were made; one past the seats goes again and the month answers full. Two pages asking for
+ * the last seat at once both make a payment; the later one is removed.
+ */
+export async function reserve(env, siteId, rand) {
+  const pl = await plan(env)
+  if (pl.left <= 0) return { full: true }
+  const r = await gold.start(env, siteId, rand, pl)
+  const month = bkkMonth()
+  const ids = (await env.DB.prepare(`SELECT id, site_id FROM pay WHERE ${HELD} ORDER BY created, id`).bind(...heldArgs(month)).all()).results
+  const mine = ids.findIndex((x) => x.site_id === siteId)
+  const seats = (await env.DB.prepare('SELECT seats FROM sian_month WHERE month = ?').bind(month).first())?.seats || SEATS
+  if (mine >= seats) {
+    await env.DB.prepare("DELETE FROM pay WHERE site_id = ? AND plan = 'sian' AND status = 'open'").bind(siteId).run()
+    return { full: true }
+  }
+  return { ...r, left: Math.max(0, seats - ids.length) }
 }
 
 /** Members on the wall: live Sala Sian pages, newest first. */

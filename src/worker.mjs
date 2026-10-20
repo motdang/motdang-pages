@@ -746,9 +746,9 @@ ${s ? `<p>ข้อความถึง ${escHtml(title)} จะส่งสำ
   if (p === 'gold' && m === 'POST') {
     const want = String((await body(request)).plan || '')
     if (want === 'sian') {
-      const pl = await sian.plan(env)
-      if (pl.left <= 0 && !sian.isSian(s)) return J({ error: 'full' }, 409)
-      return J({ ...(await gold.start(env, s.id, rand, pl)), plan: 'sian', tier: isGold ? 'gold' : 'free', gold_until: s.gold_until, member: sian.isSian(s) })
+      const r = await sian.reserve(env, s.id, rand)
+      if (r.full) return J({ error: 'full' }, 409)
+      return J({ ...r, plan: 'sian', tier: isGold ? 'gold' : 'free', gold_until: s.gold_until, member: sian.isSian(s) })
     }
     return J({ ...(await gold.start(env, s.id, rand, gold.planOf(env, normalize(JSON.parse(s.d)), want))), tier: isGold ? 'gold' : 'free', gold_until: s.gold_until })
   }
