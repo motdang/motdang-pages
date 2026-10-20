@@ -129,7 +129,7 @@ export function page(env, lang, month, list, nonce) {
 <ol class="ladder" aria-label="price ladder">${rung}</ol><p class="shoup">${esc(T.shoup)}</p>
 <p class="how">${esc(T.joinHow)}</p><nav class="cta"><a class="btn" href="/make">${esc(T.join)}</a><a class="btn ghost" href="/make#kind=amulet">${esc(T.make)}</a></nav></div></header>
 <main><h2>${esc(T.inside)}</h2><ul class="perks">${T.b.map(([h, p]) => `<li><b>${esc(h)}</b><span>${esc(p)}</span></li>`).join('')}</ul>
-<p><a class="btn ghost" href="/amulet-price?hl=${lang}">${esc(T.try)} →</a></p>
+<p class="cta"><a class="btn" href="/amulets?hl=${lang}">${lang === 'th' ? 'ตลาดพระ' : 'Amulet market'} →</a><a class="btn ghost" href="/amulet-price?hl=${lang}">${esc(T.try)} →</a></p>
 ${list.length ? `<h2>${esc(T.wall)}</h2><div class="wall">${list.map(card).join('')}</div>` : ''}</main></body></html>`
 }
 

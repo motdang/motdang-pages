@@ -10,6 +10,7 @@
 //   /x/<link>             a translator's page check: the maker's words beside the machine's (trcheck.mjs)
 //   /tap                  touch phones, a card lands on the other one; /tap/<id> what an NFC sticker opens (tap.mjs)
 //   /support              Use · Volunteer · Pay · Invest, for people far away who back Mot Dang (support.mjs)
+//   /amulets              ตลาดพระ, the amulet night market: sellers' amulets, stalls, Guess the hammer (market.mjs)
 //   /amulet-price         the amulet price guide (amprice.mjs)    /sian  Sala Sian, the amulet sellers' velvet rope (sian.mjs)
 //   /sell                 sell pages for Mot Dang: the work, the pay, the sign-up; /sell/<id>.<tok> a seller's kit (sell.mjs)
 //   /name/calendar.ics    the page's calendar to follow    /name/l/<id>  a listing    /name/w/<id>  a portfolio project    /name/a/<id>  an amulet    /name/room/<id>.ics  a room's taken nights
@@ -51,8 +52,9 @@ import { guestPage } from './guest.mjs'
 import { doodleRoute } from './doodle.mjs'
 import * as amprice from './amprice.mjs'
 import * as sian from './sian.mjs'
+import * as market from './market.mjs'
 
-const QUOTA = { site: 3, photo: 200, save: 400, report: 20, msg: 12, pd: 200, notify: 3, slip: 10, book: 10, domain: 6, lister: 3, deal: 40, terms: 10, join: 3, founding: 5, gift: 20, backer: 5, tap: 3, tapsave: 60, bump: 300 }
+const QUOTA = { site: 3, photo: 200, save: 400, report: 20, msg: 12, pd: 200, notify: 3, slip: 10, book: 10, domain: 6, lister: 3, deal: 40, terms: 10, join: 3, founding: 5, gift: 20, backer: 5, tap: 3, tapsave: 60, bump: 300, guess: 400, sadhu: 200, here: 2500 }
 const TRIAL_DAYS = 30 // Nan 2026-10-14: a new page is Gold for its first 30 days
 const MAIN = 'https://motdang.net'
 const PASS = /^\/(vendor|fonts|tiles|data|front)\/|^\/sites\/doodle-map\//
@@ -146,6 +148,7 @@ async function route(request, env, ctx) {
     return html(amprice.lookupPage(lang, nonce, P?.built), 200, { nonce })
   }
   if (path === '/sian' || path === '/sian/') return sian.route(request, env, path, url, { html })
+  if (path === '/amulets' || path === '/amulets/') return market.route(request, env, path, url, origin, { rand })
   if (path === '/tap' || path.startsWith('/tap/')) {
     const r = await tap.route(request, env, path, url, { html, sha, rand, sameOrigin, take, sender, clean, look })
     if (r) return r
@@ -248,7 +251,7 @@ async function page(request, env, ctx, name, sub, url, origin, base) {
   return html(render(site, opt), 200, { nonce })
 }
 
-const CSP_PAGE = (nonce) => `default-src 'self'; img-src 'self' data: blob: https://i.ytimg.com; style-src 'self' 'unsafe-inline'; font-src 'self'; ` +
+const CSP_PAGE = (nonce) => `default-src 'self'; img-src 'self' data: blob: https://i.ytimg.com https://www.g-pra.com https://img.lazcdn.com; style-src 'self' 'unsafe-inline'; font-src 'self'; ` +
   `script-src 'self'${nonce ? ` 'nonce-${nonce}'` : ''} https://static.cloudflareinsights.com; connect-src 'self' https://cloudflareinsights.com; worker-src 'self' blob:; child-src 'self' blob:; ` +
   `frame-src 'self' https://www.youtube-nocookie.com https://player.vimeo.com https://drive.google.com; frame-ancestors 'self'; base-uri 'none'; form-action 'self'`
 const CSP_MAP = (nonce) => `default-src 'self'; img-src 'self' data: blob: https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://motdang.net; font-src 'self' https://fonts.gstatic.com https://motdang.net; ` +
@@ -366,6 +369,11 @@ async function api(request, env, ctx, p, url, origin) {
     const latest = (await env.DB.prepare("SELECT name, kind, look, d, tier, gold_until FROM site WHERE status='live' ORDER BY published DESC LIMIT 12").all()).results
       .map((r) => { const d = JSON.parse(r.d); return { name: r.name, kind: r.kind, look: r.look, title: d.name || r.name, tagline: d.tagline || '', cover: d.cover ? `/img/${d.cover}-s.webp` : '', card: d.card ? `/img/${d.card}.jpg` : '', gold: gold.isGold(r) } })
     return J({ live: r?.n || 0, countries: r?.cc || 0, gold: g?.n || 0, latest, price: Number(env.GOLD_THB) || gold.GOLD_THB, hotel: Number(env.HOTEL_THB) || gold.HOTEL_THB, hotelYear: Number(env.HOTEL_YEAR_THB) || gold.HOTEL_YEAR_THB }, 200, { 'cache-control': 'public, max-age=120' })
+  }
+
+  if (p.startsWith('market/')) {
+    const r = await market.api(request, env, p, url, { J, take, sender, body })
+    if (r) return r
   }
 
   // the amulet price guide: open to anyone; a Sala Sian page's builder (x-edit) gets every comparable
