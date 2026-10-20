@@ -111,9 +111,9 @@ const baht = (a) => { const [w, t] = String(a).split('.'); return nf(Number(w)) 
 const bkkMonth = (t = Date.now()) => new Date(t + 7 * 3600e3).toISOString().slice(0, 7)
 const lineShare = (t) => 'https://line.me/R/share?text=' + encodeURIComponent(t)
 
-function shell(title, body) {
+function shell(title, body, og = '') {
   return `<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex">
-<title>${esc(title)}</title>
+<title>${esc(title)}</title>${og}
 <style>body{margin:0;font:17px/1.45 system-ui,sans-serif;background:#fff8e7;color:#1c1530}main{max-width:560px;margin:0 auto;padding:18px 16px 48px}
 h1{font-size:24px;margin:0 0 6px}h2{font-size:19px;margin:26px 0 8px}.amt{font-size:34px;font-weight:800;margin:6px 0}.hint{font-size:15px;color:#4a4458}
 .card{background:#fff;border:2px solid #1c1530;border-radius:14px;padding:14px;margin:10px 0}.row{display:flex;gap:10px;flex-wrap:wrap}
@@ -124,6 +124,8 @@ button,.btn{display:inline-block;font:inherit;font-weight:800;padding:14px 16px;
 <body><main>${body}</main></body></html>`
 }
 const note = (th, en) => shell(en, `<p style="font-size:19px">${esc(th)}<br>${esc(en)}</p>`)
+
+const LISTER_OG = '<meta property="og:type" content="website"><meta property="og:url" content="https://sites.motdang.net/lister"><meta property="og:title" content="หาเงินจากการลงประกาศ · Earn from listings"><meta property="og:description" content="A share of the fee on every deal you bring."><meta property="og:image" content="https://sites.motdang.net/s/lister-card.jpg"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:image:type" content="image/jpeg"><meta property="og:image:alt" content="หาเงินจากการลงประกาศ · Earn from listings, on Mot Dang"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:image" content="https://sites.motdang.net/s/lister-card.jpg">'
 
 /** /lister — the ask. */
 function applyPage(done) {
@@ -142,7 +144,7 @@ function applyPage(done) {
 <p><button type="submit">ส่ง · Send</button></p></form>
 <details><summary class="hint">ลงอะไรได้บ้าง · What you can list</summary><ul><li>เช่า ขาย ที่อยู่อาศัย พาณิชย์ อุตสาหกรรม · Rent or sale: residential, commercial, industrial</li>
 <li>ช่างซ่อม แม่บ้าน คนสวน ช่างประปา ช่างไฟ ขนย้าย · Handyman, maid, gardener, plumber, electrician, packer · mover</li>
-<li>ส่วนแบ่งเริ่ม ${SPLIT_LADDER[2]}% ของค่าธรรมเนียม จ่ายวันที่เจ้าของจ่าย · Your share starts at ${SPLIT_LADDER[2]}% of each fee, sent the day the owner pays</li></ul></details>`)
+<li>ส่วนแบ่งเริ่ม ${SPLIT_LADDER[2]}% ของค่าธรรมเนียม จ่ายวันที่เจ้าของจ่าย · Your share starts at ${SPLIT_LADDER[2]}% of each fee, sent the day the owner pays</li></ul></details>`, LISTER_OG)
 }
 
 function slugOf(name) {

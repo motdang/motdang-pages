@@ -1,0 +1,70 @@
+import test from 'node:test'
+import assert from 'node:assert/strict'
+import { serveCard, todo, keep } from '../src/ogcard.mjs'
+import { render } from '../public/s/render.mjs'
+
+const JPG = new Uint8Array([0xff, 0xd8, 0xff, 1, 2, 3])
+const site = (over = {}) => ({ id: 'site1', name: 'tonpho', kind: 'amulet', look: 'lanna', lang: 'th', tier: 'gold', gold_until: '2099-01-01', status: 'live', sian: 0,
+  d: JSON.stringify({ name: 'ต้นโพธิ์', photos: ['aaaaaaaaaaaaaaaa', 'bbbbbbbbbbbbbbbb'], card: 'cccccccccccccccc',
+    amulets: [{ id: 'som1', t: 'พระสมเด็จ', photos: ['aaaaaaaaaaaaaaaa'] }, { id: 'nopic', t: 'พระรอด', photos: [] }],
+    works: [{ id: 'w1', t: 'Mural', photos: ['bbbbbbbbbbbbbbbb'] }] }), ...over })
+
+function env(rows) {
+  const r2 = new Map([['p/aaaaaaaaaaaaaaaa', { bytes: JPG, meta: { v: 'ok' } }], ['p/bbbbbbbbbbbbbbbb', { bytes: JPG, meta: { v: 'ok' } }]])
+  const obj = (k) => r2.has(k) ? { body: r2.get(k).bytes, customMetadata: r2.get(k).meta, arrayBuffer: async () => r2.get(k).bytes.buffer } : null
+  const chain = (w, h) => {
+    const c = { transform: () => c, draw: () => c, output: async () => ({ response: () => new Response(JPG) }) }
+    return c
+  }
+  return {
+    r2,
+    DB: { prepare: (q) => ({ bind: (...a) => ({ first: async () => rows.find((r) => r.name === a[0]) || null }), all: async () => ({ results: rows }) }) },
+    MEDIA: { get: async (k) => obj(k), head: async (k) => (r2.has(k) ? {} : null), put: async (k, b) => { r2.set(k, { bytes: b, meta: {} }) }, delete: async (k) => { r2.delete(k) } },
+    IMAGES: { info: async () => ({ width: 900, height: 1600 }), input: () => chain() },
+  }
+}
+
+test('an amulet page has a card of its own, made from its photo, and kept', async () => {
+  const e = env([site()])
+  const r = await serveCard(e, 'tonpho/a/som1.jpg', 'https://sites.motdang.net')
+  assert.equal(r.status, 200)
+  assert.equal(r.headers.get('content-type'), 'image/jpeg')
+  assert.ok([...e.r2.keys()].some((k) => /^og\/site1\/a-som1-[a-z0-9]+-c\.jpg$/.test(k)))
+})
+
+test('a drawn card wins over the fitted photo, and the fitted one goes', async () => {
+  const e = env([site()])
+  await serveCard(e, 'tonpho/a/som1.jpg', 'https://sites.motdang.net')
+  const want = (await todo(e)).find((x) => x.path === 'tonpho/a/som1.jpg')
+  assert.ok(want, 'the amulet is on the list to draw')
+  assert.equal(await keep(e, want.base, JPG), true)
+  assert.ok(e.r2.has(want.base + '.jpg') && !e.r2.has(want.base + '-c.jpg'))
+  assert.ok(!(await todo(e)).some((x) => x.path === 'tonpho/a/som1.jpg'))
+})
+
+test('an item without a photo shows the page card until one is drawn; unknown items and other files are refused', async () => {
+  const e = env([site()])
+  const r = await serveCard(e, 'tonpho/a/nopic.jpg', 'https://sites.motdang.net')
+  assert.equal(r.status, 302)
+  assert.match(r.headers.get('location'), /\/img\/cccccccccccccccc\.jpg$/)
+  assert.equal((await serveCard(e, 'tonpho/a/nope.jpg', 'https://sites.motdang.net')).status, 404)
+  assert.equal((await serveCard(e, 'tonpho/x/som1.jpg', 'https://sites.motdang.net')).status, 404)
+  assert.equal((await serveCard(env([site({ status: 'held' })]), 'tonpho.jpg', 'https://sites.motdang.net')).status, 404)
+  assert.equal(await keep(e, '../p/aaaaaaaaaaaaaaaa', JPG), false)
+  assert.equal(await keep(e, 'og/site1/a-som1-abc', new Uint8Array([1, 2, 3])), false)
+})
+
+test('listings are Gold only', async () => {
+  const d = JSON.parse(site().d); d.lists = [{ id: 'condo1', t: 'Condo', photos: ['aaaaaaaaaaaaaaaa'] }]
+  const homes = (o) => site({ kind: 'homes', d: JSON.stringify(d), ...o })
+  assert.equal((await serveCard(env([homes({ tier: 'free' })]), 'tonpho/l/condo1.jpg', 'https://sites.motdang.net')).status, 404)
+  assert.equal((await serveCard(env([homes()]), 'tonpho/l/condo1.jpg', 'https://sites.motdang.net')).status, 200)
+})
+
+test('the page names the same card the route serves', async () => {
+  const s = site()
+  const html = render({ ...s, d: JSON.parse(s.d) }, { amulet: 'som1' })
+  const k = /card\/tonpho\/a\/som1\.jpg\?k=([a-z0-9]+)/.exec(html)[1]
+  const want = (await todo(env([s]))).find((x) => x.path === 'tonpho/a/som1.jpg')
+  assert.equal(want.key, k)
+})
