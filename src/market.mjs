@@ -50,7 +50,7 @@ let built = null
 function index(P) {
   if (built && built.at === P.at) return built
   const conceptIndex = new Map(P.rx.map((x, i) => [x.lab, i]))
-  const match = ([key, , , how]) => (how === 'k' ? (r) => r.kind === key : ((i) => (r) => r.c.includes(i))(conceptIndex.get(key)))
+  const match = ([key, , , how]) => (how === 'k' ? (r) => r.kind === key : ((i) => (r) => Array.isArray(r.c) && r.c.includes(i))(conceptIndex.get(key)))
   const stalls = []
   for (const s of STALLS) {
     const m = match(s)
@@ -339,24 +339,25 @@ export function page(lang, nonce, F, rows, origin, ctx = {}) {
   if (gm) F = { ...F, bell: F.bell.filter((b) => b.aid !== gm.aid) } // a challenge's own hammer stays hidden
   const url = st ? `${origin}/amulets/${st.slug}` : gm ? `${origin}/amulets?g=${gm.aid}` : `${origin}/amulets`
   const title = st ? fill(T.stallTitle, { n: name(st, lang) }) : gm ? fill(T.gameTitle, { t: gm.title }) : `${T.title} · ${T.sub}`
-  const desc = st ? fill(T.stallDesc, { n: name(st, lang), na: nf(st.nA), a: B(st.midA), nl: nf(st.nL), b: B(st.midL), lo: B(st.lo), hi: B(st.hi) })
+  const desc = st ? fill(T.stallDesc, { n: name(st, lang), na: nf(st.nA), a: st.nA ? B(st.midA) : '–', nl: nf(st.nL), b: st.nL ? B(st.midL) : '–', lo: B(st.lo), hi: B(st.hi) })
     : gm ? fill(T.gameDesc, { d: gm.closed, n: gm.bidders }) : T.lead
   const card = st ? `${origin}/amulets/card/stall-${st.slug}.jpg` : gm ? `${origin}/amulets/card/g-${gm.aid}.jpg` : `${origin}/amulets/card/market.jpg`
   const cardAlt = fill(T.altCard, { t: st ? desc : gm ? fill(T.gameDesc, { d: gm.closed, n: gm.bidders }) + ' ' + gm.title : T.lead })
   const data = { lang, origin, F: { stalls: F.stalls.map(({ picFrom, ...s }) => s), counts: F.counts }, T, handles: { a: HANDLE_A, b: HANDLE_B }, game: gm ? gm.aid : 0, stall: st ? st.key : '' }
   const json = JSON.stringify(data).replace(/</g, '\\u003c')
   const alt = lang === 'th' ? 'en' : 'th'
-  const here = st ? `/amulets/${st.slug}` : '/amulets'
+  const here = st ? `/amulets/${st.slug}` : gm ? `/amulets?g=${gm.aid}` : '/amulets'
+  const hl = (l) => here + (here.includes('?') ? '&' : '?') + 'hl=' + l
   return `<!doctype html><html lang="${lang}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>${esc(title)} · Mot Dang</title><meta name="description" content="${esc(desc)}"><link rel="canonical" href="${esc(url)}${lang === 'en' ? (url.includes('?') ? '&' : '?') + 'hl=en' : ''}">
-<link rel="alternate" hreflang="th" href="${esc(origin + here)}"><link rel="alternate" hreflang="en" href="${esc(origin + here)}?hl=en"><link rel="alternate" type="application/json" href="${origin}/amulets.json" title="${esc(T.jsonFeed)}">
+<link rel="alternate" hreflang="th" href="${esc(origin + here)}"><link rel="alternate" hreflang="en" href="${esc(origin + hl('en'))}"><link rel="alternate" type="application/json" href="${origin}/amulets.json" title="${esc(T.jsonFeed)}">
 <meta property="og:type" content="website"><meta property="og:site_name" content="Mot Dang"><meta property="og:url" content="${esc(url)}"><meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(desc)}">
 <meta property="og:image" content="${esc(card)}"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:image:alt" content="${esc(cardAlt)}"><meta property="og:locale" content="${lang === 'th' ? 'th_TH' : 'en_US'}">
 <meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="${esc(title)}"><meta name="twitter:description" content="${esc(desc)}"><meta name="twitter:image" content="${esc(card)}"><meta name="twitter:image:alt" content="${esc(cardAlt)}">
 <link rel="icon" href="/s/ant.svg"><link rel="stylesheet" href="/s/market.css"><script type="application/ld+json">${JSON.stringify(ld(F, rows, origin, lang, st)).replace(/</g, '\\u003c')}</script></head>
 <body class="mk"><div class="sky" aria-hidden="true">${'<i></i>'.repeat(12)}</div>
 <header class="mkhead"><ul class="lanterns" aria-hidden="true">${'<li></li>'.repeat(7)}</ul>
-<p class="kick"><a href="/">sites.motdang.net</a> · <a href="${here}${alt === 'en' ? '?hl=en' : '?hl=th'}" hreflang="${alt}">${lang === 'th' ? 'English' : 'ไทย'}</a> · <button id="snd" class="snd" aria-pressed="false">🔔 ${esc(T.sound)}</button></p>
+<p class="kick"><a href="/">sites.motdang.net</a> · <a href="${esc(hl(alt))}" hreflang="${alt}">${lang === 'th' ? 'English' : 'ไทย'}</a> · <button id="snd" class="snd" aria-pressed="false">🔔 ${esc(T.sound)}</button></p>
 <h1>${esc(T.title)}</h1><p class="sub">${esc(T.sub)}</p><p class="live"><span id="here"></span> <span id="hourg"></span></p>
 <p><button class="btn sh" data-share="market" data-url="${origin}/amulets" data-text="${esc(T.shareMarketText)}" data-card="${origin}/amulets/card/market.jpg">📣 ${esc(T.shareMarket)}</button></p>
 <div class="bell" aria-label="${esc(T.bell)}"><b>🔔 ${esc(T.bell)}</b><div class="tick" id="tick">${bellHtml(F, T)}</div></div></header>
@@ -396,7 +397,7 @@ export async function route(request, env, path, url, origin, { rand }) {
   const F = P ? front(P) : { stalls: [], bell: [], counts: {} }
   const st = m[1] && P ? stall(P, m[1]) : null
   if (m[1] && !st) return null
-  const gid = Number(url.searchParams.get('g')) || 0
+  const gid = m[1] ? 0 : Number(url.searchParams.get('g')) || 0 // a challenge only on the market's front: a stall page lists every hammer
   const gm = gid && P ? round(P, Math.random, gid) : null
   const rows = await shelf(env, P, origin, lang).catch((e) => { console.error(e); return [] })
   const nonce = rand(16)

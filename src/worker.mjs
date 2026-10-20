@@ -365,7 +365,9 @@ async function sitemap(env, origin) {
   // the amulet market, its stalls, the price guide and Sala Sian (market.mjs, amprice.mjs, sian.mjs)
   const P = await amprice.load(env).catch(() => null)
   const today = new Date().toISOString().slice(0, 10)
-  const mk = [`${origin}/amulets`, `${origin}/amulet-price`, `${origin}/sian`, ...(P ? market.front(P).stalls.map((x) => `${origin}/amulets/${x.slug}`) : [])]
+  let stalls = []
+  try { stalls = P ? market.front(P).stalls.map((x) => `${origin}/amulets/${x.slug}`) : [] } catch (e) { console.error(e) }
+  const mk = [`${origin}/amulets`, `${origin}/amulet-price`, `${origin}/sian`, ...stalls]
     .map((u) => `<url><loc>${u}</loc><lastmod>${today}</lastmod></url>`).join('')
   const body = `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>${origin}/</loc></url><url><loc>${origin}/support</loc></url>${mk}` +
     rows.map((r) => { const day = r.updated.slice(0, 10); let works = [], ams = []; try { const n = normalize(JSON.parse(r.d)); works = n.works; ams = n.amulets } catch {} return loc(`${origin}/${r.name}`, day) + works.map((x) => loc(`${origin}/${r.name}/w/${x.id}`, day)).join('') + ams.map((x) => loc(`${origin}/${r.name}/a/${x.id}`, day)).join('') }).join('') + '</urlset>'
