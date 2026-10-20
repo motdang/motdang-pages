@@ -378,7 +378,7 @@ async function api(request, env, ctx, p, url, origin) {
     const tok = request.headers.get('x-edit') || ''
     const s = tok ? await env.DB.prepare('SELECT tier, gold_until, plan FROM site WHERE edit_hash = ?').bind(await sha(tok)).first() : null
     const full = sian.isSian(s)
-    return J(amprice.guide(P, q, { labels, full }), 200, full ? {} : { 'cache-control': 'public, max-age=3600', 'access-control-allow-origin': '*' })
+    return J(amprice.guide(P, q, { labels, full }), 200, full ? { vary: 'x-edit' } : { 'cache-control': 'public, max-age=3600', 'access-control-allow-origin': '*', vary: 'x-edit' })
   }
 
   if (p === 'find' && m === 'GET') return J({ results: await find(env, url, origin) }, 200, { 'access-control-allow-origin': '*', 'cache-control': 'public, max-age=60' })

@@ -27,7 +27,7 @@ export async function load(env) {
 export function prepare(data) {
   const rx = data.concepts.map(([g, lab, th, en]) => ({ g, lab, th: new RegExp(th), en: new RegExp(en, 'i') }))
   const kinds = data.kinds.map(([k, pats]) => ({ k, pats: pats.map((p) => new RegExp(p, 'i')) }))
-  const rows = (src) => src.rows.map((r) => Object.fromEntries(src.fields.map((f, i) => [f, r[i]])))
+  const rows = (src) => src.rows.map((r) => { const o = Object.fromEntries(src.fields.map((f, i) => [f, r[i]])); o.tl = thd(o.title).toLowerCase(); return o })
   return { at: Date.now(), built: data.built, crawled: data.lazada.crawled, rx, kinds, gpra: rows(data.gpra), lazada: rows(data.lazada) }
 }
 
@@ -70,7 +70,7 @@ export function score(P, Q, r) {
     const q = Q.c.filter((i) => P.rx[i].g === g), c = r.c.filter((i) => P.rx[i].g === g)
     if (q.length && c.length && !q.some((i) => have.has(i))) s -= pen
   }
-  const title = thd(r.title).toLowerCase()
+  const title = r.tl ?? thd(r.title).toLowerCase()
   if (Q.maker && title.includes(Q.maker.toLowerCase())) s += 4
   if (Q.temple && title.includes(Q.temple.toLowerCase())) s += 3
   if (Q.mould && title.includes(Q.mould.toLowerCase())) s += 1.5

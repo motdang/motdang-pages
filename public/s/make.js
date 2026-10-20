@@ -1598,7 +1598,7 @@ async function amGuide(i) {
   if (auto && !x.temple && !x.maker) { box.innerHTML = `<p class="hint">${esc(amUi(S.lang, 'guideName'))}</p>`; return }
   box.dataset.q = amGuideQuery(x)
   box.innerHTML = '<p class="hint">…</p>'
-  const g = await fetch('/api/amulet-price?' + box.dataset.q, { headers: S.token ? { 'x-edit': S.token } : {} }).then((r) => (r.ok ? r.json() : null)).catch(() => null)
+  const g = await fetch('/api/amulet-price?' + box.dataset.q, { headers: S.token ? { 'x-edit': S.token } : {}, cache: S.token ? 'no-cache' : 'default' }).then((r) => (r.ok ? r.json() : null)).catch(() => null)
   box.innerHTML = drawGuide(g, S.lang, { use: x.status !== 'show' })
   box.dataset.i = i
 }

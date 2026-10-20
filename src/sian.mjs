@@ -28,7 +28,9 @@ export const isSian = (s) => gold.isGold(s) && s?.plan === 'sian'
 const bounds = (m) => [new Date(Date.parse(`${m}-01T00:00:00+07:00`)).toISOString(), new Date(Date.parse(`${nextMonth(m)}-01T00:00:00+07:00`)).toISOString()]
 async function taken(env, month) {
   const [a, b] = bounds(month)
-  return (await env.DB.prepare("SELECT COUNT(*) AS n FROM pay WHERE plan = 'sian' AND status = 'paid' AND updated >= ? AND updated < ?").bind(a, b).first())?.n || 0
+  // paid this month, plus payments still open from the last two days or waiting on a slip: those seats are held
+  const held = new Date(Date.now() - 2 * 864e5).toISOString()
+  return (await env.DB.prepare("SELECT COUNT(*) AS n FROM pay WHERE plan = 'sian' AND ((status = 'paid' AND updated >= ? AND updated < ?) OR status = 'slip' OR (status = 'open' AND created >= ?))").bind(a, b, held).first())?.n || 0
 }
 
 /** This month's price and seats left; a new month steps the price from the one before. */
