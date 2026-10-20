@@ -43,6 +43,14 @@ const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '
 const t = (th, en) => `<span class="th">${th}</span><span class="en">${en}</span>`
 const cut = (s, n) => String(s ?? '').replace(/\s+/g, ' ').trim().slice(0, n)
 const nowIso = () => new Date().toISOString()
+/** An http(s) address, or null: a feed's URL never reaches an href unchecked. */
+export const safe = (u) => { try { const x = new URL(String(u || '').trim()); return /^https?:$/.test(x.protocol) ? x.href.slice(0, 500) : null } catch { return null } }
+/** Monday 00:00 in Bangkok of the week `n` weeks from the one holding `ms`, as UTC ms. */
+export function weekStart(ms, n = 0) {
+  const b = new Date(ms + 7 * 3600e3)
+  const day = Date.UTC(b.getUTCFullYear(), b.getUTCMonth(), b.getUTCDate()) - ((b.getUTCDay() + 6) % 7) * 864e5
+  return day + n * 7 * 864e5 - 7 * 3600e3
+}
 
 // ---- reading ---------------------------------------------------------------------------
 
@@ -179,8 +187,8 @@ async function put(env, rows) {
       host_url=CASE WHEN excluded.host_url <> '' THEN excluded.host_url ELSE ev.host_url END, site_id=COALESCE(excluded.site_id, ev.site_id),
       place_href=COALESCE(excluded.place_href, ev.place_href), place_name=COALESCE(excluded.place_name, ev.place_name), feed=excluded.feed, seen=excluded.seen`
   for (let i = 0; i < rows.length; i += 40) {
-    await env.DB.batch(rows.slice(i, i + 40).map((r) => env.DB.prepare(sql).bind(r.id, r.src, r.title, r.start, r.end ?? null, r.all_day || 0, r.url ?? null, r.venue || '', r.area || '',
-      r.lat ?? null, r.lng ?? null, r.cost || '', r.approval || 0, r.spots ?? null, r.kinds || '', r.host || '', r.host_url || '', r.site_id ?? null, r.place_href ?? null, r.place_name ?? null, r.feed, r.seen)))
+    await env.DB.batch(rows.slice(i, i + 40).map((r) => env.DB.prepare(sql).bind(r.id, r.src, r.title, r.start, r.end ?? null, r.all_day || 0, safe(r.url), r.venue || '', r.area || '',
+      r.lat ?? null, r.lng ?? null, r.cost || '', r.approval || 0, r.spots ?? null, r.kinds || '', r.host || '', safe(r.host_url) || '', r.site_id ?? null, r.place_href ?? null, r.place_name ?? null, r.feed, r.seen)))
   }
 }
 
@@ -275,6 +283,7 @@ export async function rows(env, q = {}) {
   if (q.days) { where.push('start <= ?'); args.push(new Date(Date.now() + q.days * 864e5).toISOString()) }
   if (q.kind && q.kind !== 'all') { where.push("(' ' || kinds || ' ') LIKE ?"); args.push(`% ${q.kind} %`) }
   if (q.site) { where.push('site_id = ?'); args.push(q.site) }
+  if (q.except) { where.push('src <> ?'); args.push(q.except) }
   if (q.place) { where.push('place_href = ?'); args.push(q.place) }
   if (q.near) {
     const [la, ln] = q.near, d = (q.km || 2) / 111
@@ -294,9 +303,9 @@ const bkDay = (ms) => new Date(ms + 7 * 3600e3).toISOString().slice(0, 10)
 /** One row as data for others. */
 export function asData(e) {
   return {
-    id: e.id, title: e.title, start: e.start, end: e.end, allDay: !!e.all_day, url: e.url, venue: e.venue, area: e.area, lat: e.lat, lng: e.lng,
-    cost: e.cost, approval: !!e.approval, spots: e.spots, kinds: (e.kinds || '').split(' ').filter(Boolean), host: e.host, hostUrl: e.host_url,
-    page: e.site_id ? e.host_url : null, place: e.place_href ? { url: `${MAIN}/${e.place_href}`, name: e.place_name } : null, ics: `${MAIN}/tech/e/${encodeURIComponent(e.id)}.ics`,
+    id: e.id, title: e.title, start: e.start, end: e.end, allDay: !!e.all_day, url: safe(e.url), venue: e.venue, area: e.area, lat: e.lat, lng: e.lng,
+    cost: e.cost, approval: !!e.approval, spots: e.spots, kinds: (e.kinds || '').split(' ').filter(Boolean), host: e.host, hostUrl: safe(e.host_url),
+    page: e.site_id ? safe(e.host_url) : null, place: e.place_href ? { url: `${MAIN}/${e.place_href}`, name: e.place_name } : null, ics: `${MAIN}/tech/e/${encodeURIComponent(e.id)}.ics`,
     when: { th: dayOf(e.start, 'th'), en: dayOf(e.start, 'en'), time: e.all_day ? '' : clock(e.start) + (e.end && bkDay(Date.parse(e.end)) === bkDay(Date.parse(e.start)) ? '–' + clock(e.end) : '') },
   }
 }
@@ -307,7 +316,7 @@ function icsOf(list, name) {
   const out = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//motdang.net//tech//EN', `X-WR-CALNAME:${tx(name)}`, 'X-WR-TIMEZONE:Asia/Bangkok', 'REFRESH-INTERVAL;VALUE=DURATION:PT6H', 'X-PUBLISHED-TTL:PT6H']
   for (const e of list) {
     out.push('BEGIN:VEVENT', `UID:${tx(e.id)}@motdang.net`, `DTSTAMP:${f(nowIso())}`, `DTSTART:${f(e.start)}`, `DTEND:${f(e.end || new Date(Date.parse(e.start) + 2 * 3600e3).toISOString())}`,
-      `SUMMARY:${tx(e.title)}`, (e.venue || e.place_name || e.area) ? `LOCATION:${tx(e.venue || e.place_name || e.area)}` : '', e.url ? `URL:${tx(e.url)}` : '',
+      `SUMMARY:${tx(e.title)}`, (e.venue || e.place_name || e.area) ? `LOCATION:${tx(e.venue || e.place_name || e.area)}` : '', safe(e.url) ? `URL:${tx(safe(e.url))}` : '',
       `DESCRIPTION:${tx([e.cost, e.host && 'Host: ' + e.host, e.url].filter(Boolean).join(' · '))}`, 'END:VEVENT')
   }
   out.push('END:VCALENDAR')
@@ -355,7 +364,7 @@ ${tags ? `<div class="tags">${tags}</div>` : ''}
 }
 
 function weekBlocks(list, lang) {
-  const now = Date.now(), wk = (n) => now + n * 7 * 864e5
+  const wk = (n) => weekStart(Date.now(), n)
   const groups = [[t('สัปดาห์นี้', 'This week'), (s) => s < wk(1)], [t('สัปดาห์หน้า', 'Next week'), (s) => s < wk(2)], [t('หลังจากนั้น', 'Later'), () => true]]
   const used = new Set()
   return groups.map(([h, f]) => {
@@ -371,7 +380,7 @@ export async function page(env, { lang, kind }) {
   const src = (await env.DB.prepare('SELECT MAX(at) AS at FROM ev_src WHERE ok = 1').first())?.at
   const hosts = new Map(), venues = new Map()
   for (const e of list) {
-    if (e.host && !hosts.has(e.host)) hosts.set(e.host, { url: e.host_url, n: 0, page: !!e.site_id })
+    if (e.host && !hosts.has(e.host)) hosts.set(e.host, { url: safe(e.host_url), n: 0, page: !!e.site_id })
     if (e.host) hosts.get(e.host).n++
     if (e.place_href && !venues.has(e.place_href)) venues.set(e.place_href, { name: e.place_name, n: 0 })
     if (e.place_href) venues.get(e.place_href).n++
@@ -419,7 +428,8 @@ const STRIP_CSS = `.mdev{list-style:none;margin:8px 0 0;padding:0}.mdev li{paddi
 
 /** The section an owner's page carries: what its linked calendars have coming, and the way to tech events. */
 export async function siteSection(env, s, kind) {
-  const mine = (await rows(env, { site: s.id, n: 20, days: 120 })).filter((e) => e.src !== 'site')
+  // the page shows its own dates already; this is what its linked calendars carry
+  const mine = await rows(env, { site: s.id, except: 'site', n: 8, days: 120 })
   const techPage = ['group', 'event', 'work'].includes(kind) || mine.some((e) => / tech /.test(` ${e.kinds} `))
   if (!mine.length && !techPage) return ''
   const li = mine.slice(0, 8).map((e) => {

@@ -50,3 +50,19 @@ test('as data, in Bangkok time', () => {
   assert.match(x.when.en, /31 Oct/)
   assert.equal(x.ics, 'https://motdang.net/tech/e/luma-evt-1.ics')
 })
+
+import { safe, weekStart } from '../src/events.mjs'
+
+test('only http(s) links', () => {
+  assert.equal(safe('javascript:alert(1)'), null)
+  assert.equal(safe('data:text/html,x'), null)
+  assert.equal(safe('https://luma.com/x77eafle'), 'https://luma.com/x77eafle')
+})
+
+test('weeks run Monday to Sunday in Bangkok', () => {
+  const tue = Date.parse('2026-10-20T10:00:00+07:00')
+  assert.equal(new Date(weekStart(tue)).toISOString(), '2026-10-18T17:00:00.000Z') // Mon 19 Oct 00:00 ICT
+  assert.equal(new Date(weekStart(tue, 1)).toISOString(), '2026-10-25T17:00:00.000Z')
+  const sunLate = Date.parse('2026-10-25T23:30:00+07:00')
+  assert.equal(weekStart(sunLate), weekStart(tue))
+})
