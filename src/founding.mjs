@@ -5,6 +5,7 @@
 //   /founders      the price, the seats left this month, the form, the wall
 //   /fm/<link>     the founder's bill (PromptPay QR, the slip), then their page: number, codes
 //   /g/<code>      a Gold code: type a page's address, the page is Gold for a year
+//                  (a month, for a code from the week on Mot Dang on LINE; motdang.net me.js)
 //
 // One payment buys two Gold codes (a Gold year each: one to keep, one to give) and a
 // number on the wall. Each month has seats; on the 1st the price steps Shoup's way on
@@ -184,14 +185,24 @@ async function memberPage(env, id, origin, self) {
 <form method="post" enctype="multipart/form-data" class="card"><label>สลิป · Slip<input type="file" name="slip" accept="image/*" required></label><p><button class="wide" type="submit">ส่งสลิป · Send the slip</button></p></form>${keep}`)
 }
 
+/** A code's length of Gold, said both ways: [title th, title en, for-th, for-en]. */
+export function span(months = 12) {
+  if (months === 12) return ['ทอง 1 ปี', 'A Gold year', 'ทั้งปี', 'for a year']
+  if (months === 1) return ['ทอง 1 เดือน', 'A Gold month', 'หนึ่งเดือน', 'for a month']
+  return [`ทอง ${months} เดือน`, `Gold for ${months} months`, `${months} เดือน`, `for ${months} months`]
+}
+
 /** /g/<code> */
 async function giftPage(env, code, msg) {
-  const g = await env.DB.prepare('SELECT g.*, f.n, f.name, f.show, s.name AS page FROM gift g JOIN founder f ON f.id = g.founder LEFT JOIN site s ON s.id = g.site_id WHERE g.code = ?').bind(code).first()
-  if (!g) return null
-  const from = `จากสมาชิกผู้ก่อตั้ง #${g.n}${g.show ? ' ' + esc(g.name) : ''} · from founding member #${g.n}${g.show ? ' ' + esc(g.name) : ''}`
-  if (g.used) return shell('Gold code', `<h1>ทอง 1 ปี · A Gold year</h1><p class="hint">${from}</p><p class="ok">✓ ใช้แล้ว · Used on <a href="/${esc(g.page || '')}">sites.motdang.net/${esc(g.page || '')}</a></p>`)
-  return shell('Gold code · motdang', `<h1>ทอง 1 ปี<br>A Gold year</h1><p class="hint">${from}</p>
-<p>หน้าที่เป็นทอง: ภาษา ลิงก์ Agoda และ Booking.com ทั้งปี<br>A Gold page: its languages, its Agoda and Booking.com links, for a year.</p>
+  const g = await env.DB.prepare('SELECT g.*, f.n, f.name, f.show, s.name AS page FROM gift g LEFT JOIN founder f ON f.id = g.founder LEFT JOIN site s ON s.id = g.site_id WHERE g.code = ?').bind(code).first()
+  if (!g || (!g.n && g.source !== 'line')) return null
+  const from = g.source === 'line'
+    ? 'จากมดแดงทาง LINE · from Mot Dang on LINE'
+    : `จากสมาชิกผู้ก่อตั้ง #${g.n}${g.show ? ' ' + esc(g.name) : ''} · from founding member #${g.n}${g.show ? ' ' + esc(g.name) : ''}`
+  const [th, en, thFor, enFor] = span(g.months)
+  if (g.used) return shell('Gold code', `<h1>${th} · ${en}</h1><p class="hint">${from}</p><p class="ok">✓ ใช้แล้ว · Used on <a href="/${esc(g.page || '')}">sites.motdang.net/${esc(g.page || '')}</a></p>`)
+  return shell('Gold code · motdang', `<h1>${th}<br>${en}</h1><p class="hint">${from}</p>
+<p>หน้าที่เป็นทอง: ภาษา ลิงก์ Agoda และ Booking.com ${thFor}<br>A Gold page: its languages, its Agoda and Booking.com links, ${enFor}.</p>
 ${msg ? `<p class="wait">${msg}</p>` : ''}
 <form method="post" class="card"><label>หน้าของคุณ · Your page<input name="page" required maxlength="80" placeholder="sites.motdang.net/yourpage" autocapitalize="off" spellcheck="false"></label>
 <p><button class="wide" type="submit">ทำให้เป็นทอง · Make it Gold</button></p></form>
@@ -213,7 +224,8 @@ async function redeem(env, code, input, origin) {
   if (gold.isHotel(s) && s.plan === 'hotel') return { msg: 'หน้านี้ใช้แผนโรงแรมอยู่ ใช้โค้ดกับหน้าอื่น · This page is on the hotel plan; use the code on another page.' }
   const r = await env.DB.prepare('UPDATE gift SET site_id = ?, used = ? WHERE code = ? AND used IS NULL').bind(s.id, new Date().toISOString(), code).run()
   if (!r.meta?.changes) return { msg: 'ใช้ไปแล้ว · Already used.' }
-  const until = await gold.grant(env, s.id, 12, 'gold')
+  const months = (await env.DB.prepare('SELECT months FROM gift WHERE code = ?').bind(code).first())?.months || 12
+  const until = await gold.grant(env, s.id, months, 'gold')
   await gold.postSales(env, `🐜 Gold code used · ${JSON.parse(s.d || '{}').name || s.name} → Gold to ${until}\n${origin}/${s.name}`).catch((e) => console.error(e))
   return { site: s }
 }

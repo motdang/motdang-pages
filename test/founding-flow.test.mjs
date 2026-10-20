@@ -106,3 +106,22 @@ test('a full month takes no more asks', async () => {
   assert.equal(new URL(r.headers.get('location')).pathname, '/founders')
   assert.match(await (await go('/founders')).text(), /Full this month/)
 })
+
+test('a Gold month code from the week on Mot Dang on LINE (motdang.net me.js): a month, then used', async () => {
+  const now = new Date().toISOString()
+  env.DB.raw.prepare("INSERT INTO site (id, name, edit_hash, status, kind, look, lang, tier, d, created, updated) VALUES ('s2','baan-x','x2','live','shop','plain','th','free','{\"name\":\"Baan X\"}',?,?)").run(now, now)
+  env.DB.raw.prepare("INSERT INTO gift (code, founder, made, months, source) VALUES ('linemonth1', '', ?, 1, 'line')").run(now)
+  let t = await (await go('/g/linemonth1')).text()
+  assert.match(t, /A Gold month/)
+  assert.match(t, /from Mot Dang on LINE/)
+  const r = await go('/g/linemonth1', { method: 'POST', body: form({ page: 'baan-x' }) })
+  assert.equal(r.status, 303)
+  const s = await env.DB.prepare("SELECT tier, gold_until, plan FROM site WHERE id = 's2'").first()
+  assert.equal(s.tier, 'gold')
+  assert.equal(s.plan, 'gold', 'a month of Gold, not the hotel plan')
+  const days = (new Date(s.gold_until) - new Date(now.slice(0, 10))) / 864e5
+  assert.ok(days >= 28 && days <= 31, String(days))
+  t = await (await go('/g/linemonth1')).text()
+  assert.match(t, /Used on/)
+  assert.equal((await go('/g/nosuchcode')).status, 404)
+})
