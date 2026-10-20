@@ -436,9 +436,9 @@ const th=/^th/.test(document.documentElement.lang||navigator.language||'');
 document.querySelectorAll('[data-md-events]').forEach(async el=>{const d=el.dataset,q=new URLSearchParams();
 ['kind','site','place','near','km','n','days'].forEach(k=>d[k]&&q.set(k,d[k]));if(!q.has('n'))q.set('n','6');
 try{const r=await fetch(M+'/tech/events.json?'+q);const j=await r.json();const L=j.events||[];
-if(!L.length&&d.empty!=='show'){el.hidden=true;return}
+if(!L.length){if(!d.replace&&d.empty!=='show')el.hidden=true;return}
 if(!document.getElementById('mdevcss')){const s=document.createElement('style');s.id='mdevcss';s.textContent=${JSON.stringify(STRIP_CSS)};document.head.appendChild(s)}
-el.innerHTML=(d.title?'<h3 style="margin:0">'+e(d.title)+'</h3>':'')+'<ul class="mdev">'+L.map(x=>'<li><b>'+(x.url?'<a href="'+e(x.url)+'" rel="noopener">'+e(x.title)+'</a>':e(x.title))+'</b><small>'+e(th?x.when.th:x.when.en)+(x.when.time?' · '+x.when.time:'')+(x.place&&!d.place?' · <a href="'+e(x.place.url)+'">'+e(x.place.name)+'</a>':x.venue&&!d.place?' · '+e(x.venue):'')+(x.cost?' · '+e(x.cost):'')+'</small></li>').join('')+'</ul><a class="mdevmore" href="'+M+'/tech/'+(d.kind==='all'?'?all=1':'')+'">'+(th?'ดูทั้งหมด':'See all')+' →</a>';el.hidden=false}catch(_){}})})();`
+el.innerHTML=(d.title?'<h3 style="margin:0">'+e(d.title)+'</h3>':'')+'<ul class="mdev">'+L.map(x=>'<li><b>'+(x.url?'<a href="'+e(x.url)+'" rel="noopener">'+e(x.title)+'</a>':e(x.title))+'</b><small>'+e(th?x.when.th:x.when.en)+(x.when.time?' · '+x.when.time:'')+(x.place&&!d.place?' · <a href="'+e(x.place.url)+'">'+e(x.place.name)+'</a>':x.venue&&!d.place?' · '+e(x.venue):'')+(x.cost?' · '+e(x.cost):'')+'</small></li>').join('')+'</ul><a class="mdevmore" href="'+M+(d.place?'/events.html':'/tech/'+(d.kind==='all'?'?all=1':''))+'">'+(th?'ดูทั้งหมด':'See all')+' →</a>';el.hidden=false}catch(_){}})})();`
 
 /** Routes under /tech/ (motdang.net) and /events (sites.motdang.net). */
 export async function route(request, env, path, url, { langOf }) {
