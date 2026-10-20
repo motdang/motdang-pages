@@ -56,7 +56,7 @@ import * as amprice from './amprice.mjs'
 import * as sian from './sian.mjs'
 import * as market from './market.mjs'
 
-const QUOTA = { site: 3, photo: 200, save: 400, report: 20, msg: 12, pd: 200, notify: 3, slip: 10, book: 10, domain: 6, lister: 3, deal: 40, terms: 10, join: 3, founding: 5, gift: 20, backer: 5, tap: 3, tapsave: 60, bump: 300, guess: 400, sadhu: 200, here: 2500 }
+const QUOTA = { site: 3, photo: 200, save: 400, report: 20, msg: 12, pd: 200, notify: 3, slip: 10, book: 10, domain: 6, lister: 3, deal: 40, terms: 10, join: 3, founding: 5, gift: 20, backer: 5, tap: 3, tapsave: 60, bump: 300, card: 400, guess: 400, sadhu: 200, here: 2500 }
 const TRIAL_DAYS = 30 // Nan 2026-10-14: a new page is Gold for its first 30 days
 const MAIN = 'https://motdang.net'
 const PASS = /^\/(vendor|fonts|tiles|data|front)\/|^\/sites\/doodle-map\//
@@ -590,13 +590,14 @@ ${s ? `<p>ข้อความถึง ${escHtml(title)} จะส่งสำ
     }
     d.photos = d.photos.slice(0, photoMax(kind, isGold))
     // photos named in the page must be this page's own; credits come from the library, not the browser
-    const ids = [...new Set([d.cover, d.card, d.avatar, d.place.snap, ...d.photos].filter(Boolean))]
+    const ids = [...new Set([d.cover, d.card, d.avatar, d.place.snap, d.og?.photo, ...d.photos].filter(Boolean))]
     d.credits = {}
     if (ids.length) {
       const own = await env.DB.prepare(`SELECT id, credit FROM photo WHERE site_id = ? AND id IN (${ids.map(() => '?').join(',')})`).bind(s.id, ...ids).all()
       const ok = new Map(own.results.map((r) => [r.id, r.credit]))
       if (!ok.has(d.cover)) d.cover = ''
       if (!ok.has(d.card)) d.card = ''
+      if (d.og && typeof d.og === 'object' && !ok.has(d.og.photo)) d.og.photo = ''
       if (!ok.has(d.avatar)) d.avatar = ''
       if (!ok.has(d.place.snap)) d.place.snap = ''
       d.photos = d.photos.filter((x) => ok.has(x))
@@ -639,6 +640,12 @@ ${s ? `<p>ข้อความถึง ${escHtml(title)} จะส่งสำ
     ])
     await log(env, s.id, 'deleted-by-maker', s.name)
     return J({ ok: true })
+  }
+
+  if (p === 'card' && m === 'POST') { // the share card as it would draw, for the builder (ogcard.mjs)
+    const who = await sender(request, env)
+    if (!(await take(env, who, 'card'))) return J({ error: 'quota' }, 429)
+    return og.preview(env, s, await body(request), origin)
   }
 
   if (p === 'photo' && m === 'POST') {

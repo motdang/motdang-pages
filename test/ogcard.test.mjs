@@ -63,3 +63,33 @@ test('the page names the same card the route serves', async () => {
   const k = /card\/tonpho\/a\/som1\.jpg\?k=([a-z0-9]+)/.exec(html)[1]
   assert.equal((await cardOf(env([s]), 'tonpho/a/som1.jpg')).o.key, k)
 })
+
+test('with the card library bound, the card is drawn from the page and the maker\'s choices, and kept', async () => {
+  const e = env([site()])
+  let spec = null
+  e.CARDS = { fetch: async (u, init) => { spec = JSON.parse(init.body); return new Response(new Uint8Array([0xff, 0xd8, 7])) } }
+  const d = JSON.parse(site().d); d.og = { layout: 'band', font: 'serif', title: 'Big words', accent: '#123456' }
+  e.DB = env([site({ d: JSON.stringify(d) })]).DB
+  const r = await serveCard(e, 'tonpho.jpg', 'https://sites.motdang.net')
+  assert.equal(r.status, 200)
+  assert.equal(spec.layout, 'band'); assert.equal(spec.font, 'serif'); assert.equal(spec.title, 'Big words'); assert.equal(spec.accent, '#123456')
+  assert.equal(spec.url, 'sites.motdang.net/tonpho')
+  assert.ok([...e.r2.keys()].some((k) => /^og\/site1\/p-[a-z0-9]+\.jpg$/.test(k)))
+  const item = await serveCard(e, 'tonpho/a/som1.jpg', 'https://sites.motdang.net')
+  assert.equal(item.status, 200)
+  assert.equal(spec.title, 'พระสมเด็จ'); assert.equal(spec.sub, 'ต้นโพธิ์'); assert.equal(spec.layout, 'band')
+  assert.match(spec.image.url, /\/img\/aaaaaaaaaaaaaaaa\.webp$/)
+})
+
+test('the builder\'s preview leaves out a picture that is not the page\'s own', async () => {
+  const { preview } = await import('../src/ogcard.mjs')
+  const e = env([site()])
+  let spec = null
+  e.CARDS = { fetch: async (u, init) => { spec = JSON.parse(init.body); return new Response(new Uint8Array([0xff, 0xd8])) } }
+  e.DB = { prepare: () => ({ bind: () => ({ all: async () => ({ results: [] }) }) }) }
+  const d = JSON.parse(site().d); d.og = { photo: 'zzzzzzzzzzzzzzzz', layout: 'photo' }
+  const r = await preview(e, site(), { d }, 'https://sites.motdang.net')
+  assert.equal(r.status, 200)
+  assert.equal(spec.image, null)
+  assert.equal(spec.layout, 'plain')
+})

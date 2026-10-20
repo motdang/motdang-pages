@@ -35,6 +35,10 @@ bucket_name = "motdang-pages"
 binding = "SITE"
 service = "mot-dang-site"
 
+[[services]]
+binding = "CARDS" # the share-card library (NaNoBotCo/cards), /card/… and the builder's card preview
+service = "cards"
+
 # Llama Guard on page text, Mistral Small on photos. Doodle anything (src/doodle.mjs) draws with FLUX.2 klein.
 [ai]
 binding = "AI"

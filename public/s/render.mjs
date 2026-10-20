@@ -9,7 +9,7 @@ import { DINGBATS } from './db/names.mjs'
 import { normalizeExtras, upcoming, campsNow, utcOf, money, MAP_NEAR, MAX, UNIT_LABEL, tagsOf } from './extras.mjs'
 import { normalizeAmulets, amuletSection, amuletBody, amuletLd, amuletDesc, AM_CSS, AM_MAX, amCap } from './amulet.mjs'
 import { LOOKS, LOOK_IDS, GOLD_LOOKS, LOOK_ALIAS, lookOf, HERO_CSS, F_THAI } from './looks.mjs'
-import { ogOf } from './og.mjs'
+import { ogOf, normalizeOg } from './og.mjs'
 
 export { LOOKS, LOOK_IDS, GOLD_LOOKS, LOOK_ALIAS, lookOf }
 
@@ -110,6 +110,7 @@ export function normalize(d = {}) {
   o.cover = PHOTO_ID.test(d.cover || '') ? d.cover : ''
   o.coverPos = Array.isArray(d.coverPos) && d.coverPos.length === 2 && d.coverPos.every((v) => typeof v === 'number' && v >= 0 && v <= 1) ? d.coverPos.map((v) => Math.round(v * 100) / 100) : null
   o.card = PHOTO_ID.test(d.card || '') ? d.card : ''
+  o.og = normalizeOg(d.og) // the maker's share card choices (make-card.mjs)
   o.avatar = PHOTO_ID.test(d.avatar || '') ? d.avatar : ''
   o.avround = d.avround !== false
   o.photos = (Array.isArray(d.photos) ? d.photos : []).filter((p) => PHOTO_ID.test(p)).slice(0, MAX_PHOTOS.amulet)
@@ -592,7 +593,7 @@ export function render(site, opt = {}) {
   // each page and item page its own 1200×630 card: the drawn one, else /card/… (og.mjs)
   const X = L || Wk || Am
   const og = ogOf(site, d, L ? 'l' : Wk ? 'w' : Am ? 'a' : '', X)
-  const card = Wk && Wk.card ? `${origin}/img/${Wk.card}.jpg` : X || !d.card ? `${origin}/card/${og.path}.jpg?k=${og.key}` : `${origin}/img/${d.card}.jpg`
+  const card = Wk && Wk.card ? `${origin}/img/${Wk.card}.jpg` : `${origin}/card/${og.path}.jpg?k=${og.key}`
   const cardAlt = X ? `${X.t} · ${name}` : d.tagline ? `${name} · ${d.tagline}` : name
   out.push(`<!doctype html><html lang="${lang}" data-look="${lookId}" translate="no" class="notranslate"><head><meta charset="utf-8"><meta name="google" content="notranslate">`,
     opt.nonce ? `<script nonce="${opt.nonce}">if(/[.]translate[.]goog$/.test(location.hostname))location.replace("https://"+location.hostname.slice(0,-15).replace(/--/g,"~").replace(/-/g,".").replace(/~/g,"-")+location.pathname+location.search.replace(/([?&])_x_tr_[^&]*/g,"$1").replace(/[?&]+$/,"").replace(/[?]&+/,"?")+location.hash)</script>` : '',

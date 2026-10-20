@@ -1,12 +1,14 @@
 // ogcard.mjs — /card/<name>.jpg and /card/<name>/<a|w|l>/<id>.jpg: each page's and each item page's
 // own 1200×630 share card (NaN 2026-10-20: "All sites made by me and all 'gold' level sites should
-// include unique share cards"). A drawn card kept under the current key (public/s/og.mjs) when there is
-// one, else the item's own photo fitted to the card through the Images binding: a wide photo fills it,
-// a tall one (an amulet) sits whole on a blurred copy of itself.
+// include unique share cards"), drawn by the card library (the cards Worker, binding CARDS) from the
+// page's data and the maker's choices (public/s/og.mjs), and kept in R2 under the card's key. Without
+// the library, the item's own photo fitted to the card through the Images binding: a wide photo fills
+// it, a tall one (an amulet) sits whole on a blurred copy of itself.
 
 import { normalize } from '../public/s/render.mjs'
 import { amCap } from '../public/s/amulet.mjs'
-import { ogOf } from '../public/s/og.mjs'
+import { ogOf, specOf } from '../public/s/og.mjs'
+import { LOOK_IDS } from '../public/s/looks.mjs'
 import { isGold } from './gold.mjs'
 import { isSian } from './sian.mjs'
 
@@ -48,6 +50,13 @@ export async function serveCard(env, rest, origin) {
   if (!c) return none()
   const drawn = await env.MEDIA.get(c.base + '.jpg')
   if (drawn) return jpg(drawn.body, 86400)
+  if (env.CARDS) {
+    try {
+      const bytes = await draw(env, specOf(c.o, { img: (id) => `${origin}/img/${id}.webp`, host: new URL(origin).host, lang: c.site.lang }))
+      await env.MEDIA.put(c.base + '.jpg', bytes, { httpMetadata: { contentType: 'image/jpeg' } })
+      return jpg(bytes, 86400)
+    } catch (e) { console.error('card draw', String(e?.message || e)) }
+  }
   const cut = await env.MEDIA.get(c.base + '-c.jpg')
   if (cut) return jpg(cut.body, 3600)
   const src = c.o.photo && env.IMAGES?.input ? await env.MEDIA.get(`p/${c.o.photo}`) : null
@@ -77,4 +86,36 @@ async function fitted(env, bytes) {
       .output({ format: 'image/jpeg', quality: 85 })
   }
   return new Uint8Array(await r.response().arrayBuffer())
+}
+
+/** The card library's drawing of a spec, as JPEG bytes. */
+async function draw(env, spec) {
+  const r = await env.CARDS.fetch('https://cards/draw', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(spec) })
+  if (!r.ok) throw new Error('cards ' + r.status)
+  return new Uint8Array(await r.arrayBuffer())
+}
+
+/**
+ * The builder's preview (POST /api/card): the card as the maker's unsaved page and choices would draw it.
+ * b = { d, look, t, id }. Pictures that are not this page's own are left out.
+ */
+export async function preview(env, s, b, origin) {
+  if (!env.CARDS) return new Response('', { status: 503 })
+  const d = normalize(b && b.d && typeof b.d === 'object' ? b.d : JSON.parse(s.d || '{}'))
+  const site = siteOf({ ...s, look: LOOK_IDS.includes(b?.look) ? b.look : s.look })
+  const t = ['a', 'w', 'l'].includes(b?.t) ? b.t : ''
+  const x = t ? itemsOf(site, d, t).find((y) => y.id === b.id) || null : null
+  if (t && !x) return new Response('', { status: 404 })
+  const o = ogOf(site, d, t, x)
+  const ids = [o.photo, o.avatar].filter(Boolean)
+  const own = ids.length ? new Set((await env.DB.prepare(`SELECT id FROM photo WHERE site_id = ? AND id IN (${ids.map(() => '?').join(',')})`).bind(s.id, ...ids).all()).results.map((r) => r.id)) : new Set()
+  if (!own.has(o.photo)) o.photo = ''
+  if (!own.has(o.avatar)) o.avatar = ''
+  try {
+    const bytes = await draw(env, specOf(o, { img: (id) => `${origin}/img/${id}.webp`, host: new URL(origin).host, lang: s.lang }))
+    return new Response(bytes, { headers: { 'content-type': 'image/jpeg', 'cache-control': 'no-store' } })
+  } catch (e) {
+    console.error('card preview', String(e?.message || e))
+    return new Response('', { status: 502 })
+  }
 }
