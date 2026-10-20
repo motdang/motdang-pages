@@ -24,9 +24,9 @@ main{padding:18px 16px 80px}.chips{display:flex;flex-wrap:wrap;gap:8px;margin:0 
 .empty{padding:60px 0;text-align:center;color:#5a4f6a}.more{display:block;margin:24px auto;text-align:center;font-weight:700}
 .nf{max-width:560px;margin:10vh auto;padding:0 16px;text-align:center}.nf h1{color:#1c1530}`
 
-function shell(lang, title, inner, { langLinks = '' } = {}) {
+function shell(lang, title, inner, { langLinks = '', og = '' } = {}) {
   return `<!doctype html><html lang="${lang}" translate="no" class="notranslate"><head><meta charset="utf-8"><meta name="google" content="notranslate"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${esc(title)} · Mot Dang</title><meta name="robots" content="noindex"><link rel="icon" href="/s/ant.svg"><meta name="theme-color" content="#1c1530">
+<title>${esc(title)} · Mot Dang</title><meta name="robots" content="noindex">${og}<link rel="icon" href="/s/ant.svg"><meta name="theme-color" content="#1c1530">
 <style>${CSS}</style></head><body>${langLinks}${inner}</body></html>`
 }
 
@@ -65,7 +65,7 @@ export async function directory(env, url, request, origin = 'https://sites.motda
 ${ccs.length > 1 ? `<nav class="chips">${ccs.map((c) => `<a href="${q({ cc: c.cc === cc ? '' : c.cc })}"${c.cc === cc ? ' class="on"' : ''}>${esc(region(c.cc))} <small>${c.n}</small></a>`).join('')}</nav>` : ''}
 ${tiles ? `<div class="grid">${tiles}</div>` : `<p class="empty">${T('d_none')}</p>`}
 ${rows.length > 48 ? `<a class="more" href="${q({ before: rows[47].published })}">→</a>` : ''}</main>`
-  return shell(lang, ui(lang, 'd_title'), inner, { langLinks })
+  return shell(lang, ui(lang, 'd_title'), inner, { langLinks, og: `<meta property="og:type" content="website"><meta property="og:url" content="https://sites.motdang.net/all"><meta property="og:title" content="${esc(ui(lang, 'd_title'))} · Mot Dang"><meta property="og:description" content="${esc(ui(lang, 'd_make'))}"><meta property="og:image" content="https://sites.motdang.net/s/all-card.jpg"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:image:type" content="image/jpeg"><meta property="og:image:alt" content="หน้าเว็บ · Pages, every page on sites.motdang.net"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:image" content="https://sites.motdang.net/s/all-card.jpg">` })
 }
 
 /** Not found, being made, or taken down. A free address offers itself. */

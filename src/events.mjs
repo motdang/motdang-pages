@@ -416,7 +416,7 @@ ${venueList.length ? `<h2>${t('สถานที่', 'Where')}</h2><div class=
   return `<!doctype html><html lang="${lang}" data-l="${lang}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>${esc(title)}</title><link rel="icon" href="${MAIN}/favicon.ico"><meta name="description" content="${esc(desc)}"><link rel="canonical" href="${MAIN}${self}">
 <meta property="og:type" content="website"><meta property="og:url" content="${MAIN}${self}"><meta property="og:title" content="${esc(tech ? 'Tech & AI events · Chiang Mai and Chiang Rai' : 'What is on · Chiang Mai and Chiang Rai')}"><meta property="og:description" content="${esc(desc)}">
-<meta property="og:image" content="${HOME}/s/card.jpg"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:image:alt" content="Tech and AI events in Chiang Mai and Chiang Rai on motdang"><meta name="twitter:card" content="summary_large_image">
+<meta property="og:image" content="${HOME}/s/${tech ? 'tech' : 'whats-on'}-card.jpg"><meta property="og:image:type" content="image/jpeg"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:image:alt" content="${tech ? 'Tech and AI events in Chiang Mai and Chiang Rai on motdang' : 'What is on in Chiang Mai and Chiang Rai on motdang'}"><meta name="twitter:card" content="summary_large_image">
 <link rel="alternate" type="text/calendar" href="${MAIN}/tech/events.ics"><script type="application/ld+json">${JSON.stringify(ld).replace(/</g, '\\u003c')}</script>
 <style>${CSS}</style></head><body>${body}</body></html>`
 }

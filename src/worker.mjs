@@ -6,6 +6,7 @@
 //   /map                  a page's drawn map (motdang.net's doodle-map engine)
 //   /feed.json            every live page as data, for motdang.net (search, place pages, maps)
 //   /api/…                the builder's and the pages' calls    /img/…  photos    /s/…  static files
+//   /card/name.jpg        a page's share card; /card/name/<a|w|l>/<id>.jpg an item page's (ogcard.mjs)
 //   /admin                held and reported pages, Gold slips, sellers
 //   /x/<link>             a translator's page check: the maker's words beside the machine's (trcheck.mjs)
 //   /tap                  touch phones, a card lands on the other one; /tap/<id> what an NFC sticker opens (tap.mjs)
@@ -28,6 +29,7 @@ import { PAGE_LANGS } from '../public/s/words.mjs'
 import { nameProblem, screen } from './screen.mjs'
 import { clean, look, typeOf, MAX_BIG, MAX_SMALL } from './photo.mjs'
 import { directory, notFound, adminPage } from './pages.mjs'
+import * as og from './ogcard.mjs'
 import * as stats from './stats.mjs'
 import * as msg from './msg.mjs'
 import * as pd from './pd.mjs'
@@ -105,6 +107,7 @@ async function route(request, env, ctx) {
   if (path === '/make' || path === '/make/') return asset(request, env, '/s/make.html', 'make')
   if (path.startsWith('/s/')) return asset(request, env, path)
   if (path.startsWith('/img/')) return image(env, path.slice(5))
+  if (path.startsWith('/card/') && (m === 'GET' || m === 'HEAD')) return og.serveCard(env, path.slice(6), origin)
   if (path.startsWith('/api/')) return api(request, env, ctx, path.slice(5), url, origin)
   if (path === '/all' || path === '/all/') return html(await directory(env, url, request, origin), 200, { cache: 'public, max-age=120' })
   if (path === '/random') {

@@ -12,7 +12,8 @@ const req = (ua, h = {}) => ({ headers: new Map(Object.entries({ 'user-agent': u
 test('pages live at sites.motdang.net/name, with its own share card', () => {
   const html = render({ ...base, d: { name: 'ข้าวซอย' } })
   assert.match(html, /<link rel="canonical" href="https:\/\/sites\.motdang\.net\/khaosoi-mae-sai">/)
-  assert.match(html, /og:image" content="https:\/\/sites\.motdang\.net\/s\/card\.jpg"/)
+  assert.match(html, /og:image" content="https:\/\/sites\.motdang\.net\/card\/khaosoi-mae-sai\.jpg\?k=[a-z0-9]+"/)
+  assert.match(html, /twitter:card" content="summary_large_image"/)
   assert.ok(!html.includes('/~'))
 })
 

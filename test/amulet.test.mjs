@@ -68,7 +68,8 @@ test('a free page shows six amulets, and the seventh has no page', () => {
 test('each amulet has its own page: front and back, facts, price, a LINE reserve with the message written', () => {
   const html = render({ ...base, d }, { amulet: 'som1' })
   assert.match(html, /<title>พระสมเด็จวัดระฆัง พิมพ์ใหญ่ · ต้นโพธิ์ พระเครื่อง<\/title>/)
-  assert.match(html, new RegExp(`og:image" content="https://sites.motdang.net/img/${F}.webp"`))
+  assert.match(html, /og:image" content="https:\/\/sites.motdang.net\/card\/tonpho-amulets\/a\/som1\.jpg\?k=[a-z0-9]+"/)
+  assert.match(html, /og:image:alt" content="พระสมเด็จวัดระฆัง พิมพ์ใหญ่ · ต้นโพธิ์ พระเครื่อง"/)
   assert.match(html, /og:url" content="https:\/\/sites.motdang.net\/tonpho-amulets\/a\/som1"/)
   assert.match(html, /<figcaption>ด้านหน้า<\/figcaption>/)
   assert.match(html, /<figcaption>ด้านหลัง<\/figcaption>/)

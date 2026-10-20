@@ -9,6 +9,7 @@ import { DINGBATS } from './db/names.mjs'
 import { normalizeExtras, upcoming, campsNow, utcOf, money, MAP_NEAR, MAX, UNIT_LABEL, tagsOf } from './extras.mjs'
 import { normalizeAmulets, amuletSection, amuletBody, amuletLd, amuletDesc, AM_CSS, AM_MAX, amCap } from './amulet.mjs'
 import { LOOKS, LOOK_IDS, GOLD_LOOKS, LOOK_ALIAS, lookOf, HERO_CSS, F_THAI } from './looks.mjs'
+import { ogOf } from './og.mjs'
 
 export { LOOKS, LOOK_IDS, GOLD_LOOKS, LOOK_ALIAS, lookOf }
 
@@ -588,15 +589,19 @@ export function render(site, opt = {}) {
 
   // head
   const desc = (L && L.note.slice(0, 160)) || (Wk && (Wk.note.slice(0, 160) || [Wk.client, Wk.year].filter(Boolean).join(' · '))) || (Am && amuletDesc(Am, lang)) || d.tagline || d.about.slice(0, 160) || name
-  const card = L && L.photos[0] ? origin + img(L.photos[0]) : Wk && Wk.card ? `${origin}/img/${Wk.card}.jpg` : Wk && Wk.photos[0] ? origin + img(Wk.photos[0]) : Am && Am.photos[0] ? origin + img(Am.photos[0]) : d.card ? `${origin}/img/${d.card}.jpg` : d.cover ? origin + img(d.cover) : `${origin}/s/card.jpg`
+  // each page and item page its own 1200×630 card: the drawn one, else /card/… (og.mjs)
+  const X = L || Wk || Am
+  const og = ogOf(site, d, L ? 'l' : Wk ? 'w' : Am ? 'a' : '', X)
+  const card = Wk && Wk.card ? `${origin}/img/${Wk.card}.jpg` : X || !d.card ? `${origin}/card/${og.path}.jpg?k=${og.key}` : `${origin}/img/${d.card}.jpg`
+  const cardAlt = X ? `${X.t} · ${name}` : d.tagline ? `${name} · ${d.tagline}` : name
   out.push(`<!doctype html><html lang="${lang}" data-look="${lookId}" translate="no" class="notranslate"><head><meta charset="utf-8"><meta name="google" content="notranslate">`,
     opt.nonce ? `<script nonce="${opt.nonce}">if(/[.]translate[.]goog$/.test(location.hostname))location.replace("https://"+location.hostname.slice(0,-15).replace(/--/g,"~").replace(/-/g,".").replace(/~/g,"-")+location.pathname+location.search.replace(/([?&])_x_tr_[^&]*/g,"$1").replace(/[?&]+$/,"").replace(/[?]&+/,"?")+location.hash)</script>` : '',
     `<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">`,
     `<title>${esc(title)}</title><meta name="description" content="${esc(desc)}">`,
     `<meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(desc)}">`,
     `<meta property="og:url" content="${esc(pageUrl)}"><meta property="og:type" content="website"><meta property="og:site_name" content="Mot Dang">`,
-    `<meta property="og:image" content="${esc(card)}"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:image:alt" content="${esc(name)}">`,
-    `<meta name="twitter:card" content="summary_large_image"><meta name="twitter:image" content="${esc(card)}">`,
+    `<meta property="og:image" content="${esc(card)}"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:image:type" content="image/jpeg"><meta property="og:image:alt" content="${esc(cardAlt)}">`,
+    `<meta name="twitter:card" content="summary_large_image"><meta name="twitter:image" content="${esc(card)}"><meta name="twitter:image:alt" content="${esc(cardAlt)}">`,
     `<meta name="robots" content="${gold && site.status === 'live' ? 'index,follow,notranslate' : 'noindex,notranslate'}"><link rel="canonical" href="${esc(opt.hl ? pageUrl + '?hl=' + opt.hl : pageUrl)}">`,
     langs.length > 1 && gold && site.status === 'live' ? langs.map((l) => `<link rel="alternate" hreflang="${l}" href="${esc(l === home ? pageUrl : pageUrl + '?hl=' + l)}">`).join('') : '',
     gold && site.status === 'live' && !opt.preview ? `<script type="application/ld+json">${(Am ? JSON.stringify(amuletLd(Am, pageUrl, card, cur)) : ldJson(site, d, name, pageUrl, card, L, sym)).replace(/</g, '\\u003c')}</script>` : '',
