@@ -553,6 +553,17 @@
     }
   }
 
+  // ---- Sala Sian: market prices under an amulet (amprice-ui.mjs draws /api/amulet-price) ----
+  var mk = $('#amkt')
+  if (mk) {
+    Promise.all([import('/s/amprice-ui.mjs'), fetch('/api/amulet-price?' + mk.getAttribute('data-q')).then(function (r) { return r.ok ? r.json() : null })]).then(function (r) {
+      var ui = r[0], g = r[1]
+      if (!g || (!g.auction && !g.online)) { mk.remove(); return }
+      var st = document.createElement('style'); st.textContent = ui.GUIDE_CSS; document.head.appendChild(st)
+      mk.querySelector('.apg-out').innerHTML = ui.drawGuide(g, mk.getAttribute('data-lang'), { compact: true })
+    }).catch(function () { mk.remove() })
+  }
+
   // ---- read in your own language, when the page has it ----
   if (pd.langs && pd.langs.length > 1 && !pd.hl && !pd.preview) {
     var want = (navigator.languages || [navigator.language || '']).map(function (x) { return String(x).slice(0, 2).toLowerCase() }).filter(function (x) { return pd.langs.indexOf(x) >= 0 })[0]

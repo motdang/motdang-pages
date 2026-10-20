@@ -7,7 +7,7 @@ import { word, PAGE_LANGS } from './words.mjs'
 import { encodeQr } from './qr.mjs'
 import { DINGBATS } from './db/names.mjs'
 import { normalizeExtras, upcoming, campsNow, utcOf, money, MAP_NEAR, MAX, UNIT_LABEL, tagsOf } from './extras.mjs'
-import { normalizeAmulets, amuletSection, amuletBody, amuletLd, amuletDesc, AM_CSS, AM_MAX } from './amulet.mjs'
+import { normalizeAmulets, amuletSection, amuletBody, amuletLd, amuletDesc, AM_CSS, AM_MAX, amCap } from './amulet.mjs'
 import { LOOKS, LOOK_IDS, GOLD_LOOKS, LOOK_ALIAS, lookOf, HERO_CSS, F_THAI } from './looks.mjs'
 
 export { LOOKS, LOOK_IDS, GOLD_LOOKS, LOOK_ALIAS, lookOf }
@@ -53,7 +53,7 @@ export const sceneOf = (kind, d) => (d.scene && SCENE_IDS.has(d.scene) ? d.scene
 // The dingbat beside each section's heading, and the look each page look draws them in.
 const HEAD_DING = { pay: 'coin', about: 'sparkle', menu: 'noodles', prices: 'coin', hours: 'clock', photos: 'camera', where: 'pin', line: 'chat', links: 'link',
   contact: 'telephone', msg: 'envelope', when: 'calendar', drawn: 'pencil', video: 'play', spots: 'compass', share: 'share',
-  cal: 'calendar', camp: 'megaphone', book: 'clock', rooms: 'key', lists: 'home', works: 'nib', quotes: 'hedera', amulets: 'lotus', amterms: 'bell' }
+  cal: 'calendar', camp: 'megaphone', book: 'clock', rooms: 'key', lists: 'home', works: 'nib', quotes: 'hedera', amulets: 'lotus', amterms: 'bell', amkt: 'coin' }
 const DING_LOOK = { poster: 'riso', loom: 'paper', stitch: 'paper', night: 'neon', clean: 'ink', lanna: 'paper', gold: 'paper' }
 export const ACCENTS = ['#f04a00', '#ff2e88', '#ffb000', '#19a974', '#137a71', '#2563eb', '#7c3aed', '#111827']
 
@@ -575,7 +575,8 @@ export function render(site, opt = {}) {
   const out = []
   const L = gold && opt.listing ? d.lists.find((x) => x.id === opt.listing) || null : null
   const Wk = !L && opt.work ? d.works.find((x) => x.id === opt.work) || null : null
-  const ams = d.amulets.slice(0, gold ? AM_MAX.gold : AM_MAX.free)
+  const sianOn = gold && !!site.sian
+  const ams = d.amulets.slice(0, amCap(gold, sianOn))
   const Am = !L && !Wk && opt.amulet ? ams.find((x) => x.id === opt.amulet) || null : null
   const tz = d.hours.tz
   const sym = CURRENCY[cur] || ''
@@ -638,7 +639,7 @@ export function render(site, opt = {}) {
   out.push('<main class="wrap">')
   if (L) out.push(listingBody(L, { site, d, W, H2, img, sym, gold, opt, name }))
   else if (Wk) out.push(workBody(Wk, { site, d, W, H2, img, gold }))
-  else if (Am) out.push(amuletBody(Am, { site, d, lang, esc, H2, img, icon, paras, sym, ding, line, oa: lineOa(c.line), url: pageUrl, list: ams, W, tel: telHref }))
+  else if (Am) out.push(amuletBody(Am, { site, d, lang, esc, H2, img, icon, paras, sym, ding, line, oa: lineOa(c.line), url: pageUrl, list: ams, W, tel: telHref, sian: sianOn }))
   else {
 
   // reach: the buttons a reader came for
@@ -705,7 +706,7 @@ export function render(site, opt = {}) {
   if (d.about) out.push(`<section class="card rise">${H2('about', W('about'))}${paras(d.about)}</section>`)
 
   // an amulet seller's amulets, each its own page
-  if (ams.length) out.push(amuletSection(ams, { site, lang, esc, H2, img, sym, ding }))
+  if (ams.length) out.push(amuletSection(ams, { site, lang, esc, H2, img, sym, ding, sian: sianOn }))
 
   // a portfolio: the work, filtered by tag, each its own page
   const works = d.works.slice(0, gold ? MAX.works : MAX.worksFree)

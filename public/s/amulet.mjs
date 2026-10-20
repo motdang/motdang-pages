@@ -11,7 +11,9 @@ const str = (v, n) => String(v ?? '').replace(/[\u0000-\u0008\u000b\u000c\u000e-
 const ID = /^[a-z0-9]{4,12}$/
 const PHOTO_ID = /^[a-z0-9]{12,24}$/
 
-export const AM_MAX = { gold: 120, free: 6, photos: 12 }
+export const AM_MAX = { sian: 500, gold: 120, free: 6, photos: 12 }
+/** How many amulets a page shows: Sala Sian 500, Gold 120, Free 6. */
+export const amCap = (isGold, isSian) => (isGold ? (isSian ? AM_MAX.sian : AM_MAX.gold) : AM_MAX.free)
 export const AM_STATUS = ['open', 'reserved', 'sold', 'show']
 
 // [id, ไทย, English, 中文]
@@ -56,8 +58,9 @@ export function normalizeAmulets(d, o) {
       p: str(x?.p, 24), status: AM_STATUS.includes(x?.status) ? x.status : 'open', note: str(x?.note, 2000),
       photos: (Array.isArray(x?.photos) ? x.photos : []).filter((p) => PHOTO_ID.test(p)).slice(0, AM_MAX.photos),
     }
-  }).filter((x) => x.t).slice(0, AM_MAX.gold)
+  }).filter((x) => x.t).slice(0, AM_MAX.sian)
   o.amterms = str(d.amterms, 600)
+  o.amkt = d.amkt === true // Sala Sian: the market card under each amulet
   return o
 }
 
@@ -81,15 +84,15 @@ const AW = {
   en: { amulets: 'Amulets', all: 'All', avail: 'Available', st_open: 'Available', st_reserved: 'Reserved', st_sold: 'Gone', st_show: 'On show', ask: 'Ask the price', price: 'Price',
     temple: 'Temple', maker: 'Maker', year: 'Year', mat: 'Material', mould: 'Mould', size: 'Size', cond: 'Condition', cert: 'Certificate', frame: 'Frame', form: 'Kind',
     front: 'Front', back: 'Back', reserve: 'Reserve on LINE', copied: 'Message copied. Paste it in LINE.', terms: 'Guarantee · delivery', more: 'More amulets',
-    allBtn: 'All the amulets', detail: 'Details', askAbout: 'Ask about this amulet', goneAsk: 'Ask for one like it', be: 'BE', askHi: 'I would like to reserve' },
+    allBtn: 'All the amulets', detail: 'Details', askAbout: 'Ask about this amulet', goneAsk: 'Ask for one like it', be: 'BE', askHi: 'I would like to reserve', sian: 'Sala Sian', market: 'Market prices', marketHint: 'Close sales at auction and asking prices online, from the Mot Dang price guide' },
   th: { amulets: 'พระเครื่อง', all: 'ทั้งหมด', avail: 'พร้อมเช่า', st_open: 'พร้อมเช่า', st_reserved: 'จองแล้ว', st_sold: 'เช่าแล้ว', st_show: 'พระโชว์', ask: 'สอบถามราคา', price: 'ราคาเช่า',
     temple: 'วัด', maker: 'เกจิ · ผู้สร้าง', year: 'ปี', mat: 'เนื้อ', mould: 'พิมพ์', size: 'ขนาด', cond: 'สภาพ', cert: 'บัตรรับรอง', frame: 'กรอบ · เลี่ยม', form: 'ประเภท',
     front: 'ด้านหน้า', back: 'ด้านหลัง', reserve: 'จององค์นี้ทางไลน์', copied: 'คัดลอกข้อความแล้ว วางในไลน์ได้เลย', terms: 'การรับประกัน · การจัดส่ง', more: 'พระองค์อื่น',
-    allBtn: 'พระทั้งหมด', detail: 'รายละเอียด', askAbout: 'สอบถามองค์นี้', goneAsk: 'ถามหาองค์แบบนี้', be: 'พ.ศ.', askHi: 'สนใจเช่าบูชา' },
+    allBtn: 'พระทั้งหมด', detail: 'รายละเอียด', askAbout: 'สอบถามองค์นี้', goneAsk: 'ถามหาองค์แบบนี้', be: 'พ.ศ.', askHi: 'สนใจเช่าบูชา', sian: 'ศาลาเซียน', market: 'ราคาตลาด', marketHint: 'ราคาประมูลที่ปิดแล้วและราคาตั้งขายออนไลน์ที่ใกล้เคียง จากราคากลางของ Mot Dang' },
   zh: { amulets: '佛牌', all: '全部', avail: '可请', st_open: '可请', st_reserved: '已预订', st_sold: '已请走', st_show: '仅展示', ask: '询价', price: '请供价',
     temple: '寺庙', maker: '师父 · 制作', year: '年份', mat: '材质', mould: '模版', size: '尺寸', cond: '品相', cert: '鉴定卡', frame: '外壳', form: '类别',
     front: '正面', back: '背面', reserve: '在 LINE 预订', copied: '信息已复制，请粘贴到 LINE。', terms: '保证 · 寄送', more: '更多佛牌',
-    allBtn: '全部佛牌', detail: '介绍', askAbout: '询问这尊佛牌', goneAsk: '询问类似的佛牌', be: '佛历', askHi: '我想请这尊' },
+    allBtn: '全部佛牌', detail: '介绍', askAbout: '询问这尊佛牌', goneAsk: '询问类似的佛牌', be: '佛历', askHi: '我想请这尊', sian: 'Sala Sian', market: '市场价', marketHint: '相近的拍卖成交价和网上标价，来自 Mot Dang 行情' },
 }
 export const aw = (lang, k) => (AW[lang] && AW[lang][k]) || AW.en[k] || k
 
@@ -107,6 +110,8 @@ export const AM_CSS = `.agrid{display:grid;grid-template-columns:repeat(auto-fil
 .ahead{display:flex;gap:8px;margin:0 0 6px}.ahead .st{padding:3px 10px;border-radius:99px;background:#0b8043;color:#fff;font:800 13px/1.4 var(--body)}.ahead .st-reserved{background:#b45309}.ahead .st-sold{background:#111}.ahead .st-show{background:#5b4a8a}
 .aprice{margin:6px 0 14px;font:800 clamp(28px,7vw,40px)/1.1 var(--display);color:var(--acc-ink)}.aprice.ask{font-size:24px}
 .afacts dl{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin:0 0 14px}.afacts dl div{padding:10px 12px;border-radius:12px;background:var(--soft)}
+.sianmark{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:99px;background:#4a0f19;color:#f3d48a;box-shadow:inset 0 0 0 1.5px #b8860b;font:800 12px/1.4 var(--body);text-decoration:none;vertical-align:middle}
+.amkt .apg-out{min-height:60px}.amkt .hint{color:var(--mute);font-size:13px;margin:0 0 10px}
 .afacts dt{font-size:13px;color:var(--mute)}.afacts dd{margin:0;font-size:18px;font-weight:800;overflow-wrap:anywhere}.afacts .cert{grid-column:1/-1}`
 
 /** One amulet in the grid: front photo, status, price, temple and year. */
@@ -123,6 +128,7 @@ export function amuletSection(list, h) {
   const { lang, esc, H2 } = h
   const forms = AM_FORMS.filter((f) => list.some((x) => x.form === f[0]))
   const out = [`<section class="card rise" id="amulets">${H2('amulets', esc(aw(lang, 'amulets')))}`]
+  if (h.sian) out.push(`<p style="margin:-6px 0 12px"><a class="sianmark" href="/sian">◆ ${esc(aw(lang, 'sian'))}</a></p>`)
   const btns = [`<button class="on" data-af="">${esc(aw(lang, 'all'))}</button>`]
   if (list.some((x) => x.status !== 'open') && list.some((x) => x.status === 'open')) btns.push(`<button data-af="st:open">${esc(aw(lang, 'avail'))}</button>`)
   if (forms.length > 1) for (const f of forms) btns.push(`<button data-af="${f[0]}">${esc(amLabel(AM_FORMS, f[0], lang))}</button>`)
@@ -146,7 +152,7 @@ export function amuletBody(x, h) {
   }
   const facts = [['form', x.form && amLabel(AM_FORMS, x.form, lang)], ['temple', x.temple], ['maker', x.maker], ['year', amYear(x.year, lang)],
     ['mat', x.mat && amLabel(AM_MATERIALS, x.mat, lang)], ['mould', x.mould], ['size', x.size], ['cond', x.cond && amLabel(AM_CONDS, x.cond, lang)], ['frame', x.frame], ['cert', x.cert]].filter(([, v]) => v)
-  out.push(`<section class="card afacts rise"><p class="ahead"><span class="st st-${x.status}">${A('st_' + x.status)}</span></p>`,
+  out.push(`<section class="card afacts rise"><p class="ahead"><span class="st st-${x.status}">${A('st_' + x.status)}</span>${h.sian ? `<a class="sianmark" href="/sian">◆ ${A('sian')}</a>` : ''}</p>`,
     !sells(x) ? '' : x.p ? `<p class="aprice"><small style="display:block;font:700 14px var(--body);color:var(--mute)">${A('price')}</small>${esc(money(x.p, sym))}</p>` : `<p class="aprice ask">${A('ask')}</p>`,
     facts.length ? `<dl>${facts.map(([k, v]) => `<div${k === 'cert' ? ' class="cert"' : ''}><dt>${A(k)}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>` : '')
   if (sells(x) && line) {
@@ -155,6 +161,10 @@ export function amuletBody(x, h) {
     out.push(`<div class="tools-row"><a class="btn line" id="amreserve" data-t="reserve"${oa ? '' : ` data-copy="${esc(text)}" data-done="${A('copied')}"`} href="${esc(href)}" rel="nofollow noopener">${icon('chat')}${A('reserve')}</a></div>`)
   }
   out.push('</section>')
+  if (h.sian && d.amkt) {
+    const q = { t: x.t, temple: x.temple, maker: x.maker, year: x.year, mould: x.mould, cert: x.cert, matl: x.mat ? amLabel(AM_MATERIALS, x.mat, 'th') : '', forml: x.form ? amLabel(AM_FORMS, x.form, 'th') : '' }
+    out.push(`<section class="card amkt rise" id="amkt" data-q="${esc(new URLSearchParams(Object.entries(q).filter(([, v]) => v)).toString())}" data-lang="${esc(lang)}">${H2('amkt', A('market'))}<p class="hint">${A('marketHint')}</p><div class="apg-out"></div></section>`)
+  }
   if (x.note) out.push(`<section class="card rise">${H2('about', A('detail'))}${paras(x.note)}</section>`)
   if (d.amterms) out.push(`<section class="card rise">${H2('amterms', A('terms'))}${paras(d.amterms)}</section>`)
   const c = d.contact, reach = []

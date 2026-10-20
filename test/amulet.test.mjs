@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { render, normalize, KINDS, SCENES } from '../public/s/render.mjs'
-import { amYear, amLabel, AM_MATERIALS, AM_MAX } from '../public/s/amulet.mjs'
+import { amYear, amLabel, AM_MATERIALS, AM_MAX, amCap } from '../public/s/amulet.mjs'
 import { textOf } from '../src/screen.mjs'
 import { texts } from '../src/tr.mjs'
 
@@ -33,7 +33,8 @@ test('an amulet page kind, with the facts sellers list and empty rows dropped', 
   assert.equal(n.amulets[4].form, '')
   assert.equal(normalize({ amulets: [{ t: 'x', mat: 'เนื้อกระเบื้อง' }] }).amulets[0].mat, 'เนื้อกระเบื้อง') // other words stay as typed
   assert.equal(amLabel(AM_MATERIALS, 'nawa', 'zh'), '九宝铜')
-  assert.equal(normalize({ amulets: Array.from({ length: 200 }, (_, i) => ({ t: 'a' + i })) }).amulets.length, AM_MAX.gold)
+  assert.equal(normalize({ amulets: Array.from({ length: 600 }, (_, i) => ({ t: 'a' + i })) }).amulets.length, AM_MAX.sian) // stored up to Sala Sian's 500
+  assert.deepEqual([amCap(false, false), amCap(true, false), amCap(true, true), amCap(false, true)], [6, 120, 500, 6])
 })
 
 test('years read as the reader counts them', () => {
