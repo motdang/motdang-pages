@@ -18,6 +18,7 @@ import { amcamInit, amcamTake, amcamClick, amLens, amPost } from './make-amcam.m
 import { AM_MAX, amCap } from './amulet.mjs'
 import { drawCard, cardKey, CARD } from './card.mjs'
 import { loadFaces } from './mark.mjs'
+import { cardHtml, cardBind } from './make-card.mjs'
 
 const $ = (s, el = document) => el.querySelector(s)
 const app = $('#app')
@@ -586,14 +587,14 @@ const SECTIONS = [
   ['rooms', 'moon', 's_rooms', 'gold'], ['ota', 'globe', 's_ota', 'gold'], ['lists', 'tag', 's_lists', 'gold'], ['svc', 'clock', 's_svc', 'gold'], ['items', 'tag', 's_items'],
   ['cal', 'cal', 's_cal'], ['camps', 'party', 's_camps', 'gold'],
   ['order', 'basket', 's_order'], ['contact', 'phone', 's_contact'], ['map', 'pin', 's_map'], ['spots', 'compass', 's_spots'], ['hours', 'clock', 's_hours'],
-  ['links', 'link', 's_links'], ['msg', 'mail', 's_msg'], ['look', 'star', 's_look'], ['video', 'camera', 's_video', 'gold'],
+  ['links', 'link', 's_links'], ['msg', 'mail', 's_msg'], ['look', 'star', 's_look'], ['card', 'share', 's_card'], ['video', 'camera', 's_video', 'gold'],
 ]
 
 function hasData(id) {
   const d = S.d
   return { event: !!d.event, words: true, drawing: true, photos: d.photos.length > 0, items: d.items.length > 0, order: !!(d.order.grabfood || d.order.lineman),
     contact: Object.values(d.contact).some(Boolean), map: d.place.lat !== null || !!d.place.addr, hours: d.hours.on, links: d.links.length > 0, msg: true, look: true,
-    video: !!d.video, spots: d.spots.length > 0, cal: d.cal.length > 0, ota: !!(d.ota.agoda || d.ota.booking), camps: d.camps.length > 0, svc: d.svc.length > 0, rooms: d.rooms.length > 0, lists: d.lists.length > 0, face: !!d.avatar, works: d.works.length > 0, amulets: d.amulets.length > 0, quotes: d.quotes.length > 0 }[id]
+    video: !!d.video, spots: d.spots.length > 0, cal: d.cal.length > 0, ota: !!(d.ota.agoda || d.ota.booking), camps: d.camps.length > 0, svc: d.svc.length > 0, rooms: d.rooms.length > 0, lists: d.lists.length > 0, face: !!d.avatar, works: d.works.length > 0, amulets: d.amulets.length > 0, quotes: d.quotes.length > 0, card: true }[id]
 }
 
 function tabs() {
@@ -612,7 +613,7 @@ const GROUPS = [
   ['offer', ['amulets', 'pay', 'items', 'works', 'svc', 'rooms', 'lists', 'ota', 'cal', 'camps', 'quotes'], 'cart'],
   ['reach', ['contact', 'order', 'msg', 'links'], 'telephone'],
   ['where', ['map', 'hours', 'spots'], 'compass'],
-  ['look', ['look'], 'sparkle'],
+  ['look', ['look', 'card'], 'sparkle'],
 ]
 const groupOf = (id) => (GROUPS.find(([g, ids]) => g === id || ids.includes(id)) || GROUPS[0])[0]
 const secRow = (id) => SECTIONS.find((x) => x[0] === id)
@@ -729,6 +730,7 @@ const val = (v) => esc(v ?? '')
 const field = (k, label, v, type = 'text', extra = '') => `<label class="field"><span>${label}</span><input type="${type}" data-k="${k}" value="${val(v)}" ${extra}></label>`
 
 const SEC = {
+  card() { return cardHtml(S, { T, esc, imgUrl, isGold: isGold(), accent: accentNow() }) },
   words() {
     return field('name', T('name'), S.d.name, 'text', 'maxlength="60"') + field('tagline', T('tagline'), S.d.tagline, 'text', 'maxlength="140"') +
       `<label class="field"><span>${T('about')}</span><textarea data-k="about" maxlength="2400">${val(S.d.about)}</textarea></label>`
@@ -1109,6 +1111,7 @@ function bindTabs() {
 
 function bindEdit() {
   const form = $('#form')
+  cardBind(form, S, { changed, token: () => S.token, toast, T })
   form.addEventListener('toggle', amToggle, true)
   form.addEventListener('input', (e) => {
     const k = e.target.dataset.k
