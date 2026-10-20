@@ -436,8 +436,11 @@ export async function siteSection(env, s, kind) {
     const x = asData(e)
     return `<li><b>${x.url ? `<a href="${esc(x.url)}" rel="noopener">${esc(x.title)}</a>` : esc(x.title)}</b><small>${esc(x.when.en)}${x.when.time ? ' · ' + x.when.time : ''}${x.place ? ` · <a href="${esc(x.place.url)}">${esc(x.place.name)}</a>` : x.venue ? ' · ' + esc(x.venue) : ''}${x.cost ? ' · ' + esc(x.cost) : ''}</small></li>`
   }).join('')
-  return `<style>${STRIP_CSS}</style><section class="card rise" id="whatson"><h2 style="margin:0">🗓 What's on · งานที่จะมา</h2>${li ? `<ul class="mdev">${li}</ul>` : ''}
-<a class="mdevmore" href="${MAIN}/tech/">💻 Tech &amp; AI events in Chiang Mai · งานเทคและ AI →</a></section>`
+  const link = `<a class="mdevmore" href="${MAIN}/tech/">💻 Tech &amp; AI events in Chiang Mai · งานเทคและ AI →</a>`
+  // no calendar of its own: the way to the town's events, without an empty heading
+  if (!li) return `<style>${STRIP_CSS}</style><section class="card rise" id="whatson" style="padding-top:14px;padding-bottom:14px">${link}</section>`
+  return `<style>${STRIP_CSS}</style><section class="card rise" id="whatson"><h2 style="margin:0">🗓 What's on · งานที่จะมา</h2><ul class="mdev">${li}</ul>
+${link}</section>`
 }
 
 /** /tech/w.js: fills <div data-md-events data-place|data-site|data-near|data-kind|data-n> on any page. */
