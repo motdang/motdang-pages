@@ -59,6 +59,9 @@ const shareBox = $('#share')
 const mobile = /Android|iPhone|iPad/i.test(navigator.userAgent)
 async function share({ what, url, text, card }) {
   const u = withLang(url)
+  // the card is fetched as the sheet opens: the phone's share must start inside the tap, with no wait
+  let file = null
+  if (card && navigator.canShare) fetch(card).then((r) => (r.ok ? r.blob() : null)).then((b) => { if (b) file = new File([b], 'motdang-amulets.jpg', { type: 'image/jpeg' }) }).catch(() => {})
   const enc = encodeURIComponent
   const go = (ch, href) => `<a class="ch ${ch}" data-ch="${ch}" href="${esc(href)}" target="_blank" rel="noopener">${esc({ line: 'LINE', facebook: 'Facebook', x: 'X', whatsapp: 'WhatsApp', messenger: 'Messenger' }[ch])}</a>`
   shareBox.innerHTML = `<div class="sb"><header><b>📣 ${esc(T.share)}</b><button class="x">${esc(T.close)}</button></header>
@@ -77,14 +80,8 @@ async function share({ what, url, text, card }) {
     if (c.dataset.ch === 'native') {
       e.preventDefault()
       const data = { title: document.title, text, url: u }
-      try {
-        if (card && navigator.canShare) {
-          const blob = await fetch(card).then((r) => (r.ok ? r.blob() : null))
-          const file = blob && new File([blob], 'motdang-amulets.jpg', { type: 'image/jpeg' })
-          if (file && navigator.canShare({ files: [file] })) data.files = [file]
-        }
-        await navigator.share(data)
-      } catch {}
+      if (file && navigator.canShare({ files: [file] })) data.files = [file]
+      navigator.share(data).catch((err) => { if (err?.name !== 'AbortError') { c.textContent = '🔗 ' + T.copy; c.dataset.ch = 'copy' } })
     }
   }
   shareBox.showModal()

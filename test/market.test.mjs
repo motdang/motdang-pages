@@ -144,10 +144,12 @@ test('a stall page has its own title, card and list; a challenge link its own ca
   assert.match(h, /amulets\/card\/stall-nang-kwak\.jpg/)
   assert.match(h, /<link rel="canonical" href="https:\/\/sites\.motdang\.net\/amulets\/nang-kwak\?hl=en">/)
   assert.match(h, /Seller’s photo on Lazada: นางกวัก กวักเงินทอง, listed at ฿259, 594 sold/)
+  assert.ok(!/content="[^"]*middle ฿0/.test(h)) // a stall with no auctions says –, not ฿0
   const g = market.round(P, Math.random, 13)
   assert.equal(g.aid, 13)
   const gh = market.page('th', 'n', F, [], 'https://sites.motdang.net', { game: g })
   assert.match(gh, /amulets\/card\/g-13\.jpg/)
+  assert.match(gh, /href="\/amulets\?g=13&amp;hl=en" hreflang="en"/) // switching language keeps the challenge
   assert.ok(!gh.includes('view.php?aid=13')) // the challenge's own auction is out of the bell, so its hammer stays hidden
 })
 
