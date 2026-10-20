@@ -8,6 +8,7 @@ import { normalize } from '../public/s/render.mjs'
 import { amCap } from '../public/s/amulet.mjs'
 import { ogOf } from '../public/s/og.mjs'
 import { isGold } from './gold.mjs'
+import { isSian } from './sian.mjs'
 
 const W = 1200, H = 630
 const RX = /^([a-z0-9-]{2,40})(?:\/([alw])\/([a-z0-9-]{1,32}))?\.jpg$/
@@ -15,22 +16,31 @@ const RX = /^([a-z0-9-]{2,40})(?:\/([alw])\/([a-z0-9-]{1,32}))?\.jpg$/
 const jpg = (body, age) => new Response(body, { headers: { 'content-type': 'image/jpeg', 'cache-control': `public, max-age=${age}`, 'access-control-allow-origin': '*', 'x-content-type-options': 'nosniff' } })
 const none = () => new Response('', { status: 404, headers: { 'cache-control': 'no-cache' } })
 
-/** The page and item a card path names, with what the card shows and where it is kept. */
+/** A page row as the worker reads it for rendering (worker.mjs page()): Gold and Sian as of today. */
+const siteOf = (s) => ({ ...s, tier: isGold(s) ? 'gold' : 'free', sian: isSian(s) })
+
+/** The items a page shows, by kind: listings are Gold only, amulets up to the page's cap. */
+function itemsOf(site, d, t) {
+  const gold = site.tier === 'gold'
+  return t === 'l' ? (gold ? d.lists : []) : t === 'w' ? d.works : t === 'a' ? d.amulets.slice(0, amCap(gold, site.sian)) : []
+}
+
+/** One card: what it shows and where it is kept. */
+function card(site, d, t, x) {
+  const o = ogOf(site, d, t, x)
+  return { site, d, x, o, base: `og/${site.id}/${t || 'p'}${x ? '-' + x.id : ''}-${o.key}` }
+}
+
+/** The page and item a card path names. */
 export async function cardOf(env, rest) {
   const m = RX.exec(rest)
   if (!m) return null
   const s = await env.DB.prepare('SELECT * FROM site WHERE name = ?').bind(m[1]).first()
   if (!s || s.status !== 'live') return null
-  const d = normalize(JSON.parse(s.d || '{}'))
-  const gold = isGold(s)
-  let x = null
-  if (m[2]) {
-    const list = m[2] === 'l' ? (gold ? d.lists : []) : m[2] === 'w' ? d.works : d.amulets.slice(0, amCap(gold, s.sian))
-    x = list.find((y) => y.id === m[3]) || null
-    if (!x) return null
-  }
-  const o = ogOf(s, d, m[2] || '', x)
-  return { s, d, x, o, base: `og/${s.id}/${m[2] || 'p'}${x ? '-' + x.id : ''}-${o.key}` }
+  const site = siteOf(s), d = normalize(JSON.parse(s.d || '{}'))
+  if (!m[2]) return card(site, d, '', null)
+  const x = itemsOf(site, d, m[2]).find((y) => y.id === m[3])
+  return x ? card(site, d, m[2], x) : null
 }
 
 export async function serveCard(env, rest, origin) {
@@ -69,21 +79,19 @@ async function fitted(env, bytes) {
   return new Uint8Array(await r.response().arrayBuffer())
 }
 
-/** For tools/og-cards.mjs (admin): every live page and item page whose drawn card is missing. */
-export async function todo(env) {
-  const rows = (await env.DB.prepare("SELECT name FROM site WHERE status = 'live'").all()).results
+/** For tools/og-cards.mjs (admin): live pages and item pages whose drawn card is missing, `max` at a time. */
+export async function todo(env, max = 25) {
+  const rows = (await env.DB.prepare("SELECT * FROM site WHERE status = 'live'").all()).results
   const out = []
-  for (const r of rows) {
-    const one = await cardOf(env, r.name + '.jpg')
-    if (!one) continue
-    const paths = one.d.card ? [] : [r.name + '.jpg']
-    const gold = isGold(one.s)
-    for (const x of gold ? one.d.lists : []) paths.push(`${r.name}/l/${x.id}.jpg`)
-    for (const x of one.d.works) if (!x.card) paths.push(`${r.name}/w/${x.id}.jpg`)
-    for (const x of one.d.amulets.slice(0, amCap(gold, one.s.sian))) paths.push(`${r.name}/a/${x.id}.jpg`)
-    for (const p of paths) {
-      const c = p === r.name + '.jpg' ? one : await cardOf(env, p)
-      if (c && !(await env.MEDIA.head(c.base + '.jpg'))) out.push({ ...c.o, path: p, base: c.base, name: r.name, kind: c.s.kind })
+  let looked = 0
+  for (const s of rows) {
+    const site = siteOf(s), d = normalize(JSON.parse(s.d || '{}'))
+    const cards = d.card ? [] : [card(site, d, '', null)]
+    for (const t of ['l', 'w', 'a']) for (const x of itemsOf(site, d, t)) if (!(t === 'w' && x.card)) cards.push(card(site, d, t, x))
+    for (const c of cards) {
+      if (out.length >= max || looked >= 400) return out // the rest on the next call, inside the subrequest limit
+      looked++
+      if (!(await env.MEDIA.head(c.base + '.jpg'))) out.push({ ...c.o, path: c.o.path + '.jpg', base: c.base, name: s.name, kind: s.kind })
     }
   }
   return out
