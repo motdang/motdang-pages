@@ -102,10 +102,10 @@ test('a page that shows a ladder shows today\'s number instead', async () => {
   const li = await text('/lister')
   assert.match(li, new RegExp(`Your share is ${SPLIT_LADDER[2]}% of each fee`))
   assert.ok(!/starts at|ส่วนแบ่งเริ่ม/.test(li))
-  // the owner's terms for home help: the bill shows the month's rate; the range of the ladder is not said
+  // the owner's terms for home help: today's rate up front; the terms they agree to keep the ladder's range
   const lines = termsLines('help', 15).flat().join('\n')
   assert.match(lines, /15%/)
-  assert.ok(!lines.includes(`${HELP_LADDER[0]}–${HELP_LADDER.at(-1)}%`))
+  assert.ok(lines.includes(`${HELP_LADDER[0]}–${HELP_LADDER.at(-1)}%`))
   assert.match(lines, /rate of the month it is made/)
 })
 

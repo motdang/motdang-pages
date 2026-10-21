@@ -76,7 +76,7 @@ export function termsLines(what, rate) {
     [`${rate}% ของงานแรกกับลูกค้าใหม่แต่ละคนที่มาจาก motdang`, `${rate}% of the first job with each new customer who came through motdang`],
     ['งานต่อไปกับลูกค้าคนเดิม ไม่มีค่าธรรมเนียม', 'Later jobs with the same customer: no fee'],
     ['คิดเป็นงานหรือเป็นครั้ง ไม่ใช่การจ้างเป็นรายเดือน', 'Per job or per visit; a monthly hire is not a deal here'],
-    ['บิลแสดงอัตราของเดือนที่ทำบิล', 'The bill shows the rate of the month it is made'],
+    [`อัตราขยับทุกเดือนตามความต้องการ ${HELP_LADDER[0]}–${HELP_LADDER.at(-1)}% บิลแสดงอัตราของเดือนที่ทำบิล`, `The rate moves monthly with demand, ${HELP_LADDER[0]}–${HELP_LADDER.at(-1)}%; the bill shows the rate of the month it is made`],
   ]
   return [
     ['เช่า ที่อยู่อาศัย: สัญญา 12 เดือนขึ้นไป ค่าเช่า 1 เดือน · 6–11 เดือน ครึ่งเดือน · ต่ำกว่า 6 เดือน ¼ เดือน', 'Rent, residential: lease of 12 months or more, one month\'s rent · 6–11 months, half · under 6, a quarter'],
