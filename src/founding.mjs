@@ -220,7 +220,6 @@ async function redeem(env, code, input, origin) {
   const name = pageName(input)
   const s = name && await env.DB.prepare("SELECT * FROM site WHERE name = ? AND status != 'removed'").bind(name).first()
   if (!s) return { msg: 'ไม่พบหน้านี้ · No page by that name.' }
-  if (gold.isHotel(s) && s.plan === 'hotel') return { msg: 'หน้านี้มีรับจองห้องพักอยู่แล้ว ใช้โค้ดกับหน้าอื่น · This page has hotel booking; use the code on another page.' }
   const r = await env.DB.prepare('UPDATE gift SET site_id = ?, used = ? WHERE code = ? AND used IS NULL').bind(s.id, new Date().toISOString(), code).run()
   if (!r.meta?.changes) return { msg: 'ใช้ไปแล้ว · Already used.' }
   const months = (await env.DB.prepare('SELECT months FROM gift WHERE code = ?').bind(code).first())?.months || 12

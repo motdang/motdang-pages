@@ -31,6 +31,7 @@ Traffic: `src/stats.mjs` counts visits, people (a salted hash a day), machines a
 Page checks (2026-10-16): a gig made at /admin or `POST /admin/gig?json=1` (name, lang, who) gives a signed link, 30 days. A save writes `tr_fix`, keyed by the maker's words, which wins over the cron's `tr` row and outlives it; a line whose words changed shows its old fix, flagged. Each save posts to #people-team; the `gig` row (posted, taken) is read into Paid in Art's data/gigs.tsv.
 Messages: `src/msg.mjs`; a copy goes by Resend to an address the maker confirmed (25 a page a day, 90 in all).
 Gold: `src/gold.mjs`, ฿3,000 a year by PromptPay with a satang tail; SlipOK checks the slip when its keys are set, otherwise the slip waits at /admin.
+Hotel booking counts its own months (2026-10-21): ฿555 a month, or ฿5,550 a year that is also 12 months of Gold; `site.hotel_until` is the last hotel day, apart from `gold_until`, and each payment adds its months after the last one. Direct room bookings and the room calendar follow `hotel_until` (and a page's first 30 Gold days); `gold.grant` writes both dates, and a hotel month adds Gold only where the Gold period would end before the hotel months do.
 The edit link is the sign-in: a random token, stored as its SHA-256. A page goes live when `src/screen.mjs` (rules, then Llama Guard) passes it; photos pass `src/photo.mjs` (vision model).
 
 ```

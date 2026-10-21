@@ -569,7 +569,7 @@ ${s ? `<p>ข้อความถึง ${escHtml(title)} จะส่งสำ
       tier: isGold ? 'gold' : 'free', gold_until: s.gold_until, trial: !!s.trial, notify_email: s.notify_email || '', notify_ok: !!s.notify_ok, unread: un?.n || 0,
       asks: (await env.DB.prepare("SELECT COUNT(*) AS n FROM booking WHERE site_id = ? AND status = 'new'").bind(s.id).first())?.n || 0,
       domain: s.domain || '', domain_state: s.domain_state || '', domains: dom.on(env), price: Number(env.GOLD_THB) || gold.GOLD_THB,
-      plan: s.plan || 'gold', hotel: gold.isHotel(s), plans: gold.PLANS(env),
+      plan: s.plan || 'gold', hotel: gold.isHotel(s), hotel_until: s.hotel_until || '', plans: gold.PLANS(env),
       sian: s.kind === 'amulet' || normalize(JSON.parse(s.d)).amulets.length ? await sian.thisMonth(env).then((x) => ({ price: x.price, left: x.left, seats: x.seats, member: sian.isSian(s) })).catch(() => null) : null,
       founders: await founding.thisMonth(env).then((f) => ({ price: f.price, left: f.left })).catch(() => null) })
   }
@@ -798,7 +798,7 @@ ${s ? `<p>ข้อความถึง ${escHtml(title)} จะส่งสำ
       if (r.full) return J({ error: 'full' }, 409)
       return J({ ...r, plan: 'sian', tier: isGold ? 'gold' : 'free', gold_until: s.gold_until, member: sian.isSian(s) })
     }
-    return J({ ...(await gold.start(env, s.id, rand, gold.planOf(env, normalize(JSON.parse(s.d)), want))), tier: isGold ? 'gold' : 'free', gold_until: s.gold_until })
+    return J({ ...(await gold.start(env, s.id, rand, gold.planOf(env, normalize(JSON.parse(s.d)), want))), tier: isGold ? 'gold' : 'free', gold_until: s.gold_until, hotel_until: s.hotel_until || '', hotel_now: gold.isHotel(s) })
   }
   if (p === 'gold/slip' && m === 'POST') {
     const who = await sender(request, env)
@@ -820,7 +820,8 @@ ${s ? `<p>ข้อความถึง ${escHtml(title)} จะส่งสำ
         const cut = await sellers.credit(env, { siteId: s.id, payId: pay.id, amount: pay.amount })
         await gold.tellSales(env, { title: JSON.parse(s.d).name || s.name, url: `${origin}/${s.name}`, amount: pay.amount, months: pay.months || 12, plan: pay.plan, how: 'SlipOK', cut })
       })().catch((e) => console.error(e)))
-      return J({ ok: true, tier: 'gold', gold_until: until })
+      const now2 = await env.DB.prepare('SELECT tier, gold_until, hotel_until, trial FROM site WHERE id = ?').bind(s.id).first()
+      return J({ ok: true, tier: 'gold', gold_until: until, hotel_until: now2?.hotel_until || '', hotel: gold.isHotel(now2) })
     }
     await env.DB.prepare("UPDATE pay SET status='slip', slip=?, note=?, updated=? WHERE id=?").bind(key, r.why, now, pay.id).run()
     await log(env, s.id, 'gold-slip', r.why)

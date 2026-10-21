@@ -128,7 +128,7 @@ test('two plans: Free and Gold; the hotel pays are one payment of Gold with hote
     gold.tellSales({ DISCORD_SALES: 'https://x/y' }, { title: 'B', url: 'u', amount: '555.01', months: 1, plan: 'hotel', how: 'SlipOK' }),
   ]).finally(() => { globalThis.fetch = real }).then(() => {
     assert.match(said[0], /Gold \+ hotel booking, a year/)
-    assert.match(said[1], /Gold \+ hotel booking, a month/)
+    assert.match(said[1], /Hotel booking, a month/)
     assert.ok(!said.join('').includes('Hotel year'))
   })
 })

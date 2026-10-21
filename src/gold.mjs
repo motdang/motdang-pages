@@ -20,8 +20,8 @@ export function planOf(env, d, want) {
   const P = PLANS(env)
   return P[want] || (d && Array.isArray(d.rooms) && d.rooms.length ? P.hotel : P.gold)
 }
-/** Direct room bookings: the hotel month, or the first 30 Gold days. */
-export const isHotel = (s) => isGold(s) && (!!s.trial || s.plan === 'hotel')
+/** Direct room bookings: while the page's hotel months last (hotel_until), or in its first 30 Gold days. Gold alone has none. */
+export const isHotel = (s) => isGold(s) && (!!s.trial || (!!s.hotel_until && s.hotel_until >= new Date().toISOString().slice(0, 10)))
 
 export const slipOn = (env) => !!(env.SLIPOK_KEY && env.SLIPOK_BRANCH)
 
@@ -59,14 +59,33 @@ export async function checkSlip(env, file, baht) {
   } catch { return { ok: false, why: 'service' } }
 }
 
-/** Gold for `months` (a year unless said) from today, or past the current end. */
+const iso = (d) => d.toISOString().slice(0, 10)
+const plusMonths = (from, n) => { const d = new Date(from); d.setUTCMonth(d.getUTCMonth() + n); return d }
+
+/**
+ * What a payment adds, from where the last one ends (or from today).
+ * gold, sian, terms: `months` of Gold.
+ * hotel (Nan 2026-10-21, "charge hotel booking by the month"): `months` of hotel booking, counted apart from the Gold period.
+ * The hotel year is also 12 months of Gold. A hotel month adds Gold only where the Gold period would end before the hotel months
+ * do (a page with no Gold gets a month of each), so a Gold year stays as it is. A page in its 30 free days starts after them.
+ * A hotel payment leaves `plan` alone. Returns the end of the Gold period.
+ */
 export async function grant(env, siteId, months = 12, plan = months === 1 ? 'hotel' : 'gold') {
-  const s = await env.DB.prepare('SELECT gold_until FROM site WHERE id = ?').bind(siteId).first()
-  const from = s?.gold_until && s.gold_until > new Date().toISOString() ? new Date(s.gold_until) : new Date()
-  from.setUTCMonth(from.getUTCMonth() + months)
-  const until = from.toISOString().slice(0, 10)
-  await env.DB.prepare("UPDATE site SET tier='gold', gold_until=?, trial=0, plan=? WHERE id=?").bind(until, plan, siteId).run()
-  return until
+  const s = await env.DB.prepare('SELECT gold_until, hotel_until, trial FROM site WHERE id = ?').bind(siteId).first()
+  const now = new Date().toISOString()
+  const live = (d) => (d && d > now ? d : null) // an end that has not passed (a date counts as passed on its own day, as it always has)
+  const goldFrom = new Date(live(s?.gold_until) || now)
+  if (plan !== 'hotel') {
+    const until = iso(plusMonths(goldFrom, months))
+    await env.DB.prepare("UPDATE site SET tier='gold', gold_until=?, trial=0, plan=? WHERE id=?").bind(until, plan, siteId).run()
+    return until
+  }
+  const hotelFrom = new Date([now, live(s?.hotel_until), s?.trial ? live(s?.gold_until) : null].filter(Boolean).sort().at(-1))
+  const hotelUntil = iso(plusMonths(hotelFrom, months))
+  let goldUntil = months >= 12 ? iso(plusMonths(goldFrom, months)) : live(s?.gold_until)
+  if (!goldUntil || goldUntil < hotelUntil) goldUntil = hotelUntil
+  await env.DB.prepare("UPDATE site SET tier='gold', gold_until=?, hotel_until=?, trial=0 WHERE id=?").bind(goldUntil, hotelUntil, siteId).run()
+  return goldUntil
 }
 
 /** Is the page Gold today? */
@@ -74,7 +93,7 @@ export const isGold = (s) => s?.tier === 'gold' && (!s.gold_until || s.gold_unti
 
 /** A paid plan, posted to the team's sales channel when DISCORD_SALES is set. */
 export async function tellSales(env, { title, url, amount, months, plan, how, cut }) {
-  const what = plan === 'sian' ? 'Sala Sian year' : plan === 'hotel' ? (months === 1 ? 'Gold + hotel booking, a month' : 'Gold + hotel booking, a year') : 'Gold year'
+  const what = plan === 'sian' ? 'Sala Sian year' : plan === 'hotel' ? (months === 1 ? 'Hotel booking, a month' : 'Gold + hotel booking, a year') : 'Gold year'
   const by = (cut ? `\n${cut.name} +฿${cut.cut} (${cut.rate}%)` : '') + (cut?.bonus ? `\n${cut.bonus.name} +฿${cut.bonus.cut} (brought ${cut.bonus.for}, first sale)` : '')
   return postSales(env, `💰 **${what}** · ฿${amount} · ${title}\n${url} · ${how}${by}`)
 }

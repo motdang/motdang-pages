@@ -38,7 +38,7 @@ const S = {
   pageLang: '', d: null, open: new Set(), local: new Map(), big: new Map(), photoGps: null, picker: null, busy: 0,
   tab: 'edit', tier: 'gold', goldUntil: '', notifyEmail: '', notifyOk: false, unread: 0, // a page starts with 30 days of Gold
   trial: false, asks: 0, domain: '', domainState: '', domains: false, price: 3000, dbFam: '', dbQ: '',
-  plan: 'gold', hotel: true, plans: null, payPlan: '', part: '',
+  hotel: true, hotelUntil: '', plans: null, payPlan: '', part: '',
 }
 const isGold = () => S.tier === 'gold'
 const ding = (n, look = 'ink', play = 'loop') => `<i data-dingbat="${n}" data-look="${look}" data-play="${play}" aria-hidden="true"></i>`
@@ -2014,7 +2014,8 @@ async function drawGold() {
     const tg = $('#trygold'); if (tg) tg.onclick = () => { S.look = 'gold'; S.d.accent = ''; changed(); S.tab = 'edit'; draw(); openPart('look') }
   }
   const rooms = S.d.rooms.length > 0
-  const want = S.payPlan || (rooms && (S.trial || S.plan === 'hotel') ? 'hotel' : 'gold')
+  const hotelOn = !!S.hotelUntil && S.hotelUntil >= new Date().toISOString().slice(0, 10) // paid hotel months are running; the free 30 days are S.trial
+  const want = S.payPlan || (rooms && (S.trial || hotelOn) ? 'hotel' : 'gold')
   // Sala Sian (src/sian.mjs): an amulet page's velvet rope, a Gold year with more, priced on a Shoup ladder
   const AU = (k, v = {}) => esc(Object.entries(v).reduce((t, [a, b]) => t.replace('{' + a + '}', b), amUi(S.lang, k)))
   const sianBox = !S.sian ? '' : isSian() ? `<p class="goldon">${AU('sian_member', { d: S.goldUntil || '' })} · <a href="/sian" target="_blank">/sian</a></p>`
@@ -2022,17 +2023,20 @@ async function drawGold() {
       <p class="left">${S.sian.left > 0 ? AU('sian_left', { n: S.sian.left }) : AU('sian_full')}</p>
       ${S.sian.left > 0 && want !== 'sian' ? `<button class="go" id="tosian">${AU('sian_join', { p: new Intl.NumberFormat(S.lang).format(S.sian.price) })}</button>` : ''} <a href="/sian" target="_blank" rel="noopener">${AU('sian_go')} →</a></section>`
   const bindSian = () => { const b = $('#tosian'); if (b) b.onclick = () => { S.payPlan = 'sian'; drawGold() } }
-  const needHotel = rooms && S.plan !== 'hotel'
   // founding membership (src/founding.mjs): two Gold years for one payment, while this month has seats.
-  // Not for a page with rooms: a Gold code gives the Gold year, not the hotel plan.
+  // Not for a page with rooms: a Gold code gives the Gold year, not hotel booking.
   const fm = S.founders, nfL = new Intl.NumberFormat(S.lang)
   const fmBox = fm && fm.left > 0 && !rooms ? `<section class="gfound"><h3>${T('g_fmH')}</h3>
     <p>${esc(ui(S.lang, 'g_fmP').replace('{p}', nfL.format(fm.price)))}</p><p class="hint">${T('g_fmHow')}</p>
     <p class="left">${esc(ui(S.lang, 'g_fmLeft').replace('{n}', nfL.format(fm.left)))}</p>
     <a class="go" href="/founders" target="_blank" rel="noopener">${T('g_fmGo')} →</a></section>` : ''
-  if (isGold() && !S.trial && !(needHotel && /^hotel/.test(S.payPlan || '')) && want !== 'sian') {
-    tb.innerHTML = head + `<p class="goldon">★ ${esc(ui(S.lang, 'g_on').replace('{d}', S.goldUntil || ''))}</p>` + sianBox +
-      (needHotel ? `<p style="text-align:center"><button class="go" id="tohotel">${esc(ui(S.lang, 'g_hotelGo').replace('{p}', new Intl.NumberFormat(S.lang).format(S.plans?.hotel?.baht || 555)))}</button></p>` : '') + domainBox() + list
+  // Gold until, and hotel booking until: two dates (src/gold.mjs grant); a hotel adds a month after the last one
+  const dated = (k, d) => esc(ui(S.lang, k)).replace('{d}', `<span style="white-space:nowrap">${esc(d)}</span>`) // a date does not break at its hyphens
+  const goldBanner = `<p class="goldon">★ ${dated('g_on', S.goldUntil || '')}</p>`
+  const hotelBanner = hotelOn ? `<p class="goldon">★ ${dated('g_hotelOn', S.hotelUntil)}</p>` : ''
+  if (isGold() && !S.trial && !/^hotel/.test(S.payPlan || '') && want !== 'sian') {
+    tb.innerHTML = head + goldBanner + hotelBanner + sianBox +
+      (rooms ? `<p style="text-align:center"><button class="go" id="tohotel">${esc(ui(S.lang, hotelOn ? 'g_hotelMore' : 'g_hotelGo').replace('{p}', new Intl.NumberFormat(S.lang).format(S.plans?.hotel?.baht || 555)))}</button></p>` : '') + domainBox() + list
     after()
     dingbats(['signals', 'classic', 'curious'])
     bindDomain()
@@ -2044,10 +2048,10 @@ async function drawGold() {
   const gp = (v, key, p) => `<button type="button" data-seg="payplan" data-v="${v}"${want === v ? ' class="on"' : ''}>${esc(ui(S.lang, key).replace('{p}', new Intl.NumberFormat(S.lang).format(p)))}</button>`
   const pick = rooms && S.plans ? `<div class="gplans">${gp('gold', 'g_planGold', S.plans.gold.baht)}<div class="gh"><span>${T('g_hotelLine')}</span>${gp('hotel', 'g_planHotel', S.plans.hotel.baht)}${S.plans.hotelyear ? gp('hotelyear', 'g_planHotelYear', S.plans.hotelyear.baht) : ''}</div></div>` : ''
   try { r = await call('POST', 'gold', { plan: want }) } catch (e) { tb.innerHTML = head + `<p class="hint">${e.message === 'full' ? AU('sian_full') : T('e_net')}</p>` + list; after(); S.payPlan = ''; return }
-  if (r.tier === 'gold' && !S.trial && want !== 'sian' && !(needHotel && /^hotel/.test(want))) { S.tier = 'gold'; S.goldUntil = r.gold_until; return drawGold() } // a Gold year adding hotel booking pays: no way round again
+  if (r.tier === 'gold' && !S.trial && want !== 'sian' && !/^hotel/.test(want)) { S.tier = 'gold'; S.goldUntil = r.gold_until; S.hotelUntil = r.hotel_until || ''; S.hotel = !!r.hotel_now; return drawGold() } // hotel booking pays; it does not go round again
   const tail = String(r.amount).split('.')[1] || '00'
   const nf = new Intl.NumberFormat(S.lang)
-  tb.innerHTML = head + (S.trial ? `<p class="goldon">★ ${esc(ui(S.lang, 'g_trial').replace('{d}', S.goldUntil || ''))}</p>` : '') + pick + (want === 'sian' ? '' : sianBox) + `<section class="goldpay"><p class="price">${want === 'sian' ? AU('sian_pay', { p: nf.format(r.baht) }) : esc(ui(S.lang, r.months === 1 ? 'g_priceMonth' : 'g_price').replace('{p}', nf.format(r.baht)))}</p>${r.hotel ? `<p class="hint">${T(r.months === 1 ? 'g_hotelWhy' : 'g_hotelYearWhy')}</p>` : ''}
+  tb.innerHTML = head + (S.trial ? `<p class="goldon">★ ${esc(ui(S.lang, 'g_trial').replace('{d}', S.goldUntil || ''))}</p>` : isGold() ? goldBanner + hotelBanner : '') + pick + (want === 'sian' ? '' : sianBox) + `<section class="goldpay"><p class="price">${want === 'sian' ? AU('sian_pay', { p: nf.format(r.baht) }) : esc(ui(S.lang, r.months === 1 ? 'g_priceMonth' : 'g_price').replace('{p}', nf.format(r.baht)))}</p>${r.hotel ? `<p class="hint">${T(r.months === 1 ? (isGold() && !S.trial ? 'g_hotelAddWhy' : 'g_hotelWhy') : 'g_hotelYearWhy')}</p>` : ''}
     ${r.payload ? `<div class="ppqr">${qrSvg(r.payload, { dark: '#0e3d78', light: '#ffffff', label: 'PromptPay' })}<b>฿${esc(nf.format(Number(r.amount)))}</b><span>PromptPay</span></div>
       <p class="hint">${esc(ui(S.lang, 'g_scan').replace('{s}', tail))}</p>
       <label class="pick goldslip">${icon('download')}${T('g_slip')}<input type="file" accept="image/*" id="slip"></label><p id="slipstate" class="pinstate"></p>` : `<p class="hint">${T('g_nopp')}</p>`}</section>` + fmBox + list + (isGold() ? domainBox() : '')
@@ -2063,7 +2067,7 @@ async function drawGold() {
     const fd = new FormData(); fd.append('slip', f, 'slip.jpg')
     try {
       const res = await call('POST', 'gold/slip', fd, true)
-      if (res.tier === 'gold') { S.tier = 'gold'; S.goldUntil = res.gold_until; S.trial = false; S.plan = want === 'sian' ? 'sian' : want === 'gold' ? 'gold' : 'hotel'; S.hotel = !/^(gold|sian)$/.test(want); if (want === 'sian' && S.sian) S.sian.member = true; S.payPlan = ''; toast(ui(S.lang, 'g_thanks')); drawGold() }
+      if (res.tier === 'gold') { S.tier = 'gold'; S.goldUntil = res.gold_until; S.hotelUntil = res.hotel_until || ''; S.hotel = !!res.hotel; S.trial = false; if (want === 'sian' && S.sian) S.sian.member = true; S.payPlan = ''; toast(ui(S.lang, 'g_thanks')); drawGold() }
       else { st.className = 'pinstate ok'; st.innerHTML = `${icon('check')}${T('g_wait')}` }
     } catch { st.textContent = ui(S.lang, 'e_net') }
   }
@@ -2193,7 +2197,7 @@ async function boot() {
       Object.assign(S, { name: r.name, kind: r.kind, look: lookOf(r.look), pageLang: r.lang, status: r.status, views: r.views, d: normalize(r.d), step: 'edit',
         tier: r.tier, goldUntil: r.gold_until || '', notifyEmail: r.notify_email, notifyOk: r.notify_ok, unread: r.unread,
         trial: !!r.trial, asks: r.asks || 0, domain: r.domain || '', domainState: r.domain_state || '', domains: !!r.domains, price: r.price || 3000,
-        plan: r.plan || 'gold', hotel: !!r.hotel, plans: r.plans || null, founders: r.founders || null, sian: r.sian || null, cardUrl: '' })
+        hotel: !!r.hotel, hotelUntil: r.hotel_until || '', plans: r.plans || null, founders: r.founders || null, sian: r.sian || null, cardUrl: '' })
       S.d.event = S.d.event || undefined
       S.open = new Set(DEFAULT_OPEN[S.kind]); S.part = ''
       if (h.get('tab')) S.tab = h.get('tab')
