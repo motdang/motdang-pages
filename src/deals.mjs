@@ -76,7 +76,7 @@ export function termsLines(what, rate) {
     [`${rate}% ของงานแรกกับลูกค้าใหม่แต่ละคนที่มาจาก motdang`, `${rate}% of the first job with each new customer who came through motdang`],
     ['งานต่อไปกับลูกค้าคนเดิม ไม่มีค่าธรรมเนียม', 'Later jobs with the same customer: no fee'],
     ['คิดเป็นงานหรือเป็นครั้ง ไม่ใช่การจ้างเป็นรายเดือน', 'Per job or per visit; a monthly hire is not a deal here'],
-    [`อัตราขยับทุกเดือนตามความต้องการ ${HELP_LADDER[0]}–${HELP_LADDER.at(-1)}% บิลแสดงอัตราของเดือนนั้น`, `The rate moves monthly with demand, ${HELP_LADDER[0]}–${HELP_LADDER.at(-1)}%; the bill shows the month's rate`],
+    ['บิลแสดงอัตราของเดือนที่ทำบิล', 'The bill shows the rate of the month it is made'],
   ]
   return [
     ['เช่า ที่อยู่อาศัย: สัญญา 12 เดือนขึ้นไป ค่าเช่า 1 เดือน · 6–11 เดือน ครึ่งเดือน · ต่ำกว่า 6 เดือน ¼ เดือน', 'Rent, residential: lease of 12 months or more, one month\'s rent · 6–11 months, half · under 6, a quarter'],
@@ -144,7 +144,7 @@ function applyPage(done) {
 <p><button type="submit">ส่ง · Send</button></p></form>
 <details><summary class="hint">ลงอะไรได้บ้าง · What you can list</summary><ul><li>เช่า ขาย ที่อยู่อาศัย พาณิชย์ อุตสาหกรรม · Rent or sale: residential, commercial, industrial</li>
 <li>ช่างซ่อม แม่บ้าน คนสวน ช่างประปา ช่างไฟ ขนย้าย · Handyman, maid, gardener, plumber, electrician, packer · mover</li>
-<li>ส่วนแบ่งเริ่ม ${SPLIT_LADDER[2]}% ของค่าธรรมเนียม จ่ายวันที่เจ้าของจ่าย · Your share starts at ${SPLIT_LADDER[2]}% of each fee, sent the day the owner pays</li></ul></details>`, LISTER_OG)
+<li>ส่วนแบ่งของคุณ ${SPLIT_LADDER[2]}% ของค่าธรรมเนียม จ่ายวันที่เจ้าของจ่าย · Your share is ${SPLIT_LADDER[2]}% of each fee, sent the day the owner pays</li></ul></details>`, LISTER_OG)
 }
 
 function slugOf(name) {

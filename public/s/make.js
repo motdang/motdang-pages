@@ -912,7 +912,7 @@ Object.assign(SEC, {
   },
   rooms() {
     const st = S.d.stay
-    return (S.hotel ? '' : `<p class="glocked">${esc(ui(S.lang, 'h_needHotel').replace('{p}', new Intl.NumberFormat(S.lang).format(S.plans?.hotel?.baht || 555)))} <button class="linkbtn" data-tab="gold">${T('goldOpen')} →</button></p>`) +
+    return (S.hotel ? '' : `<p class="glocked">${esc(ui(S.lang, 'h_needHotel').replace('{p}', new Intl.NumberFormat(S.lang).format(S.plans?.hotel?.baht || 555)).replace('{y}', new Intl.NumberFormat(S.lang).format(S.plans?.hotelyear?.baht || 5550)))} <button class="linkbtn" data-tab="gold">${T('goldOpen')} →</button></p>`) +
       `<div class="rowc" style="margin-bottom:12px"><b>${T('h_setup')}</b>
       <div class="grid2f" style="margin-top:8px"><label class="mini"><span>${T('h_in')}</span><input type="time" data-k="stay.in" value="${val(st.in)}"></label><label class="mini"><span>${T('h_out')}</span><input type="time" data-k="stay.out" value="${val(st.out)}"></label></div>
       <label class="check"><input type="checkbox" class="sw" data-k="stay.instant" ${st.instant ? 'checked' : ''}>${T('h_instant')}</label>
@@ -2040,9 +2040,11 @@ async function drawGold() {
     bindSian()
     return
   }
-  const pick = rooms && S.plans ? `<div class="field" style="text-align:center">${seg('payplan', want, [['gold', esc(ui(S.lang, 'g_planGold').replace('{p}', new Intl.NumberFormat(S.lang).format(S.plans.gold.baht)))], ['hotel', esc(ui(S.lang, 'g_planHotel').replace('{p}', new Intl.NumberFormat(S.lang).format(S.plans.hotel.baht)))], ...(S.plans.hotelyear ? [['hotelyear', esc(ui(S.lang, 'g_planHotelYear').replace('{p}', new Intl.NumberFormat(S.lang).format(S.plans.hotelyear.baht)))]] : [])])}</div>` : ''
+  // Gold, and one line under it for hotel booking (a month or a year): the page is Gold either way
+  const gp = (v, key, p) => `<button type="button" data-seg="payplan" data-v="${v}"${want === v ? ' class="on"' : ''}>${esc(ui(S.lang, key).replace('{p}', new Intl.NumberFormat(S.lang).format(p)))}</button>`
+  const pick = rooms && S.plans ? `<div class="gplans">${gp('gold', 'g_planGold', S.plans.gold.baht)}<div class="gh"><span>${T('g_hotelLine')}</span>${gp('hotel', 'g_planHotel', S.plans.hotel.baht)}${S.plans.hotelyear ? gp('hotelyear', 'g_planHotelYear', S.plans.hotelyear.baht) : ''}</div></div>` : ''
   try { r = await call('POST', 'gold', { plan: want }) } catch (e) { tb.innerHTML = head + `<p class="hint">${e.message === 'full' ? AU('sian_full') : T('e_net')}</p>` + list; after(); S.payPlan = ''; return }
-  if (r.tier === 'gold' && !S.trial && want !== 'sian') { S.tier = 'gold'; S.goldUntil = r.gold_until; return drawGold() }
+  if (r.tier === 'gold' && !S.trial && want !== 'sian' && !(needHotel && /^hotel/.test(want))) { S.tier = 'gold'; S.goldUntil = r.gold_until; return drawGold() } // a Gold year adding hotel booking pays: no way round again
   const tail = String(r.amount).split('.')[1] || '00'
   const nf = new Intl.NumberFormat(S.lang)
   tb.innerHTML = head + (S.trial ? `<p class="goldon">★ ${esc(ui(S.lang, 'g_trial').replace('{d}', S.goldUntil || ''))}</p>` : '') + pick + (want === 'sian' ? '' : sianBox) + `<section class="goldpay"><p class="price">${want === 'sian' ? AU('sian_pay', { p: nf.format(r.baht) }) : esc(ui(S.lang, r.months === 1 ? 'g_priceMonth' : 'g_price').replace('{p}', nf.format(r.baht)))}</p>${r.hotel ? `<p class="hint">${T(r.months === 1 ? 'g_hotelWhy' : 'g_hotelYearWhy')}</p>` : ''}

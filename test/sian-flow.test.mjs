@@ -74,11 +74,11 @@ test("last month's slips hold no seat this month", async () => {
   assert.equal((await sian.thisMonth(env)).left, 10)
 })
 
-test('/sian shows the price, the seats and the ladder', async () => {
+test('/sian shows the price and the seats of the month, and not the ladder', async () => {
   const env = { DB: d1() }
   const r = await sian.route(new Request('http://x/sian?hl=en'), env, '/sian', new URL('http://x/sian?hl=en'), { html: (b) => new Response(b) })
   const t = await r.text()
   assert.match(t, /฿9,999 a year/)
   assert.match(t, /10 of 10 seats left this month/)
-  assert.match(t, /<li class="on">฿9,999<\/li>/)
+  assert.ok(!/class="ladder"|<li class="on">/.test(t))
 })

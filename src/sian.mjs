@@ -98,7 +98,7 @@ async function members(env) {
 
 const W = {
   th: { title: 'ศาลาเซียน', kick: 'สำหรับร้านพระเครื่องบน Mot Dang', lead: 'ห้องรับรองของคนขายพระ: ราคากลางเต็ม ทุกรายการที่ใกล้เคียง พร้อมลิงก์ ราคาตลาดใต้พระทุกองค์ และที่บนกำแพงเซียน',
-    price: '฿{p} ต่อปี', left: 'เหลือ {n} จาก {s} ที่ในเดือนนี้', full: 'เดือนนี้เต็มแล้ว เปิดใหม่วันที่ 1', shoup: 'ราคาตามความต้องการ: เดือนไหนที่นั่งไป 8 ใน 10 เดือนถัดไปขึ้นหนึ่งขั้น ไปไม่ถึง 6 ลงหนึ่งขั้น',
+    price: '฿{p} ต่อปี', left: 'เหลือ {n} จาก {s} ที่ในเดือนนี้', full: 'เดือนนี้เต็มแล้ว เปิดใหม่วันที่ 1',
     inside: 'ในศาลา', join: 'เข้าศาลา', joinHow: 'เปิดหน้าเว็บพระของคุณ แท็บ "ทอง" แล้วเลือกศาลาเซียน', make: 'ยังไม่มีหน้า? ทำหน้าพระ', wall: 'เซียนในศาลา', open: 'พร้อมเช่า {n} องค์', try: 'ลองราคากลาง',
     b: [['ราคากลางเต็ม', 'ทุกรายการประมูลที่ปิดแล้วและราคาออนไลน์ที่ใกล้เคียง พร้อมลิงก์ไปดูองค์จริง ปุ่ม "ใช้ราคานี้" ในทุกองค์'],
       ['ราคาตลาดใต้พระทุกองค์', 'ลูกค้าเห็นราคาประมูลและราคาออนไลน์ใต้ราคาของคุณ เปิดหรือปิดได้'],
@@ -107,7 +107,7 @@ const W = {
       ['ที่บนกำแพง', 'ร้านของคุณอยู่บนหน้านี้ ให้คนหาพระเห็น'],
       ['ทุกอย่างของทอง', 'กล้องพระ ตัดพื้นหลัง ถ่ายหน้า-หลังเป็นองค์เดียว 360 รูป โดเมนของคุณเอง']] },
   en: { title: 'Sala Sian', kick: 'For amulet sellers on Mot Dang', lead: 'The amulet sellers’ room: the full price guide with every close sale linked, market prices under each amulet, and a place on the wall.',
-    price: '฿{p} a year', left: '{n} of {s} seats left this month', full: 'Full this month. Seats open on the 1st.', shoup: 'The price follows demand: a month that fills 8 of 10 seats moves the next month up a step; under 6, down a step.',
+    price: '฿{p} a year', left: '{n} of {s} seats left this month', full: 'Full this month. Seats open on the 1st.',
     inside: 'Inside', join: 'Join', joinHow: 'Open your amulet page’s builder, the Gold tab, and choose Sala Sian.', make: 'No page yet? Make an amulet page', wall: 'In the sala', open: '{n} available', try: 'Try the price guide',
     b: [['The full price guide', 'Every closed auction and online listing close to your amulet, each linked to the piece, and "Use this price" on every amulet.'],
       ['Market prices under each amulet', 'Buyers see auction and online prices under yours. On or off, your call.'],
@@ -119,7 +119,6 @@ const W = {
 
 export function page(env, lang, month, list, nonce) {
   const T = W[lang] || W.en
-  const rung = LADDER.map((p) => `<li${p === month.price ? ' class="on"' : ''}>฿${nf(p)}</li>`).join('')
   const card = (m) => `<a class="mem" href="/${esc(m.name)}">${m.cover ? `<img src="/img/${esc(m.cover)}-s.webp" alt="${esc((lang === 'th' ? 'รูปหน้าร้าน ' : 'Cover photo of ') + m.title + (lang === 'th' ? ` ร้านพระในศาลาเซียน มี ${m.open} องค์พร้อมเช่า` : `, an amulet shop in Sala Sian with ${m.open} available`))}" loading="lazy">` : '<span class="noimg" aria-hidden="true">🪷</span>'}<b>${esc(m.title)}</b><small>${esc(T.open.replace('{n}', m.open))}</small></a>`
   return `<!doctype html><html lang="${lang}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${esc(T.title)} · Mot Dang</title><meta name="description" content="${esc(T.lead)}"><meta property="og:title" content="${esc(T.title)}"><meta property="og:description" content="${esc(T.lead)}">
@@ -129,7 +128,6 @@ export function page(env, lang, month, list, nonce) {
 <body class="sian"><header class="rope"><p class="kick"><a href="/">sites.motdang.net</a> · <a href="?hl=${lang === 'th' ? 'en' : 'th'}">${lang === 'th' ? 'English' : 'ไทย'}</a></p>
 <p class="k2">${esc(T.kick)}</p><h1>${esc(T.title)}</h1><p class="lead">${esc(T.lead)}</p>
 <div class="ticket"><p class="pr">${esc(T.price.replace('{p}', nf(month.price)))}</p><p class="seats">${esc(month.left > 0 ? T.left.replace('{n}', month.left).replace('{s}', month.seats) : T.full)}</p>
-<ol class="ladder" aria-label="price ladder">${rung}</ol><p class="shoup">${esc(T.shoup)}</p>
 <p class="how">${esc(T.joinHow)}</p><nav class="cta" style="margin:0 0 10px">${shareLinks(lang === 'th' ? 'ศาลาเซียน ห้องรับรองของคนขายพระบน Mot Dang' : 'Sala Sian, the amulet sellers’ room on Mot Dang', 'https://sites.motdang.net/sian')}</nav><nav class="cta"><a class="btn" href="/make">${esc(T.join)}</a><a class="btn ghost" href="/make#kind=amulet">${esc(T.make)}</a></nav></div></header>
 <main><h2>${esc(T.inside)}</h2><ul class="perks">${T.b.map(([h, p]) => `<li><b>${esc(h)}</b><span>${esc(p)}</span></li>`).join('')}</ul>
 <p class="cta"><a class="btn" href="/amulets?hl=${lang}">${lang === 'th' ? 'ตลาดพระ' : 'Amulet market'} →</a><a class="btn ghost" href="/amulet-price?hl=${lang}">${esc(T.try)} →</a></p>

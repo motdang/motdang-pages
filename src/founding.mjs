@@ -152,7 +152,6 @@ ${form}
 <details><summary>ทำงานอย่างไร · How it works</summary><ul>
 <li>โค้ดทองหนึ่งโค้ดทำให้หน้าหนึ่งบน sites.motdang.net เป็นทอง 1 ปี นับจากวันที่ใช้ ส่งให้ใครก็ได้ทาง LINE<br><span class="hint">A Gold code makes one page on sites.motdang.net Gold for a year from the day it's used. Send it to anyone on LINE.</span></li>
 <li>ทองปีละ ฿${nf(Number(env.GOLD_THB) || gold.GOLD_THB)} ตามปกติ<br><span class="hint">Gold is ฿${nf(Number(env.GOLD_THB) || gold.GOLD_THB)} a year on its own.</span></li>
-<li>ราคาขยับทุกวันที่ 1 ตามที่นั่งเดือนก่อน: ขายได้ 80% ขึ้นไป ขึ้นหนึ่งขั้น ต่ำกว่า 60% ลงหนึ่งขั้น · ${LADDER.map((x) => '฿' + nf(x)).join(' · ')}<br><span class="hint">The price moves on the 1st with last month's seats: 80% or more taken, up a step; under 60%, down a step.</span></li>
 <li>เป็นทองจ่ายล่วงหน้า ไม่ใช่หุ้นของมดแดง ไม่คืนเงิน<br><span class="hint">Prepaid Gold, not a share in motdang. No refunds.</span></li>
 <li>จ่ายด้วยพร้อมเพย์ ส่งสลิป เลขและโค้ดมาเมื่อสลิปผ่าน<br><span class="hint">Pay by PromptPay and send the slip; the number and codes come once the slip clears.</span></li>
 </ul></details>
@@ -221,7 +220,7 @@ async function redeem(env, code, input, origin) {
   const name = pageName(input)
   const s = name && await env.DB.prepare("SELECT * FROM site WHERE name = ? AND status != 'removed'").bind(name).first()
   if (!s) return { msg: 'ไม่พบหน้านี้ · No page by that name.' }
-  if (gold.isHotel(s) && s.plan === 'hotel') return { msg: 'หน้านี้ใช้แผนโรงแรมอยู่ ใช้โค้ดกับหน้าอื่น · This page is on the hotel plan; use the code on another page.' }
+  if (gold.isHotel(s) && s.plan === 'hotel') return { msg: 'หน้านี้มีรับจองห้องพักอยู่แล้ว ใช้โค้ดกับหน้าอื่น · This page has hotel booking; use the code on another page.' }
   const r = await env.DB.prepare('UPDATE gift SET site_id = ?, used = ? WHERE code = ? AND used IS NULL').bind(s.id, new Date().toISOString(), code).run()
   if (!r.meta?.changes) return { msg: 'ใช้ไปแล้ว · Already used.' }
   const months = (await env.DB.prepare('SELECT months FROM gift WHERE code = ?').bind(code).first())?.months || 12

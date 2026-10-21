@@ -228,9 +228,8 @@ ${promptpay ? `<p style="margin-top:16px">${t('พร้อมเพย์ จ�
 <div class="window" aria-hidden="true"></div>
 <section id="invest"><div>
 <h2>${icon('rocket')}${t('ลงทุน', 'Invest')}</h2>
-<p class="sub">${t('ส่วนแบ่งรายได้ เริ่มที่ ฿100,000', 'A share of revenue, from ฿100,000.')}</p>
+<p class="sub">${t(`ส่วนแบ่งรายได้ เริ่มที่ ฿${nf(RUNGS[0])}`, `A share of revenue, from ฿${nf(RUNGS[0])}.`)}</p>
 ${done('i')}
-<p class="hint">${t('ขั้น', 'Steps')}: ${RUNGS.map((r) => '฿' + nf(r)).join(' · ')}</p>
 <a class="card go" href="${PLAN}"><span><b>${t('แผนมดแดง', 'The Red Ant Plan')}</b><small>${t('เงื่อนไข ตัวเลข และสามงวด', 'The terms, the numbers, the three draws')}</small></span></a>
 <a class="card go" href="${PLANS}"><span><b>${t('เอกสารแผนทั้งหมด', 'Every plan document')}</b><small>motdang.github.io/business-plan</small></span></a>
 <form method="post" action="/support/invest" class="card"><input class="hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true"><input type="hidden" name="lang" value="${lang}">
@@ -241,7 +240,7 @@ ${done('i')}
 <label>${t('ประมาณเท่าไร', 'About how much')}<select name="amount"><option value="">—</option>${RUNGS.map((r) => `<option value="${r}">฿${nf(r)}</option>`).join('')}<option value="-1">฿1,000,000+</option></select></label>
 <label>${t('ข้อความ', 'Note')}<textarea name="note" maxlength="600"></textarea></label>
 <p><button class="wide" type="submit">${t('ส่งถึงแนน', 'Send to NaN')}</button></p></form>
-<p class="hint">${t('ต่ำกว่า ฿100,000:', 'Under ฿100,000:')} <a href="#pay">${t('สมาชิกผู้ก่อตั้ง', 'founding membership')}</a></p>
+<p class="hint">${t(`ต่ำกว่า ฿${nf(RUNGS[0])}:`, `Under ฿${nf(RUNGS[0])}:`)} <a href="#pay">${t('สมาชิกผู้ก่อตั้ง', 'founding membership')}</a></p>
 </div></section>
 </div>
 <footer><p>motdang.net Co., Ltd. · ${t('เชียงราย', 'Chiang Rai')} · DBD 0575569006139</p>
