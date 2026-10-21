@@ -1043,7 +1043,7 @@ async function tidy(env) {
   await job('events', () => events.refresh(env, { normalize, upcoming, utcOf }))
   await job('translate', () => tr.catchUp(env, gold.isGold, normalize))
   await job('monthly', () => monthly(env, gold.isGold, HOME))
-  await job('trial', () => trialNotes(env, HOME, (d) => gold.planOf(env, d)))
+  await job('trial', () => trialNotes(env, HOME, gold.PLANS(env)))
   await job('sellers', () => sellers.monthEnd(env, (c) => gold.postSales(env, c), (id) => sell.beerLink(env, sha, HOME, 'p', id, 60), (t) => tellBeer(env, t)))
   await job('deals', () => deals.monthly(env, (c) => gold.postSales(env, c)))
   await job('founding', async () => (await founding.thisMonth(env, Date.now(), (c) => gold.postSales(env, c))).price)

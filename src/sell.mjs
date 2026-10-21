@@ -26,13 +26,14 @@ const W = {
     title: 'Sell for Mot Dang', h1: (r) => `Sell pages to shops. Keep ${r}%.`,
     lead: 'Shops and hotels in Chiang Mai buy a year of their own page on Mot Dang. You show them, they pay by PromptPay, and your share is paid on the 1st of the month.',
     work: 'The work', price: 'Price', you: 'You get', example: 'Example to show', feeL: 'of each deal fee',
-    list: ['Listings', 'homes, land, shops for rent or sale; handyman, maid, gardener, plumber, electrician, mover'], payFee: 'Listings: your share of each fee is sent the day the owner pays.',
+    list: ['Homes and home help', 'homes, land, shops for rent or sale; handyman, maid, gardener, plumber, electrician, mover'], payFee: 'Listings: your share of each fee is sent the day the owner pays.',
     listH: 'Listings', listN: (r) => `Homes and home help: make the page with the owner, send the terms, record the deal. ${r}% of each fee.`, board: 'Your listings board',
     kitNow: 'Your kit. Keep this link; it opens once Beer says yes.', toSelf: 'Send to yourself on LINE',
-    gold: ['Gold year', 'any shop, café, clinic, service'], hotel: ['Hotel year', 'hotels, guesthouses, hostels: guests book rooms on the page'],
+    gold: ['Gold, a year', 'any shop, café, clinic, service'], hotel: ['With hotel booking, a year', 'hotels, guesthouses, hostels: guests book rooms on the page'],
     pay: 'Pay',
-    ladder: (r, t, l) => `Start at ${r}%. Each month the share moves one step on ${l}: sell 80% of ฿${t} or more, one step up; under 60%, one step down.`,
-    paid: 'Paid on the 1st, to your PromptPay.', bring: (b) => `Bring a seller: ฿${b} when they sell their first plan.`,
+    now: (r) => `You get ${r}% this month, paid on the 1st to your PromptPay.`,
+    ladderKit: (l, t) => `Each month your share moves one step on ${l}: sell 80% of ฿${t} or more, one step up; under 60%, one step down.`,
+    bring: (b) => `Bring a seller: ฿${b} when they sell their first plan.`,
     money: 'Customers pay only through the QR on their own page. No cash.',
     need: 'You need', needs: 'A phone, LINE, a PromptPay number, and time to walk into shops. Thai, Burmese or English.',
     steps: 'Steps', s: ['Sign up.', 'Keep your kit link. Once Beer says yes it opens: your QR, an example page, what to say.', 'Visit shops. They scan your QR, make their page with you in about 5 minutes, and pay.', 'Each sale shows on your kit page as it happens.'],
@@ -49,13 +50,14 @@ const W = {
     title: 'ขายกับมดแดง', h1: (r) => `ขายหน้าเว็บให้ร้านค้า รับ ${r}%`,
     lead: 'ร้านค้าและโรงแรมในเชียงใหม่ซื้อหน้าเว็บของตัวเองบนมดแดงเป็นรายปี คุณไปเสนอ ร้านจ่ายผ่านพร้อมเพย์ ส่วนแบ่งของคุณจ่ายทุกวันที่ 1 ของเดือน',
     work: 'งาน', price: 'ราคา', you: 'คุณได้', example: 'ตัวอย่างให้ร้านดู', feeL: 'ของค่าธรรมเนียมแต่ละดีล',
-    list: ['ลงประกาศ', 'บ้าน ที่ดิน ร้าน ให้เช่าหรือขาย · ช่างซ่อม แม่บ้าน คนสวน ช่างประปา ช่างไฟ ขนย้าย'], payFee: 'ลงประกาศ: ส่วนแบ่งค่าธรรมเนียมโอนให้วันที่เจ้าของจ่าย',
+    list: ['บ้านและงานบ้าน', 'บ้าน ที่ดิน ร้าน ให้เช่าหรือขาย · ช่างซ่อม แม่บ้าน คนสวน ช่างประปา ช่างไฟ ขนย้าย'], payFee: 'ลงประกาศ: ส่วนแบ่งค่าธรรมเนียมโอนให้วันที่เจ้าของจ่าย',
     listH: 'ลงประกาศ', listN: (r) => `บ้านและงานบ้าน: ทำหน้ากับเจ้าของ ส่งเงื่อนไข บันทึกดีล ได้ ${r}% ของค่าธรรมเนียม`, board: 'บอร์ดลงประกาศของคุณ',
     kitNow: 'ชุดของคุณ เก็บลิงก์นี้ไว้ จะเปิดใช้เมื่อเบียร์ตอบรับ', toSelf: 'ส่งให้ตัวเองทาง LINE',
-    gold: ['ทองรายปี', 'ร้าน คาเฟ่ คลินิก งานบริการ ทุกแบบ'], hotel: ['โรงแรมรายปี', 'โรงแรม เกสต์เฮาส์ โฮสเทล แขกจองห้องบนหน้าเว็บ'],
+    gold: ['ทองรายปี', 'ร้าน คาเฟ่ คลินิก งานบริการ ทุกแบบ'], hotel: ['พร้อมรับจองห้องพัก รายปี', 'โรงแรม เกสต์เฮาส์ โฮสเทล แขกจองห้องบนหน้าเว็บ'],
     pay: 'ค่าตอบแทน',
-    ladder: (r, t, l) => `เริ่มที่ ${r}% ทุกเดือนส่วนแบ่งขยับหนึ่งขั้นบน ${l}: ขายได้ 80% ของ ฿${t} ขึ้นไป ขึ้นหนึ่งขั้น ต่ำกว่า 60% ลงหนึ่งขั้น`,
-    paid: 'จ่ายทุกวันที่ 1 เข้าพร้อมเพย์ของคุณ', bring: (b) => `ชวนคนขายมาเพิ่ม: รับ ฿${b} เมื่อเขาขายได้ครั้งแรก`,
+    now: (r) => `เดือนนี้คุณได้ ${r}% จ่ายทุกวันที่ 1 เข้าพร้อมเพย์ของคุณ`,
+    ladderKit: (l, t) => `ทุกเดือนส่วนแบ่งของคุณขยับหนึ่งขั้นบน ${l}: ขายได้ 80% ของ ฿${t} ขึ้นไป ขึ้นหนึ่งขั้น ต่ำกว่า 60% ลงหนึ่งขั้น`,
+    bring: (b) => `ชวนคนขายมาเพิ่ม: รับ ฿${b} เมื่อเขาขายได้ครั้งแรก`,
     money: 'ลูกค้าจ่ายผ่าน QR บนหน้าเว็บของเขาเท่านั้น ไม่รับเงินสด',
     need: 'สิ่งที่ต้องมี', needs: 'มือถือ LINE เบอร์พร้อมเพย์ และเวลาเดินเข้าร้าน พูดไทย พม่า หรืออังกฤษ',
     steps: 'ขั้นตอน', s: ['สมัคร', 'เก็บลิงก์ชุดของคุณไว้ เบียร์ตอบรับแล้วจะเปิดใช้: QR ของคุณ หน้าตัวอย่าง คำพูดที่ใช้', 'ไปตามร้าน ร้านสแกน QR ของคุณ ทำหน้าเว็บด้วยกันประมาณ 5 นาที แล้วจ่าย', 'ยอดขายแต่ละครั้งขึ้นในหน้าชุดของคุณทันที'],
@@ -70,15 +72,16 @@ const W = {
   },
   my: {
     title: 'Mot Dang အတွက် ရောင်းပါ', h1: (r) => `ဆိုင်များကို စာမျက်နှာ ရောင်းပါ။ ${r}% ရယူပါ။`,
-    lead: 'ချင်းမိုင်ရှိ ဆိုင်များနှင့် ဟိုတယ်များသည် Mot Dang ပေါ်တွင် ကိုယ်ပိုင်စာမျက်နှာကို တစ်နှစ်စာ ဝယ်ကြသည်။ သင်က ပြသပါ၊ သူတို့က PromptPay ဖြင့် ပေးချေပါ၊ သင့်ဝေစုကို လဆန်း ၁ ရက်နေ့ ပေးပါသည်။',
+    lead: 'ချင်းမိုင်ရှိ ဆိုင်များနှင့် ဟိုတယ်များသည် Mot Dang ပေါ်တွင် ကိုယ်ပိုင်စာမျက်နှာကို တစ်နှစ်စာ ဝယ်ကြသည်။ သင်က ပြသပါ၊ သူတို့က PromptPay ဖြင့် ပေးချေပါ၊ သင့်ဝေစုကို လတိုင်း ၁ ရက်နေ့ ပေးပါသည်။',
     work: 'အလုပ်', price: 'ဈေး', you: 'သင်ရမည်', example: 'ပြရန် နမူနာ', feeL: 'အပေးအယူတိုင်း၏ ကြေး',
-    list: ['ကြော်ငြာတင်ခြင်း', 'အိမ်၊ မြေ၊ ဆိုင် အငှား သို့မဟုတ် အရောင်း · ပြုပြင်သူ၊ အိမ်အကူ၊ ဥယျာဉ်မှူး၊ ပိုက်ပြင်သူ၊ လျှပ်စစ်ပြင်သူ၊ ပစ္စည်းသယ်ပို့သူ'], payFee: 'ကြော်ငြာ: ပိုင်ရှင် ပေးချေသည့်နေ့တွင် ကြေး၏ သင့်ဝေစုကို ပို့သည်။',
+    list: ['အိမ်နှင့် အိမ်အကူ', 'အိမ်၊ မြေ၊ ဆိုင် အငှား သို့မဟုတ် အရောင်း · ပြုပြင်သူ၊ အိမ်အကူ၊ ဥယျာဉ်မှူး၊ ပိုက်ပြင်သူ၊ လျှပ်စစ်ပြင်သူ၊ ပစ္စည်းသယ်ပို့သူ'], payFee: 'ကြော်ငြာ: ပိုင်ရှင် ပေးချေသည့်နေ့တွင် ကြေး၏ သင့်ဝေစုကို ပို့သည်။',
     listH: 'ကြော်ငြာ', listN: (r) => `အိမ်နှင့် အိမ်အကူ: ပိုင်ရှင်နှင့်အတူ စာမျက်နှာ ပြုလုပ်၊ စည်းကမ်းပို့၊ အပေးအယူ မှတ်ပါ။ ကြေး၏ ${r}%။`, board: 'သင့်ကြော်ငြာဘုတ်',
     kitNow: 'သင့်ကိရိယာ။ ဤလင့်ခ်ကို သိမ်းထားပါ၊ Beer လက်ခံပြီးနောက် ပွင့်မည်။', toSelf: 'ကိုယ့်ထံ LINE ဖြင့် ပို့ရန်',
-    gold: ['ရွှေ တစ်နှစ်', 'ဆိုင်၊ ကော်ဖီဆိုင်၊ ဆေးခန်း၊ ဝန်ဆောင်မှု မည်သည့်ဆိုင်မဆို'], hotel: ['ဟိုတယ် တစ်နှစ်', 'ဟိုတယ်၊ တည်းခိုခန်း၊ ဟော်စတယ် · ဧည့်သည်များ စာမျက်နှာပေါ်တွင် အခန်းမှာနိုင်'],
+    gold: ['ရွှေ တစ်နှစ်', 'ဆိုင်၊ ကော်ဖီဆိုင်၊ ဆေးခန်း၊ ဝန်ဆောင်မှု မည်သည့်ဆိုင်မဆို'], hotel: ['ဟိုတယ်ကြိုတင်မှာယူမှုဖြင့်၊ တစ်နှစ်', 'ဟိုတယ်၊ တည်းခိုခန်း၊ ဟော်စတယ် · ဧည့်သည်များ စာမျက်နှာပေါ်တွင် အခန်းမှာနိုင်'],
     pay: 'လစာ',
-    ladder: (r, t, l) => `${r}% မှ စတင်သည်။ လစဉ် ဝေစုသည် ${l} ပေါ်တွင် တစ်ဆင့် ရွေ့သည်: ฿${t} ၏ 80% နှင့်အထက် ရောင်းလျှင် တစ်ဆင့်တက်၊ 60% အောက် တစ်ဆင့်ဆင်း။`,
-    paid: 'လဆန်း ၁ ရက်နေ့ သင့် PromptPay သို့ ပေးသည်။', bring: (b) => `ရောင်းသူ တစ်ဦး ခေါ်လာပါ: သူ ပထမဆုံး ရောင်းရသောအခါ ฿${b}။`,
+    now: (r) => `ဤလတွင် သင် ${r}% ရမည်။ လတိုင်း ၁ ရက်နေ့ သင့် PromptPay သို့ ပေးသည်။`,
+    ladderKit: (l, t) => `လစဉ် သင့်ဝေစုသည် ${l} ပေါ်တွင် တစ်ဆင့် ရွေ့သည်: ฿${t} ၏ 80% နှင့်အထက် ရောင်းလျှင် တစ်ဆင့်တက်၊ 60% အောက် တစ်ဆင့်ဆင်း။`,
+    bring: (b) => `ရောင်းသူ တစ်ဦး ခေါ်လာပါ: သူ ပထမဆုံး ရောင်းရသောအခါ ฿${b}။`,
     money: 'ဖောက်သည်များ သူတို့စာမျက်နှာရှိ QR မှသာ ပေးချေသည်။ ငွေသား မယူရ။',
     need: 'လိုအပ်သည်', needs: 'ဖုန်း၊ LINE၊ PromptPay နံပါတ်နှင့် ဆိုင်များသို့ သွားရန် အချိန်။ ထိုင်း၊ မြန်မာ သို့မဟုတ် အင်္ဂလိပ်။',
     steps: 'အဆင့်များ', s: ['စာရင်းသွင်းပါ။', 'သင့်ကိရိယာလင့်ခ်ကို သိမ်းထားပါ။ Beer လက်ခံပြီးနောက် ပွင့်မည်: သင့် QR၊ နမူနာစာမျက်နှာ၊ ပြောရမည့်စကား။', 'ဆိုင်များသို့ သွားပါ။ သူတို့က သင့် QR ကို စကင်ဖတ်၊ သင်နှင့်အတူ ၅ မိနစ်ခန့်ဖြင့် စာမျက်နှာ ပြုလုပ်ပြီး ပေးချေသည်။', 'ရောင်းချမှုတိုင်း သင့်ကိရိယာစာမျက်နှာတွင် ချက်ချင်း ပေါ်သည်။'],
@@ -95,7 +98,7 @@ const W = {
 
 // Thai lines for the shop, from Hom's sheet (annual-plans, 2026-10-15)
 const SAY = ['สวัสดีครับ/ค่ะ มาจาก motdang.net ครับ/ค่ะ', 'เราทำหน้าเว็บร้านให้ มีแผนที่ ปุ่ม LINE ปุ่ม Grab ลูกค้าหาร้านเจอง่าย', 'ดูตัวอย่างนี้ได้ไหมครับ/คะ',
-  (g) => `ทองรายปี ${g} บาท ใช้ได้ทั้งปี`, (h) => `โรงแรมรายปี ${h} บาท แขกจองห้องตรงกับร้าน ไม่เสียค่าคอม 15% ให้ Agoda`, 'จ่ายปีเดียว 10 เดือน ได้ 12 เดือน',
+  (g) => `ทองรายปี ${g} บาท ใช้ได้ทั้งปี`, (h) => `ทองพร้อมรับจองห้องพัก ${h} บาทต่อปี แขกจองห้องตรงกับร้าน ไม่เสียค่าคอม 15% ให้ Agoda`, 'จ่ายปีเดียว 10 เดือน ได้ 12 เดือน',
   'ลองทำหน้าเว็บตอนนี้เลยไหมครับ/คะ ใช้เวลา 5 นาที ใช้ทองฟรี 30 วัน', 'สแกน QR นี้ด้วยกล้องมือถือได้เลยครับ/ค่ะ']
 
 export function langOf(url, request, fallback) {
@@ -115,7 +118,7 @@ main{max-width:640px;margin:0 auto;padding:12px 16px 56px}a{color:#a3140f}
 .top h1{font:400 34px/1.15 "Chonburi","Prompt",system-ui,serif;margin:6px 0 10px}.top p{margin:0;color:#ffe9d6}.ant{width:40px;height:40px}
 h2{font:400 24px/1.2 "Chonburi","Prompt",system-ui,serif;margin:30px 0 10px}
 .work{display:grid;gap:10px}.job{background:#fff;border:2px solid #1c1530;border-radius:14px;padding:14px;display:grid;grid-template-columns:1fr auto;gap:2px 12px}
-.job b{font-size:20px}.job small{color:#5a4f6a;grid-column:1}.job .n{grid-row:1/3;grid-column:2;text-align:right}.job .n s{text-decoration:none;display:block;font-size:14px;color:#5a4f6a}.job .n strong{font-size:26px;color:#a3140f}
+.job b{font-size:20px}.job small{color:#5a4f6a;grid-column:1}.job .n{grid-row:1/3;grid-column:2;text-align:right}.job .n s{text-decoration:none;display:block;font-size:14px;color:#5a4f6a}.job .n strong{font-size:26px;color:#a3140f}.job .sub{grid-column:1/-1;display:grid;grid-template-columns:1fr auto;gap:2px 12px;margin-top:10px;padding-top:10px;border-top:2px dashed #ecd8bf}.job .sub b{font-size:17px}.job .sub b,.job .sub small{display:block}
 ul,ol{padding-left:22px;margin:0}li{margin:6px 0}.ladder{display:flex;gap:6px;margin:10px 0}.ladder span{flex:1;text-align:center;border:2px solid #1c1530;border-radius:10px;padding:6px 0;font-weight:600}.ladder .on{background:#ffb000}
 details.opt summary{cursor:pointer;color:#5a4f6a;font-size:15px}details.opt[open]{display:grid;gap:12px}.top .go{display:inline-block;margin-top:14px;background:#fff7ec;color:#1c1530;font-weight:700;text-decoration:none;padding:12px 22px;border-radius:99px}form{display:grid;gap:12px;background:#fff;border:2px solid #1c1530;border-radius:16px;padding:16px}label{display:grid;gap:4px;font-size:15px;color:#5a4f6a}
 input{font:inherit;padding:12px;border:2px solid #ecd8bf;border-radius:10px;background:#fff;color:#1c1530;width:100%}input:focus{outline:none;border-color:#d7261e}
@@ -219,12 +222,14 @@ ${f('name', 'name', 'text', 'required maxlength="60" autocomplete="name"')}${f('
 ${via ? `<input type="hidden" name="via" value="${esc(via.id)}"><p class="hint">${w.f.via}: <b>${esc(via.name)}</b></p>` : ''}
 <button>${w.f.send}</button></form>
 <h2>${w.work}</h2><div class="work">
-<div class="job"><b>${w.gold[0]}</b><small>${w.gold[1]}</small><div class="n"><s>${w.price} ฿${nf(p.gold)}</s>${w.you} <strong>฿${share(p.gold)}</strong></div></div>
-<div class="job"><b>${w.hotel[0]}</b><small>${w.hotel[1]}</small><div class="n"><s>${w.price} ฿${nf(p.hotel)}</s>${w.you} <strong>฿${share(p.hotel)}</strong></div></div>
-<div class="job"><b>${w.list[0]}</b><small>${w.list[1]}</small><div class="n"><s>${w.feeL}</s>${w.you} <strong>${feeStart()}%</strong></div></div>
+<div class="job"><b>${w.gold[0]}</b><small>${w.gold[1]}</small><div class="n"><s>${w.price} ฿${nf(p.gold)}</s>${w.you} <strong>฿${share(p.gold)}</strong></div>
+<div class="sub"><div><b>${w.hotel[0]}</b><small>${w.hotel[1]}</small></div><div class="n"><s>${w.price} ฿${nf(p.hotel)}</s>${w.you} <strong>฿${share(p.hotel)}</strong></div></div></div>
 </div><p class="hint">${w.example}: <a href="${origin}/${EXAMPLE}">sites.motdang.net/${EXAMPLE}</a></p>
-<h2>${w.pay}</h2><div class="ladder">${LADDER.map((r) => `<span${r === START.rate ? ' class="on"' : ''}>${r}%</span>`).join('')}</div>
-<ul><li>${esc(w.ladder(START.rate, nf(START.target), LADDER.join(' · ')))}</li><li>${w.paid}</li><li>${w.payFee}</li><li>${esc(w.bring(BONUS))}</li><li>${w.money}</li></ul>
+<h2>${w.listH}</h2><div class="work">
+<div class="job"><b>${w.list[0]}</b><small>${w.list[1]}</small><div class="n"><s>${w.feeL}</s>${w.you} <strong>${feeStart()}%</strong></div></div>
+</div><p>${w.payFee}</p>
+<h2>${w.pay}</h2>
+<ul><li>${esc(w.now(START.rate))}</li><li>${esc(w.bring(BONUS))}</li><li>${w.money}</li></ul>
 <h2>${w.need}</h2><p>${w.needs}</p>
 <h2>${w.steps}</h2><ol>${w.s.map((x) => `<li>${x}</li>`).join('')}</ol>`, { og, noindex: false, langs: langBar(lang, href) })
 }
@@ -277,6 +282,7 @@ async function kitPage(env, s, url, request, origin, d, nonce) {
   return shell(lang, w.kit(s.name), `<header class="top">${ANT}<h1>${esc(w.kit(s.name))}</h1><p>${esc(st.month)} · ${w.target} ฿${nf(s.target)}</p></header>
 <h2>${w.month}</h2><div class="tiles"><div><small>${w.plans}</small><b>${st.n}</b></div><div><small>${w.sales}</small><b>฿${nf(st.sales)}</b></div><div><small>${w.share}</small><b>${s.rate}%</b></div><div><small>${w.get}</small><b>฿${nf(st.owed)}</b></div></div>
 <div class="ladder">${LADDER.map((r) => `<span${r === s.rate ? ' class="on"' : ''}>${r}%</span>`).join('')}</div>
+<p class="hint">${esc(w.ladderKit(LADDER.join(' · '), nf(s.target)))}</p>
 <h2>${w.qr}</h2><div class="qrbox" id="qr-make">${qrSvg(make, { label: w.qr })}<p class="mono">${esc(make.replace(/^https?:\/\//, ''))}</p><p class="hint">${w.qrnote}</p><button data-save="qr-make" data-name="${esc(s.id)}-qr">${w.save}</button></div>
 <p class="hint">${w.example}: <a href="${origin}/${EXAMPLE}">sites.motdang.net/${EXAMPLE}</a></p>
 <h2>${w.how}</h2><ol>${w.k.map((x) => `<li>${x}</li>`).join('')}</ol>
