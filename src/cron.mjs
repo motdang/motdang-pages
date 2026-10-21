@@ -95,13 +95,15 @@ export async function trialNotes(env, origin, plans, max = 15) {
     const say = rooms
       ? [`ทอง ปีละ ฿${g} · พร้อมรับจองห้องพัก เดือนละ ฿${nf(plans.hotel.baht)} หรือปีละ ฿${nf(plans.hotelyear.baht)}`, `Gold is ฿${g} a year; with hotel booking ฿${nf(plans.hotel.baht)} a month or ฿${nf(plans.hotelyear.baht)} a year`]
       : [`ทอง ปีละ ฿${g}`, `Gold is ฿${g} a year`]
+    // the free 30 days carry hotel booking too; the note says so for a page with rooms
+    const what = rooms ? ['ทองและรับจองห้องพัก', 'Gold and hotel booking', 'run'] : ['ทอง', 'Gold', 'runs']
     const ok = await mail(env, {
       to: s.notify_email, subject: `${title} — ทองถึง ${s.gold_until} · Gold until ${s.gold_until}`.slice(0, 120),
       html: `<div style="font:16px/1.5 system-ui,-apple-system,'Segoe UI',sans-serif;color:#1c1530;max-width:560px">
 <h2 style="margin:0 0 10px;font-size:22px">${esc(title)}</h2>
-<p>ทองของหน้าเว็บนี้ถึงวันที่ <b>${esc(s.gold_until)}</b> หลังจากนั้นหน้าเว็บยังออนไลน์ต่อแบบฟรี<br>Gold on this page runs to <b>${esc(s.gold_until)}</b>. After that the page stays online as a free page.</p>
+<p>${what[0]}ของหน้าเว็บนี้ถึงวันที่ <b>${esc(s.gold_until)}</b> หลังจากนั้นหน้าเว็บยังออนไลน์ต่อแบบฟรี<br>${what[1]} on this page ${what[2]} to <b>${esc(s.gold_until)}</b>. After that the page stays online as a free page.</p>
 <p>${say[0]} · ${say[1]}: <a href="${origin}/make">${origin.replace(/^https:\/\//, '')}/make</a> → ทอง · Gold</p></div>`,
-      text: `${title}\nGold until ${s.gold_until}. After that the page stays online as a free page.\n${say[1]} — ${origin}/make\n`,
+      text: `${title}\n${what[1]} until ${s.gold_until}. After that the page stays online as a free page.\n${say[1]} — ${origin}/make\n`,
     })
     if (ok) sent++
   }
