@@ -100,7 +100,7 @@ export const LOOKS = {
       .btn{border-radius:3px;text-transform:uppercase;letter-spacing:.05em;font-family:var(--display);font-stretch:condensed;font-weight:800;font-size:19px;box-shadow:4px 4px 0 #000}
       .btn.dark{background:var(--ink);color:#16121f}.btn.ghost{box-shadow:inset 0 0 0 2px currentColor,4px 4px 0 #000}
       .menu .p{font:800 27px/1 var(--display);font-stretch:condensed;color:var(--acc-ink)}
-      .tshare{border:0;border-radius:3px;background:var(--accent);color:var(--on-accent);box-shadow:3px 3px 0 #000;-webkit-backdrop-filter:none;backdrop-filter:none}
+      .tshare,.tlang{border:0;border-radius:3px;background:var(--accent);color:var(--on-accent);box-shadow:3px 3px 0 #000;-webkit-backdrop-filter:none;backdrop-filter:none}
       .calz .dt{border-radius:3px}`,
     art: '',
   },
@@ -136,7 +136,7 @@ export const LOOKS = {
       .card h2{font:italic 700 27px/1.1 var(--display);color:var(--acc-ink);letter-spacing:0;text-transform:none}
       .menu .p{font:700 22px/1 var(--display);color:var(--acc-ink)}
       .btn.dark{background:var(--ink);color:#1f150e}
-      .tshare{top:52px;border-color:#8a6635;background:#1f150ecc;color:#e0a83e}`,
+      .tshare,.tlang{top:52px;border-color:#8a6635;background:#1f150ecc;color:#e0a83e}`,
     art: '',
     deco: () => ({
       back: '<div class="band" aria-hidden="true"></div>',
@@ -183,7 +183,7 @@ export const LOOKS = {
       .btn.dark{background:#ffd400;color:#1b1f5e}
       .menu .p{font:800 22px/1 var(--body);color:#e0156d}
       .foot{color:#fff}.foot a{color:#ffd400}.share,.credits{color:var(--ink)}
-      .tshare{top:46px;background:#fff;color:#1b1f5e;border:3px solid #1b1f5e;box-shadow:3px 3px 0 #ff2e88;-webkit-backdrop-filter:none;backdrop-filter:none}`,
+      .tshare,.tlang{top:46px;background:#fff;color:#1b1f5e;border:3px solid #1b1f5e;box-shadow:3px 3px 0 #ff2e88;-webkit-backdrop-filter:none;backdrop-filter:none}`,
     art: '',
     deco: () => ({
       back: '<div class="ribbon" aria-hidden="true"></div>',
@@ -230,7 +230,7 @@ export const LOOKS = {
       .menu .p{color:#ffd76a;text-shadow:0 0 10px #ffb00066}
       .btn{border-radius:14px;box-shadow:0 0 22px color-mix(in srgb,var(--accent) 55%,transparent)}
       .btn.line,.btn.grab{box-shadow:none}.btn.dark{background:#fdf6ff;color:#0b0d26;box-shadow:0 0 18px #ffffff44}
-      .tshare{top:auto;bottom:auto;top:58px;border:2px solid #ff6fb8;color:#ffd0ea;background:#0b0d26aa;box-shadow:0 0 12px #ff4fa388}`,
+      .tshare,.tlang{top:auto;bottom:auto;top:58px;border:2px solid #ff6fb8;color:#ffd0ea;background:#0b0d26aa;box-shadow:0 0 12px #ff4fa388}`,
     art: '',
     deco: () => {
       const strand = (y0, sag, n, cols) => {
@@ -284,7 +284,7 @@ export const LOOKS = {
       .btn{background:linear-gradient(180deg,#f8dd8e,#d9a441);color:#3b0a0d;border-radius:6px}.btn.dark{background:#2a0508;color:#f3c552;box-shadow:inset 0 0 0 1px #e2b03a}
       .menu .p{color:#8a1a1f;font:400 22px/1 var(--display)}
       .foot{color:#fff3dc}.foot a{color:#ffd77a}.share,.credits{color:var(--ink)}
-      .tshare{border:1px solid #e2b03a;background:#2a0508cc;color:#f3c552}`,
+      .tshare,.tlang{border:1px solid #e2b03a;background:#2a0508cc;color:#f3c552}`,
     art: '',
     deco: () => {
       const fin = (c) => `<svg class="fin ${c}" viewBox="0 0 34 48" aria-hidden="true"><path d="M17 47C6 42 3 30 9 20c0 8 4 11 8 11s8-3 8-11c6 10 3 22-8 27z" fill="#e2b03a"/><path d="M17 31C12 25 12 13 17 1c5 12 5 24 0 30z" fill="#ffd77a"/><path d="M17 42c-5-3-6-9-3-13 1 4 2 5 3 5s2-1 3-5c3 4 2 10-3 13z" fill="#4a0c12"/></svg>`
@@ -318,7 +318,7 @@ export const LOOKS = {
       .card h2{color:#6b7280;font-size:12.5px;letter-spacing:.16em}
       .reach{margin-bottom:26px}.btn{border-radius:14px}.reach .btn:first-child{background:#111827;color:#fff}
       .menu .p{color:#111827}
-      .tshare{border:0;background:#fff;color:#111827;box-shadow:0 2px 10px rgba(17,24,39,.18)}`,
+      .tshare,.tlang{border:0;background:#fff;color:#111827;box-shadow:0 2px 10px rgba(17,24,39,.18)}`,
     art: '',
   },
 
@@ -359,7 +359,7 @@ export const LOOKS = {
       .btn{background:linear-gradient(180deg,#f8dd8e,#c9952f);color:#1a1205;border-radius:2px;letter-spacing:.1em;text-transform:uppercase;font-size:15px}
       .btn.dark{background:transparent;color:#e7b84a;box-shadow:inset 0 0 0 1px #e7b84a}
       .menu .p{color:#e7b84a}
-      .tshare{border:1px solid #e7b84a;background:#0c0a07cc;color:#e7b84a}
+      .tshare,.tlang{border:1px solid #e7b84a;background:#0c0a07cc;color:#e7b84a}
       .goldrule{height:30px;margin:24px 0;background:${enc('<svg xmlns="http://www.w3.org/2000/svg" width="60" height="30"><path d="M30 6l6 9-6 9-6-9z" fill="none" stroke="#e7b84a" stroke-width="1.2"/><path d="M0 15h22M38 15h22" stroke="#e7b84a" stroke-width="1"/></svg>')} center/60px 30px repeat-x}`,
     art: '',
     deco: () => {
@@ -390,8 +390,9 @@ export const HERO_CSS = `.top{position:relative;overflow:hidden;color:var(--ink)
 .top.gilt:not(.has-cover)>.t{padding-top:62px}
 .seal{position:absolute;left:12px;top:12px;z-index:7;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle at 34% 30%,#fff6d5,#f3c552 42%,#9c6a1c);box-shadow:0 2px 8px rgba(0,0,0,.45),inset 0 0 0 2px #fff4;color:#3a2604}
 .seal svg{width:19px;height:19px}
-.tshare{position:absolute;right:12px;top:12px;z-index:8;display:grid;place-items:center;width:44px;height:44px;padding:0;border:1px solid rgba(255,255,255,.4);border-radius:50%;background:rgba(10,8,20,.42);color:#fff;cursor:pointer;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);transition:transform .15s}
+.tshare,.tlang{position:absolute;right:12px;top:12px;z-index:8;display:grid;place-items:center;width:44px;height:44px;padding:0;border:1px solid rgba(255,255,255,.4);border-radius:50%;background:rgba(10,8,20,.42);color:#fff;cursor:pointer;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);transition:transform .15s}
 .tshare:active{transform:scale(.9)}.tshare .i{width:21px;height:21px}
+.tlang{right:64px;grid-template-columns:auto auto;gap:3px;width:auto;min-width:44px;padding:0 10px 0 9px;font:600 12px/1 var(--body);letter-spacing:.04em;text-transform:uppercase}.tlang .i{width:19px;height:19px}.tlang select{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;font-size:16px}.tlang:focus-within{outline:2px solid currentColor;outline-offset:2px}
 .top:not(.has-cover) .tshare{background:transparent;color:inherit;border-color:currentColor}
 @keyframes drift{to{transform:scale(1.08) translate(-1%,-1%)}}
 @keyframes grow{from{transform:scaleX(0)}}

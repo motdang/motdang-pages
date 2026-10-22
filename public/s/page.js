@@ -154,6 +154,7 @@
     else copy()
   }
   $$('#share, .tshare').forEach(function (b) { b.onclick = doShare })
+  $$('.tlang select').forEach(function (sel) { sel.onchange = function () { location.href = sel.value } })
   var cp = $('#copy')
   function copy() {
     var done = function () { if (!cp) return; var sp = cp.querySelector('span'), t = sp.textContent; sp.textContent = w.copied; setTimeout(function () { sp.textContent = t }, 1800) }

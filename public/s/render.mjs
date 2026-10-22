@@ -483,7 +483,7 @@ dialog.qrd{background:#fff;color:#000;padding:26px;text-align:center;width:min(9
 @media (max-width:560px){.campin{flex-wrap:wrap;padding:18px 22px}.campin>[data-dingbat]{font-size:34px}.campt{flex:1 1 calc(100% - 52px)}.code{width:100%;flex-direction:row;justify-content:center;gap:12px}}.readin button{padding:0 4px;border:0;background:none;color:inherit;font:700 20px/1 system-ui;cursor:pointer}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}.rise{opacity:1;transform:none}}
 @media (min-width:760px){.drawn{margin:30px -40px}}
-@media print{.reach,.foot,.tshare,.tools-row,.msgcard,.dmap{display:none}body{background:#fff;color:#000}}`
+@media print{.reach,.foot,.tshare,.tlang,.tools-row,.msgcard,.dmap{display:none}body{background:#fff;color:#000}}`
 
 const DAY_ORDER = [0, 1, 2, 3, 4, 5, 6]
 const OSM_DAY = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su']
@@ -637,6 +637,10 @@ export function render(site, opt = {}) {
   if (cta) out.push(`<a class="btn cta${cta[1] === 'give' ? ' give' : ''}" data-t="${cta[1] === 'give' ? 'give' : 'cta'}" href="${esc(cta[0])}"${/^https?:/.test(cta[0]) ? ' rel="nofollow noopener"' : ''}>${icon(cta[2])}${W(cta[1])}</a>`)
   out.push('</div>')
   out.push(`<button class="tshare" data-t="share" aria-label="${W('share')}" title="${W('share')}">${icon('share')}</button>`)
+  if (!opt.thumb && gold && langs.length > 1) {
+    const cur = opt.hl || home
+    out.push(`<label class="tlang" title="${W('readIn')}">${icon('globe')}<span class="cur">${esc(cur)}</span><select data-t="lang" aria-label="${W('readIn')}">${langs.map((l) => `<option value="${l === home ? '?' : '?hl=' + l}"${l === cur ? ' selected' : ''}>${esc(PAGE_LANGS[l])}</option>`).join('')}</select></label>`)
+  }
   if (gold) out.push(`<span class="seal" role="img" aria-label="${W('gold')}" title="${W('gold')}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 18.5h18l1.2-11-5.7 4.2L12 4.5l-4.5 7.2L1.8 7.5z" fill="currentColor"/></svg></span>`)
   out.push('</header>', deco.under || '')
   // a look picker's tile: the top of the page only, no script (make.js scales it down)
@@ -1066,8 +1070,7 @@ function foot(site, d, lang, url, opt, held, gold, dl) {
   if (cr.length && !held) parts.push(`<details class="credits"><summary>${W('pictures')} (${cr.length})</summary><ul>${cr.map(([, c]) => `<li>${creditLine(c)}</li>`).join('')}</ul></details>`)
   if (d.counter) parts.push(`<p>${new Intl.NumberFormat(lang).format(views)} ${W('visits')}</p>`)
   if (!held && opt.langs && opt.langs.length > 1) {
-    const home = opt.home || site.lang, cur = opt.hl || home
-    parts.push(`<nav class="langs" aria-label="${W('readIn')}">${opt.langs.map((l) => `<a href="${l === home ? '?' : '?hl=' + l}" data-t="lang" hreflang="${l}"${l === cur ? ' aria-current="true"' : ''}>${esc(PAGE_LANGS[l])}</a>`).join('')}</nav>`)
+    const home = opt.home || site.lang
     if (opt.hl && opt.hl !== home) parts.push(`<p class="mt">${W('machine', { l: esc(PAGE_LANGS[home]) })}</p>`)
   }
   parts.push('<nav>')
