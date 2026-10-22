@@ -28,6 +28,8 @@ import { AM_MAX, amCap } from '../public/s/amulet.mjs'
 import { PAGE_LANGS } from '../public/s/words.mjs'
 import { nameProblem, screen } from './screen.mjs'
 import { clean, look, typeOf, MAX_BIG, MAX_SMALL } from './photo.mjs'
+import { readMenu } from './menu.mjs'
+import * as receipt from './receipt.mjs'
 import { directory, notFound, adminPage } from './pages.mjs'
 import * as og from './ogcard.mjs'
 import * as stats from './stats.mjs'
@@ -60,7 +62,7 @@ import * as amprice from './amprice.mjs'
 import * as sian from './sian.mjs'
 import * as market from './market.mjs'
 
-const QUOTA = { site: 3, photo: 200, save: 400, report: 20, msg: 12, news: 12, pd: 200, notify: 3, slip: 10, book: 10, domain: 6, lister: 3, deal: 40, terms: 10, join: 3, founding: 5, gift: 20, backer: 5, tap: 3, tapsave: 60, bump: 300, card: 400, guess: 400, sadhu: 200, here: 2500 }
+const QUOTA = { menu: 20, site: 3, photo: 200, save: 400, report: 20, msg: 12, news: 12, pd: 200, notify: 3, slip: 10, book: 10, domain: 6, lister: 3, deal: 40, terms: 10, join: 3, founding: 5, gift: 20, backer: 5, tap: 3, tapsave: 60, bump: 300, card: 400, guess: 400, sadhu: 200, here: 2500 }
 const TRIAL_DAYS = 30 // Nan 2026-10-14: a new page is Gold for its first 30 days
 const MAIN = 'https://motdang.net'
 const PASS = /^\/(vendor|fonts|tiles|data|front)\/|^\/sites\/doodle-map\//
@@ -124,6 +126,16 @@ async function route(request, env, ctx) {
     return body ? html(body, 200, { nonce, map: true, cache: 'public, max-age=3600' }) : new Response('', { status: 400 })
   }
   if (path === '/feed.json') return feed(env, origin)
+  const gr = /^\/bk\/([a-z0-9]{14})\/receipt$/.exec(path)
+  if (gr && m === 'GET') { // a receipt for an accepted booking, to read and save as PDF (receipt.mjs)
+    const bk = await env.DB.prepare('SELECT * FROM booking WHERE id = ?').bind(gr[1]).first()
+    const s = bk && await env.DB.prepare('SELECT * FROM site WHERE id = ?').bind(bk.site_id).first()
+    if (!bk || !s) return html(notFound(null, request), 404)
+    if (bk.status !== 'ok') return html(receipt.noReceipt(bk), 404)
+    const nonce = rand(16)
+    const no = await receipt.issue(env, bk)
+    return html(receipt.receiptPage(bk, s, normalize(JSON.parse(s.d)), { ...no, origin, nonce }), 200, { nonce })
+  }
   const gb = /^\/bk\/([a-z0-9]{14})$/.exec(path)
   if (gb && m === 'GET') {
     const bk = await env.DB.prepare('SELECT * FROM booking WHERE id = ?').bind(gb[1]).first()
@@ -700,6 +712,19 @@ ${s ? `<p>ข้อความถึง ${escHtml(title)} จะส่งสำ
     return J({ id, held: meta.v !== 'ok', credit: credit ? JSON.parse(credit) : null })
   }
 
+  // a photo of a menu or price board, read into rows for the price list; the photo is looked at once and dropped (menu.mjs)
+  if (p === 'menu/read' && m === 'POST') {
+    if (!isGold) return J({ error: 'gold' }, 402)
+    const form = await request.formData()
+    const pic = clean(await form.get('photo')?.arrayBuffer?.() ?? new ArrayBuffer(0), MAX_BIG)
+    if (pic.error) return J({ error: 'photo-' + pic.error }, 400)
+    if (!(await take(env, s.id, 'menu'))) return J({ error: 'quota' }, 429)
+    const r = await readMenu(env.AI, pic.bytes, typeOf(pic.kind), { first: env.MENU_MODEL || '' })
+    await log(env, s.id, 'menu-read', r.error ? r.error : `${r.rows.length} ${r.model}`)
+    if (r.error) return J({ error: r.error }, 502)
+    return J({ rows: r.rows })
+  }
+
   if (p === 'pd' && m === 'GET') {
     const who = await sender(request, env)
     if (!(await take(env, who, 'pd'))) return J({ error: 'quota' }, 429)
@@ -777,12 +802,12 @@ ${s ? `<p>ข้อความถึง ${escHtml(title)} จะส่งสำ
     const rows = (await env.DB.prepare("SELECT * FROM booking WHERE site_id = ? AND (status NOT IN ('gone') OR at >= ?) AND (status = 'new' OR end >= ?) ORDER BY start LIMIT 300").bind(s.id, new Date(Date.now() - 3 * 864e5).toISOString(), new Date(Date.now() - 2 * 864e5).toISOString().slice(0, 10)).all()).results
     const blocks = (await env.DB.prepare('SELECT room, COUNT(*) AS n FROM blocks WHERE site_id = ? GROUP BY room').bind(s.id).all()).results
     const reads = (await env.DB.prepare('SELECT room, url, at, ok, nights FROM ical_read WHERE site_id = ?').bind(s.id).all()).results
-    return J({ rows: rows.map((r) => ({ ...book.describe(r, d, s.lang), id: r.id, kind: r.kind, item: r.item, start: r.start, end: r.end, people: r.people, name: r.name, reach: r.reach, email: r.email, note: r.note, status: r.status, at: r.at, total: r.total, paid: !!r.paid, ref: r.ref })), blocks, reads })
+    return J({ rows: rows.map((r) => ({ ...book.describe(r, d, s.lang), id: r.id, kind: r.kind, item: r.item, start: r.start, end: r.end, people: r.people, name: r.name, reach: r.reach, email: r.email, note: r.note, status: r.status, at: r.at, total: r.total, paid: r.paid === 1, dep: r.paid === 2, depAsked: r.status === 'ok' ? receipt.depositAsked(r, s, d) : 0, ref: r.ref })), blocks, reads })
   }
   if (p === 'bookings' && m === 'POST') {
     const b = await body(request)
-    if (b.act === 'paid' || b.act === 'unpaid') {
-      await env.DB.prepare('UPDATE booking SET paid = ? WHERE id = ? AND site_id = ?').bind(b.act === 'paid' ? 1 : 0, String(b.id || ''), s.id).run()
+    if (b.act === 'paid' || b.act === 'unpaid' || b.act === 'deposit') { // 1 paid in full, 2 deposit received, 0 not yet
+      await env.DB.prepare('UPDATE booking SET paid = ? WHERE id = ? AND site_id = ?').bind({ paid: 1, deposit: 2, unpaid: 0 }[b.act], String(b.id || ''), s.id).run()
       return J({ ok: true })
     }
     if (b.act === 'close') {

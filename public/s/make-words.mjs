@@ -1,6 +1,7 @@
 // make-words.mjs — the builder's words, and the directory's.
 
 import { Z } from './make-words-more.mjs'
+import { GM } from './make-words-gold.mjs'
 import { Y } from './make-words-try.mjs'
 import { X } from './make-words-edit.mjs'
 import { W } from './make-words-pick.mjs'
@@ -247,6 +248,7 @@ const V = {
 // each table in turn in the maker's language, then each in English (the tables: words for the steps, the
 // editor, the pickers, the avatar maker, the logo maker, the doodles, the share card)
 const TABLES = [U, V, Z, Y, X, W, A, G, Q, K, N]
+TABLES.push(GM) // reading a menu from a photo, receipts (make-words-gold.mjs)
 export function ui(lang, k) {
   for (const t of TABLES) if (t[lang] && t[lang][k]) return t[lang][k]
   for (const t of TABLES) if (t.en[k]) return t.en[k]

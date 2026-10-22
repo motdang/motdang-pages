@@ -20,6 +20,7 @@ import { drawCard, cardKey, CARD } from './card.mjs'
 import { loadFaces } from './mark.mjs'
 import { cardHtml, cardBind } from './make-card.mjs'
 import { drawCustomers } from './make-customers.mjs'
+import { menuBox, menuInit } from './make-menu.mjs'
 
 const $ = (s, el = document) => el.querySelector(s)
 const app = $('#app')
@@ -770,7 +771,7 @@ const SEC = {
   },
   items() {
     const cur = S.d.currency || currencyFor(S.d.place.cc, S.pageLang)
-    return `<div class="items">${S.d.items.map((it, i) => `<div class="it"><input data-k="items.${i}.n" placeholder="${T('item')}" value="${val(it.n)}" maxlength="80">
+    return menuBox({ S, icon, isGold: isGold() }) + `<div class="items">${S.d.items.map((it, i) => `<div class="it"><input data-k="items.${i}.n" placeholder="${T('item')}" value="${val(it.n)}" maxlength="80">
       <input data-k="items.${i}.p" placeholder="${T('price')}" value="${val(it.p)}" maxlength="24" inputmode="decimal"><button class="x" data-rmitem="${i}" aria-label="${T('remove')}">×</button>
       <input data-k="items.${i}.note" placeholder="${T('details')}" value="${val(it.note)}" maxlength="160"></div>`).join('')}</div>
       <div class="row"><button class="go ghost" id="additem">${icon('plus')}${T('addItem')}</button>
@@ -1828,10 +1829,11 @@ async function drawBookings() {
   const card = (x) => {
     const rp = replyHref(x.reach)
     return `<article class="msg bk ${x.status}" data-id="${esc(x.id)}"><header><b>${esc(x.what)}</b><span class="bst">${T('bk_' + x.status)}</span></header>
-      <p class="when">${esc(x.when)}</p><p class="body">${x.ref ? `<code>${esc(x.ref)}</code> · ` : ''}<b>${esc(x.name || '—')}</b>${x.reach ? ' · ' + esc(x.reach) : ''}${x.email ? ' · ' + esc(x.email) : ''}${x.people > 1 ? ` · ${x.people} ${T('bk_people')}` : ''}${x.kind === 'room' && x.status !== 'hold' ? ` · <b class="${x.paid ? 'paidy' : 'paidn'}">${T(x.paid ? 'bk_paid' : 'bk_unpaid')}</b>` : ''}</p>
+      <p class="when">${esc(x.when)}</p><p class="body">${x.ref ? `<code>${esc(x.ref)}</code> · ` : ''}<b>${esc(x.name || '—')}</b>${x.reach ? ' · ' + esc(x.reach) : ''}${x.email ? ' · ' + esc(x.email) : ''}${x.people > 1 ? ` · ${x.people} ${T('bk_people')}` : ''}${(x.kind === 'room' && x.status !== 'hold') || x.status === 'ok' ? ` · <b class="${x.paid || x.dep ? 'paidy' : 'paidn'}">${T(x.paid ? 'bk_paid' : x.dep ? 'bk_depIn' : 'bk_unpaid')}</b>` : ''}</p>
       ${x.note ? `<p class="reach">${esc(x.note)}</p>` : ''}
       <footer>${x.status === 'hold' ? '' : `${x.status !== 'ok' ? `<button class="go small" data-bk="ok">${icon('check')}${T('bk_accept')}</button>` : ''}${x.status !== 'no' ? `<button class="go ghost small" data-bk="no">${T('bk_decline')}</button>` : ''}`}
-      ${x.kind === 'room' && x.status === 'ok' ? `<button class="go ghost small" data-bk="${x.paid ? 'unpaid' : 'paid'}">${T(x.paid ? 'bk_markUnpaid' : 'bk_markPaid')}</button>` : ''}
+      ${x.status === 'ok' ? `${x.paid ? '' : `<button class="go ghost small" data-bk="paid">${T('bk_markPaid')}</button>`}${!x.paid && !x.dep && x.depAsked > 0 ? `<button class="go ghost small" data-bk="deposit">${T('bk_depIn')}</button>` : ''}${x.paid || x.dep ? `<button class="go ghost small" data-bk="unpaid">${T('bk_markUnpaid')}</button>` : ''}
+      <a class="go ghost small" href="/bk/${esc(x.id)}/receipt" target="_blank" rel="noopener">${T('rc_open')}</a>` : ''}
       ${rp ? `<a class="go line small" href="${esc(rp.href)}" target="_blank" rel="noopener">${icon('chat')}${T('m_reply')} · ${esc(rp.label)}</a>` : ''}<button class="go ghost small" data-bk="gone">${T('bk_del')}</button></footer></article>`
   }
   const groups = ['new', 'ok', 'hold', 'no', 'gone'].map((st) => [st, r.rows.filter((x) => x.status === st)]).filter(([, l]) => l.length)
@@ -1847,7 +1849,9 @@ async function drawBookings() {
     let host = x.url; try { host = new URL(x.url).hostname.replace(/^www\./, '') } catch {}
     return `<li>${esc(room ? room.n : x.room)} · ${esc(host)} · ${x.ok ? `${T('bk_read')} ${esc(when(x.at))} · ${x.nights ?? 0}` : `<b style="color:var(--red)">${T('bk_failed')}</b>`}</li>`
   }).join('')}</ul></section>` : ''
-  tb.innerHTML = head + (groups.length ? groups.map(([st, l]) => `<h3 class="bkh">${T('bk_' + st)} · ${l.length}</h3><div class="msgs">${l.map(card).join('')}</div>`).join('') : `<div class="empty">${ding('calendar', 'paper')}<p>${T('bk_none')}</p></div>`) + closeBox + cals
+  const taxBox = `<section class="panel"><h3>${T('rc_head')}</h3><label class="mini"><span>${T('rc_tax')}</span><input id="taxid" maxlength="24" value="${val(S.d.tax)}" inputmode="numeric" autocomplete="off"></label><p class="hint">${T('rc_taxHint')}</p></section>`
+  tb.innerHTML = head + (groups.length ? groups.map(([st, l]) => `<h3 class="bkh">${T('bk_' + st)} · ${l.length}</h3><div class="msgs">${l.map(card).join('')}</div>`).join('') : `<div class="empty">${ding('calendar', 'paper')}<p>${T('bk_none')}</p></div>`) + closeBox + taxBox + cals
+  const taxEl = $('#taxid'); if (taxEl) taxEl.oninput = () => { S.d.tax = taxEl.value; changed() }
   const clgo = $('#clgo')
   if (clgo) clgo.onclick = async () => {
     try { await call('POST', 'bookings', { act: 'close', room: $('#clroom').value, from: $('#clfrom').value, to: $('#clto').value, name: $('#clname').value }); drawBookings() } catch { toast(ui(S.lang, 'e_net')) }
@@ -2236,6 +2240,7 @@ async function boot() {
     create(S.look, document.createElement('b')).then(() => { if (S.step === 'edit') publish() })
   }
 }
+menuInit({ app, S, call, icon, toast, redrawSec, changed }) // Read a menu photo (make-menu.mjs)
 window.addEventListener('hashchange', boot)
 window.addEventListener('resize', () => { preview(); document.body.classList.toggle('sheeton', S.tab === 'edit' && !!S.part && narrow()) })
 window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && S.tab === 'edit' && S.part && !document.querySelector('.sheet')) closePart() })

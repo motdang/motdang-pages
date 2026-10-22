@@ -94,6 +94,7 @@ export function normalizeExtras(d, o) {
     photos: (Array.isArray(x?.photos) ? x.photos : []).filter((p) => PHOTO_ID.test(p)).slice(0, 24),
     video: videoUrl(x?.video), card: PHOTO_ID.test(x?.card || '') ? x.card : '',
   })).filter((x) => x.t).slice(0, MAX.works))
+  o.tax = str(d.tax, 24).replace(/[^\p{L}\p{N} .\/-]/gu, '') // the owner's tax ID, printed on receipts (receipt.mjs)
   o.quotes = (Array.isArray(d.quotes) ? d.quotes : []).map((x) => ({ q: str(x?.q, 400), who: str(x?.who, 80) })).filter((x) => x.q).slice(0, MAX.quotes)
   return o
 }
