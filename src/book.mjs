@@ -173,13 +173,14 @@ export async function tellReader(env, s, d, bk, origin, lang) {
   const page = `${origin}/${s.name}`
   const mine = bk.kind === 'room' ? `<p><a href="${origin}/bk/${bk.id}" style="display:inline-block;padding:12px 20px;border-radius:99px;background:#1c1530;color:#fff;font-weight:800;text-decoration:none">การจองของคุณ · Your booking${bk.ref ? ' ' + esc(bk.ref) : ''}</a></p>` : ''
   const cal = bk.status === 'ok' ? `<p><a href="${origin}/api/bk/${bk.id}.ics" style="display:inline-block;padding:12px 20px;border-radius:99px;background:#ffb000;color:#000;font-weight:800;text-decoration:none">ใส่ปฏิทิน · Add to calendar</a></p>` : ''
+  const rcpt = bk.status === 'ok' ? `<p><a href="${origin}/bk/${bk.id}/receipt" style="display:inline-block;padding:12px 20px;border-radius:99px;background:#ffb000;color:#000;font-weight:800;text-decoration:none">ใบเสร็จ · Receipt</a></p>` : ''
   return mail(env, {
     to: bk.email, subject: `${words[0]} · ${words[1]} — ${title}`.slice(0, 140), replyTo: EMAIL.test(d.contact.email || '') ? d.contact.email : '',
     html: `<div style="font:16px/1.5 system-ui,-apple-system,'Segoe UI',sans-serif;color:#1c1530;max-width:560px">
 <p style="margin:0 0 4px;color:#5a4f6a">${esc(words[0])} · ${esc(words[1])}</p><h2 style="margin:0 0 10px;font-size:22px">${esc(title)}</h2>
-<p style="margin:0;font-size:18px"><b>${esc(x.what)}</b><br>${esc(x.when)}</p><p>${esc(words[2])} · ${esc(words[3])}</p>${cal}${mine}
+<p style="margin:0;font-size:18px"><b>${esc(x.what)}</b><br>${esc(x.when)}</p><p>${esc(words[2])} · ${esc(words[3])}</p>${cal}${rcpt}${mine}
 ${d.contact.phone ? `<p>☎ ${esc(d.contact.phone)}</p>` : ''}<p style="font-size:14px;color:#5a4f6a"><a href="${page}">${esc(page.replace(/^https:\/\//, ''))}</a></p></div>`,
-    text: `${words[0]} · ${words[1]}\n${title}\n${x.what}\n${x.when}\n${words[2]} · ${words[3]}\n${bk.kind === 'room' ? origin + '/bk/' + bk.id + '\n' : ''}${page}\n`,
+    text: `${words[0]} · ${words[1]}\n${title}\n${x.what}\n${x.when}\n${words[2]} · ${words[3]}\n${bk.status === 'ok' ? 'ใบเสร็จ · Receipt: ' + origin + '/bk/' + bk.id + '/receipt\n' : ''}${bk.kind === 'room' ? origin + '/bk/' + bk.id + '\n' : ''}${page}\n`,
   })
 }
 

@@ -497,3 +497,11 @@ body{font-family:"Prompt",system-ui,-apple-system,"Segoe UI","Noto Sans Thai","N
 .ogpics{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 6px}.ogpics button{flex:none;width:72px;height:54px;border:2px solid var(--line,#ddd);border-radius:8px;padding:0;overflow:hidden;background:#eee;font:600 12px/1.1 inherit;cursor:pointer}
 .ogpics img{width:100%;height:100%;object-fit:cover}.ogfont{display:flex;flex-wrap:wrap;gap:6px}.ogsw{display:flex;flex-wrap:wrap;gap:8px}
 .ogsw button{width:36px;height:36px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 1px #0003;cursor:pointer}.ogsw button.on{box-shadow:0 0 0 3px #111}
+
+/* Read a menu photo (make-menu.mjs) */
+.menuread{margin:0 0 14px}.menupick{min-height:64px}.menupick input{display:none}
+.mrev{margin:8px 0 14px;padding:10px;border-radius:14px;background:var(--cream);box-shadow:inset 0 0 0 2px var(--line)}
+.mrow{display:grid;grid-template-columns:48px minmax(0,1fr) 96px;gap:8px;margin:0 0 10px;align-items:center}
+.mrow.dup{opacity:.6}.mrow input[data-mrt]{grid-column:2/4}.mrow .msec{grid-column:2/4;color:var(--mute);font-size:13px}
+.mck{display:grid;place-items:center;min-height:48px}.mck input{width:28px;height:28px}
+.mopt{display:flex;gap:10px;align-items:center;margin:4px 0 12px;font-weight:600;min-height:44px}.mopt input{width:24px;height:24px}

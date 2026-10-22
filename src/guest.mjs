@@ -41,6 +41,7 @@ table{width:100%;border-collapse:collapse}td{padding:9px 0;border-bottom:1px das
 .b.g{background:transparent;color:inherit;box-shadow:inset 0 0 0 2px currentColor}.b.l{background:#06c755;color:#000}.m{color:var(--mute);font-size:15px}</style></head><body><main class="w">
 <section class="c"><p class="ref">${esc(bk.ref || '')}</p><h1>${esc(d.name || s.name)}</h1><span class="st">${st[0]} · ${st[1]}</span></section>
 <section class="c"><table>${rows.map(([k, v]) => `<tr><td>${k}</td><td>${v}</td></tr>`).join('')}</table>${Number(bk.total) ? `<p class="tot">฿${nf(Number(bk.total))}</p>` : ''}</section>
+${bk.status === 'ok' ? `<section class="c"><a class="b g" href="/bk/${esc(bk.id)}/receipt">ใบเสร็จ · Receipt</a></section>` : ''}
 ${pay.deposit ? `<section class="c" style="text-align:center"><b>จ่ายตอนนี้ · Pay now ฿${nf(pay.deposit.amount)}</b>${pay.deposit.qr}<p class="m">พร้อมเพย์ เข้าบัญชีโรงแรม · PromptPay to the hotel</p></section>` : ''}
 ${pay.link ? `<section class="c"><a class="b" href="${esc(pay.link)}" rel="nofollow noopener">จ่ายกับโรงแรม · Pay the hotel${pay.due ? ' ฿' + nf(pay.due) : ''}</a></section>` : ''}
 ${!pay.deposit && !pay.link && bk.status !== 'gone' && bk.status !== 'no' ? `<section class="c"><p style="margin:0">จ่ายที่โรงแรม · Pay at the hotel</p></section>` : ''}
