@@ -73,6 +73,7 @@ GOLD_THB = "3000"
 HOTEL_THB = "555" # a month, for a page that takes room bookings (Nan 2026-10-14)
 HOTEL_YEAR_THB = "5550" # the hotel year paid up front, twelve months for ten (2026-10-15)
 MAIL_FROM = "Mot Dang <pages@motdang.net>"
+ZONE_ID = "a9e92ea931cf4f5b085d8ce8c6a2ff15" # motdang.net, for own addresses (src/domain.mjs); on once the secret CF_SAAS_TOKEN is set
 INVEST_TO = "nan@motdang.net" # an investor's note at /support goes here in full
 
 # Secrets (npx wrangler secret put NAME), never in this file:

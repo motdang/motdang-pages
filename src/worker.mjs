@@ -777,7 +777,7 @@ ${s ? `<p>ข้อความถึง ${escHtml(title)} จะส่งสำ
       if (state !== s.domain_state) await env.DB.prepare('UPDATE site SET domain_state = ? WHERE id = ?').bind(state, s.id).run()
       return J({ domain: s.domain, state, records: dom.records(s.domain) })
     }
-    if (s.domain_id) await dom.drop(env, s.domain_id)
+    if (s.domain_id) await dom.drop(env, s.domain_id, s.domain)
     if (m === 'DELETE') { await env.DB.prepare('UPDATE site SET domain = NULL, domain_id = NULL, domain_state = NULL WHERE id = ?').bind(s.id).run(); return J({ ok: true }) }
     const who = await sender(request, env)
     if (!(await take(env, who, 'domain'))) return J({ error: 'quota' }, 429)
