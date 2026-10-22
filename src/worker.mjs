@@ -61,8 +61,9 @@ import { doodleRoute } from './doodle.mjs'
 import * as amprice from './amprice.mjs'
 import * as sian from './sian.mjs'
 import * as market from './market.mjs'
+import * as line from './lineedit.mjs'
 
-const QUOTA = { menu: 20, site: 3, photo: 200, save: 400, report: 20, msg: 12, news: 12, pd: 200, notify: 3, slip: 10, book: 10, domain: 6, lister: 3, deal: 40, terms: 10, join: 3, founding: 5, gift: 20, backer: 5, tap: 3, tapsave: 60, bump: 300, card: 400, guess: 400, sadhu: 200, here: 2500 }
+const QUOTA = { menu: 20, site: 3, photo: 200, save: 400, report: 20, msg: 12, news: 12, pd: 200, notify: 3, slip: 10, book: 10, domain: 6, lister: 3, deal: 40, terms: 10, join: 3, founding: 5, gift: 20, backer: 5, tap: 3, tapsave: 60, bump: 300, card: 400, guess: 400, sadhu: 200, here: 2500, linecode: 10 }
 const TRIAL_DAYS = 30 // Nan 2026-10-14: a new page is Gold for its first 30 days
 const MAIN = 'https://motdang.net'
 const PASS = /^\/(vendor|fonts|tiles|data|front)\/|^\/sites\/doodle-map\//
@@ -252,6 +253,7 @@ async function page(request, env, ctx, name, sub, url, origin, base) {
   }
   const opt = { origin, nonce, ...(base ? { base } : {}) }
   if (s.status === 'live' && !sub) opt.events = await events.siteSection(env, s, s.kind).catch(() => '')
+  if (s.status === 'live' && !sub && site.tier === 'gold') opt.news = await line.shownNews(env, s.id).catch(() => []) // dated notes, Edit by LINE (lineedit.mjs)
   if (sub.startsWith('/l/')) {
     const id = sub.slice(3)
     if (site.tier !== 'gold' || !normalize(site.d).lists.some((x) => x.id === id)) return html(notFound(null, request), 404)
@@ -580,7 +582,7 @@ ${s ? `<p>ข้อความถึง ${escHtml(title)} จะส่งสำ
       throw e
     }
     await log(env, id, 'create', name)
-    return J({ id, name, token, status: 'draft', tier: 'gold', gold_until: new Date(Date.now() + TRIAL_DAYS * 864e5).toISOString().slice(0, 10), trial: true })
+    return J({ id, name, token, status: 'draft', tier: 'gold', gold_until: new Date(Date.now() + TRIAL_DAYS * 864e5).toISOString().slice(0, 10), trial: true, line_on: line.on(env), loaded: now })
   }
 
   // Everything below needs the edit link.
@@ -591,6 +593,7 @@ ${s ? `<p>ข้อความถึง ${escHtml(title)} จะส่งสำ
   const isGold = gold.isGold(s)
 
   if (p === 'site' && m === 'GET') {
+    const loaded = new Date().toISOString()
     const un = await env.DB.prepare("SELECT COUNT(*) AS n FROM msg WHERE site_id = ? AND status = 'new'").bind(s.id).first()
     return J({ id: s.id, name: s.name, status: s.status, kind: s.kind, look: s.look, lang: s.lang, d: JSON.parse(s.d), views: s.views,
       tier: isGold ? 'gold' : 'free', gold_until: s.gold_until, trial: !!s.trial, notify_email: s.notify_email || '', notify_ok: !!s.notify_ok, unread: un?.n || 0,
@@ -598,7 +601,8 @@ ${s ? `<p>ข้อความถึง ${escHtml(title)} จะส่งสำ
       domain: s.domain || '', domain_state: s.domain_state || '', domains: dom.on(env), price: Number(env.GOLD_THB) || gold.GOLD_THB,
       plan: s.plan || 'gold', hotel: gold.isHotel(s), hotel_until: s.hotel_until || '', plans: gold.PLANS(env),
       sian: s.kind === 'amulet' || normalize(JSON.parse(s.d)).amulets.length ? await sian.thisMonth(env).then((x) => ({ price: x.price, left: x.left, seats: x.seats, member: sian.isSian(s) })).catch(() => null) : null,
-      founders: await founding.thisMonth(env).then((f) => ({ price: f.price, left: f.left })).catch(() => null) })
+      founders: await founding.thisMonth(env).then((f) => ({ price: f.price, left: f.left })).catch(() => null),
+      line: await line.describe(env, s).catch(() => ({ on: false })), news: await line.notesFor(env, s.id).catch(() => []), loaded })
   }
 
   if (p === 'site' && m === 'PUT') {
@@ -614,6 +618,11 @@ ${s ? `<p>ข้อความถึง ${escHtml(title)} จะส่งสำ
       name = String(b.name).toLowerCase()
       const why = nameProblem(name)
       if (why) return J({ error: 'name', why }, 400)
+    }
+    // photos that came in by LINE since the editor loaded this page are kept (lineedit.mjs addPhoto)
+    const loadedAt = new Date().toISOString(), added = []
+    if (b.d && /^\d{4}-\d{2}-\d{2}T[\d:.]+Z$/.test(String(b.loaded || ''))) {
+      for (const id of await line.photosSince(env, s.id, b.loaded)) if (!d.photos.includes(id)) { d.photos.push(id); added.push(id) }
     }
     d.photos = d.photos.slice(0, photoMax(kind, isGold))
     // photos named in the page must be this page's own; credits come from the library, not the browser
@@ -654,12 +663,13 @@ ${s ? `<p>ข้อความถึง ${escHtml(title)} จะส่งสำ
       throw e
     }
     if (status !== s.status) await log(env, s.id, status, held || '')
-    return J({ status, name, d: nd, look: lookId })
+    return J({ status, name, d: nd, look: lookId, added: added.filter((id) => nd.photos.includes(id)), loaded: loadedAt })
   }
 
   if (p === 'site' && m === 'DELETE') {
     const ph = await env.DB.prepare('SELECT id FROM photo WHERE site_id = ?').bind(s.id).all()
     for (const r of ph.results) await env.MEDIA.delete([`p/${r.id}`, `p/${r.id}-s`])
+    await line.dropSite(env, s.id)
     await env.DB.batch([
       env.DB.prepare('DELETE FROM photo WHERE site_id = ?').bind(s.id),
       env.DB.prepare('DELETE FROM msg WHERE site_id = ?').bind(s.id),
@@ -779,6 +789,17 @@ ${s ? `<p>ข้อความถึง ${escHtml(title)} จะส่งสำ
     const r = await customers.broadcast(env, s, normalize(JSON.parse(s.d)), { text: b.text, link: b.link ? String(b.link) : '' }, origin, rand, log)
     return J(r, r.error ? ({ month: 409, quota: 429, busy: 503, mail: 502 }[r.error] || 400) : 200)
   }
+  // Edit by LINE (lineedit.mjs): the code that links a LINE account, who is linked, and the page's dated notes
+  if (p === 'line' && m === 'GET') return J(await line.describe(env, s))
+  if (p === 'line' && m === 'DELETE') { await line.unlinkSite(env, s.id); await log(env, s.id, 'line-unlinked', 'from the editor'); return J({ ok: true }) }
+  if (p === 'line/code' && m === 'POST') {
+    const who = await sender(request, env)
+    if (!(await take(env, who, 'linecode'))) return J({ error: 'quota' }, 429)
+    const r = await line.mint(env, s, { rand, sha })
+    return r.error ? J(r, r.error === 'gold' ? 402 : 503) : J(r)
+  }
+  if (p === 'notes' && m === 'GET') return J({ notes: await line.notesFor(env, s.id) })
+  if (p === 'notes' && m === 'DELETE') { await line.dropNote(env, s.id, (await body(request)).id); return J({ ok: true }) }
 
   if (p === 'notify' && m === 'PUT') {
     const who = await sender(request, env)
@@ -1102,6 +1123,7 @@ async function tidy(env) {
   await env.DB.prepare("DELETE FROM pay WHERE status = 'open' AND COALESCE(plan, '') NOT IN ('fee', 'founding') AND created < ?").bind(new Date(Date.now() - 14 * 864e5).toISOString()).run()
   // 2026-10-14: room calendars, translations, the monthly note, the trial's end note
   const job = async (name, f) => { try { done[name] = await f() } catch (e) { done[name] = 'error: ' + String(e?.message || e).slice(0, 300); console.error(name, e?.stack || e) } }
+  await job('line', () => line.tidyLine(env))
   await job('calendars', () => readCalendars(env, gold.isGold, normalize))
   await job('events', () => events.refresh(env, { normalize, upcoming, utcOf }))
   await job('translate', () => tr.catchUp(env, gold.isGold, normalize))

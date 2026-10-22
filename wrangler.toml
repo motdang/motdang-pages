@@ -3,7 +3,7 @@
 # motdang.net/~* route, where the first address (2026-10-12) redirects here;
 # mot-dang-site (motdang.net/*) keeps every other path on motdang.net.
 name = "motdang-pages"
-main = "src/worker.mjs"
+main = "src/entry.mjs" # the Worker (worker.mjs) and the LineEdit entrypoint motdang-line calls (Edit by LINE)
 compatibility_date = "2026-07-01"
 workers_dev = false
 
@@ -82,6 +82,10 @@ HOTEL_YEAR_THB = "5550" # the hotel year paid up front, twelve months for ten (2
 MAIL_FROM = "Mot Dang <pages@motdang.net>"
 ZONE_ID = "a9e92ea931cf4f5b085d8ce8c6a2ff15" # motdang.net, for own addresses (src/domain.mjs); on once the secret CF_SAAS_TOKEN is set
 INVEST_TO = "nan@motdang.net" # an investor's note at /support goes here in full
+# Edit by LINE (src/lineedit.mjs, Nan 2026-10-22): "off" hides the editor's LINE tab and refuses the codes and the LINE
+# Worker's calls; "on" opens them. motdang-line has its own var, PAGE_EDIT, for the chat side.
+LINE_EDIT = "off"
+LINE_OA = "@964yxgnk" # the Official Account the editor opens LINE to
 
 # Secrets (npx wrangler secret put NAME), never in this file:
 #   ADMIN_KEY       password for /admin (any user name)
