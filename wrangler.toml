@@ -84,4 +84,6 @@ INVEST_TO = "nan@motdang.net" # an investor's note at /support goes here in full
 #   DISCORD_SALES   webhook of the team's #minisites channel; each paid plan is posted there
 #   DISCORD_PEOPLE  webhook of #people-team; each sign-up at /sell is posted there for Beer, and each volunteer at /support
 #   DISCORD_CORE_PLAN  webhook of #core-plan; an investor's note at /support is posted there, without the contact
+#   GBP_CLIENT_ID, GBP_CLIENT_SECRET, GBP_KEY  Google Business Profile sync (src/gbp.mjs); the Gold tab's Google card shows "Coming soon" until all three exist.
+#                   GBP_KEY is any long random string; it seals the owners' Google refresh tokens in D1
 # SELLER_AUTO = "1" (a var) lets a sign-up sell at once; without it Beer says yes first

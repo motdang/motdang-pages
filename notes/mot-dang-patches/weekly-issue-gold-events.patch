@@ -1,0 +1,86 @@
+--- a/importers/make_newsletter.py	2026-10-22 10:53:21
++++ b/importers/make_newsletter.py	2026-10-22 10:53:21
+@@ -25,6 +25,9 @@
+ OUT = os.path.join(ROOT, "_incoming", "newsletter-out")
+ SITE = "https://motdang.net"
+ ENDPOINT = SITE + "/newsletter/send"
++# Gold pages on sites.motdang.net list their dated events in the Worker's events.json (src/events.mjs);
++# the week's issue carries them under their own heading, each starred and linked to the page.
++GOLD_FEED = SITE + "/tech/events.json?kind=all&gold=1&days=7&n=60"
+ 
+ TH_DAY = ["จ.", "อ.", "พ.", "พฤ.", "ศ.", "ส.", "อา."]
+ TH_MON = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."]
+@@ -92,13 +95,41 @@
+     return when, e["title"], rest, SITE + "/events.html#" + anchor(e["title"])
+ 
+ 
+-def compose(events, first):
++def gold_events(first, fetch=None):
++    """The week's events from Gold pages, as rows for the issue: [{start, title, venue_name, url, page, gold}].
++    The Worker reads the pages every 30 minutes; a failed read gives none and the issue goes without the section."""
++    try:
++        doc = fetch(GOLD_FEED) if fetch else json.load(urllib.request.urlopen(
++            urllib.request.Request(GOLD_FEED, headers={"User-Agent": "motdang make_newsletter.py"}), timeout=30))
++    except Exception as ex:
++        print("newsletter: Gold pages' events not read, %s: %s" % (type(ex).__name__, ex))
++        return []
++    last = first + timedelta(days=6)
++    out = []
++    for e in doc.get("events") or []:
++        when = (e.get("when") or {})
++        try:
++            d = datetime.fromisoformat((e.get("start") or "").replace("Z", "+00:00")) + timedelta(hours=7)
++        except ValueError:
++            continue
++        if not e.get("gold") or not (first <= d.date() <= last) or not e.get("title"):
++            continue
++        link = e.get("page") or e.get("url") or ""
++        if not link.startswith("https://"):
++            continue
++        out.append({"day": d.date(), "time": when.get("time") or d.strftime("%H:%M"), "title": e["title"],
++                    "venue_name": e.get("venue") or ((e.get("place") or {}).get("name")) or "", "cost": e.get("cost") or "", "url": link})
++    return sorted(out, key=lambda x: (x["day"], x["time"]))
++
++
++def compose(events, first, gold=None):
+     running, by_day = pick(events, first)
+     last = first + timedelta(days=6)
+     span = "%d–%d %s" % (first.day, last.day, last.strftime("%b")) if first.month == last.month \
+         else "%s – %s" % (first.strftime("%-d %b"), last.strftime("%-d %b"))
+     subject = "มดแดง · งานในเมือง · What's on, %s" % span
+-    n = len(running) + sum(len(v) for v in by_day.values())
++    gold = gold or []
++    n = len(running) + sum(len(v) for v in by_day.values()) + len(gold)
+ 
+     t = ["มดแดง · What's on, %s" % span, ""]
+     h = ['<div style="font:15px/1.45 system-ui,sans-serif;max-width:40rem">',
+@@ -122,6 +153,20 @@
+     for d, rows in by_day.items():
+         add(day_head(d), rows)
+ 
++    if gold:
++        head = "★ จากหน้าทอง · From Gold pages"
++        t.append(head)
++        h.append('<h2 style="font-size:16px;margin:1.2em 0 .3em">%s</h2><ul style="padding-left:1.1em;margin:0">' % html.escape(head))
++        for g in gold:
++            rest = " · ".join(x for x in (g["venue_name"], g["cost"]) if x)
++            when = "%s %s" % (day_head(g["day"]), g["time"])
++            t.append("  ★ " + when + "  " + g["title"] + (" — " + rest if rest else ""))
++            t.append("    " + g["url"])
++            h.append('<li>★ <b>%s</b> <a href="%s">%s</a>%s</li>' % (
++                html.escape(when), html.escape(g["url"]), html.escape(g["title"]), (" — " + html.escape(rest)) if rest else ""))
++        t.append("")
++        h.append("</ul>")
++
+     t += ["งานประจำสัปดาห์และงานทั้งหมด · Weekly and all events: %s/events.html" % SITE, "",
+           "เลิกรับ · Unsubscribe: {{UNSUB}}"]
+     h += ['<p style="margin-top:1.5em"><a href="%s/events.html">งานประจำสัปดาห์และงานทั้งหมด · Weekly and all events</a></p>' % SITE,
+@@ -166,7 +211,7 @@
+     args = sys.argv[1:]
+     first = date.fromisoformat(args[args.index("--date") + 1]) if "--date" in args else date.today()
+     doc = json.load(open(os.path.join(ROOT, "data", "events.json"), encoding="utf-8"))
+-    issue = compose(doc["events"], first)
++    issue = compose(doc["events"], first, gold_events(first))
+     os.makedirs(OUT, exist_ok=True)
+     path = os.path.join(OUT, issue["issue"] + ".json")
+     with open(path, "w", encoding="utf-8") as f:

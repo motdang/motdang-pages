@@ -55,8 +55,9 @@ import { doodleRoute } from './doodle.mjs'
 import * as amprice from './amprice.mjs'
 import * as sian from './sian.mjs'
 import * as market from './market.mjs'
+import * as gbp from './gbp.mjs'
 
-const QUOTA = { site: 3, photo: 200, save: 400, report: 20, msg: 12, pd: 200, notify: 3, slip: 10, book: 10, domain: 6, lister: 3, deal: 40, terms: 10, join: 3, founding: 5, gift: 20, backer: 5, tap: 3, tapsave: 60, bump: 300, card: 400, guess: 400, sadhu: 200, here: 2500 }
+const QUOTA = { site: 3, photo: 200, save: 400, report: 20, msg: 12, pd: 200, notify: 3, slip: 10, book: 10, domain: 6, lister: 3, deal: 40, terms: 10, join: 3, founding: 5, gift: 20, backer: 5, tap: 3, tapsave: 60, bump: 300, card: 400, gbp: 60, guess: 400, sadhu: 200, here: 2500 }
 const TRIAL_DAYS = 30 // Nan 2026-10-14: a new page is Gold for its first 30 days
 const MAIN = 'https://motdang.net'
 const PASS = /^\/(vendor|fonts|tiles|data|front)\/|^\/sites\/doodle-map\//
@@ -556,6 +557,9 @@ ${s ? `<p>ข้อความถึง ${escHtml(title)} จะส่งสำ
     return J({ id, name, token, status: 'draft', tier: 'gold', gold_until: new Date(Date.now() + TRIAL_DAYS * 864e5).toISOString().slice(0, 10), trial: true })
   }
 
+  // Google Business Profile: the sign-in returns here, the state it carries names the page (src/gbp.mjs)
+  if (p === 'gbp/callback' && m === 'GET') return gbp.callback(env, url, origin)
+
   // Everything below needs the edit link.
   const token = request.headers.get('x-edit') || ''
   if (!/^[A-Za-z0-9_-]{32,64}$/.test(token)) return api2(request, env, p, url)
@@ -627,6 +631,7 @@ ${s ? `<p>ข้อความถึง ${escHtml(title)} จะส่งสำ
       throw e
     }
     if (status !== s.status) await log(env, s.id, status, held || '')
+    if (isGold && status === 'live') ctx.waitUntil(gbp.afterSave(env, s.id, origin)) // Google Business Profile follows the save
     return J({ status, name, d: nd, look: lookId })
   }
 
@@ -638,6 +643,7 @@ ${s ? `<p>ข้อความถึง ${escHtml(title)} จะส่งสำ
       env.DB.prepare('DELETE FROM msg WHERE site_id = ?').bind(s.id),
       env.DB.prepare("UPDATE site SET status='removed', name = name || '~' || id, d='{}', notify_email=NULL, notify_ok=0, updated=? WHERE id = ?").bind(new Date().toISOString(), s.id),
     ])
+    await gbp.drop(env, s.id)
     await log(env, s.id, 'deleted-by-maker', s.name)
     return J({ ok: true })
   }
@@ -765,6 +771,11 @@ ${s ? `<p>ข้อความถึง ${escHtml(title)} จะส่งสำ
     await env.DB.prepare('UPDATE booking SET status = ? WHERE id = ?').bind(st, bk.id).run()
     if ((st === 'ok' || st === 'no') && bk.status !== st) ctx.waitUntil(book.tellReader(env, s, normalize(JSON.parse(s.d)), { ...bk, status: st }, origin, s.lang).catch((e) => console.error(e)))
     return J({ ok: true })
+  }
+
+  if (p === 'gbp' || p.startsWith('gbp/')) {
+    const r = await gbp.route(request, env, ctx, p, origin, s, { J, body, take, sender })
+    if (r) return r
   }
 
   if (p === 'domain' && (m === 'PUT' || m === 'GET' || m === 'DELETE')) {
@@ -1042,6 +1053,7 @@ async function tidy(env) {
   const job = async (name, f) => { try { done[name] = await f() } catch (e) { done[name] = 'error: ' + String(e?.message || e).slice(0, 300); console.error(name, e?.stack || e) } }
   await job('calendars', () => readCalendars(env, gold.isGold, normalize))
   await job('events', () => events.refresh(env, { normalize, upcoming, utcOf }))
+  await job('gbp', () => gbp.due(env, HOME))
   await job('translate', () => tr.catchUp(env, gold.isGold, normalize))
   await job('monthly', () => monthly(env, gold.isGold, HOME))
   await job('trial', () => trialNotes(env, HOME, gold.PLANS(env)))

@@ -19,6 +19,7 @@ import { AM_MAX, amCap } from './amulet.mjs'
 import { drawCard, cardKey, CARD } from './card.mjs'
 import { loadFaces } from './mark.mjs'
 import { cardHtml, cardBind } from './make-card.mjs'
+import { gbpBox, bindGbp, GBP_CSS } from './make-gbp.mjs'
 
 const $ = (s, el = document) => el.querySelector(s)
 const app = $('#app')
@@ -2036,10 +2037,11 @@ async function drawGold() {
   const hotelBanner = hotelOn ? `<p class="goldon">★ ${dated('g_hotelOn', S.hotelUntil)}</p>` : ''
   if (isGold() && !S.trial && !/^hotel/.test(S.payPlan || '') && want !== 'sian') {
     tb.innerHTML = head + goldBanner + hotelBanner + sianBox +
-      (rooms ? `<p style="text-align:center"><button class="go" id="tohotel">${esc(ui(S.lang, hotelOn ? 'g_hotelMore' : 'g_hotelGo').replace('{p}', new Intl.NumberFormat(S.lang).format(S.plans?.hotel?.baht || 555)))}</button></p>` : '') + domainBox() + list
+      (rooms ? `<p style="text-align:center"><button class="go" id="tohotel">${esc(ui(S.lang, hotelOn ? 'g_hotelMore' : 'g_hotelGo').replace('{p}', new Intl.NumberFormat(S.lang).format(S.plans?.hotel?.baht || 555)))}</button></p>` : '') + domainBox() + gbpHtml() + list
     after()
     dingbats(['signals', 'classic', 'curious'])
     bindDomain()
+    bindGbpCard()
     const th = $('#tohotel'); if (th) th.onclick = () => { S.payPlan = 'hotel'; drawGold() }
     bindSian()
     return
@@ -2054,10 +2056,11 @@ async function drawGold() {
   tb.innerHTML = head + (S.trial ? `<p class="goldon">★ ${esc(ui(S.lang, 'g_trial').replace('{d}', S.goldUntil || ''))}</p>` : isGold() ? goldBanner + hotelBanner : '') + pick + (want === 'sian' ? '' : sianBox) + `<section class="goldpay"><p class="price">${want === 'sian' ? AU('sian_pay', { p: nf.format(r.baht) }) : esc(ui(S.lang, r.months === 1 ? 'g_priceMonth' : 'g_price').replace('{p}', nf.format(r.baht)))}</p>${r.hotel ? `<p class="hint">${T(r.months === 1 ? (isGold() && !S.trial ? 'g_hotelAddWhy' : 'g_hotelWhy') : 'g_hotelYearWhy')}</p>` : ''}
     ${r.payload ? `<div class="ppqr">${qrSvg(r.payload, { dark: '#0e3d78', light: '#ffffff', label: 'PromptPay' })}<b>฿${esc(nf.format(Number(r.amount)))}</b><span>PromptPay</span></div>
       <p class="hint">${esc(ui(S.lang, 'g_scan').replace('{s}', tail))}</p>
-      <label class="pick goldslip">${icon('download')}${T('g_slip')}<input type="file" accept="image/*" id="slip"></label><p id="slipstate" class="pinstate"></p>` : `<p class="hint">${T('g_nopp')}</p>`}</section>` + fmBox + list + (isGold() ? domainBox() : '')
+      <label class="pick goldslip">${icon('download')}${T('g_slip')}<input type="file" accept="image/*" id="slip"></label><p id="slipstate" class="pinstate"></p>` : `<p class="hint">${T('g_nopp')}</p>`}</section>` + fmBox + list + (isGold() ? domainBox() + gbpHtml() : '')
   after()
   dingbats(['signals', 'classic', 'curious'])
   bindDomain()
+  bindGbpCard()
   tb.querySelectorAll('[data-seg="payplan"]').forEach((b) => (b.onclick = () => { S.payPlan = b.dataset.v; drawGold() }))
   bindSian()
   const slip = $('#slip')
@@ -2072,6 +2075,14 @@ async function drawGold() {
     } catch { st.textContent = ui(S.lang, 'e_net') }
   }
 }
+
+// the Google card (make-gbp.mjs): the connection to Google Business Profile, and the kit of fields to paste
+function gbpHtml() {
+  if (!isGold()) return ''
+  if (!document.getElementById('gbpcss')) { const st = document.createElement('style'); st.id = 'gbpcss'; st.textContent = GBP_CSS; document.head.append(st) }
+  return gbpBox(S, { T, esc, imgUrl, url: S.domain && S.domainState === 'active' ? `https://${S.domain}` : `${location.origin}/${S.name}` })
+}
+function bindGbpCard() { const r = $('#gbpbox'); if (r) bindGbp(r, S, { call, T, esc, toast, icon }) }
 
 function domainBox() {
   if (!S.domains) return `<section class="panel"><h3>${T('g_domain')}</h3><p class="hint">${T('g_domainOff')}</p></section>`
@@ -2189,7 +2200,8 @@ function toast(msg) {
 
 async function boot() {
   const h = new URLSearchParams(location.hash.slice(1))
-  const t = h.get('t')
+  // back from Google's sign-in: the page is named in the address, its edit link is in this browser
+  const t = h.get('t') || (h.get('gbp') ? (store.get('pages', []).find((p) => p.name === h.get('gbp')) || {}).token : '')
   if (t) {
     S.token = t
     try {
@@ -2201,6 +2213,7 @@ async function boot() {
       S.d.event = S.d.event || undefined
       S.open = new Set(DEFAULT_OPEN[S.kind]); S.part = ''
       if (h.get('tab')) S.tab = h.get('tab')
+      if (h.get('gbp')) { S.gbpBack = h.get('gbperr') ? 'err:' + h.get('gbperr') : h.get('gbp2') ? 'ok' : ''; history.replaceState(null, '', '/make#t=' + t) }
       remember()
       camStart()
     } catch (e) {

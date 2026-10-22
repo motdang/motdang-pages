@@ -1,0 +1,59 @@
+Google Business Profile sync: what switches it on
+(read against developers.google.com/my-business on 2026-10-22)
+
+The Gold tab's Google card works without any of this: it shows the kit (hours, description,
+phone, link, offers, each with a copy button) and a link to business.google.com. The
+Connect button appears once the three secrets below exist.
+
+1. Google account and Cloud project
+   - One Google account that owns or manages a verified Business Profile with a website,
+     live for 60 days or more. It is the account the request is made from.
+   - console.cloud.google.com: create a project (for example "Mot Dang Pages"). Note its
+     Project Number (Project info card on the dashboard).
+
+2. Ask Google for Business Profile API access (the quota is 0 until this is approved)
+   - Form: https://support.google.com/business/contact/api_default
+     choose "Application for Basic API Access". Use the email that is owner or manager
+     of the profile. Give the Project Number, the business website, and the reason:
+     "sites.motdang.net makes web pages for shop owners; with each owner's consent it
+     copies the page's hours, description, phone, link, photos and offers to the owner's
+     own profile."
+   - Approved when APIs & Services > Quotas shows 300 requests per minute for the
+     Business Profile APIs (0 means not approved).
+
+3. Enable these APIs in the project (API Library, each one, Enable)
+   - My Business Account Management API
+   - My Business Business Information API
+   - Google My Business API (v4; appears after approval; localPosts and media use it)
+   (The Lodging, Place Actions, Notifications and Verifications APIs are not used.)
+
+4. OAuth consent screen (APIs & Services > OAuth consent screen)
+   - User type External. App name: Mot Dang Pages. Support email and developer email.
+   - App home page: https://sites.motdang.net
+   - Authorised domain: motdang.net
+   - Privacy policy link: a page on motdang.net that says what is read and sent (Google
+     asks for one for a sensitive scope).
+   - Scope to add: https://www.googleapis.com/auth/business.manage
+   - While the app is in Testing, only listed test users can connect (up to 100) and
+     their sign-in lapses after 7 days. Press Publish app to remove both limits; Google
+     may then ask to verify the app for the scope.
+
+5. OAuth client (APIs & Services > Credentials > Create credentials > OAuth client ID)
+   - Application type: Web application. Name: Mot Dang Pages.
+   - Authorised JavaScript origins: none needed.
+   - Authorised redirect URI, exactly:  https://sites.motdang.net/api/gbp/callback
+   - Copy the client ID and client secret.
+
+6. Secrets on the Worker (not committed anywhere)
+   npx wrangler secret put GBP_CLIENT_ID
+   npx wrangler secret put GBP_CLIENT_SECRET
+   npx wrangler secret put GBP_KEY        (any long random string; seals refresh tokens in D1)
+   npx wrangler d1 migrations apply motdang-pages --remote    (0030, 0031) before deploying
+
+Then, on a Gold page's Gold tab: Connect Google Business Profile, sign in, pick the
+business, Send now.
+
+Not yet confirmed against a live Google account: the 24-hour form of regularHours
+(closeTime hours 24), whether Google accepts the WebP photo files the pages store (a
+refused photo is named on the card and not asked again), and offer posts with a start
+date later than today.
