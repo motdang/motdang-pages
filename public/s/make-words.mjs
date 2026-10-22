@@ -11,6 +11,7 @@ import { Q } from './make-words-doodle.mjs'
 import { K } from './make-words-card.mjs'
 import { N } from './make-words-cust.mjs'
 import { N as NL } from './make-words-line.mjs'
+import { B } from './make-words-gbp.mjs'
 
 export const UI_LANGS = { th: 'ไทย', en: 'English', my: 'မြန်မာ', zh: '中文' }
 
@@ -251,6 +252,7 @@ const V = {
 const TABLES = [U, V, Z, Y, X, W, A, G, Q, K, N]
 TABLES.push(GM) // reading a menu from a photo, receipts (make-words-gold.mjs)
 TABLES.push(NL) // edit by LINE (make-words-line.mjs)
+TABLES.push(B) // Google profile (make-words-gbp.mjs)
 export function ui(lang, k) {
   for (const t of TABLES) if (t[lang] && t[lang][k]) return t[lang][k]
   for (const t of TABLES) if (t.en[k]) return t.en[k]
