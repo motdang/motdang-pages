@@ -54,7 +54,7 @@ export const sceneOf = (kind, d) => (d.scene && SCENE_IDS.has(d.scene) ? d.scene
 // The dingbat beside each section's heading, and the look each page look draws them in.
 const HEAD_DING = { pay: 'coin', about: 'sparkle', menu: 'noodles', prices: 'coin', hours: 'clock', photos: 'camera', where: 'pin', line: 'chat', links: 'link',
   contact: 'telephone', msg: 'envelope', when: 'calendar', drawn: 'pencil', video: 'play', spots: 'compass', share: 'share',
-  cal: 'calendar', camp: 'megaphone', book: 'clock', rooms: 'key', lists: 'home', works: 'nib', quotes: 'hedera', amulets: 'lotus', amterms: 'bell', amkt: 'coin' }
+  cal: 'calendar', news: 'megaphone', camp: 'megaphone', book: 'clock', rooms: 'key', lists: 'home', works: 'nib', quotes: 'hedera', amulets: 'lotus', amterms: 'bell', amkt: 'coin' }
 const DING_LOOK = { poster: 'riso', loom: 'paper', stitch: 'paper', night: 'neon', clean: 'ink', lanna: 'paper', gold: 'paper' }
 export const ACCENTS = ['#f04a00', '#ff2e88', '#ffb000', '#19a974', '#137a71', '#2563eb', '#7c3aed', '#111827']
 
@@ -471,6 +471,7 @@ dialog.qrd{background:#fff;color:#000;padding:26px;text-align:center;width:min(9
 .wcard b{font:800 19px/1.25 var(--display)}.wcard small{color:var(--mute);font-size:14px}
 .wshots{display:grid;gap:12px}.wshots button{display:block;padding:0;border:0;background:none;cursor:zoom-in}.wshots img{display:block;width:100%;height:auto;border-radius:calc(var(--r)/2)}
 .wtags{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0 0}.wtags a{padding:4px 12px;border-radius:99px;background:var(--soft);color:var(--ink);font:700 14px var(--body);text-decoration:none}
+.news time{display:block;margin:0 0 4px;color:var(--mute);font:700 14px/1.4 var(--body)}.news .n1 p{margin:0 0 8px;font:500 20px/1.5 var(--body)}.nold{list-style:none;margin:14px 0 0;padding:14px 0 0;border-top:2px solid var(--line);display:grid;gap:12px}.nold li p{margin:0;font:500 16px/1.5 var(--body)}.nold time{margin:0}
 .quotes figure{margin:0 0 18px;padding:0 0 0 18px;border-left:4px solid var(--accent)}.quotes blockquote{margin:0;font:500 19px/1.5 var(--body)}.quotes blockquote p{margin:0 0 6px}.quotes figcaption{color:var(--mute);font-weight:700}.lcard{display:flex;flex-direction:column;gap:3px;color:var(--ink);text-decoration:none}
 .lcard figure{position:relative;margin:0 0 6px;aspect-ratio:4/3;border-radius:calc(var(--r) + 2px);overflow:hidden;background:var(--line)}.lcard img{width:100%;height:100%;object-fit:cover;transition:transform .5s}.lcard:hover img{transform:scale(1.05)}.lcard .noimg{display:grid;place-items:center;height:100%;font-size:72px;background:repeating-linear-gradient(45deg,var(--line) 0 12px,var(--bg) 12px 24px)}
 .lcard .deal,.lhead .deal{position:absolute;left:8px;top:8px;padding:3px 10px;border-radius:99px;background:var(--accent);color:var(--on-accent);font:800 12px/1.4 var(--body);letter-spacing:.06em;text-transform:uppercase}.lhead .deal{position:static}
@@ -670,6 +671,15 @@ export function render(site, opt = {}) {
     out.push(`<section class="camp" data-e="${e}"><div class="campin">${ding('megaphone', 'mono')}<div class="campt"><b>${esc(k.t)}</b>${k.note ? `<p>${esc(k.note)}</p>` : ''}`,
       `<p class="cnt"><span data-left="${e}"></span> · ${W('campEnds', { t: esc(ends) })}</p></div>`,
       k.code ? `<button class="code" data-t="code" data-code="${esc(k.code)}" aria-label="${W('campCopy')}"><small>${W('campCode')}</small>${esc(k.code)}</button>` : '', '</div></section>')
+  }
+
+  // News (Edit by LINE, Gold): dated notes the owner sent from LINE; the newest in full, a few older ones below it
+  const news = gold && Array.isArray(opt.news) ? opt.news.filter((n) => n && n.at && n.body).slice(0, 5) : []
+  if (news.length) {
+    const day = (iso) => { try { return new Intl.DateTimeFormat(lang, { dateStyle: 'medium', timeZone: tz }).format(new Date(iso)) } catch { return String(iso).slice(0, 10) } }
+    const item = (n) => `<time datetime="${esc(n.at)}">${esc(day(n.at))}</time>${paras(n.body)}`
+    out.push(`<section class="card rise news" id="news">${H2('news', W('news'))}<article class="n1">${item(news[0])}</article>`,
+      news.length > 1 ? `<ol class="nold">${news.slice(1).map((n) => `<li>${item(n)}</li>`).join('')}</ol>` : '', '</section>')
   }
 
   // event

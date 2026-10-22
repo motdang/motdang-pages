@@ -39,6 +39,7 @@ const S = {
   tab: 'edit', tier: 'gold', goldUntil: '', notifyEmail: '', notifyOk: false, unread: 0, // a page starts with 30 days of Gold
   trial: false, asks: 0, domain: '', domainState: '', domains: false, price: 3000, dbFam: '', dbQ: '',
   hotel: true, hotelUntil: '', plans: null, payPlan: '', part: '',
+  lineOn: false, line: null, news: [], loaded: '', lineCode: null, // Edit by LINE (lineedit.mjs): the tab, who is linked, the page's dated notes, when this copy was read
 }
 const isGold = () => S.tier === 'gold'
 const ding = (n, look = 'ink', play = 'loop') => `<i data-dingbat="${n}" data-look="${look}" data-play="${play}" aria-hidden="true"></i>`
@@ -567,6 +568,7 @@ async function create(look, btn) {
   try {
     const r = await call('POST', 'sites', { name: S.addr, kind: S.kind, look, lang: S.pageLang, d: S.d, by: new URLSearchParams(location.search).get('by') || '' })
     S.token = r.token; S.name = r.name; S.status = r.status; S.tier = r.tier || 'gold'; S.goldUntil = r.gold_until || ''; S.trial = !!r.trial; S.hotel = !!r.trial
+    S.lineOn = !!r.line_on; S.line = null; S.news = []; S.loaded = r.loaded || ''
     history.replaceState(null, '', '/make#t=' + S.token)
     remember()
     camStart()
@@ -600,7 +602,7 @@ function hasData(id) {
 function tabs() {
   const t = (id, label, extra = '') => `<button data-tab="${id}"${S.tab === id ? ' class="on"' : ''}>${label}${extra}</button>`
   const bk = S.d && (S.d.svc.length || S.d.rooms.length) ? t('book', T('t_book'), S.asks ? `<span class="dot">${S.asks}</span>` : '') : ''
-  return `<nav class="tabs">${t('edit', T('t_edit'))}${t('msgs', T('t_msgs'), S.unread ? `<span class="dot">${S.unread}</span>` : '')}${bk}${t('stats', T('t_stats'))}${t('gold', (isGold() ? '★ ' : '') + T('t_gold'))}</nav>`
+  return `<nav class="tabs">${t('edit', T('t_edit'))}${t('msgs', T('t_msgs'), S.unread ? `<span class="dot">${S.unread}</span>` : '')}${bk}${t('stats', T('t_stats'))}${S.lineOn ? t('line', T('t_line')) : ''}${t('gold', (isGold() ? '★ ' : '') + T('t_gold'))}</nav>`
 }
 
 // The editor is the page and six parts under it (Nan 2026-10-15: lead with why, try it, be not afraid,
@@ -1445,7 +1447,7 @@ function preview(now) {
     const f = $('#frame')
     if (!f) return
     if (S.inline) return
-    const html = render({ name: S.name, look: S.look, lang: S.pageLang, kind: S.kind, d: S.d, views: S.views || 1234, status: 'live', tier: S.tier }, { preview: true, img: imgUrl, origin: location.origin, hotel: S.hotel })
+    const html = render({ name: S.name, look: S.look, lang: S.pageLang, kind: S.kind, d: S.d, views: S.views || 1234, status: 'live', tier: S.tier }, { preview: true, img: imgUrl, origin: location.origin, hotel: S.hotel, news: shownNews() })
     const y = f.contentWindow?.scrollY || 0
     f.srcdoc = html
     f.onload = () => { try { f.contentWindow.scrollTo(0, y) } catch {} ; f.contentDocument?.querySelectorAll('a[href]').forEach((a) => a.setAttribute('target', '_blank')); try { wireFrame(f); lightPart(false) } catch {} }
@@ -1480,9 +1482,13 @@ async function save(extra = {}) {
     // a live page whose name, picture, avatar or look changed gets a new share card
     if (S.status === 'live' && !extra.publish && cardKey({ look: S.look, name: S.name, kind: S.kind, tier: S.tier }, S.d) !== S.cardKey) await makeCard().catch(() => {})
     const d = { ...S.d, items: S.d.items.filter((x) => x.n || x.p || x.note) }
-    const r = await call('PUT', 'site', { d, look: S.look, lang: S.pageLang, kind: S.kind, ...extra })
+    const r = await call('PUT', 'site', { d, look: S.look, lang: S.pageLang, kind: S.kind, loaded: S.loaded, ...extra })
     S.status = r.status
     if (r.d) { S.d.credits = r.d.credits; S.d.video = r.d.video }
+    if (r.loaded) S.loaded = r.loaded
+    // photos that came in by LINE while this copy was open: the server kept them, this copy takes them
+    const fresh = (r.added || []).filter((id) => !S.d.photos.includes(id))
+    if (fresh.length) { S.d.photos = [...S.d.photos, ...fresh]; redrawSec('photos'); preview() }
     remember()
   } catch (e) {
     toast(ui(S.lang, e.message === 'quota' ? 'e_quota' : e.message === 'edit-link' ? 'e_link' : 'e_net'))
@@ -1814,6 +1820,7 @@ function drawTab() {
   if (S.tab === 'msgs') return drawMsgs()
   if (S.tab === 'stats') return drawStats()
   if (S.tab === 'book') return drawBookings()
+  if (S.tab === 'line' && S.lineOn) return drawLine()
   return drawGold()
 }
 
@@ -1879,7 +1886,7 @@ function fillMini(id, { look, tier, anchor } = {}) {
   const f = $('#' + id)
   if (!f) return
   const t = tier || S.tier
-  f.srcdoc = render({ name: S.name, look: look || S.look, lang: S.pageLang, kind: S.kind, d: S.d, views: S.views || 1234, status: 'live', tier: t }, { preview: true, gold: t === 'gold', img: imgUrl, origin: location.origin, hotel: S.hotel })
+  f.srcdoc = render({ name: S.name, look: look || S.look, lang: S.pageLang, kind: S.kind, d: S.d, views: S.views || 1234, status: 'live', tier: t }, { preview: true, gold: t === 'gold', img: imgUrl, origin: location.origin, hotel: S.hotel, news: shownNews() })
   f.onload = () => {
     try {
       const doc = f.contentDocument
@@ -1997,6 +2004,58 @@ async function drawStats(days) {
     const a = document.createElement('a'); a.href = URL.createObjectURL(await res.blob()); a.download = S.name + '-traffic.csv'; a.click()
   }
   dingbats(['signals', 'classic'])
+}
+
+// ---- Edit by LINE and News (src/lineedit.mjs) --------------------------------------------------
+
+const shownNews = () => (S.news || []).filter((n) => n.status === 'shown').slice(0, 5)
+let lineTimer = 0
+
+async function drawLine() {
+  clearInterval(lineTimer)
+  const tb = $('#tb')
+  try {
+    const [l, n] = await Promise.all([call('GET', 'line'), call('GET', 'notes')])
+    S.line = l; S.news = n.notes
+  } catch { tb.innerHTML = `<p class="hint">${T('e_net')}</p>`; return }
+  const linked = !!S.line?.linked
+  const code = S.lineCode && S.lineCode.exp > Date.now() ? S.lineCode : null
+  const head = `<section class="tabhead one"><div><h2 class="th2">${T('line_h')}</h2><p class="why3">${T('line_why')}</p></div></section>`
+  const how = `<ul class="plain linehow">${['line_h1', 'line_h2', 'line_h3', 'line_h4'].map((k) => `<li>${T(k)}</li>`).join('')}</ul>`
+  let box
+  if (!isGold()) box = `${linked ? `<p class="pinstate">${T('line_ended')}</p>` : ''}${goldLocked()}`
+  else {
+    box = (linked ? `<p class="pinstate ok">${icon('check')}${esc(S.line.name ? ui(S.lang, 'line_on').replace('{n}', () => S.line.name) : ui(S.lang, 'line_onNo'))}</p>` : '') + how
+    if (code) {
+      box += `<div class="lcode"><small>${T('line_code')}</small><b>${esc(code.code)}</b></div><p class="hint">${T('line_left')}</p>
+        <p><a class="go" id="lnopen" href="${esc(code.href)}" target="_blank" rel="noopener">${icon('chat')}${T('line_open')}</a></p><p class="hint">${T('line_tap')}</p><p class="pinstate" id="lnwait">${T('line_wait')}</p>`
+    } else box += `<p class="row"><button class="go${linked ? ' ghost' : ' big'}" id="lnlink">${T(linked ? 'line_again' : 'line_link')}</button>${linked ? `<button class="go ghost" id="lnoff">${T('line_off')}</button>` : ''}</p>`
+  }
+  const list = S.news.length ? `<div class="msgs">${S.news.map((x) => `<article class="msg ${x.status === 'held' ? 'held' : ''}" data-id="${esc(x.id)}"><header><b>${esc(when(x.at))}</b></header>
+      ${x.status === 'held' ? `<p class="heldtag">${T('n_held')}</p>` : ''}<p class="body">${esc(x.body)}</p><footer><button class="go ghost small" data-nd="${esc(x.id)}">${T('n_del')}</button></footer></article>`).join('')}</div>`
+    : `<p class="none2">${ding('mailbox', 'paper')}<span>${T('n_none')}</span></p>`
+  tb.innerHTML = `${head}<section class="panel linebox">${box}</section>
+    <section class="tabhead one"><div><h2 class="th2">${T('n_h')}</h2><p class="why3">${T('n_why')}</p></div></section>${list}`
+  dingbats(['signals'])
+  tb.querySelectorAll('[data-tab]').forEach((b) => (b.onclick = (e) => { e.preventDefault(); S.tab = b.dataset.tab; draw(); window.scrollTo(0, 0) }))
+  const link = $('#lnlink')
+  if (link) link.onclick = async () => {
+    link.disabled = true
+    try { S.lineCode = await call('POST', 'line/code'); drawLine() } catch (e) { link.disabled = false; toast(ui(S.lang, e.message === 'quota' ? 'e_quota' : 'e_net')) }
+  }
+  const off = $('#lnoff')
+  if (off) off.onclick = async () => { try { await call('DELETE', 'line'); S.lineCode = null; drawLine() } catch { toast(ui(S.lang, 'e_net')) } }
+  // the page of a code: ask every few seconds until the account has taken it, or the code runs out
+  if (code && isGold()) lineTimer = setInterval(async () => {
+    if (S.tab !== 'line' || !$('#lnwait')) return clearInterval(lineTimer)
+    if (S.lineCode.exp < Date.now()) { clearInterval(lineTimer); S.lineCode = null; return drawLine() }
+    try { const l = await call('GET', 'line'); if (l.linked) { clearInterval(lineTimer); S.lineCode = null; drawLine() } } catch {}
+  }, 4000)
+  tb.onclick = async (e) => {
+    const b = e.target.closest('[data-nd]'); if (!b) return
+    b.disabled = true
+    try { await call('DELETE', 'notes', { id: b.dataset.nd }); S.news = S.news.filter((x) => x.id !== b.dataset.nd); drawLine(); preview(true) } catch { b.disabled = false; toast(ui(S.lang, 'e_net')) }
+  }
 }
 
 async function drawGold() {
@@ -2197,7 +2256,8 @@ async function boot() {
       Object.assign(S, { name: r.name, kind: r.kind, look: lookOf(r.look), pageLang: r.lang, status: r.status, views: r.views, d: normalize(r.d), step: 'edit',
         tier: r.tier, goldUntil: r.gold_until || '', notifyEmail: r.notify_email, notifyOk: r.notify_ok, unread: r.unread,
         trial: !!r.trial, asks: r.asks || 0, domain: r.domain || '', domainState: r.domain_state || '', domains: !!r.domains, price: r.price || 3000,
-        hotel: !!r.hotel, hotelUntil: r.hotel_until || '', plans: r.plans || null, founders: r.founders || null, sian: r.sian || null, cardUrl: '' })
+        hotel: !!r.hotel, hotelUntil: r.hotel_until || '', plans: r.plans || null, founders: r.founders || null, sian: r.sian || null, cardUrl: '',
+        lineOn: !!r.line?.on, line: r.line || null, news: r.news || [], loaded: r.loaded || '' })
       S.d.event = S.d.event || undefined
       S.open = new Set(DEFAULT_OPEN[S.kind]); S.part = ''
       if (h.get('tab')) S.tab = h.get('tab')
