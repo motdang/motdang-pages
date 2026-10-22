@@ -97,7 +97,7 @@ test('the refresh token is sealed, the state is signed and expires', async () =>
 const sqlite = await import('node:sqlite').catch(() => null)
 function db() {
   const d = new sqlite.DatabaseSync(':memory:')
-  d.exec(fs.readFileSync(new URL('../migrations/0031_gbp.sql', import.meta.url), 'utf8'))
+  d.exec(fs.readFileSync(new URL('../migrations/0034_gbp.sql', import.meta.url), 'utf8'))
   d.exec('CREATE TABLE site (id TEXT, name TEXT, look TEXT, lang TEXT, tier TEXT, gold_until TEXT, status TEXT, d TEXT, updated TEXT, domain TEXT, domain_state TEXT)')
   return { raw: d, prepare: (q) => { const st = d.prepare(q); let a = []; const o = { bind: (...x) => { a = x; return o }, run: async () => ({ meta: st.run(...a) }), first: async () => st.get(...a) ?? null, all: async () => ({ results: st.all(...a) }) }; return o } }
 }
