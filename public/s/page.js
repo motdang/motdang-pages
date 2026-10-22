@@ -346,12 +346,17 @@
 
   // ---- a message to the maker ----
   var mf = $('#msgf'), born = Date.now()
+  // the news tick opens an email box and asks for it; unticked, the box closes
+  $$('input[name=news]').forEach(function (cb) {
+    var f = cb.form, em = f && f.querySelector('input[name=newsmail]')
+    if (em) cb.onchange = function () { em.hidden = !cb.checked; em.required = cb.checked; if (cb.checked) em.focus() }
+  })
   if (mf && !pd.preview) mf.onsubmit = function (e) {
     e.preventDefault()
     var btn = mf.querySelector('button'), f = new FormData(mf)
     btn.disabled = true
     fetch('/api/msg', { method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ n: pd.name, name: f.get('name'), reach: f.get('reach'), body: f.get('body'), website: f.get('website'), ms: Date.now() - born }) })
+      body: JSON.stringify({ n: pd.name, name: f.get('name'), reach: f.get('reach'), body: f.get('body'), website: f.get('website'), news: f.get('news') ? 1 : 0, email: f.get('news') ? f.get('newsmail') : '', ms: Date.now() - born }) })
       .then(function (r) { if (!r.ok) throw r; return r.json() })
       .then(function () {
         mf.innerHTML = '<p class="ok"><i data-dingbat="envelope" data-play="once" style="font-size:1.6em"></i>' + (w.msgSent || 'Sent') + '</p>'
@@ -401,6 +406,11 @@
   var addD = function (day, n) { var t = new Date(day + 'T00:00:00Z'); t.setUTCDate(t.getUTCDate() + n); return t.toISOString().slice(0, 10) }
   var fmtDay = function (day, o) { try { return new Intl.DateTimeFormat(lang, Object.assign({ timeZone: 'UTC' }, o)).format(new Date(day + 'T00:00:00Z')) } catch (e) { return day } }
   var moneyOf = function (n) { return (pd.sym || '') + new Intl.NumberFormat(lang).format(n) }
+  // a booking form's news tick asks for the email too
+  document.addEventListener('change', function (e) {
+    var t = e.target
+    if (t && t.name === 'news' && t.form && t.form.classList.contains('bookf') && t.form.elements.email) t.form.elements.email.required = t.checked
+  })
   function askForm(extra, people, label) {
     return '<form class="msgf bookf" data-born="' + Date.now() + '">' + extra +
       '<input name="name" maxlength="80" autocomplete="name" required placeholder="' + esc(w.bookName) + '" aria-label="' + esc(w.bookName) + '">' +
@@ -408,12 +418,14 @@
       '<input name="email" type="email" maxlength="254" autocomplete="email" placeholder="' + esc(w.bookEmail) + '" aria-label="' + esc(w.bookEmail) + '">' +
       (people > 1 ? '<label style="display:flex;gap:10px;align-items:center;font-weight:700">' + esc(w.bookPeople) + '<input name="people" type="number" min="1" max="' + people + '" value="1" style="width:90px"></label>' : '') +
       '<textarea name="note" maxlength="600" placeholder="' + esc(w.bookNote) + '" aria-label="' + esc(w.bookNote) + '" style="min-height:70px"></textarea>' +
+      '<label class="newsopt"><input type="checkbox" name="news" value="1"><span>' + esc((w.newsOpt || '').replace('{n}', pd.title || '')) + '</span></label>' +
       '<input class="hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true"><button class="btn" type="submit">' + esc(label || w.bookSend) + '</button></form>'
   }
   function sendAsk(form, body, box) {
     var f = new FormData(form), btn = form.querySelector('button[type=submit]')
     btn.disabled = true
     ;['name', 'reach', 'email', 'people', 'note', 'website'].forEach(function (k) { if (f.get(k) != null) body[k] = f.get(k) })
+    if (f.get('news')) body.news = 1
     body.n = pd.name; body.ms = Date.now() - (+form.getAttribute('data-born') || 0)
     fetch('/api/book', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
       .then(function (r) { return r.json().then(function (j) { if (!r.ok) throw j; return j }) })

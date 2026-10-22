@@ -93,8 +93,9 @@ export async function ask(env, s, d, b, who, now = Date.now()) {
   const id = rand(14)
   const ref = 'MD' + id.slice(0, 6).toUpperCase()
   const status = (kind === 'svc' ? d.book.auto : d.stay.instant) ? 'ok' : 'new'
-  await env.DB.prepare('INSERT INTO booking (id, site_id, kind, item, start, end, people, name, reach, email, note, status, at, sender, total, nights, ref) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)')
-    .bind(id, s.id, kind, item, start, end, people, name, reach, email, note, status, new Date(now).toISOString(), who.slice(0, 16), total, nights, ref).run()
+  const news = b.news ? 1 : 0 // the tick on "News from <page>, once a month at most"
+  await env.DB.prepare('INSERT INTO booking (id, site_id, kind, item, start, end, people, name, reach, email, note, status, at, sender, total, nights, ref, news, ok_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)')
+    .bind(id, s.id, kind, item, start, end, people, name, reach, email, note, status, new Date(now).toISOString(), who.slice(0, 16), total, nights, ref, news, status === 'ok' ? new Date(now).toISOString() : null).run()
   const bk = { id, kind, item, start, end, total, ref, status }
   return { ok: true, id, ref, status, total: total ? Number(total) : null, ...payFor(d, s, bk) }
 }
@@ -171,7 +172,7 @@ export async function tellReader(env, s, d, bk, origin, lang) {
   }[bk.status] || null
   if (!words) return false
   const page = `${origin}/${s.name}`
-  const mine = bk.kind === 'room' ? `<p><a href="${origin}/bk/${bk.id}" style="display:inline-block;padding:12px 20px;border-radius:99px;background:#1c1530;color:#fff;font-weight:800;text-decoration:none">การจองของคุณ · Your booking${bk.ref ? ' ' + esc(bk.ref) : ''}</a></p>` : ''
+  const mine = bk.status !== 'no' ? `<p><a href="${origin}/bk/${bk.id}" style="display:inline-block;padding:12px 20px;border-radius:99px;background:#1c1530;color:#fff;font-weight:800;text-decoration:none">การจองของคุณ · Your booking${bk.ref ? ' ' + esc(bk.ref) : ''}</a></p>` : ''
   const cal = bk.status === 'ok' ? `<p><a href="${origin}/api/bk/${bk.id}.ics" style="display:inline-block;padding:12px 20px;border-radius:99px;background:#ffb000;color:#000;font-weight:800;text-decoration:none">ใส่ปฏิทิน · Add to calendar</a></p>` : ''
   return mail(env, {
     to: bk.email, subject: `${words[0]} · ${words[1]} — ${title}`.slice(0, 140), replyTo: EMAIL.test(d.contact.email || '') ? d.contact.email : '',

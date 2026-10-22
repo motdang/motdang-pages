@@ -49,6 +49,10 @@ import * as support from './support.mjs'
 import * as tap from './tap.mjs'
 import * as events from './events.mjs'
 import { readCalendars, monthly, trialNotes } from './cron.mjs'
+import * as customers from './customers.mjs'
+import * as remind from './remind.mjs'
+import * as guestline from './guestline.mjs'
+import { unsubPage } from './customers.mjs'
 import { calIcs, roomIcs, addDays, upcoming, utcOf } from '../public/s/extras.mjs'
 import { guestPage } from './guest.mjs'
 import { doodleRoute } from './doodle.mjs'
@@ -56,7 +60,7 @@ import * as amprice from './amprice.mjs'
 import * as sian from './sian.mjs'
 import * as market from './market.mjs'
 
-const QUOTA = { site: 3, photo: 200, save: 400, report: 20, msg: 12, pd: 200, notify: 3, slip: 10, book: 10, domain: 6, lister: 3, deal: 40, terms: 10, join: 3, founding: 5, gift: 20, backer: 5, tap: 3, tapsave: 60, bump: 300, card: 400, guess: 400, sadhu: 200, here: 2500 }
+const QUOTA = { site: 3, photo: 200, save: 400, report: 20, msg: 12, news: 12, pd: 200, notify: 3, slip: 10, book: 10, domain: 6, lister: 3, deal: 40, terms: 10, join: 3, founding: 5, gift: 20, backer: 5, tap: 3, tapsave: 60, bump: 300, card: 400, guess: 400, sadhu: 200, here: 2500 }
 const TRIAL_DAYS = 30 // Nan 2026-10-14: a new page is Gold for its first 30 days
 const MAIN = 'https://motdang.net'
 const PASS = /^\/(vendor|fonts|tiles|data|front)\/|^\/sites\/doodle-map\//
@@ -126,8 +130,13 @@ async function route(request, env, ctx) {
     const s = bk && await env.DB.prepare('SELECT * FROM site WHERE id = ?').bind(bk.site_id).first()
     if (!bk || !s) return html(notFound(null, request), 404)
     const nonce = rand(16)
-    return html(guestPage(bk, s, origin, nonce), 200, { nonce })
+    return html(guestPage(bk, s, origin, nonce, env, { line: url.searchParams.get('line') || '' }), 200, { nonce })
   }
+  // LINE sign-in for "Remind me on LINE" on a guest page, and the one-tap unsubscribe from a monthly email
+  if (path === '/line/go' && m === 'GET') return guestline.go(env, url, origin)
+  if (path === '/line/cb' && m === 'GET') return guestline.cb(request, env, url, origin)
+  const un = /^\/u\/([A-Za-z0-9_.-]{20,300})$/.exec(path)
+  if (un && (m === 'GET' || m === 'POST')) return unsubscribe(request, env, un[1], m)
   if (path === '/robots.txt') return new Response(`User-agent: *\nAllow: /\nAllow: /api/amulet-price\nDisallow: /api/\nDisallow: /make\nDisallow: /admin\nSitemap: ${origin}/sitemap.xml\n`, { headers: { 'content-type': 'text/plain' } })
   if (path === '/sitemap.xml') return sitemap(env, origin)
   if (path === '/llms.txt') return new Response(llms(origin), { headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'public, max-age=3600' } })
@@ -467,17 +476,19 @@ async function api(request, env, ctx, p, url, origin) {
     ctx.waitUntil(stats.tap(env, request, s.id, b.kind === 'room' ? 'rooms' : 'book'))
     ctx.waitUntil((async () => {
       const bk = await env.DB.prepare('SELECT * FROM booking WHERE id = ?').bind(r.id).first()
+      if (bk.news) await customers.optIn(env, s.id, bk.email)
       await book.tellMaker(env, s, d, bk, origin)
       await book.tellReader(env, s, d, bk, origin, s.lang)
       await log(env, s.id, 'booking', `${bk.kind} ${bk.item} ${bk.start}`)
     })().catch((e) => console.error(e)))
-    return J({ ok: true, status: r.status, deposit: r.deposit, ref: r.ref, total: r.total, link: r.link || '', due: r.due || 0, page: r.ref && b.kind === 'room' ? `${origin}/bk/${r.id}` : '' })
+    return J({ ok: true, status: r.status, deposit: r.deposit, ref: r.ref, total: r.total, link: r.link || '', due: r.due || 0, page: r.ref ? `${origin}/bk/${r.id}` : '' })
   }
   const bkCx = /^bk\/([a-z0-9]{14})\/cancel$/.exec(p)
   if (bkCx && m === 'POST') {
     const bk = await env.DB.prepare("SELECT * FROM booking WHERE id = ? AND status IN ('new','ok')").bind(bkCx[1]).first()
     if (bk) {
       await env.DB.prepare("UPDATE booking SET status = 'gone' WHERE id = ?").bind(bk.id).run()
+      ctx.waitUntil(guestline.cancel(env, bk).catch((e) => console.error(e)))
       const s = await env.DB.prepare('SELECT * FROM site WHERE id = ?').bind(bk.site_id).first()
       if (s) {
         await log(env, s.id, 'booking-cancel', bk.ref || bk.id)
@@ -499,14 +510,18 @@ async function api(request, env, ctx, p, url, origin) {
     if (b.website || Number(b.ms) < 2500) return J({ ok: true }) // a form filled by a script
     const who = await sender(request, env)
     if (!(await take(env, who, 'msg'))) return J({ error: 'quota' }, 429)
-    const s = await env.DB.prepare("SELECT id, name, d, notify_email, notify_ok FROM site WHERE name = ? AND status = 'live'").bind(String(b.n || '')).first()
+    const s = await env.DB.prepare("SELECT id, name, d, notify_email, notify_ok, tier, gold_until FROM site WHERE name = ? AND status = 'live'").bind(String(b.n || '')).first()
     const mm = msg.clean(b)
     if (!s || !mm) return J({ error: 'empty' }, 400)
     if (JSON.parse(s.d).msg === false) return J({ error: 'off' }, 400)
     const verdict = msg.check(mm)
     const id = rand(14)
-    await env.DB.prepare('INSERT INTO msg (id, site_id, at, name, reach, body, status, why, sender) VALUES (?,?,?,?,?,?,?,?,?)')
-      .bind(id, s.id, new Date().toISOString(), mm.name, mm.reach, mm.body, verdict === 'ok' ? 'new' : 'held', verdict === 'ok' ? null : verdict.slice(5), who.slice(0, 16)).run()
+    // the tick on "News from <page>, once a month at most" (Gold pages): the address is the one given for news, else the contact line when it is an email
+    const news = b.news && gold.isGold(s) && verdict === 'ok' ? 1 : 0
+    const email = customers.validEmail(b.email) || customers.validEmail(mm.reach)
+    await env.DB.prepare('INSERT INTO msg (id, site_id, at, name, reach, body, status, why, sender, news, email) VALUES (?,?,?,?,?,?,?,?,?,?,?)')
+      .bind(id, s.id, new Date().toISOString(), mm.name, mm.reach, mm.body, verdict === 'ok' ? 'new' : 'held', verdict === 'ok' ? null : verdict.slice(5), who.slice(0, 16), news, email || null).run()
+    if (news) await customers.optIn(env, s.id, email)
     ctx.waitUntil(stats.tap(env, request, s.id, 'msg'))
     if (verdict === 'ok' && s.notify_ok && s.notify_email) {
       ctx.waitUntil((async () => {
@@ -719,6 +734,27 @@ ${s ? `<p>ข้อความถึง ${escHtml(title)} จะส่งสำ
     return J({ ok: true })
   }
 
+  // Customers (Gold): everyone who booked or wrote, as a list and as CSV; one email of news a month
+  if (p === 'customers' && m === 'GET') {
+    if (!isGold) return J({ error: 'gold' }, 402)
+    const d = normalize(JSON.parse(s.d))
+    const rows = await customers.list(env, s, d)
+    return J({ rows: rows.map(({ lastAt, mail, ...r }) => ({ ...r, mail: mail.length > 0 })), news: await customers.state(env, s, d, origin) })
+  }
+  if (p === 'customers.csv' && m === 'GET') {
+    if (!isGold) return J({ error: 'gold' }, 402)
+    return new Response(customers.csv(await customers.list(env, s, normalize(JSON.parse(s.d)))), { headers: { 'content-type': 'text/csv; charset=utf-8', 'content-disposition': `attachment; filename="${s.name}-customers.csv"`, 'cache-control': 'no-store' } })
+  }
+  if (p === 'news' && m === 'POST') {
+    if (!isGold) return J({ error: 'gold' }, 402)
+    if (s.status !== 'live') return J({ error: 'draft' }, 400)
+    const who = await sender(request, env)
+    if (!(await take(env, who, 'news'))) return J({ error: 'quota' }, 429)
+    const b = await body(request)
+    const r = await customers.broadcast(env, s, normalize(JSON.parse(s.d)), { text: b.text, link: b.link ? String(b.link) : '' }, origin, rand, log)
+    return J(r, r.error ? ({ month: 409, quota: 429, busy: 503, mail: 502 }[r.error] || 400) : 200)
+  }
+
   if (p === 'notify' && m === 'PUT') {
     const who = await sender(request, env)
     if (!(await take(env, who, 'notify'))) return J({ error: 'quota' }, 429)
@@ -762,7 +798,8 @@ ${s ? `<p>ข้อความถึง ${escHtml(title)} จะส่งสำ
     const st = { ok: 'ok', no: 'no', gone: 'gone', new: 'new', hold: 'hold' }[b.act]
     const bk = st && await env.DB.prepare('SELECT * FROM booking WHERE id = ? AND site_id = ?').bind(String(b.id || ''), s.id).first()
     if (!bk) return J({ error: 'act' }, 400)
-    await env.DB.prepare('UPDATE booking SET status = ? WHERE id = ?').bind(st, bk.id).run()
+    await env.DB.prepare('UPDATE booking SET status = ?, ok_at = CASE WHEN ? = \'ok\' AND status != \'ok\' THEN ? ELSE ok_at END WHERE id = ?').bind(st, st, new Date().toISOString(), bk.id).run()
+    if (st !== 'ok' && bk.status === 'ok') ctx.waitUntil(guestline.cancel(env, bk).catch((e) => console.error(e))) // a booking no longer accepted has no LINE reminder
     if ((st === 'ok' || st === 'no') && bk.status !== st) ctx.waitUntil(book.tellReader(env, s, normalize(JSON.parse(s.d)), { ...bk, status: st }, origin, s.lang).catch((e) => console.error(e)))
     return J({ ok: true })
   }
@@ -1045,6 +1082,7 @@ async function tidy(env) {
   await job('translate', () => tr.catchUp(env, gold.isGold, normalize))
   await job('monthly', () => monthly(env, gold.isGold, HOME))
   await job('trial', () => trialNotes(env, HOME, gold.PLANS(env)))
+  await job('remind', () => remind.run(env, { isGold: gold.isGold, normalize, origin: HOME }))
   await job('sellers', () => sellers.monthEnd(env, (c) => gold.postSales(env, c), (id) => sell.beerLink(env, sha, HOME, 'p', id, 60), (t) => tellBeer(env, t)))
   await job('deals', () => deals.monthly(env, (c) => gold.postSales(env, c)))
   await job('founding', async () => (await founding.thisMonth(env, Date.now(), (c) => gold.postSales(env, c))).price)
@@ -1056,6 +1094,20 @@ async function tidy(env) {
 
 const ESC = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }
 const escHtml = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ESC[c])
+
+/** /u/<key>: no more news from a page. A tap on the emailed link does it; the button on the page takes it back. */
+async function unsubscribe(request, env, key, m) {
+  const k = await customers.readKey(env, key)
+  const s = k && await env.DB.prepare('SELECT name, d, lang FROM site WHERE id = ?').bind(k.siteId).first()
+  if (!s) return html(unsubPage({ lang: 'th', title: '', bad: true, action: '' }), 400)
+  const lang = s.lang
+  const title = JSON.parse(s.d).name || s.name
+  let off = true
+  if (m === 'POST') off = !/(^|&)undo=1(&|$)/.test(await request.text().catch(() => '')) // a form with undo=1 puts the news back; the mail app's one-click post stops it
+  else await customers.setOff(env, k.siteId, k.email, true)
+  if (m === 'POST') await customers.setOff(env, k.siteId, k.email, off)
+  return html(unsubPage({ lang, title, done: off, action: '/u/' + key }), 200)
+}
 
 function sameOrigin(request, url) {
   const o = request.headers.get('origin')

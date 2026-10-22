@@ -199,6 +199,11 @@ function videoBlock(v, poster, H2, W, img) {
 }
 
 /** A Gold page's give button: a link to where the money goes. */
+/** The tick for "News from <page>, once a month at most", and the email it asks for once it is ticked. Gold pages. */
+const newsBox = (W, name) => {
+  return `<label class="newsopt"><input type="checkbox" name="news" value="1"><span>${W('newsOpt', { n: name })}</span></label>` +
+    `<input class="newsmail" name="newsmail" type="email" maxlength="254" autocomplete="email" placeholder="${W('newsMail')}" aria-label="${W('newsMail')}" hidden>`
+}
 const giveBtn = (u, W) => `<a class="btn give" data-t="give" href="${esc(u)}" rel="nofollow noopener">${icon('heart')}${W('give')}</a>`
 
 function validTz(tz) {
@@ -417,6 +422,7 @@ img{max-width:100%;display:block}a{color:inherit}.i{width:22px;height:22px;flex:
 .video iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
 .msgf{display:grid;gap:10px}.msgf input,.msgf textarea{width:100%;min-height:52px;padding:12px 14px;border-radius:calc(var(--r)/1.5 + 4px);border:2px solid var(--line);background:var(--soft);color:var(--ink);font:inherit;outline:0}
 .msgf textarea{min-height:120px;resize:vertical}.msgf input:focus,.msgf textarea:focus{border-color:var(--accent)}.msgf .hp{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
+.msgf .newsopt{display:flex;gap:12px;align-items:flex-start;min-height:52px;padding:6px 0;font-weight:600;cursor:pointer}.msgf .newsopt input{flex:none;width:30px;min-width:30px;height:30px;min-height:30px;margin:0;padding:0;accent-color:var(--accent)}.msgf .newsmail[hidden]{display:none}
 .msgf .ok{display:flex;align-items:center;gap:10px;font-weight:700;font-size:20px;color:var(--acc-ink)}
 .foot{text-align:center;padding:30px 16px 120px;font-size:15px;color:var(--mute)}
 .share{max-width:560px;margin:0 auto 26px;padding:22px 18px;border-radius:var(--r);background:var(--card);color:var(--ink)}
@@ -871,6 +877,7 @@ export function render(site, opt = {}) {
       `<form class="msgf" id="msgf"><input name="name" maxlength="80" autocomplete="name" placeholder="${W('msgName')}" aria-label="${W('msgName')}">`,
       `<input name="reach" maxlength="120" autocomplete="tel" placeholder="${W('msgReach')}" aria-label="${W('msgReach')}">`,
       `<textarea name="body" maxlength="2000" required placeholder="${W('msgBody')}" aria-label="${W('msgBody')}"></textarea>`,
+      gold ? newsBox(W, name) : '',
       `<input class="hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">`,
       `<button class="btn" type="submit"${opt.preview ? ' disabled' : ''}>${icon('mail')}${W('msgSend')}</button></form></section>`)
   }
@@ -890,7 +897,7 @@ export function render(site, opt = {}) {
     book: gold && (d.svc.length || (hotel && d.rooms.length)) ? { ahead: d.book.ahead, svc: Object.fromEntries(d.svc.map((v) => [v.id, { cap: v.cap, mins: v.mins, p: v.p }])), rooms: Object.fromEntries(d.rooms.map((r) => [r.id, { g: r.guests, p: r.p, p2: r.p2, rates: r.rates, min: r.min, units: r.units }])), stay: { in: d.stay.in, out: d.stay.out } } : null,
     w: Object.fromEntries(['happening', 'ended', 'farFrom', 'reportAsk', 'send', 'thanks', 'close', 'copied', 'orderHi', 'msgSent', 'msgFail', 'saveQr', 'story', 'drawnTap',
       'bookPick', 'bookNone', 'bookName', 'bookReach', 'bookEmail', 'bookPeople', 'bookNote', 'bookSend', 'bookAsked', 'bookDone', 'bookFail', 'bookDeposit', 'bookScan', 'bookLeft',
-      'roomIn', 'roomOut', 'roomNights', 'roomNight1', 'roomSend', 'roomTotal', 'roomPickIn', 'roomPickOut', 'roomTaken', 'roomMin', 'roomLeft', 'bookRef', 'payNow', 'payHotel', 'payLink', 'yourBooking', 'readIn', 'msgName', 'msgReach', 'msgBody', 'msgSend', 'payScan', 'paySlip', 'payTotal'].map((k) => [k, word(lang, k)])),
+      'newsOpt', 'newsMail', 'roomIn', 'roomOut', 'roomNights', 'roomNight1', 'roomSend', 'roomTotal', 'roomPickIn', 'roomPickOut', 'roomTaken', 'roomMin', 'roomLeft', 'bookRef', 'payNow', 'payHotel', 'payLink', 'yourBooking', 'readIn', 'msgName', 'msgReach', 'msgBody', 'msgSend', 'payScan', 'paySlip', 'payTotal'].map((k) => [k, word(lang, k)])),
     line: line || '',
   }
   out.push(`<template id="qrsvg">${qrSvg(url, { dark: '#000', light: '#fff', label: url })}</template>`)
@@ -1015,7 +1022,7 @@ function listingBody(x, { site, d, W, H2, img, sym, name }) {
   out.push(`<section class="card msgcard rise" id="message">${H2('msg', W('listAsk'))}`, reach.length ? `<nav class="reach" style="margin:0 0 16px">${reach.join('')}</nav>` : '',
     d.msg ? `<form class="msgf" id="msgf" data-about="${esc(x.t)}"><input name="name" maxlength="80" autocomplete="name" placeholder="${W('msgName')}" aria-label="${W('msgName')}">` +
       `<input name="reach" maxlength="120" autocomplete="tel" placeholder="${W('msgReach')}" aria-label="${W('msgReach')}">` +
-      `<textarea name="body" maxlength="2000" required aria-label="${W('msgBody')}">${esc(x.t)} — </textarea><input class="hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">` +
+      `<textarea name="body" maxlength="2000" required aria-label="${W('msgBody')}">${esc(x.t)} — </textarea>` + (site.tier === 'gold' ? newsBox(W, name) : '') + `<input class="hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">` +
       `<button class="btn" type="submit">${icon('mail')}${W('msgSend')}</button></form>` : '', '</section>')
   const others = d.lists.filter((y) => y.id !== x.id).slice(0, 6)
   if (others.length) out.push(`<section class="card rise">${H2('lists', W('listAll'))}<div class="lgrid">${others.map((y) => listCard(y, { site, W, img, sym })).join('')}</div>`,
