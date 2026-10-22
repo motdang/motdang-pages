@@ -19,6 +19,7 @@ import { AM_MAX, amCap } from './amulet.mjs'
 import { drawCard, cardKey, CARD } from './card.mjs'
 import { loadFaces } from './mark.mjs'
 import { cardHtml, cardBind } from './make-card.mjs'
+import { drawCustomers } from './make-customers.mjs'
 
 const $ = (s, el = document) => el.querySelector(s)
 const app = $('#app')
@@ -600,7 +601,7 @@ function hasData(id) {
 function tabs() {
   const t = (id, label, extra = '') => `<button data-tab="${id}"${S.tab === id ? ' class="on"' : ''}>${label}${extra}</button>`
   const bk = S.d && (S.d.svc.length || S.d.rooms.length) ? t('book', T('t_book'), S.asks ? `<span class="dot">${S.asks}</span>` : '') : ''
-  return `<nav class="tabs">${t('edit', T('t_edit'))}${t('msgs', T('t_msgs'), S.unread ? `<span class="dot">${S.unread}</span>` : '')}${bk}${t('stats', T('t_stats'))}${t('gold', (isGold() ? '★ ' : '') + T('t_gold'))}</nav>`
+  return `<nav class="tabs">${t('edit', T('t_edit'))}${t('msgs', T('t_msgs'), S.unread ? `<span class="dot">${S.unread}</span>` : '')}${bk}${t('cust', T('t_cust'))}${t('stats', T('t_stats'))}${t('gold', (isGold() ? '★ ' : '') + T('t_gold'))}</nav>`
 }
 
 // The editor is the page and six parts under it (Nan 2026-10-15: lead with why, try it, be not afraid,
@@ -1814,6 +1815,7 @@ function drawTab() {
   if (S.tab === 'msgs') return drawMsgs()
   if (S.tab === 'stats') return drawStats()
   if (S.tab === 'book') return drawBookings()
+  if (S.tab === 'cust') return drawCustomers($('#tb'), { S, call, ui, esc, toast, icon, goldLocked })
   return drawGold()
 }
 
