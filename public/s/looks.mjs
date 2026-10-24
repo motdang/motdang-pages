@@ -393,7 +393,7 @@ export const HERO_CSS = `.top{position:relative;overflow:hidden;color:var(--ink)
 .tshare,.tlang{position:absolute;right:12px;top:12px;z-index:8;display:grid;place-items:center;width:44px;height:44px;padding:0;border:1px solid rgba(255,255,255,.4);border-radius:50%;background:rgba(10,8,20,.42);color:#fff;cursor:pointer;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);transition:transform .15s}
 .tshare:active{transform:scale(.9)}.tshare .i{width:21px;height:21px}
 .tlang{right:64px;grid-template-columns:auto auto;gap:3px;width:auto;min-width:44px;padding:0 10px 0 9px;font:600 12px/1 var(--body);letter-spacing:.04em;text-transform:uppercase}.tlang .i{width:19px;height:19px}.tlang select{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;font-size:16px}.tlang:focus-within{outline:2px solid currentColor;outline-offset:2px}
-.top:not(.has-cover) .tshare{background:transparent;color:inherit;border-color:currentColor}
+.top:not(.has-cover) .tshare,.top:not(.has-cover) .tlang{background:transparent;color:inherit;border-color:currentColor}
 @keyframes drift{to{transform:scale(1.08) translate(-1%,-1%)}}
 @keyframes grow{from{transform:scaleX(0)}}
 @keyframes wordup{from{opacity:0;transform:translateY(16px)}}
