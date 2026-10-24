@@ -477,13 +477,13 @@ dialog.qrd{background:#fff;color:#000;padding:26px;text-align:center;width:min(9
 .lcard .st{position:absolute;right:8px;top:8px;padding:3px 10px;border-radius:99px;background:#111;color:#fff;font:800 12px/1.4 var(--body);text-transform:uppercase}.lcard.gone figure{filter:grayscale(.75)}.lcard .pr{font:800 19px/1.2 var(--body);color:var(--acc-ink)}.lcard small{color:var(--mute);font-size:14px}
 .lhead{display:flex;gap:8px;margin:0 0 6px}.lhead .st{padding:3px 10px;border-radius:99px;background:#0b8043;color:#fff;font:800 12px/1.4 var(--body);text-transform:uppercase}.lhead .st-sold,.lhead .st-rented{background:#111}.lhead .st-reserved{background:#b45309}
 .lprice{margin:6px 0 12px;font:800 clamp(28px,7vw,40px)/1.1 var(--display);color:var(--acc-ink)}.lfacts dl{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin:0}.lfacts dl div{padding:10px 12px;border-radius:12px;background:var(--soft)}.lfacts dt{font-size:13px;color:var(--mute)}.lfacts dd{margin:0;font-size:20px;font-weight:800}
-.foot .langs{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:0 0 10px}.foot .langs a{padding:5px 11px;border-radius:99px;box-shadow:inset 0 0 0 1.5px currentColor;text-decoration:none;font-size:14px}.foot .langs a[aria-current]{background:var(--ink);color:var(--bg);box-shadow:none}.foot .mt{font-size:12px;opacity:.8}
+.foot .mt{font-size:12px;opacity:.8}
 .readin{position:fixed;left:50%;bottom:16px;z-index:40;display:flex;align-items:center;gap:8px;padding:10px 12px 10px 18px;border-radius:99px;background:var(--ink);color:var(--card);font:700 15px/1.2 var(--body);text-decoration:none;box-shadow:0 8px 24px rgba(0,0,0,.3);transform:translateX(-50%);animation:up .5s cubic-bezier(.2,.8,.2,1);white-space:nowrap}
 @keyframes up{from{opacity:0;transform:translate(-50%,40px)}}
 @media (max-width:560px){.campin{flex-wrap:wrap;padding:18px 22px}.campin>[data-dingbat]{font-size:34px}.campt{flex:1 1 calc(100% - 52px)}.code{width:100%;flex-direction:row;justify-content:center;gap:12px}}.readin button{padding:0 4px;border:0;background:none;color:inherit;font:700 20px/1 system-ui;cursor:pointer}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}.rise{opacity:1;transform:none}}
 @media (min-width:760px){.drawn{margin:30px -40px}}
-@media print{.reach,.foot,.tshare,.tools-row,.msgcard,.dmap{display:none}body{background:#fff;color:#000}}`
+@media print{.reach,.foot,.tshare,.tlang,.tools-row,.msgcard,.dmap{display:none}body{background:#fff;color:#000}}`
 
 const DAY_ORDER = [0, 1, 2, 3, 4, 5, 6]
 const OSM_DAY = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su']
@@ -637,6 +637,10 @@ export function render(site, opt = {}) {
   if (cta) out.push(`<a class="btn cta${cta[1] === 'give' ? ' give' : ''}" data-t="${cta[1] === 'give' ? 'give' : 'cta'}" href="${esc(cta[0])}"${/^https?:/.test(cta[0]) ? ' rel="nofollow noopener"' : ''}>${icon(cta[2])}${W(cta[1])}</a>`)
   out.push('</div>')
   out.push(`<button class="tshare" data-t="share" aria-label="${W('share')}" title="${W('share')}">${icon('share')}</button>`)
+  if (!opt.thumb && gold && langs.length > 1) {
+    const cur = opt.hl || home
+    out.push(`<label class="tlang" title="${W('readIn')}">${icon('globe')}<span class="cur">${esc(cur)}</span><select data-t="lang" aria-label="${W('readIn')}">${langs.map((l) => `<option value="${l === home ? '?' : '?hl=' + l}"${l === cur ? ' selected' : ''}>${esc(PAGE_LANGS[l])}</option>`).join('')}</select></label>`)
+  }
   if (gold) out.push(`<span class="seal" role="img" aria-label="${W('gold')}" title="${W('gold')}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 18.5h18l1.2-11-5.7 4.2L12 4.5l-4.5 7.2L1.8 7.5z" fill="currentColor"/></svg></span>`)
   out.push('</header>', deco.under || '')
   // a look picker's tile: the top of the page only, no script (make.js scales it down)
@@ -1066,8 +1070,7 @@ function foot(site, d, lang, url, opt, held, gold, dl) {
   if (cr.length && !held) parts.push(`<details class="credits"><summary>${W('pictures')} (${cr.length})</summary><ul>${cr.map(([, c]) => `<li>${creditLine(c)}</li>`).join('')}</ul></details>`)
   if (d.counter) parts.push(`<p>${new Intl.NumberFormat(lang).format(views)} ${W('visits')}</p>`)
   if (!held && opt.langs && opt.langs.length > 1) {
-    const home = opt.home || site.lang, cur = opt.hl || home
-    parts.push(`<nav class="langs" aria-label="${W('readIn')}">${opt.langs.map((l) => `<a href="${l === home ? '?' : '?hl=' + l}" data-t="lang" hreflang="${l}"${l === cur ? ' aria-current="true"' : ''}>${esc(PAGE_LANGS[l])}</a>`).join('')}</nav>`)
+    const home = opt.home || site.lang
     if (opt.hl && opt.hl !== home) parts.push(`<p class="mt">${W('machine', { l: esc(PAGE_LANGS[home]) })}</p>`)
   }
   parts.push('<nav>')
