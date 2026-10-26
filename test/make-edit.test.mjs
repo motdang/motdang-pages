@@ -2,6 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { X } from '../public/s/make-words-edit.mjs'
 import { K } from '../public/s/make-words-card.mjs'
+import { SB } from '../public/s/make-words-store.mjs'
 
 const src = (await import('node:fs')).readFileSync(new URL('../public/s/make.js', import.meta.url), 'utf8')
 const grab = (from, to) => { const a = src.indexOf(from); return src.slice(a, src.indexOf(to, a)) }
@@ -22,5 +23,5 @@ test('every part of the form sits in one of the six cards', () => {
     assert.ok(X.en['g_' + g] || g === 'offer', g)
     assert.ok(X.en['gw_' + g], 'why ' + g)
   }
-  for (const id of sections) if (!['words', 'look'].includes(id)) assert.ok(X.en['a_' + id] || K.en['a_' + id], 'a_' + id)
+  for (const id of sections) if (!['words', 'look'].includes(id)) assert.ok(X.en['a_' + id] || K.en['a_' + id] || SB.en['a_' + id], 'a_' + id)
 })

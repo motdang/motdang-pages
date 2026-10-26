@@ -19,8 +19,9 @@ const num = (n) => new Intl.NumberFormat(L === 'my' ? 'en' : L).format(n)
 
 // ---- the hero: the visitor's shop, drawn as they type ----------------------------------------
 // [word, the doodler's scene, dingbat, the page maker's kind, its look]
-const KINDS = [['guest', 'guesthouse', 'key', 'stay', 'loom'], ['cook', 'cooking', 'noodles', 'service', 'clean'], ['massage', 'massage', 'lotus', 'service', 'clean'],
-  ['tour', 'tuktuk', 'compass', 'service', 'night'], ['food', 'restaurant', 'noodles', 'food', 'lanna'], ['cafe', 'cafe', 'coffee', 'food', 'loom']]
+const KINDS = [['guest', 'guesthouse', 'key', 'stay', 'loom'], ['food', 'restaurant', 'noodles', 'food', 'lanna'], ['massage', 'massage', 'lotus', 'service', 'clean'],
+  ['cook', 'cooking', 'noodles', 'service', 'clean'], ['tour', 'tuktuk', 'compass', 'service', 'night'], ['store', 'handicraft', 'gift', 'store', 'clean'],
+  ['online', 'cafe', 'rocket', 'online', 'clean'], ['portfolio', 'handicraft', 'nib', 'work', 'clean']]
 let kind = 0, typed = ''
 const ALTS = [null, 38, 2, -6, -22]
 let ai = 0
@@ -62,7 +63,8 @@ function chips() {
 const EXP = { exroom1000000: 'ex-room1', exroom2000000: 'ex-room2', exroom3000000: 'ex-room3', exsomtam00000: 'ex-somtam', exkhaosoi0000: 'ex-khaosoi',
   exnoodles0000: 'ex-noodles', exkrapow00000: 'ex-krapow', exshop0000000: 'ex-shop', extomyum00000: 'ex-tomyum', exwhite000000: 'ex-white',
   exstreet00000: 'ex-street', excook0000000: 'ex-cook', exmassage0000: 'ex-massage', exmassage2000: 'ex-massage2', extrek0000000: 'ex-trek',
-  exraft0000000: 'ex-raft', exhouse0000000: 'ex-house' }
+  exraft0000000: 'ex-raft', exhouse0000000: 'ex-house', extextile0000: 'ex-textile', exumbrella000: 'ex-umbrella', excarve000000: 'ex-carve',
+  exweaver00000: 'ex-weaver', exumbrella200: 'ex-umbrella2', exlatte000000: 'ex-latte' }
 let EXCR = {}
 const exImg = (id, small) => (EXP[id] ? `/s/home/${EXP[id]}${small ? '-s' : ''}.webp` : '')
 const exCredits = (ids) => Object.fromEntries(ids.filter((id) => EXCR[EXP[id]]).map((id) => [id, EXCR[EXP[id]]]))
@@ -102,14 +104,40 @@ const EXAMPLES = () => [
     cover: 'exkhaosoi0000', photos: pics('exkhaosoi0000', 'exnoodles0000', 'exkrapow00000', 'exsomtam00000', 'exshop0000000'),
     items: [{ n: th() ? 'ข้าวซอยไก่' : 'Khao soi, chicken', p: '60' }, { n: th() ? 'ก๋วยเตี๋ยวเรือ' : 'Boat noodles', p: '50' }, { n: th() ? 'ผัดกะเพรา' : 'Pad krapow', p: '60' }, { n: th() ? 'ส้มตำ' : 'Som tam', p: '50' }],
     hours: { on: true, tz: 'Asia/Bangkok', week: all7('09:00', '16:00') }, contact: { line: '@example', phone: '053 000 000' }, place: { lat: 18.7953, lng: 98.9937, cc: 'TH', zoom: 17 }, msg: true } },
-  { name: 'example-tours', look: 'night', lang: L, kind: 'service', tier: 'gold', label: 'k_tour', d: {
-    name: th() ? 'บ้านมด ทัวร์' : 'Ant House Tours', tagline: th() ? 'ทัวร์ไปกลับจากเชียงใหม่ วัดร่องขุ่น หมู่บ้านบนดอย น้ำตก' : 'Day trips from Chiang Mai: the White Temple, hill villages, waterfalls.',
-    cover: 'exwhite000000', photos: pics('exwhite000000', 'extrek0000000', 'exraft0000000'), drawing: false,
-    svc: [
-      { id: 't1white', n: th() ? 'วัดร่องขุ่น ไปกลับ' : 'White Temple day trip', mins: 660, p: '1500', note: '07:30', cap: 8 },
-      { id: 't2doi', n: th() ? 'ดอยอินทนนท์ ไปกลับ' : 'Doi Inthanon day trip', mins: 600, p: '1800', note: '08:00', cap: 8 },
+  { name: 'example-shop', look: 'clean', lang: L, kind: 'store', tier: 'gold', label: 'k_store', d: {
+    name: th() ? 'บ้านมด ของทำมือ' : 'Ant House Handmade', tagline: th() ? 'ผ้าทอ ร่ม และงานไม้จากเชียงใหม่ ส่งทั่วโลกโดยมดแดง' : 'Weaving, umbrellas and wood from Chiang Mai, shipped anywhere by Mot Dang',
+    cover: 'extextile0000', photos: pics('extextile0000', 'exumbrella000', 'excarve000000'), drawing: false,
+    products: [
+      { id: 'p1cloth', t: th() ? 'ผ้าทอไทลื้อ' : 'Tai Lue woven cloth', p: '1200', old: '1500', opts: th() ? 'สี: แดง, น้ำเงิน' : 'Colour: red, blue', stock: 6, g: 300, photos: pics('extextile0000') },
+      { id: 'p2umb', t: th() ? 'ร่มกระดาษสา' : 'Paper umbrella', p: '650', g: 700, photos: pics('exumbrella000') },
+      { id: 'p3wood', t: th() ? 'ช้างไม้แกะสลัก' : 'Carved wooden elephant', p: '890', stock: 3, g: 900, photos: pics('excarve000000') },
     ],
-    contact: { line: '@example', whatsapp: '66530000000' }, place: { lat: 18.7883, lng: 98.9853, cc: 'TH', zoom: 15 }, msg: true } },
+    ship: { th: '60', world: '600', free: '2000', mot: true }, pay: { pp: '0812345678' },
+    contact: { line: '@example' }, msg: true } },
+  { name: 'example-online', look: 'clean', lang: L, kind: 'online', tier: 'gold', label: 'k_online', d: {
+    name: th() ? 'เรียนอังกฤษกับครูมด' : 'English with Teacher Mot', tagline: th() ? 'เรียนออนไลน์ตัวต่อตัว สำหรับงานและการเดินทาง' : 'One-to-one English lessons online, for work and travel',
+    cover: 'exlatte000000', photos: pics('exlatte000000'), drawing: false,
+    svc: [
+      { id: 'p1trial', n: th() ? 'ลองเรียน 30 นาที' : 'Trial lesson, 30 minutes', mins: 30, p: '300', note: th() ? 'วัดระดับ\nแผนการเรียน' : 'Find your level\nA plan for you' },
+      { id: 'p2ten', n: th() ? '10 ครั้ง' : '10 lessons', mins: 60, p: '4500', note: th() ? 'ครั้งละ 1 ชั่วโมง\nแบบฝึกหัดทุกครั้ง' : 'One hour each\nHomework every time' },
+      { id: 'p3work', n: th() ? 'อังกฤษเพื่อการทำงาน' : 'English for work', mins: 60, p: '6000', note: th() ? 'อีเมล ประชุม สัมภาษณ์งาน' : 'Email, meetings, job interviews' },
+    ],
+    faq: [
+      { q: th() ? 'เรียนผ่านอะไร' : 'How do we meet?', a: th() ? 'Zoom หรือ LINE วิดีโอคอล' : 'Zoom or a LINE video call.' },
+      { q: th() ? 'ยกเลิกได้ไหม' : 'Can I cancel?', a: th() ? 'ได้ บอกล่วงหน้า 24 ชั่วโมง' : 'Yes, with 24 hours notice.' },
+    ],
+    quotes: [{ q: th() ? 'กล้าพูดมากขึ้นในที่ประชุม' : 'I speak up in meetings now.', who: 'Nok' }],
+    signup: { on: true }, contact: { line: '@example', email: 'hello@example.com' }, msg: true } },
+  { name: 'example-crafts', look: 'clean', lang: L, kind: 'work', tier: 'free', label: 'k_portfolio', d: {
+    name: th() ? 'บ้านมด งานฝีมือ' : 'Ant House Crafts', tagline: th() ? 'ร่มบ่อสร้าง งานไม้ และผ้าทอ ทำมือที่เชียงใหม่' : 'Bo Sang umbrellas, wood and weaving, made by hand in Chiang Mai',
+    cover: 'exumbrella000', photos: pics('exumbrella000', 'exumbrella200', 'excarve000000', 'exweaver00000'), drawing: false,
+    works: [
+      { id: 'w1umb', t: th() ? 'ร่มกระดาษสา' : 'Paper umbrellas', year: '2026', tags: th() ? 'ร่ม' : 'Umbrellas', photos: pics('exumbrella000', 'exumbrella200') },
+      { id: 'w2carve', t: th() ? 'บานประตูแกะสลัก' : 'A carved door', year: '2025', tags: th() ? 'ไม้' : 'Wood', photos: pics('excarve000000') },
+      { id: 'w3weave', t: th() ? 'ผ้าไหมทอมือ' : 'Handwoven silk', year: '2025', tags: th() ? 'ผ้า' : 'Cloth', photos: pics('exweaver00000') },
+    ],
+    quotes: [{ q: th() ? 'ร่มสวยมาก ส่งถึงเร็ว' : 'Beautiful umbrellas, and they came fast.', who: 'Ploy' }],
+    contact: { line: '@example', email: 'hello@example.com' }, msg: true } },
 ]
 function phones() {
   const list = EXAMPLES()
@@ -177,8 +205,8 @@ function calc(price, month) {
   draw()
 }
 
-const FREE_DING = ['link', 'search', 'telephone', 'pencil', 'calendar', 'envelope', 'coin', 'camera', 'share']
-const GROUP_DING = ['calendar', 'heart', 'chat', 'star']
+const FREE_DING = ['star', 'link', 'search', 'telephone', 'pencil', 'calendar', 'envelope', 'coin', 'camera', 'share']
+const GROUP_DING = ['gift', 'calendar', 'heart', 'chat', 'star']
 function tiers(price, hotel, hotelYear) {
   hotel = hotel || 555; hotelYear = hotelYear || hotel * 10
   calc(hotelYear, hotel)

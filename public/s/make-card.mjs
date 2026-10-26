@@ -22,7 +22,7 @@ export function cardHtml(S, h) {
   const g = og(S), d = S.d
   const layout = g.layout || 'photo', font = g.font || fontOfLook(S.look), photo = g.photo || d.cover || d.photos[0] || ''
   const acc = g.accent || h.accent
-  const items = [...d.works.map((x) => ['w', x]), ...d.amulets.map((x) => ['a', x]), ...(h.isGold ? d.lists.map((x) => ['l', x]) : [])].filter(([, x]) => x.t).slice(0, 60)
+  const items = [...d.works.map((x) => ['w', x]), ...d.amulets.map((x) => ['a', x]), ...(d.products || []).map((x) => ['p', x]), ...(h.isGold ? d.lists.map((x) => ['l', x]) : [])].filter(([, x]) => x.t).slice(0, 60)
   const pics = [...new Set([d.cover, ...d.photos].filter(Boolean))]
   return `<p class="hint">${T('og_why')}</p>
     <figure class="ogpv" id="ogpv" style="--acc:${esc(acc)}"><img id="ogimg" alt="" width="1200" height="630"><span class="ogbusy" hidden></span></figure>

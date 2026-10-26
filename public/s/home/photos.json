@@ -124,5 +124,47 @@
   "src": "https://commons.wikimedia.org/wiki/File:King_Nan%27s_Teak_House2.jpg",
   "license": "CC BY-SA 3.0",
   "licenseUrl": "http://creativecommons.org/licenses/by-sa/3.0/"
+ },
+ "ex-textile": {
+  "title": "A Tai Lue woven cloth",
+  "by": "Adam Jones from Kelowna, BC, Canada",
+  "src": "https://commons.wikimedia.org/wiki/File:Detail_of_Tai_Lue_Weaving_-_Lanna_Folklife_Museum_-_Chiang_Mai_-_Thailand_-_02_(35137982155).jpg",
+  "license": "CC BY-SA 2.0",
+  "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0"
+ },
+ "ex-umbrella": {
+  "title": "Painted paper umbrellas, Bo Sang",
+  "by": "Dennis G. Jarvis",
+  "src": "https://commons.wikimedia.org/wiki/File:DGJ_4039_-_How_do_we_get_to_here._(3725553133).jpg",
+  "license": "CC BY-SA 2.0",
+  "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0"
+ },
+ "ex-carve": {
+  "title": "A wood carver at work",
+  "by": "Dennis G. Jarvis",
+  "src": "https://commons.wikimedia.org/wiki/File:DGJ_4019_-_Wood_Carving_(3723724335).jpg",
+  "license": "CC BY-SA 2.0",
+  "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0"
+ },
+ "ex-weaver": {
+  "title": "A silk weaver at her loom",
+  "by": "JJ Harrison",
+  "src": "https://commons.wikimedia.org/wiki/File:Thai_Silk_Weaving_1_-_Ban_Tha_Sawang.jpg",
+  "license": "CC BY-SA 3.0",
+  "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0"
+ },
+ "ex-umbrella2": {
+  "title": "Papering an umbrella frame",
+  "by": "Dennis G. Jarvis",
+  "src": "https://commons.wikimedia.org/wiki/File:DGJ_4038_(3724389949).jpg",
+  "license": "CC BY-SA 2.0",
+  "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0"
+ },
+ "ex-latte": {
+  "title": "Coffee at a work table",
+  "by": "Chaitanya Krishna",
+  "src": "https://commons.wikimedia.org/wiki/File:Img_20170122_172055_297_Jpg_(209119193).jpeg",
+  "license": "CC0",
+  "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en"
  }
 }

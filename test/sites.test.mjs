@@ -29,7 +29,7 @@ test('the drawing carries the page facts, hours in OpenStreetMap shape', () => {
 test('Gold looks, video, places and indexing show only for Gold', () => {
   const d = { name: 'x', video: 'https://youtu.be/dQw4w9WgXcQ', spots: [{ n: 'Wat', lat: 18.79, lng: 98.98 }], place: { lat: 18.79, lng: 98.99, cc: 'TH' } }
   const free = render({ ...base, look: 'gold', d })
-  assert.match(free, /data-look="poster"/)
+  assert.match(free, /data-look="lanna"/) // a free page wears its kind's looks; a food page lands on its first (kinds.mjs)
   assert.ok(!free.includes('youtube'))
   assert.match(free, /class="spots"/) // up to 3 places on a free page since 2026-10-14
   assert.equal(render({ ...base, d: { ...d, spots: Array.from({ length: 6 }, (_, i) => ({ n: 'P' + i, lat: 18.7 + i / 100, lng: 98.9 })) } }).match(/data-spot=/g).length, 3)
