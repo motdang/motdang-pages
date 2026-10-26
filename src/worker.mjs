@@ -63,6 +63,7 @@ import * as sian from './sian.mjs'
 import * as market from './market.mjs'
 import * as line from './lineedit.mjs'
 import * as gbp from './gbp.mjs'
+import * as steps from './steps.mjs'
 
 const QUOTA = { menu: 20, site: 3, photo: 200, save: 400, report: 20, msg: 12, news: 12, pd: 200, notify: 3, slip: 10, book: 10, domain: 6, lister: 3, deal: 40, terms: 10, join: 3, founding: 5, gift: 20, backer: 5, tap: 3, tapsave: 60, bump: 300, card: 400, guess: 400, sadhu: 200, here: 2500, linecode: 10, gbp: 60 }
 const TRIAL_DAYS = 30 // Nan 2026-10-14: a new page is Gold for its first 30 days
@@ -111,8 +112,8 @@ async function route(request, env, ctx) {
   if (!env.DEV_ORIGIN && (url.hostname === 'motdang.net' || url.hostname === 'www.motdang.net')) return new Response('', { status: 404 })
 
   if (PASS.test(path) && (m === 'GET' || m === 'HEAD')) return passThrough(request, env, url)
-  if (path === '/' || path === '/index.html') return asset(request, env, '/s/home.html', 'home')
-  if (path === '/make' || path === '/make/') return asset(request, env, '/s/make.html', 'make')
+  if (path === '/' || path === '/index.html') { if (m === 'GET') steps.later(ctx, steps.count(env, request, 'home', { src: steps.sourceOf(request, url) })); return asset(request, env, '/s/home.html', 'home') }
+  if (path === '/make' || path === '/make/') { if (m === 'GET') steps.later(ctx, steps.count(env, request, 'make', { src: steps.sourceOf(request, url) })); return asset(request, env, '/s/make.html', 'make') }
   if (path.startsWith('/s/')) return asset(request, env, path)
   if (path.startsWith('/img/')) return image(env, path.slice(5))
   if (path.startsWith('/card/') && (m === 'GET' || m === 'HEAD')) return og.serveCard(env, path.slice(6), origin)
@@ -583,6 +584,7 @@ ${s ? `<p>ข้อความถึง ${escHtml(title)} จะส่งสำ
       throw e
     }
     await log(env, id, 'create', name)
+    steps.later(ctx, steps.count(env, request, 'made', { who: id, src: seller ? 'seller' : '' }))
     return J({ id, name, token, status: 'draft', tier: 'gold', gold_until: new Date(Date.now() + TRIAL_DAYS * 864e5).toISOString().slice(0, 10), trial: true, line_on: line.on(env), loaded: now })
   }
 
@@ -667,6 +669,7 @@ ${s ? `<p>ข้อความถึง ${escHtml(title)} จะส่งสำ
       throw e
     }
     if (status !== s.status) await log(env, s.id, status, held || '')
+    if (status === 'live' && !s.published) steps.later(ctx, steps.count(env, request, 'online', { who: s.id }))
     if (isGold && status === 'live') ctx.waitUntil(gbp.afterSave(env, s.id, origin)) // Google Business Profile follows the save
     return J({ status, name, d: nd, look: lookId, added: added.filter((id) => nd.photos.includes(id)), loaded: loadedAt })
   }
@@ -892,6 +895,7 @@ ${s ? `<p>ข้อความถึง ${escHtml(title)} จะส่งสำ
       if (r.full) return J({ error: 'full' }, 409)
       return J({ ...r, plan: 'sian', tier: isGold ? 'gold' : 'free', gold_until: s.gold_until, member: sian.isSian(s) })
     }
+    steps.later(ctx, steps.count(env, request, 'gold', { who: s.id, src: s.status }))
     return J({ ...(await gold.start(env, s.id, rand, gold.planOf(env, normalize(JSON.parse(s.d)), want))), tier: isGold ? 'gold' : 'free', gold_until: s.gold_until, hotel_until: s.hotel_until || '', hotel_now: gold.isHotel(s) })
   }
   if (p === 'gold/slip' && m === 'POST') {
@@ -901,6 +905,7 @@ ${s ? `<p>ข้อความถึง ${escHtml(title)} จะส่งสำ
     if (!pay) return J({ error: 'no-payment' }, 400)
     const form = await request.formData()
     const file = form.get('slip')
+    if (file && typeof file !== 'string' && file.size) steps.later(ctx, steps.count(env, request, 'slip', { who: pay.id, src: pay.plan || 'gold' }))
     if (!file || typeof file === 'string' || !file.size || file.size > 8_000_000) return J({ error: 'slip' }, 400)
     const now = new Date().toISOString()
     const key = `slip/${pay.id}`
@@ -910,6 +915,7 @@ ${s ? `<p>ข้อความถึง ${escHtml(title)} จะส่งสำ
       const until = await gold.grant(env, s.id, pay.months || 12, pay.plan || undefined)
       await env.DB.prepare("UPDATE pay SET status='paid', slip=?, note=?, updated=? WHERE id=?").bind(key, 'slipok ' + r.ref, now, pay.id).run()
       await log(env, s.id, 'gold', 'slipok ' + r.ref)
+      steps.later(ctx, steps.count(env, null, 'paid', { who: pay.id, src: pay.plan || 'gold' }))
       ctx.waitUntil((async () => {
         const cut = await sellers.credit(env, { siteId: s.id, payId: pay.id, amount: pay.amount })
         await gold.tellSales(env, { title: JSON.parse(s.d).name || s.name, url: `${origin}/${s.name}`, amount: pay.amount, months: pay.months || 12, plan: pay.plan, how: 'SlipOK', cut })
@@ -1016,7 +1022,11 @@ async function admin(request, env, rest, url) {
   if (request.method === 'POST' && rest === '/act' && sameOrigin(request, url)) {
     const f = await request.formData()
     const id = String(f.get('id') || ''), act = String(f.get('act') || '')
-    if (act === 'live') await env.DB.prepare("UPDATE site SET status='live', held_why=NULL, published=COALESCE(published, ?) WHERE id=?").bind(new Date().toISOString(), id).run()
+    if (act === 'live') {
+      const was = await env.DB.prepare('SELECT published FROM site WHERE id = ?').bind(id).first()
+      await env.DB.prepare("UPDATE site SET status='live', held_why=NULL, published=COALESCE(published, ?) WHERE id=?").bind(new Date().toISOString(), id).run()
+      if (was && !was.published) await steps.later(null, steps.count(env, null, 'online', { who: id, src: 'admin' }))
+    }
     if (act === 'hold') await env.DB.prepare("UPDATE site SET status='held', held_why='admin' WHERE id=?").bind(id).run()
     if (act === 'remove') await env.DB.prepare("UPDATE site SET status='removed' WHERE id=?").bind(id).run()
     if (act === 'photo-ok') await releasePhoto(env, id)
@@ -1062,6 +1072,7 @@ async function payOk(env, id, origin, how) {
   }
   await gold.grant(env, p.site_id, p.months || 12, p.plan || undefined)
   await env.DB.prepare("UPDATE pay SET status='paid', note=COALESCE(note,'') || ?, updated=? WHERE id=?").bind(' · ' + how, new Date().toISOString(), id).run()
+  await steps.later(null, steps.count(env, null, 'paid', { who: id, src: p.plan || 'gold' }))
   const cut = await sellers.credit(env, { siteId: p.site_id, payId: id, amount: p.amount }).catch((e) => console.error(e))
   await gold.tellSales(env, { title: JSON.parse(p.d || '{}').name || p.name, url: `${origin}/${p.name}`, amount: p.amount, months: p.months || 12, plan: p.plan, how, cut }).catch((e) => console.error(e))
   return true
@@ -1116,7 +1127,7 @@ async function tidy(env) {
   const retry = await env.DB.prepare("SELECT * FROM site WHERE status='held' AND held_why LIKE 'guard:guard-%' LIMIT 20").all()
   for (const s of retry.results) {
     const r = await screen(env.AI, JSON.parse(s.d), {})
-    if (r.decision === 'live') { await env.DB.prepare("UPDATE site SET status='live', held_why=NULL, published=COALESCE(published, ?) WHERE id=?").bind(new Date().toISOString(), s.id).run(); await log(env, s.id, 'live', 'retry') }
+    if (r.decision === 'live') { await env.DB.prepare("UPDATE site SET status='live', held_why=NULL, published=COALESCE(published, ?) WHERE id=?").bind(new Date().toISOString(), s.id).run(); await log(env, s.id, 'live', 'retry'); if (!s.published) await steps.later(null, steps.count(env, null, 'online', { who: s.id, src: 'check' })) }
   }
   const ph = await env.DB.prepare("SELECT id FROM photo WHERE verdict='hold' AND (why LIKE 'model-%' OR why = 'unreadable' OR why = 'no-model') LIMIT 20").all()
   for (const p of ph.results) {

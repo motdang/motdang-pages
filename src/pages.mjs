@@ -1,5 +1,6 @@
 // pages.mjs — the directory of everyone's pages, the not-found page, admin.
 
+import * as steps from './steps.mjs'
 import { esc, LOOKS, KINDS, lookOf } from '../public/s/render.mjs'
 import { ui, pickLang, UI_LANGS } from '../public/s/make-words.mjs'
 
@@ -92,6 +93,7 @@ export async function adminPage(env, sel = { sellers: [], due: [], gigs: [] }) {
   const T = (rows, f) => `<table>${rows.map(f).join('')}</table>`
   return shell('en', 'Admin', `<main style="max-width:1100px;margin:0 auto;padding:16px"><style>table{width:100%;border-collapse:collapse;font-size:15px}td{border-bottom:1px solid #ddd;padding:6px;vertical-align:top}button{font:inherit;padding:4px 10px}</style>
 <h1 style="font:800 34px system-ui">Pages · admin</h1><p>${n.map((r) => `${esc(r.status)} ${r.n}`).join(' · ')}</p>
+<h2 id="steps">Steps to paid</h2>${steps.table(await steps.report(env, 14), esc)}
 <h2>Gold slips</h2>${T(pays, (p) => `<tr><td><a href="/${esc(p.name)}">${esc(p.name)}</a></td><td>฿${esc(p.amount)}</td><td>${esc(p.status)} ${esc(p.note || '')}</td><td>${esc(p.updated.slice(0, 16))}</td><td><a href="/admin/slip/${esc(p.id)}" target="_blank">slip</a></td><td>${p.status === 'slip' ? btn(p.id, 'pay-ok', 'Paid: make Gold') + ' ' + btn(p.id, 'pay-no', 'Not paid') : ''}</td></tr>`)}
 <h2>Sellers</h2>${T(sel.sellers, (s) => `<tr><td>${s.kit && s.status === 'ok' ? `<a href="${esc(s.kit)}">${esc(s.name)}</a>` : esc(s.name)} <small>${esc(s.id)}</small></td><td>${esc(s.status)} · ${s.rate}%</td><td>${esc(s.phone || '')} ${esc(s.line || '')}<br><small>${esc(s.area || '')}</small></td><td>${s.via ? 'via ' + esc(s.via) : ''}</td><td>${s.status !== 'ok' ? btn(s.id, 'seller-on', 'Selling') : btn(s.id, 'seller-off', 'Stop')}</td></tr>`)}
 <p>${sel.due.map((p) => `<a href="${esc(p.link)}">Pay ${esc(p.name)} ฿${p.baht} (${esc(p.month)})</a> ${btn(p.id, 'payout-paid', 'Paid')}`).join('<br>') || 'No payouts due.'}</p>
