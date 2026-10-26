@@ -1378,7 +1378,7 @@ function wireFrame(f) {
   inline(tag, 'tagline', 140)
   // the kind's picture, until the maker's own goes on
   const cov = S.d.cover && S.d.credits?.[S.d.cover]
-  const sample = cov && ((KPIC[S.kind] && (cov.src === KPIC[S.kind].src || cov.title === KPIC[S.kind].title)) || Object.values(EX[S.kind] || {}).some((e) => e.src === cov.src || e.title === cov.title))
+  const sample = cov && KPIC[S.kind] && (cov.src === KPIC[S.kind].src || cov.title === KPIC[S.kind].title)
   if (sample && doc.querySelector('header.top')) {
     const b = doc.createElement('span'); b.className = 'mk-pic'; b.textContent = ui(S.lang, 'yourPic'); b.dataset.part = 'photos'
     doc.querySelector('header.top').appendChild(b)

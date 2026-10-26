@@ -581,7 +581,7 @@
   var dock = $('#dock'), lead = $('.top .cta, .top .ctas')
   if (dock && lead && 'IntersectionObserver' in window) {
     dock.classList.add('off')
-    new IntersectionObserver(function (es) { dock.classList.toggle('off', es[0].isIntersecting) }).observe(lead)
+    new IntersectionObserver(function (es) { var e = es[0]; dock.classList.toggle('off', e.isIntersecting || e.boundingClientRect.top > 0) }).observe(lead)
   }
   var tabs = $('.tabs')
   if (tabs && 'IntersectionObserver' in window) {

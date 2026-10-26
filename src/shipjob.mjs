@@ -54,11 +54,11 @@ export async function act(env, job, o, s, form, origin, deps) {
     let tail = 1 + Math.floor(Math.random() * 99)
     for (let i = 0; i < 99 && used.has(formatAmount(fee + postage + tail)); i++) tail = (tail % 99) + 1
     const payId = deps.rand(12)
-    await env.DB.prepare("INSERT INTO pay (id, site_id, amount, status, created, updated, months, plan, note) VALUES (?,?,?,'open',?,?,0,'ship',?)")
-      .bind(payId, s.id, formatAmount(fee + postage + tail), now, now, ref(o.id)).run()
-    // a second tap on Shipped finds the job already sent and bills nothing (CodeRabbit on #72)
+    // a second tap on Shipped finds the job already sent and bills nothing; the bill is written only after the claim (CodeRabbit on #72, #73)
     const claim = await env.DB.prepare("UPDATE shipjob SET status = 'sent', got_at = COALESCE(got_at, ?), sent_at = ?, track = ?, fee = ?, postage = ?, pay_id = ? WHERE id = ? AND status != 'sent'").bind(now, now, track, fee, postage, payId, job.id).run()
     if (!claim.meta?.changes) return { ok: true }
+    await env.DB.prepare("INSERT INTO pay (id, site_id, amount, status, created, updated, months, plan, note) VALUES (?,?,?,'open',?,?,0,'ship',?)")
+      .bind(payId, s.id, formatAmount(fee + postage + tail), now, now, ref(o.id)).run()
     await env.DB.prepare('UPDATE orders SET track = ?, shipped_at = ? WHERE id = ?').bind(track, now, o.id).run()
     deps.later(Promise.all([omail.shipped(env, s, { ...o, track }, await orderLink(env, origin, o.id, deps.sha)), omail.billed(env, s, { ...o, track }, formatAmount(fee + postage + tail), origin)]))
     return { ok: true }

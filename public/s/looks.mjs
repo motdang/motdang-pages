@@ -77,6 +77,7 @@ export const HERO_CSS = `.top{position:relative;overflow:hidden;color:var(--ink)
 .wrap>section.card h2 svg,.wrap>section.card h2 [data-dingbat]{display:none}
 .tabs{position:sticky;top:0;z-index:20;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin:0 -16px;padding:10px 16px;background:color-mix(in srgb,var(--bg) 92%,transparent);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
 .tabs::-webkit-scrollbar{display:none}
+.wrap>section[id],.wrap>figure[id]{scroll-margin-top:68px}
 .tabs a{flex:none;padding:8px 14px;border-radius:99px;background:var(--card);box-shadow:inset 0 0 0 1px var(--line);font:600 15px/1.2 var(--body);text-decoration:none;color:var(--ink)}
 .tabs a.on{background:var(--ink);color:var(--bg);box-shadow:none}
 .dock{position:fixed;left:0;right:0;bottom:0;z-index:30;display:flex;gap:8px;justify-content:center;padding:10px 12px calc(10px + env(safe-area-inset-bottom));background:color-mix(in srgb,var(--bg) 94%,transparent);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);box-shadow:0 -1px 0 var(--line);transition:transform .25s}
