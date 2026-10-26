@@ -1,0 +1,12 @@
+--- a/build.py	2026-10-22 10:53:21
++++ b/build.py	2026-10-22 10:53:21
+@@ -15550,6 +15550,9 @@
+     live = ('<div class="whatson" data-md-events data-kind="tech" data-n="5" '
+             f'data-title="💻 {att(bi_text("งานเทคและ AI ที่จะมา", "Tech & AI coming up"))}" hidden></div>'
+             '<script src="tech/w.js" defer></script>')
++    # Gold pages' own dated events, whatever they are (Nan 2026-10-22): the same Worker, the same script, a star on each.
++    live += ('<div class="whatson" data-md-events data-kind="all" data-gold="1" data-n="8" '
++             f'data-title="★ {att(bi_text("จากหน้าทอง", "From Gold pages"))}" hidden></div>')
+     body = (f'<h1>🎪 {bi("งานในเมือง", "What is on")}</h1>'
+             f'{live}{controls}{"".join(sections)}'
+             f'<p>{bi(lede_th, lede_en)}</p>'
