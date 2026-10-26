@@ -53,6 +53,8 @@ export const Q = {
     dd_ex_event_2: 'a big birthday cake with candles and balloons', dd_ex_event_3: 'a stage with a guitar and string lights',
     dd_ex_group_1: 'friends sitting in a circle on the grass sharing food', dd_ex_group_2: 'a running club crossing a bridge at sunrise',
     dd_ex_group_3: 'a crowd of hands holding up a big heart',
+    dd_ex_store_1: 'a parcel tied with string, a red ant riding on top', dd_ex_store_2: 'a shelf of handmade soap, scarves and coffee', dd_ex_store_3: 'a mail van driving over the hills with boxes',
+    dd_ex_online_1: 'a laptop on a café table, steam rising from the coffee', dd_ex_online_2: 'a teacher waving from a video call', dd_ex_online_3: 'a rocket made of books flying over the city',
   },
   th: {
     // the button, the sheet and its fields
@@ -98,6 +100,8 @@ export const Q = {
     dd_ex_event_1: 'ตลาดกลางคืน มีโคมกระดาษและเวทีเล็กๆ', dd_ex_event_2: 'เค้กวันเกิดก้อนใหญ่ มีเทียนและลูกโป่ง',
     dd_ex_event_3: 'เวทีมีกีตาร์และไฟประดับ', dd_ex_group_1: 'เพื่อนๆ นั่งล้อมวงบนสนามหญ้า แบ่งอาหารกัน',
     dd_ex_group_2: 'ชมรมวิ่งข้ามสะพานตอนพระอาทิตย์ขึ้น', dd_ex_group_3: 'มือหลายมือชูหัวใจดวงใหญ่',
+    dd_ex_store_1: 'กล่องพัสดุผูกเชือก มีมดแดงนั่งอยู่ข้างบน', dd_ex_store_2: 'ชั้นวางสบู่ทำมือ ผ้าพันคอ และกาแฟ', dd_ex_store_3: 'รถส่งของวิ่งข้ามเขา บรรทุกกล่องเต็มคัน',
+    dd_ex_online_1: 'แล็ปท็อปบนโต๊ะร้านกาแฟ ไอกาแฟลอยขึ้น', dd_ex_online_2: 'ครูโบกมือในวิดีโอคอล', dd_ex_online_3: 'จรวดทำจากหนังสือบินเหนือเมือง',
   },
   my: {
     // the button, the sheet and its fields
@@ -157,6 +161,8 @@ export const Q = {
     dd_ex_event_2: 'ဖယောင်းတိုင်တွေနဲ့ ပူဖောင်းတွေပါတဲ့ မွေးနေ့ကိတ်ကြီး', dd_ex_event_3: 'ဂစ်တာတစ်လက်နဲ့ မီးသီးကြိုးလေးတွေပါတဲ့ စင်မြင့်တစ်ခု',
     dd_ex_group_1: 'မြက်ခင်းပေါ်မှာ စက်ဝိုင်းပုံထိုင်ပြီး အစားအသောက် မျှဝေစားနေကြတဲ့ သူငယ်ချင်းတွေ',
     dd_ex_group_2: 'နေထွက်ချိန် တံတားတစ်စင်းကို ဖြတ်ကူးနေတဲ့ အပြေးအသင်း', dd_ex_group_3: 'နှလုံးပုံကြီးတစ်ခုကို မြှောက်ထားတဲ့ လက်တွေအုပ်',
+    dd_ex_store_1: 'ကြိုးချည်ထားတဲ့ ပါဆယ်ထုပ်ပေါ်မှာ ပုရွက်ဆိတ်နီ ထိုင်နေတယ်', dd_ex_store_2: 'လက်လုပ်ဆပ်ပြာ၊ ပုဝါနဲ့ ကော်ဖီ စင်တစ်ခု', dd_ex_store_3: 'သေတ္တာတွေ အပြည့်တင်ပြီး တောင်ကုန်းကျော်နေတဲ့ စာပို့ကား',
+    dd_ex_online_1: 'ကော်ဖီဆိုင်စားပွဲပေါ်က လက်ပ်တော့၊ ကော်ဖီအငွေ့တက်နေတယ်', dd_ex_online_2: 'ဗီဒီယိုခေါ်ဆိုမှုထဲက လက်ပြနေတဲ့ ဆရာ', dd_ex_online_3: 'စာအုပ်တွေနဲ့ လုပ်ထားတဲ့ ဒုံးပျံ မြို့ပေါ်ကနေ ပျံသွားတယ်',
   },
   zh: {
     // the button, the sheet and its fields
@@ -186,5 +192,7 @@ export const Q = {
     dd_ex_homes_2: '阳台摆满绿植的现代公寓楼', dd_ex_homes_3: '系着爱心丝带的房门钥匙', dd_ex_me_1: '长发微笑的人，捧着一杯咖啡', dd_ex_me_2: '开心的自画像，拿着相机，戴着大帽子',
     dd_ex_me_3: '戴着圆眼镜和围巾的猫', dd_ex_event_1: '夜市，有纸灯笼和一个小舞台', dd_ex_event_2: '插着蜡烛、挂着气球的大生日蛋糕', dd_ex_event_3: '有吉他和彩灯的舞台',
     dd_ex_group_1: '朋友们围坐在草地上分享食物', dd_ex_group_2: '日出时跑过桥的跑步俱乐部', dd_ex_group_3: '许多只手托起一颗大爱心',
+    dd_ex_store_1: '一个用绳子捆好的包裹，上面坐着一只红蚂蚁', dd_ex_store_2: '一排手工皂、围巾和咖啡', dd_ex_store_3: '一辆装满箱子的邮车开过山丘',
+    dd_ex_online_1: '咖啡馆桌上的笔记本电脑，咖啡冒着热气', dd_ex_online_2: '在视频通话里挥手的老师', dd_ex_online_3: '一枚用书做成的火箭飞过城市',
   },
 }

@@ -19,8 +19,9 @@ const num = (n) => new Intl.NumberFormat(L === 'my' ? 'en' : L).format(n)
 
 // ---- the hero: the visitor's shop, drawn as they type ----------------------------------------
 // [word, the doodler's scene, dingbat, the page maker's kind, its look]
-const KINDS = [['guest', 'guesthouse', 'key', 'stay', 'loom'], ['cook', 'cooking', 'noodles', 'service', 'clean'], ['massage', 'massage', 'lotus', 'service', 'clean'],
-  ['tour', 'tuktuk', 'compass', 'service', 'night'], ['food', 'restaurant', 'noodles', 'food', 'lanna'], ['cafe', 'cafe', 'coffee', 'food', 'loom']]
+const KINDS = [['guest', 'guesthouse', 'key', 'stay', 'loom'], ['food', 'restaurant', 'noodles', 'food', 'lanna'], ['massage', 'massage', 'lotus', 'service', 'clean'],
+  ['cook', 'cooking', 'noodles', 'service', 'clean'], ['tour', 'tuktuk', 'compass', 'service', 'night'], ['store', 'handicraft', 'gift', 'store', 'clean'],
+  ['online', 'cafe', 'rocket', 'online', 'clean'], ['portfolio', 'handicraft', 'nib', 'work', 'clean']]
 let kind = 0, typed = ''
 const ALTS = [null, 38, 2, -6, -22]
 let ai = 0
@@ -62,7 +63,8 @@ function chips() {
 const EXP = { exroom1000000: 'ex-room1', exroom2000000: 'ex-room2', exroom3000000: 'ex-room3', exsomtam00000: 'ex-somtam', exkhaosoi0000: 'ex-khaosoi',
   exnoodles0000: 'ex-noodles', exkrapow00000: 'ex-krapow', exshop0000000: 'ex-shop', extomyum00000: 'ex-tomyum', exwhite000000: 'ex-white',
   exstreet00000: 'ex-street', excook0000000: 'ex-cook', exmassage0000: 'ex-massage', exmassage2000: 'ex-massage2', extrek0000000: 'ex-trek',
-  exraft0000000: 'ex-raft', exhouse0000000: 'ex-house' }
+  exraft0000000: 'ex-raft', exhouse0000000: 'ex-house', extextile0000: 'ex-textile', exumbrella000: 'ex-umbrella', excarve000000: 'ex-carve',
+  exweaver00000: 'ex-weaver', exumbrella200: 'ex-umbrella2', exlatte000000: 'ex-latte', excounter0000: 'ex-counter' }
 let EXCR = {}
 const exImg = (id, small) => (EXP[id] ? `/s/home/${EXP[id]}${small ? '-s' : ''}.webp` : '')
 const exCredits = (ids) => Object.fromEntries(ids.filter((id) => EXCR[EXP[id]]).map((id) => [id, EXCR[EXP[id]]]))
@@ -110,6 +112,16 @@ const EXAMPLES = () => [
       { id: 't2doi', n: th() ? 'ดอยอินทนนท์ ไปกลับ' : 'Doi Inthanon day trip', mins: 600, p: '1800', note: '08:00', cap: 8 },
     ],
     contact: { line: '@example', whatsapp: '66530000000' }, place: { lat: 18.7883, lng: 98.9853, cc: 'TH', zoom: 15 }, msg: true } },
+  { name: 'example-crafts', look: 'clean', lang: L, kind: 'work', tier: 'free', label: 'k_portfolio', d: {
+    name: th() ? 'บ้านมด งานฝีมือ' : 'Ant House Crafts', tagline: th() ? 'ร่มบ่อสร้าง งานไม้ และผ้าทอ ทำมือที่เชียงใหม่' : 'Bo Sang umbrellas, wood and weaving, made by hand in Chiang Mai',
+    cover: 'exumbrella000', photos: pics('exumbrella000', 'exumbrella200', 'excarve000000', 'exweaver00000'), drawing: false,
+    works: [
+      { id: 'w1umb', t: th() ? 'ร่มกระดาษสา' : 'Paper umbrellas', year: '2026', tags: th() ? 'ร่ม' : 'Umbrellas', photos: pics('exumbrella000', 'exumbrella200') },
+      { id: 'w2carve', t: th() ? 'บานประตูแกะสลัก' : 'A carved door', year: '2025', tags: th() ? 'ไม้' : 'Wood', photos: pics('excarve000000') },
+      { id: 'w3weave', t: th() ? 'ผ้าไหมทอมือ' : 'Handwoven silk', year: '2025', tags: th() ? 'ผ้า' : 'Cloth', photos: pics('exweaver00000') },
+    ],
+    quotes: [{ q: th() ? 'ร่มสวยมาก ส่งถึงเร็ว' : 'Beautiful umbrellas, and they came fast.', who: 'Ploy' }],
+    contact: { line: '@example', email: 'hello@example.com' }, msg: true } },
 ]
 function phones() {
   const list = EXAMPLES()
@@ -177,8 +189,8 @@ function calc(price, month) {
   draw()
 }
 
-const FREE_DING = ['link', 'search', 'telephone', 'pencil', 'calendar', 'envelope', 'coin', 'camera', 'share']
-const GROUP_DING = ['calendar', 'heart', 'chat', 'star']
+const FREE_DING = ['star', 'link', 'search', 'telephone', 'pencil', 'calendar', 'envelope', 'coin', 'camera', 'share']
+const GROUP_DING = ['gift', 'calendar', 'heart', 'chat', 'star']
 function tiers(price, hotel, hotelYear) {
   hotel = hotel || 555; hotelYear = hotelYear || hotel * 10
   calc(hotelYear, hotel)
