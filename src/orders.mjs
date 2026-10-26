@@ -214,7 +214,10 @@ export async function act(env, s, b, origin, deps) {
     // two taps on Paid take the stock once: the first claims the move (CodeRabbit on #72)
     if (!o.stocked && isGold(s)) {
       const claim = await env.DB.prepare('UPDATE orders SET stocked = 1, moved = ? WHERE id = ? AND stocked = 0').bind(now, o.id).run()
-      if (claim.meta?.changes) await moveStock(env, s, linesOf(o), -1)
+      // a move that fails gives the claim back, so the next Paid tries again (CodeRabbit on #73)
+      if (claim.meta?.changes) {
+        try { await moveStock(env, s, linesOf(o), -1) } catch (e) { await env.DB.prepare('UPDATE orders SET stocked = 0, moved = NULL WHERE id = ?').bind(o.id).run(); throw e }
+      }
     }
     const paid = { ...o, status: 'paid', paid_at: now }
     if (o.mot && hasGoods(linesOf(o))) await shipjob.create(env, s, paid, origin, deps)

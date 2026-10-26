@@ -1204,7 +1204,7 @@ async function tidy(env) {
   await env.DB.prepare('DELETE FROM quota WHERE day < ?').bind(day(3)).run()
   await env.DB.prepare('DELETE FROM seen WHERE day < ?').bind(day(2)).run()
   // a sign-up nobody confirmed in 30 days goes, address and all (CodeRabbit on #72)
-  await env.DB.prepare('DELETE FROM signup WHERE ok_at IS NULL AND at < ?').bind(new Date(Date.now() - 30 * 864e5).toISOString()).run().catch(() => {})
+  await env.DB.prepare('DELETE FROM signup WHERE ok_at IS NULL AND at < ?').bind(new Date(Date.now() - 30 * 864e5).toISOString()).run().catch((e) => console.error('signup cleanup', e))
   await env.DB.prepare('DELETE FROM bump WHERE made < ?').bind(Date.now() - 60000).run().catch(() => {})
   await env.DB.prepare("DELETE FROM pay WHERE status = 'open' AND COALESCE(plan, '') NOT IN ('fee', 'founding', 'ship') AND created < ?").bind(new Date(Date.now() - 14 * 864e5).toISOString()).run()
   // 2026-10-14: room calendars, translations, the monthly note, the trial's end note
