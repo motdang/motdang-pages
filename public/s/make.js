@@ -572,7 +572,8 @@ async function starterPic(kind) {
 function minePage() {
   const base = (a) => String(a || '').replace(/-\d$/, '')
   const nm = S.name.trim().toLowerCase()
-  return store.get('pages', []).find((p) => p.token && (p.name === S.addr || (S.addr && base(p.name) === base(S.addr) && String(p.title || '').trim().toLowerCase() === nm) || (nm && String(p.title || '').trim().toLowerCase() === nm)))
+  // the address decides; the name only breaks a tie between name and name-2 (CodeRabbit on #70)
+  return store.get('pages', []).find((p) => p.token && (p.name === S.addr || (S.addr && base(p.name) === base(S.addr) && String(p.title || '').trim().toLowerCase() === nm)))
 }
 
 async function create(look, btn) {

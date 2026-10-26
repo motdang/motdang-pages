@@ -9,7 +9,7 @@ export const C = {
     remTomorrow: 'พรุ่งนี้', remSubject: 'เตือนการจอง', remWhen: 'เวลา', remWhere: 'สถานที่', remMap: 'แผนที่', remCall: 'โทร', remManage: 'การจองของคุณ · ยกเลิกได้ที่นี่', // stylecheck: allow — เตือน names the feature (a reminder), not advice
     svcWhat: 'บริการ', svcWhen: 'เวลา', svcPeople: 'จำนวนคน', svcName: 'ชื่อ',
     newsFrom: 'ข่าวจาก', newsOpen: 'เปิดหน้าเว็บ', newsWhy: 'คุณได้รับอีเมลนี้เพราะติ๊กรับข่าวจาก {n}', newsStop: 'ไม่รับข่าวอีก',
-    unsubDone: 'ไม่รับข่าวจาก {n} แล้ว', unsubUndo: 'รับข่าวต่อ', unsubBack: 'รับข่าวจาก {n} ต่อแล้ว', unsubBad: 'ลิงก์นี้ใช้ไม่ได้',
+    unsubAsk: 'ไม่รับข่าวจาก {n} อีก?', unsubDone: 'ไม่รับข่าวจาก {n} แล้ว', unsubUndo: 'รับข่าวต่อ', unsubBack: 'รับข่าวจาก {n} ต่อแล้ว', unsubBad: 'ลิงก์นี้ใช้ไม่ได้',
   },
   en: {
     newsOpt: 'News from {n}, once a month at most', newsMail: 'Email for news',
@@ -17,7 +17,7 @@ export const C = {
     remTomorrow: 'Tomorrow', remSubject: 'Booking reminder', remWhen: 'Time', remWhere: 'Place', remMap: 'Map', remCall: 'Call', remManage: 'Your booking · cancel here',
     svcWhat: 'Service', svcWhen: 'Time', svcPeople: 'People', svcName: 'Name',
     newsFrom: 'News from', newsOpen: 'Open the page', newsWhy: 'You get this email because you ticked news from {n}', newsStop: 'Stop these emails',
-    unsubDone: 'No more news from {n}', unsubUndo: 'Keep sending', unsubBack: 'News from {n} is back on', unsubBad: 'This link does not work',
+    unsubAsk: 'Stop news from {n}?', unsubDone: 'No more news from {n}', unsubUndo: 'Keep sending', unsubBack: 'News from {n} is back on', unsubBad: 'This link does not work',
   },
   my: {
     newsOpt: '{n} ထံမှ သတင်း၊ တစ်လလျှင် တစ်ကြိမ်ထက် မပိုပါ', newsMail: 'သတင်းအတွက် အီးမေးလ်',
@@ -25,7 +25,7 @@ export const C = {
     remTomorrow: 'မနက်ဖြန်', remSubject: 'ကြိုတင်မှာယူမှု သတိပေးချက်', remWhen: 'အချိန်', remWhere: 'နေရာ', remMap: 'မြေပုံ', remCall: 'ဖုန်းခေါ်ရန်', remManage: 'သင့်ကြိုတင်မှာယူမှု · ဤနေရာတွင် ပယ်ဖျက်နိုင်သည်',
     svcWhat: 'ဝန်ဆောင်မှု', svcWhen: 'အချိန်', svcPeople: 'လူအရေအတွက်', svcName: 'အမည်',
     newsFrom: 'သတင်း -', newsOpen: 'ဝဘ်စာမျက်နှာဖွင့်ရန်', newsWhy: '{n} ထံမှ သတင်းကို အမှန်ခြစ်ထားသောကြောင့် ဤအီးမေးလ်ရရှိသည်', newsStop: 'ဤအီးမေးလ်များ ရပ်ရန်',
-    unsubDone: '{n} ထံမှ သတင်း မရတော့ပါ', unsubUndo: 'ဆက်လက်ရယူရန်', unsubBack: '{n} ထံမှ သတင်း ပြန်ရပါမည်', unsubBad: 'ဤလင့်ခ်သည် အလုပ်မလုပ်ပါ',
+    unsubAsk: '{n} ထံမှ သတင်း ရပ်မလား?', unsubDone: '{n} ထံမှ သတင်း မရတော့ပါ', unsubUndo: 'ဆက်လက်ရယူရန်', unsubBack: '{n} ထံမှ သတင်း ပြန်ရပါမည်', unsubBad: 'ဤလင့်ခ်သည် အလုပ်မလုပ်ပါ',
   },
   zh: {
     newsOpt: '来自 {n} 的消息，每月最多一次', newsMail: '接收消息的邮箱',
@@ -33,7 +33,7 @@ export const C = {
     remTomorrow: '明天', remSubject: '预约提醒', remWhen: '时间', remWhere: '地点', remMap: '地图', remCall: '拨打电话', remManage: '你的预约 · 在这里取消',
     svcWhat: '服务', svcWhen: '时间', svcPeople: '人数', svcName: '姓名',
     newsFrom: '来自', newsOpen: '打开网页', newsWhy: '你收到这封邮件，是因为你勾选了接收 {n} 的消息', newsStop: '不再接收',
-    unsubDone: '不再接收 {n} 的消息', unsubUndo: '继续接收', unsubBack: '已恢复接收 {n} 的消息', unsubBad: '这个链接无法使用',
+    unsubAsk: '不再接收 {n} 的消息吗？', unsubDone: '不再接收 {n} 的消息', unsubUndo: '继续接收', unsubBack: '已恢复接收 {n} 的消息', unsubBad: '这个链接无法使用',
   },
 }
 

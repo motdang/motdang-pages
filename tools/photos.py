@@ -44,6 +44,12 @@ for folder, cr in credits.items():
     old.update(cr)
     json.dump(old, open(f, 'w'), ensure_ascii=False, indent=1)
     if folder == 'kinds':
+        # the builder reads each kind's picture and credit from kinds.json: keep it in step
+        kf = os.path.join(ROOT, 'kinds', 'kinds.json')
+        kinds = json.load(open(kf)) if os.path.exists(kf) else {}
+        for k, c in cr.items():
+            kinds[k] = {'pd': 'k:' + k, 'title': c['title'], 'by': c['by'], 'src': c['src'], 'license': c['license'], 'licenseUrl': c.get('licenseUrl', ''), 'made': 'photo'}
+        json.dump(kinds, open(kf, 'w'), ensure_ascii=False, indent=1)
         # the kinds' pictures, as the Worker reads them: a new page's first photo, credited (src/pd.mjs, "k:<kind>")
         with open(os.path.join(ROOT, 'kinds', 'house.mjs'), 'w') as h:
             h.write('// Written by tools/photos.py from kinds/photos.json: each kind\'s picture and its credit.\n')

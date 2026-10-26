@@ -88,7 +88,7 @@ export async function lookup(id) {
   let pick = null
   if (m[1] === 'k') { // the kinds' own pictures (public/s/kinds/house.mjs), credited as their licence asks
     const h = HOUSE[m[2]]
-    return h ? { id, from: 'house', title: cut(h.title, 120), by: cut(h.by, 120) || 'Unknown', src: h.src, license: h.license, licenseUrl: h.licenseUrl || '' } : null
+    return h ? { id, from: 'house', title: cut(h.title, 120), by: cut(h.by, 120) || 'Unknown', src: h.src, license: h.license, licenseUrl: h.licenseUrl || '', big: `https://sites.motdang.net/s/kinds/${m[2]}.webp` } : null
   }
   if (m[1] === 'c') {
     const j = await get('https://commons.wikimedia.org/w/api.php?action=query&format=json&pageids=' + m[2] +
