@@ -5,6 +5,7 @@
 // Mot Dang's fee for a parcel (SHIP_FEE_TH within Thailand, SHIP_FEE_WORLD abroad, export papers) plus the postage at cost,
 // as a pay row of plan 'ship' the maker settles by PromptPay to Mot Dang, with a satang tail like the Gold payments.
 
+import { rasterType } from './slipfile.mjs'
 import { promptPayPayload, formatAmount } from './promptpay.mjs'
 import { teamLink, orderLink } from './osign.mjs'
 import * as slipq from './slipq.mjs'
@@ -55,7 +56,9 @@ export async function act(env, job, o, s, form, origin, deps) {
     const payId = deps.rand(12)
     await env.DB.prepare("INSERT INTO pay (id, site_id, amount, status, created, updated, months, plan, note) VALUES (?,?,?,'open',?,?,0,'ship',?)")
       .bind(payId, s.id, formatAmount(fee + postage + tail), now, now, ref(o.id)).run()
-    await env.DB.prepare("UPDATE shipjob SET status = 'sent', got_at = COALESCE(got_at, ?), sent_at = ?, track = ?, fee = ?, postage = ?, pay_id = ? WHERE id = ?").bind(now, now, track, fee, postage, payId, job.id).run()
+    // a second tap on Shipped finds the job already sent and bills nothing (CodeRabbit on #72)
+    const claim = await env.DB.prepare("UPDATE shipjob SET status = 'sent', got_at = COALESCE(got_at, ?), sent_at = ?, track = ?, fee = ?, postage = ?, pay_id = ? WHERE id = ? AND status != 'sent'").bind(now, now, track, fee, postage, payId, job.id).run()
+    if (!claim.meta?.changes) return { ok: true }
     await env.DB.prepare('UPDATE orders SET track = ?, shipped_at = ? WHERE id = ?').bind(track, now, o.id).run()
     deps.later(Promise.all([omail.shipped(env, s, { ...o, track }, await orderLink(env, origin, o.id, deps.sha)), omail.billed(env, s, { ...o, track }, formatAmount(fee + postage + tail), origin)]))
     return { ok: true }
@@ -81,8 +84,10 @@ export async function billSlip(env, s, request, origin, deps) {
   if (!file || typeof file === 'string' || !file.size || file.size > 8_000_000) return { error: 'slip' }
   const pay = await env.DB.prepare("SELECT * FROM pay WHERE id = ? AND site_id = ? AND plan = 'ship' AND status IN ('open','slip')").bind(String(form.get('pay') || ''), s.id).first()
   if (!pay) return { error: 'no-payment' }
+  const bytes = await file.arrayBuffer(), type = rasterType(bytes)
+  if (!type) return { error: 'slip' }
   const key = `slip/${pay.id}`
-  await env.MEDIA.put(key, await file.arrayBuffer(), { httpMetadata: { contentType: file.type || 'image/jpeg' }, customMetadata: { v: 'slip' } })
+  await env.MEDIA.put(key, bytes, { httpMetadata: { contentType: type }, customMetadata: { v: 'slip' } })
   const r = await checkSlip(env, file, Number(pay.amount))
   if (r.ok) {
     await env.DB.prepare('UPDATE pay SET slip = ?, updated = ? WHERE id = ?').bind(key, new Date().toISOString(), pay.id).run()

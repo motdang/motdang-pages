@@ -522,3 +522,4 @@ body{font-family:"Prompt",system-ui,-apple-system,"Segoe UI","Noto Sans Thai","N
 .tkind #subk .lbl{margin:16px 0 8px}
 .tkind .kinds.sub{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.tkind .kinds.sub .kind b{font-size:14px}
 @media (max-width:520px){.tkind .kinds.sub{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.slipview{position:fixed;inset:0;z-index:99;display:grid;place-items:center;padding:16px;background:rgba(10,8,16,.86);cursor:zoom-out}.slipview img{max-width:100%;max-height:100%;border-radius:12px}

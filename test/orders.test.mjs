@@ -276,7 +276,7 @@ test('a slip the buyer sends waits for the maker: SlipOK is not proof for a make
   const j = await (await order(s, [{ k: 'p', id: 'soap02' }])).json()
   const path = new URL(j.page).pathname
   const f = new FormData()
-  f.append('slip', new File([new Uint8Array([1, 2, 3])], 'slip.png', { type: 'image/png' }))
+  f.append('slip', new File([new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 13])], 'slip.png', { type: 'image/png' }))
   const r = await go(path + '/slip', { method: 'POST', body: f })
   assert.equal(r.status, 303)
   const o = orderRow(j.id)
@@ -290,6 +290,12 @@ test('a slip the buyer sends waits for the maker: SlipOK is not proof for a make
   // the maker looks at it, then says Paid
   const pic = await api(s, 'orders/slip?id=' + j.id)
   assert.equal(pic.status, 200)
+  assert.equal(pic.headers.get('content-type'), 'image/png')
+  assert.match(pic.headers.get('content-security-policy'), /sandbox/)
+  // a file that only says it is a picture is not taken: an SVG can carry script (CodeRabbit on #72)
+  const svg = new FormData(); svg.append('slip', new File(['<svg xmlns="http://www.w3.org/2000/svg"><script>1</script></svg>'], 's.svg', { type: 'image/svg+xml' }))
+  await go(path + '/slip', { method: 'POST', body: svg })
+  assert.equal((await api(s, 'orders/slip?id=' + j.id)).headers.get('content-type'), 'image/png')
   assert.equal((await api(s, 'orders/slip?id=' + 'z'.repeat(14))).status, 404)
   await settle()
   assert.ok(mails().some((m) => m.to[0] === 'owner@example.com' && /Order slip/.test(m.subject)))
@@ -533,7 +539,7 @@ test('a parcel bill is paid like Gold but grants nothing: Paid at /admin and a s
   assert.notEqual(g.amount, pay.amount)
   assert.equal(env.DB.raw.prepare("SELECT COUNT(*) AS n FROM pay WHERE site_id = ? AND plan = 'ship'").get(s.id).n, 1)
   // a slip from the maker: SlipOK is off here, so it waits for Beer with a link
-  const sf = new FormData(); sf.append('pay', pay.id); sf.append('slip', new File([new Uint8Array([9, 9])], 's.jpg', { type: 'image/jpeg' }))
+  const sf = new FormData(); sf.append('pay', pay.id); sf.append('slip', new File([new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0, 16])], 's.jpg', { type: 'image/jpeg' }))
   const r = await go('/api/orders/billslip', { method: 'POST', body: sf, headers: { 'x-edit': s.token, origin: O } })
   assert.equal(r.status, 200)
   assert.equal((await r.json()).waiting, true)

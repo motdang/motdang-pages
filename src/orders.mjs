@@ -4,6 +4,7 @@
 // and the maker says Paid or Not paid. SlipOK reads slips for Mot Dang's own account, so a slip a buyer sends to a
 // maker is a picture for the maker to look at, not proof.
 
+import { rasterType } from './slipfile.mjs'
 import { amount, campsNow } from '../public/s/extras.mjs'
 import { optsOf, prCap, dlForSale, PR_MAX } from '../public/s/store.mjs'
 import { PAGE_LANGS } from '../public/s/words.mjs'
@@ -154,7 +155,7 @@ export async function list(env, s, origin, deps) {
 export function csv(rows) {
   const cell = (v) => {
     let t = String(v ?? '')
-    if (/^[=@\t\r]|^[+-](?!\d)/.test(t)) t = "'" + t
+    if (/^[=+\-@\t\r]/.test(t)) t = "'" + t // a spreadsheet reads any of these as a formula (CodeRabbit on #72)
     return /[",\n\r]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t
   }
   const head = ['Order', 'Date', 'Status', 'Name', 'Phone or LINE', 'Email', 'Address', 'Country', 'Items', 'Items total', 'Discount', 'Shipping', 'Total', 'Code', 'Paid', 'Tracking', 'Mot Dang ships']
@@ -210,9 +211,10 @@ export async function act(env, s, b, origin, deps) {
     if (o.status === 'paid') return { ok: true }
     if (o.status === 'gone') return { error: 'gone' }
     await env.DB.prepare("UPDATE orders SET status = 'paid', paid_at = ?, seen = 1 WHERE id = ?").bind(now, o.id).run()
+    // two taps on Paid take the stock once: the first claims the move (CodeRabbit on #72)
     if (!o.stocked && isGold(s)) {
-      await moveStock(env, s, linesOf(o), -1)
-      await env.DB.prepare('UPDATE orders SET stocked = 1, moved = ? WHERE id = ?').bind(now, o.id).run()
+      const claim = await env.DB.prepare('UPDATE orders SET stocked = 1, moved = ? WHERE id = ? AND stocked = 0').bind(now, o.id).run()
+      if (claim.meta?.changes) await moveStock(env, s, linesOf(o), -1)
     }
     const paid = { ...o, status: 'paid', paid_at: now }
     if (o.mot && hasGoods(linesOf(o))) await shipjob.create(env, s, paid, origin, deps)
@@ -241,10 +243,12 @@ export async function act(env, s, b, origin, deps) {
 export async function slipIn(env, s, o, request, origin, deps) {
   let file
   try { file = (await request.formData()).get('slip') } catch { return { error: 'slip' } }
-  if (!file || typeof file === 'string' || !file.size || file.size > 8_000_000 || !/^image\//.test(file.type || '')) return { error: 'slip' }
+  if (!file || typeof file === 'string' || !file.size || file.size > 8_000_000) return { error: 'slip' }
   if (!['new', 'slip', 'no'].includes(o.status)) return { error: 'state' }
+  const bytes = await file.arrayBuffer(), type = rasterType(bytes)
+  if (!type) return { error: 'slip' } // a photo, by its bytes (slipfile.mjs)
   const key = `oslip/${o.id}`
-  await env.MEDIA.put(key, await file.arrayBuffer(), { httpMetadata: { contentType: file.type }, customMetadata: { v: 'slip' } })
+  await env.MEDIA.put(key, bytes, { httpMetadata: { contentType: type }, customMetadata: { v: 'slip' } })
   await env.DB.prepare("UPDATE orders SET status = 'slip', slip = ?, slip_at = ?, seen = 0 WHERE id = ?").bind(key, new Date().toISOString(), o.id).run()
   deps.later(omail.slip(env, s, o, origin))
   return { ok: true }
