@@ -64,7 +64,7 @@ const EXP = { exroom1000000: 'ex-room1', exroom2000000: 'ex-room2', exroom300000
   exnoodles0000: 'ex-noodles', exkrapow00000: 'ex-krapow', exshop0000000: 'ex-shop', extomyum00000: 'ex-tomyum', exwhite000000: 'ex-white',
   exstreet00000: 'ex-street', excook0000000: 'ex-cook', exmassage0000: 'ex-massage', exmassage2000: 'ex-massage2', extrek0000000: 'ex-trek',
   exraft0000000: 'ex-raft', exhouse0000000: 'ex-house', extextile0000: 'ex-textile', exumbrella000: 'ex-umbrella', excarve000000: 'ex-carve',
-  exweaver00000: 'ex-weaver', exumbrella200: 'ex-umbrella2', exlatte000000: 'ex-latte', excounter0000: 'ex-counter' }
+  exweaver00000: 'ex-weaver', exumbrella200: 'ex-umbrella2', exlatte000000: 'ex-latte' }
 let EXCR = {}
 const exImg = (id, small) => (EXP[id] ? `/s/home/${EXP[id]}${small ? '-s' : ''}.webp` : '')
 const exCredits = (ids) => Object.fromEntries(ids.filter((id) => EXCR[EXP[id]]).map((id) => [id, EXCR[EXP[id]]]))
@@ -112,6 +112,20 @@ const EXAMPLES = () => [
       { id: 't2doi', n: th() ? 'ดอยอินทนนท์ ไปกลับ' : 'Doi Inthanon day trip', mins: 600, p: '1800', note: '08:00', cap: 8 },
     ],
     contact: { line: '@example', whatsapp: '66530000000' }, place: { lat: 18.7883, lng: 98.9853, cc: 'TH', zoom: 15 }, msg: true } },
+  { name: 'example-online', look: 'clean', lang: L, kind: 'online', tier: 'gold', label: 'k_online', d: {
+    name: th() ? 'เรียนอังกฤษกับครูมด' : 'English with Teacher Mot', tagline: th() ? 'เรียนออนไลน์ตัวต่อตัว สำหรับงานและการเดินทาง' : 'One-to-one English lessons online, for work and travel',
+    cover: 'exlatte000000', photos: pics('exlatte000000'), drawing: false,
+    svc: [
+      { id: 'p1trial', n: th() ? 'ลองเรียน 30 นาที' : 'Trial lesson, 30 minutes', mins: 30, p: '300', note: th() ? 'วัดระดับ\nแผนการเรียน' : 'Find your level\nA plan for you' },
+      { id: 'p2ten', n: th() ? '10 ครั้ง' : '10 lessons', mins: 60, p: '4500', note: th() ? 'ครั้งละ 1 ชั่วโมง\nแบบฝึกหัดทุกครั้ง' : 'One hour each\nHomework every time' },
+      { id: 'p3work', n: th() ? 'อังกฤษเพื่อการทำงาน' : 'English for work', mins: 60, p: '6000', note: th() ? 'อีเมล ประชุม สัมภาษณ์งาน' : 'Email, meetings, job interviews' },
+    ],
+    faq: [
+      { q: th() ? 'เรียนผ่านอะไร' : 'How do we meet?', a: th() ? 'Zoom หรือ LINE วิดีโอคอล' : 'Zoom or a LINE video call.' },
+      { q: th() ? 'ยกเลิกได้ไหม' : 'Can I cancel?', a: th() ? 'ได้ บอกล่วงหน้า 24 ชั่วโมง' : 'Yes, with 24 hours notice.' },
+    ],
+    quotes: [{ q: th() ? 'กล้าพูดมากขึ้นในที่ประชุม' : 'I speak up in meetings now.', who: 'Nok' }],
+    signup: { on: true }, contact: { line: '@example', email: 'hello@example.com' }, msg: true } },
   { name: 'example-crafts', look: 'clean', lang: L, kind: 'work', tier: 'free', label: 'k_portfolio', d: {
     name: th() ? 'บ้านมด งานฝีมือ' : 'Ant House Crafts', tagline: th() ? 'ร่มบ่อสร้าง งานไม้ และผ้าทอ ทำมือที่เชียงใหม่' : 'Bo Sang umbrellas, wood and weaving, made by hand in Chiang Mai',
     cover: 'exumbrella000', photos: pics('exumbrella000', 'exumbrella200', 'excarve000000', 'exweaver00000'), drawing: false,
