@@ -23,7 +23,7 @@
 // The edit link is the sign-in: a long random token, stored only as its hash.
 
 import { promptPayPayload } from './promptpay.mjs'
-import { render, findable, qrSvg, normalize, vcard, ics, sign, KINDS, LOOK_IDS, GOLD_LOOKS, MAX_PHOTOS, photoMax, sceneOf, HOME } from '../public/s/render.mjs'
+import { render, findable, qrSvg, normalize, vcard, ics, sign, KINDS, LOOK_IDS, GOLD_LOOKS, MAX_PHOTOS, photoMax, sceneOf, HOME, lookOk } from '../public/s/render.mjs'
 import { AM_MAX, amCap } from '../public/s/amulet.mjs'
 import { PAGE_LANGS } from '../public/s/words.mjs'
 import { nameProblem, screen } from './screen.mjs'
@@ -619,7 +619,7 @@ ${s ? `<p>ข้อความถึง ${escHtml(title)} จะส่งสำ
     const b = await body(request)
     const d = normalize(b.d || JSON.parse(s.d))
     const kind = KINDS.includes(b.kind) ? b.kind : s.kind
-    const lookId = LOOK_IDS.includes(b.look) && (isGold || !GOLD_LOOKS.includes(b.look)) ? b.look : (LOOK_IDS.includes(b.look) ? s.look : s.look)
+    const lookId = lookOk(kind, b.look, isGold) ? b.look : s.look // a free page wears its kind's looks; Gold any (kinds.mjs)
     const lang = PAGE_LANGS[b.lang] ? b.lang : s.lang
     let name = s.name
     if (b.name && b.name !== s.name) {

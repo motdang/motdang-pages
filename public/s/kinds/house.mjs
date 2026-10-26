@@ -62,5 +62,19 @@ export const HOUSE = {
   "src": "https://commons.wikimedia.org/wiki/File:DGJ_4039_-_How_do_we_get_to_here._(3725553133).jpg",
   "license": "CC BY-SA 2.0",
   "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0"
+ },
+ "store": {
+  "title": "A market stall of local goods",
+  "by": "Petra Nesti",
+  "src": "https://www.pexels.com/photo/30908587/",
+  "license": "Pexels License",
+  "licenseUrl": "https://www.pexels.com/license/"
+ },
+ "online": {
+  "title": "Coffee at a work table",
+  "by": "Chaitanya Krishna",
+  "src": "https://commons.wikimedia.org/wiki/File:Img_20170122_172055_297_Jpg_(209119193).jpeg",
+  "license": "CC0",
+  "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en"
  }
 }

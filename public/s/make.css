@@ -511,3 +511,14 @@ body{font-family:"Prompt",system-ui,-apple-system,"Segoe UI","Noto Sans Thai","N
 /* Edit by LINE (lineedit.mjs): the code the owner sends, and the list beside it */
 .lcode{margin:12px 0 6px;padding:14px 18px;border-radius:16px;background:#fff;box-shadow:0 0 0 3px var(--gold);text-align:center}.lcode small{display:block;color:var(--mute);font-weight:700}.lcode b{display:block;font:800 34px/1.3 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.08em;user-select:all}
 .linehow{margin:0 0 14px}.linebox .row{display:flex;flex-wrap:wrap;gap:10px}
+
+/* the four kinds of site first, big; then which one, smaller (Nan 2026-10-26) */
+.tkind .kinds.groups{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.tkind .kinds.groups .kind{aspect-ratio:5/4}
+.tkind .kinds.groups .kind b{font-size:19px;padding:10px 12px 2px}
+.tkind .kinds.groups .kind small{position:relative;z-index:1;display:block;padding:0 12px 12px;font-size:14px;line-height:1.25;color:#f3ead8}
+.tkind .kinds.groups .kind::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 35%,rgba(10,8,16,.82));pointer-events:none}
+.tkind .kinds.groups .kind>*{z-index:1}.tkind .kinds.groups .kind img{z-index:0}
+.tkind #subk .lbl{margin:16px 0 8px}
+.tkind .kinds.sub{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.tkind .kinds.sub .kind b{font-size:14px}
+@media (max-width:520px){.tkind .kinds.sub{grid-template-columns:repeat(3,minmax(0,1fr))}}

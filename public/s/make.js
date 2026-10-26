@@ -3,7 +3,7 @@
 // own; "Put it online" is the only button that matters. Beside the page:
 // its messages, its traffic, and Gold.
 
-import { render, normalize, LOOKS, LOOK_IDS, GOLD_LOOKS, lookOf, KINDS, ACCENTS, CURRENCY, SCENES, DPROPS, MAX_PHOTOS, photoMax, osmHours, currencyFor, qrSvg, lineShare, lineHref, esc } from './render.mjs'
+import { render, normalize, LOOKS, LOOK_IDS, GOLD_LOOKS, lookOf, lookOk, GROUPS as SITE_GROUPS, GROUP_KINDS, groupOf as siteOf, KINDS, ACCENTS, CURRENCY, SCENES, DPROPS, MAX_PHOTOS, photoMax, osmHours, currencyFor, qrSvg, lineShare, lineHref, esc } from './render.mjs'
 import { MAX, UNIT_LABEL } from './extras.mjs'
 import { DINGBATS } from './db/names.mjs'
 import { PAGE_LANGS } from './words.mjs'
@@ -32,7 +32,7 @@ const store = {
 // the amulet camera's front-and-back switch; pair.open is the amulet waiting for its back
 const pair = { on: store.get('amPair', false), open: '' }
 const icon = (id) => `<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><use href="/s/icons.svg#i-${id}"/></svg>`
-const KIND_ICON = { shop: 'shop', food: 'food', service: 'gear', work: 'star', amulet: 'flower', stay: 'moon', homes: 'tag', me: 'me', event: 'party', group: 'people' }
+const KIND_ICON = { shop: 'shop', food: 'food', service: 'gear', work: 'star', amulet: 'flower', stay: 'moon', homes: 'tag', me: 'me', event: 'party', group: 'people', store: 'basket', online: 'globe' }
 const TZ = (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone } catch { return 'Asia/Bangkok' } })()
 
 const S = {
@@ -55,7 +55,7 @@ function dingbats(fams) {
 }
 dingbats.loaded = new Set()
 dingbats(['signals', 'classic', 'kitchen', 'faces', 'lanna'])
-const KIND_DING = { shop: 'cart', food: 'noodles', service: 'gear', work: 'nib', amulet: 'lotus', stay: 'key', homes: 'home', me: 'wave', event: 'party', group: 'crown' }
+const KIND_DING = { shop: 'cart', food: 'noodles', service: 'gear', work: 'nib', amulet: 'lotus', stay: 'key', homes: 'home', me: 'wave', event: 'party', group: 'crown', store: 'gift', online: 'rocket' }
 const DB_FAMS = [...new Set(Object.values(DINGBATS))]
 const rid = () => Math.random().toString(36).slice(2, 8).padEnd(6, 'x')
 // the dingbats a maker can put beside the name: a handful from each family
@@ -78,11 +78,13 @@ const DEFAULT_OPEN = {
   homes: ['pay', 'words', 'lists', 'photos', 'contact', 'map'],
   event: ['pay', 'event', 'words', 'cal', 'photos', 'map', 'contact'],
   group: ['pay', 'words', 'cal', 'photos', 'links', 'contact'],
+  store: ['words', 'photos', 'items', 'pay', 'contact', 'links'],
+  online: ['words', 'face', 'svc', 'quotes', 'links', 'contact'],
 }
 // new pages start in a look that shows photos as taken (Nan 2026-10-26: less image editing); Poster stays one tap away
 // the kinds most likely to pay come first (Nan 2026-10-26)
-const KIND_ORDER = ['stay', 'service', 'food', 'shop', 'homes', 'work', 'event', 'amulet', 'group', 'me']
-const LOOK_FOR = { shop: 'clean', food: 'night', service: 'loom', work: 'clean', amulet: 'lanna', stay: 'lanna', homes: 'clean', me: 'stitch', event: 'night', group: 'stitch' }
+const KIND_ORDER = ['stay', 'service', 'food', 'shop', 'homes', 'work', 'event', 'amulet', 'group', 'me', 'store', 'online']
+const LOOK_FOR = { shop: 'clean', food: 'night', service: 'loom', work: 'clean', amulet: 'lanna', stay: 'lanna', homes: 'clean', me: 'stitch', event: 'night', group: 'stitch', store: 'clean', online: 'clean' }
 
 function guessCc() {
   const zone = { 'Asia/Bangkok': 'TH', 'Asia/Yangon': 'MM', 'Asia/Rangoon': 'MM', 'Asia/Vientiane': 'LA', 'Asia/Phnom_Penh': 'KH',
@@ -104,7 +106,7 @@ function starter(kind) {
   if (kind === 'food') d.hours.week = d.hours.week.map(() => [['10:00', '20:00']])
   if (kind === 'stay') d.rooms = [{ id: rid(), n: '', guests: 2, beds: '', p: '', note: '', photos: [], ical: [] }]
   if (kind === 'homes') d.lists = [{ id: rid(), t: '', deal: 'sale', status: 'open', p: '', area: '', unit: 'm2', beds: 0, baths: 0, kind: '', note: '', photos: [] }]
-  if (kind === 'service') d.svc = []
+  if (kind === 'service' || kind === 'online') d.svc = []
   if (kind === 'event') {
     const t = new Date(Date.now() + 7 * 864e5)
     const p = (n) => String(n).padStart(2, '0')
@@ -232,8 +234,11 @@ function examples(kind, lang) {
     shop: th ? [['ถุงผ้าฝ้าย', '250'], ['โปสการ์ด ชุดละ 6 ใบ', '120'], ['ชาอู่หลง 100 กรัม', '180']] : [['Cotton bag', '250'], ['Postcards, set of 6', '120'], ['Oolong tea, 100 g', '180']],
     food: th ? [['ข้าวซอยไก่', '60'], ['กะเพราหมูสับ ไข่ดาว', '55'], ['ชาเย็น', '30']] : [['Khao soi with chicken', '60'], ['Kaphrao with fried egg', '55'], ['Thai iced tea', '30']],
     service: th ? [['นวดไทย 1 ชั่วโมง', '300'], ['นวดเท้า', '250']] : [['Thai massage, 1 hour', '300'], ['Foot massage', '250']],
+    store: th ? [['ผ้าพันคอทอมือ', '450'], ['สบู่สมุนไพร 3 ก้อน', '199'], ['กาแฟดอยช้าง 250 กรัม', '320']] : [['Handwoven scarf', '450'], ['Herbal soap, 3 bars', '199'], ['Doi Chang coffee, 250 g', '320']],
   }[kind]?.map(([n, p]) => ({ n, p, note: '' }))
-  if (parts.includes('svc')) x.svc = th ? [{ n: 'นวดไทย', mins: 60, p: '300' }, { n: 'นวดน้ำมัน', mins: 90, p: '500' }] : [{ n: 'Thai massage', mins: 60, p: '300' }, { n: 'Oil massage', mins: 90, p: '500' }]
+  if (parts.includes('svc')) x.svc = kind === 'online'
+    ? (th ? [{ n: 'คุย 30 นาที', mins: 30, p: '500' }, { n: 'แพ็กเกจเริ่มต้น', mins: 60, p: '3000' }] : [{ n: 'A 30-minute call', mins: 30, p: '500' }, { n: 'Starter package', mins: 60, p: '3000' }])
+    : th ? [{ n: 'นวดไทย', mins: 60, p: '300' }, { n: 'นวดน้ำมัน', mins: 90, p: '500' }] : [{ n: 'Thai massage', mins: 60, p: '300' }, { n: 'Oil massage', mins: 90, p: '500' }]
   if (parts.includes('rooms')) x.rooms = [
     { n: th ? 'ห้องริมสวน' : 'Garden room', guests: 2, beds: th ? 'เตียงควีน 1' : '1 queen bed', p: '900', p2: '1100', photos: [KPIC_ID] },
     { n: th ? 'ห้องครอบครัว' : 'Family room', guests: 4, beds: th ? 'เตียงคู่ 2' : '2 double beds', p: '1500', photos: [] },
@@ -277,6 +282,18 @@ function partAt(p) {
   return PART_AT[p]
 }
 
+/** The four kinds of site (kinds.mjs): the first choice, as big tiles. */
+const GROUP_PIC = { local: 'food', store: 'store', online: 'online', portfolio: 'work' }
+function groupTile(g) {
+  const on = siteOf(S.kind) === g, pk = GROUP_PIC[g]
+  return `<button class="kind grp${on ? ' on' : ''}" data-group="${g}" aria-pressed="${on}">${KPIC[pk] ? `<img src="${kpicUrl(pk, true)}" alt="" loading="lazy">` : `<span class="kd">${ding(KIND_DING[pk] || 'star', 'paper')}</span>`}<b>${T('g_' + g)}</b><small>${T('hg_' + g)}</small></button>`
+}
+/** Inside a kind of site with more than one: which one. */
+function subKinds() {
+  const ks = GROUP_KINDS[siteOf(S.kind)]
+  return ks.length > 1 ? `<p class="lbl">${T('pickSub')}</p><div class="kinds sub">${ks.map(kindTile).join('')}</div>` : ''
+}
+
 function kindTile(k) {
   return `<button class="kind${k === S.kind ? ' on' : ''}" data-kind="${k}" aria-pressed="${k === S.kind}">${KPIC[k] ? `<img src="${kpicUrl(k, true)}" alt="" loading="lazy">` : `<span class="kd">${ding(KIND_DING[k] || 'star', 'paper')}</span>`}<b>${T('k_' + k)}</b><small>${T('hk_' + k)}</small></button>`
 }
@@ -292,7 +309,7 @@ function lookTile(id) {
   const L = LOOKS[id]
   return `<button class="lp${id === S.look ? ' on' : ''}" data-look="${id}" aria-pressed="${id === S.look}">
     <span class="mp"><iframe data-th="${id}" tabindex="-1" aria-hidden="true" sandbox="allow-same-origin" scrolling="no" loading="lazy" title=""></iframe></span>
-    <span class="lkt"><b>${T('lk_' + id)}${L.gold ? `<i class="gtag">★ ${T('tagGold')}</i>` : ''}</b><small>${T('m_' + id)}</small></span></button>`
+    <span class="lkt"><b>${T('lk_' + id)}${!lookOk(S.kind, id, false) ? `<i class="gtag">★ ${T('tagGold')}</i>` : ''}</b><small>${T('m_' + id)}</small></span></button>`
 }
 
 // Each look tile is the page itself in that look, the top of it, drawn by the same render() and
@@ -328,7 +345,7 @@ function lookNav() {
 
 // after a kind, look or colour changes: the tiles, the chips and the phone, the name box untouched
 function syncPick() {
-  app.querySelectorAll('.kind').forEach((x) => { const on = x.dataset.kind === S.kind; x.classList.toggle('on', on); x.setAttribute('aria-pressed', on) })
+  app.querySelectorAll('.kind').forEach((x) => { const on = x.dataset.group ? siteOf(S.kind) === x.dataset.group : x.dataset.kind === S.kind; x.classList.toggle('on', on); x.setAttribute('aria-pressed', on) })
   const g = $('#gets'); if (g) g.innerHTML = getsHtml()
   const l = $('#lks'); if (l) l.innerHTML = LOOK_IDS.map(lookTile).join('')
   const a = $('#accs'); if (a) a.innerHTML = accDots()
@@ -394,7 +411,8 @@ function drawTry() {
     <div class="tphone"><div class="shell"><div class="url">${icon('globe')}<span>sites.motdang.net/<b id="pvaddr">${esc(S.addr || '…')}</b></span></div><iframe id="tryframe" title="${T('preview')}"></iframe></div>
       <div class="lknav" id="lknav">${lookNav()}</div></div>
     <div class="tkind"><p class="lbl">${T('for')}</p>
-      <div class="kinds">${KIND_ORDER.filter((k) => KINDS.includes(k)).concat(KINDS.filter((k) => !KIND_ORDER.includes(k))).map(kindTile).join('')}</div>
+      <div class="kinds groups">${SITE_GROUPS.map(groupTile).join('')}</div>
+      <div id="subk">${subKinds()}</div>
       <div class="gets" id="gets">${getsHtml()}</div></div>
     <div class="tlook">
       <div class="lbrow"><p class="lbl">${T('look')}</p><button class="dice" id="dice">${ding('sparkle', 'ink')}${T('surprise')}</button></div>
@@ -421,13 +439,16 @@ function drawTry() {
   }
   ad.oninput = () => { S.addrTouched = true; ad.value = ad.value.toLowerCase().replace(/[^a-z0-9-]/g, ''); S.addr = ad.value; $('#pvaddr').textContent = S.addr || '…'; check() }
   nm.onkeydown = ad.onkeydown = (e) => { if (e.key === 'Enter') $('#next').click() }
-  app.querySelectorAll('.kind').forEach((b) => (b.onclick = () => {
-    S.kind = b.dataset.kind
+  wireKinds()
+  function wireKinds() { app.querySelectorAll('.kind').forEach((b) => (b.onclick = () => {
+    const g = b.dataset.group
+    if (g) { if (siteOf(S.kind) !== g) S.kind = GROUP_KINDS[g][0] } else S.kind = b.dataset.kind
+    const sk = $('#subk'); if (sk) { sk.innerHTML = subKinds(); wireKinds() }
     if (!S.lookWanted) { S.look = LOOK_FOR[S.kind] || S.look; if (S.accent === LOOKS[S.look].accent) S.accent = '' }
     if (!S.addrTouched && S.name) { ad.value = S.addr = slugify(S.name, S.kind); check() }
     syncPick()
     tryPreview(0)
-  }))
+  })) }
   $('#dice').onclick = () => {
     const others = LOOK_IDS.filter((x) => x !== S.look)
     const id = others[Math.floor(Math.random() * others.length)]
@@ -510,10 +531,10 @@ function check() {
 
 function lookCard(id, on) {
   const L = LOOKS[id]
-  const locked = L.gold && !isGold()
+  const locked = !isGold() && !lookOk(S.kind, id, false)
   return `<button class="lp${on ? ' on' : ''}" data-look="${id}" aria-pressed="${on}">
     <span class="mp"><iframe data-th="${id}" tabindex="-1" aria-hidden="true" sandbox="allow-same-origin" scrolling="no" loading="lazy" title=""></iframe></span>
-    <span class="lkt"><b>${T('lk_' + id)}${L.gold ? `<i class="gtag">★ ${locked ? T('goldLock') : T('tagGold')}</i>` : ''}</b><small>${T('m_' + id)}</small></span></button>`
+    <span class="lkt"><b>${T('lk_' + id)}${!lookOk(S.kind, id, false) ? `<i class="gtag">★ ${locked ? T('goldLock') : T('tagGold')}</i>` : ''}</b><small>${T('m_' + id)}</small></span></button>`
 }
 
 function goldTease() {
