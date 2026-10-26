@@ -11,6 +11,8 @@ import { normalizeAmulets, amuletSection, amuletBody, amuletLd, amuletDesc, AM_C
 import { LOOKS, LOOK_IDS, GOLD_LOOKS, LOOK_ALIAS, lookOf, HERO_CSS, F_THAI } from './looks.mjs'
 import { lookOk, freeLooks, groupOf, GROUPS, GROUP_OF, GROUP_KINDS } from './kinds.mjs'
 import { ogOf, normalizeOg } from './og.mjs'
+import { O as ONLINE_WORDS, ow } from './words-online.mjs'
+import { normalizeOnline, faqShown, faqLd, faqSection, packagesSection, packagesLd, signupSection, onlineCta, ctaHtml, onlineW, ONLINE_CSS } from './online.mjs'
 
 export { LOOKS, LOOK_IDS, GOLD_LOOKS, LOOK_ALIAS, lookOf, lookOk, freeLooks, groupOf, GROUPS, GROUP_OF, GROUP_KINDS }
 
@@ -55,7 +57,7 @@ export const sceneOf = (kind, d) => (d.scene && SCENE_IDS.has(d.scene) ? d.scene
 // The dingbat beside each section's heading, and the look each page look draws them in.
 const HEAD_DING = { pay: 'coin', about: 'sparkle', menu: 'noodles', prices: 'coin', hours: 'clock', photos: 'camera', where: 'pin', line: 'chat', links: 'link',
   contact: 'telephone', msg: 'envelope', when: 'calendar', drawn: 'pencil', video: 'play', spots: 'compass', share: 'share',
-  cal: 'calendar', news: 'megaphone', camp: 'megaphone', book: 'clock', rooms: 'key', lists: 'home', works: 'nib', quotes: 'hedera', amulets: 'lotus', amterms: 'bell', amkt: 'coin' }
+  cal: 'calendar', news: 'megaphone', camp: 'megaphone', book: 'clock', rooms: 'key', lists: 'home', works: 'nib', quotes: 'hedera', amulets: 'lotus', amterms: 'bell', amkt: 'coin', packages: 'gift', faq: 'bookmark', join: 'megaphone' }
 const DING_LOOK = { poster: 'riso', loom: 'paper', stitch: 'paper', night: 'neon', clean: 'ink', lanna: 'paper', gold: 'paper' }
 export const ACCENTS = ['#f04a00', '#ff2e88', '#ffb000', '#19a974', '#137a71', '#2563eb', '#7c3aed', '#111827']
 
@@ -175,7 +177,7 @@ export function normalize(d = {}) {
   o.event = LOCAL_DT.test(e.start || '')
     ? { start: e.start, end: LOCAL_DT.test(e.end || '') && e.end > e.start ? e.end : '', tz: validTz(e.tz) }
     : null
-  return normalizeAmulets(d, normalizeExtras(d, o))
+  return normalizeOnline(d, normalizeAmulets(d, normalizeExtras(d, o)))
 }
 
 /** A YouTube, Vimeo or Google Drive address as { kind, id }, else null. */
@@ -582,6 +584,7 @@ export function render(site, opt = {}) {
   // a group's page (a club, a school, a program) names its parts as a group's, not a business's
   const GW = site.kind === 'group' ? { works: 'g_works', quotes: 'g_quotes', w_client: 'g_client', w_more: 'g_more', w_all: 'g_all', w_ask: 'g_ask', spots: 'g_spots' } : {}
   const W = (k, v) => esc(word(lang, GW[k] || k, v))
+  const Wx = (k, v) => (ONLINE_WORDS.en[k] ? esc(ow(lang, k, v)) : W(k, v)) // the online parts' words (words-online.mjs)
   const img = opt.img || ((id, small) => `/img/${id}${small ? '-s' : ''}.webp`)
   const origin = opt.origin || HOME
   const url = opt.base || `${origin}/${site.name}`
@@ -609,6 +612,9 @@ export function render(site, opt = {}) {
   const langs = (opt.langs || []).filter((l) => PAGE_LANGS[l])
   const home = opt.home || site.lang
 
+  const faqList = !L && !Wk && !Am ? faqShown(d, gold) : []
+  const onl = site.kind === 'online' || d.signup.on // the page carries online parts: their style and script
+
   // head
   const desc = (L && L.note.slice(0, 160)) || (Wk && (Wk.note.slice(0, 160) || [Wk.client, Wk.year].filter(Boolean).join(' · '))) || (Am && amuletDesc(Am, lang)) || d.tagline || d.about.slice(0, 160) || name
   // each page and item page its own 1200×630 card: the drawn one, else /card/… (og.mjs)
@@ -627,9 +633,10 @@ export function render(site, opt = {}) {
     `<meta name="robots" content="${findable(site, d, gold) ? 'index,follow,notranslate' : 'noindex,notranslate'}"><link rel="canonical" href="${esc(opt.hl ? pageUrl + '?hl=' + opt.hl : pageUrl)}">`,
     langs.length > 1 && gold && site.status === 'live' ? langs.map((l) => `<link rel="alternate" hreflang="${l}" href="${esc(l === home ? pageUrl : pageUrl + '?hl=' + l)}">`).join('') : '',
     gold && site.status === 'live' && !opt.preview ? `<script type="application/ld+json">${(Am ? JSON.stringify(amuletLd(Am, pageUrl, card, cur)) : ldJson(site, d, name, pageUrl, card, L, sym)).replace(/</g, '\\u003c')}</script>` : '',
+    faqList.length && site.status === 'live' && !opt.preview && findable(site, d, gold) ? `<script type="application/ld+json">${JSON.stringify(faqLd(faqList)).replace(/</g, '\\u003c')}</script>` : '',
     `<meta name="theme-color" content="${/--bg:(#[0-9a-f]+)/i.exec(look.vars)?.[1] || '#ffffff'}">`,
     `<link rel="icon" href="${d.avatar ? esc(img(d.avatar, true)) : '/s/ant.svg'}">`,
-    `<style>${faces(look.fonts)}:root{${look.vars};--accent:${accent};--on-accent:${onColor(accent)};--acc-ink:${accInk(look, accent)};--soft:color-mix(in srgb,var(--ink) 6%,var(--card))}${BASE_CSS}${HERO_CSS}${ams.length ? AM_CSS : ''}${look.css}</style></head><body>`)
+    `<style>${faces(look.fonts)}:root{${look.vars};--accent:${accent};--on-accent:${onColor(accent)};--acc-ink:${accInk(look, accent)};--soft:color-mix(in srgb,var(--ink) 6%,var(--card))}${BASE_CSS}${HERO_CSS}${ams.length ? AM_CSS : ''}${onl || faqList.length ? ONLINE_CSS : ''}${look.css}</style></head><body>`)
 
   if (site.status === 'held' && !opt.preview) {
     out.push(`<main class="wrap"><section class="card checking"><h1 style="font:700 28px var(--display)">${esc(name)}</h1><p>${W('checking')}</p></section></main>`,
@@ -655,7 +662,10 @@ export function render(site, opt = {}) {
   if (d.dings.length) out.push(`<p class="dings">${d.dings.map((n) => ding(n, dl)).join('')}</p>`)
   out.push(`<span id="st">${badge(lang, st)}</span>`)
   const cta = !L && !Wk ? leadButton(site, d, gold, line) : null
-  if (cta) out.push(`<a class="btn cta${cta[1] === 'give' ? ' give' : ''}" data-t="${cta[1] === 'give' ? 'give' : 'cta'}" href="${esc(cta[0])}"${/^https?:/.test(cta[0]) ? ' rel="nofollow noopener"' : ''}>${icon(cta[2])}${W(cta[1])}</a>`)
+  // an online business page leads with two buttons: the packages, then LINE or the message form (online.mjs)
+  const oc = site.kind === 'online' && !L && !Wk ? onlineCta({ d, gold, line, phone: c.phone, tel: telHref }) : null
+  if (oc) { const two = oc[0] && oc[1]; if (two) out.push('<div class="ctas">'); oc.forEach((a, i) => { if (a) out.push(ctaHtml(a, { W: Wx, icon, esc, cls: i ? ' cta2 ghost' : '' })) }); if (two) out.push('</div>') }
+  else if (cta) out.push(`<a class="btn cta${cta[1] === 'give' ? ' give' : ''}" data-t="${cta[1] === 'give' ? 'give' : 'cta'}" href="${esc(cta[0])}"${/^https?:/.test(cta[0]) ? ' rel="nofollow noopener"' : ''}>${icon(cta[2])}${W(cta[1])}</a>`)
   out.push('</div>')
   out.push(`<button class="tshare" data-t="share" aria-label="${W('share')}" title="${W('share')}">${icon('share')}</button>`)
   if (!opt.thumb && gold && langs.length > 1) {
@@ -745,6 +755,13 @@ export function render(site, opt = {}) {
 
   if (d.about) out.push(`<section class="card rise">${H2('about', W('about'))}${paras(d.about)}</section>`)
 
+  // an online business: its packages come first (online.mjs). Free: Ask; Gold: Book a call.
+  if (site.kind === 'online' && d.svc.length) {
+    const oa = lineOa(c.line)
+    const askHref = (pkg) => (d.msg ? '#message' : oa ? `https://line.me/R/oaMessage/${encodeURIComponent(oa)}/?${encodeURIComponent(ow(lang, 'askPkg', { n: pkg }))}` : line || (c.phone ? telHref(c.phone) : ''))
+    out.push(packagesSection(d.svc, { W: Wx, esc, H2, icon, sym, gold, askHref }))
+  }
+
   // an amulet seller's amulets, each its own page
   if (ams.length) out.push(amuletSection(ams, { site, lang, esc, H2, img, sym, ding, sian: sianOn }))
 
@@ -761,6 +778,8 @@ export function render(site, opt = {}) {
     for (const q of d.quotes) out.push(`<figure><blockquote>${paras(q.q)}</blockquote>${q.who ? `<figcaption>${esc(q.who)}</figcaption>` : ''}</figure>`)
     out.push('</section>')
   }
+  if (faqList.length) out.push(faqSection(faqList, { W: Wx, esc, H2, paras }))
+  if (gold && d.signup.on) out.push(signupSection(d, { W: Wx, esc, H2, icon, preview: !!opt.preview }))
 
   if (d.items.length) {
     const oa = lineOa(c.line), pp = !!d.pay.pp
@@ -775,7 +794,7 @@ export function render(site, opt = {}) {
     out.push('</section>')
   }
 
-  if (gold && d.svc.length) {
+  if (gold && d.svc.length && site.kind !== 'online') {
     out.push(`<section class="card rise" id="book">${H2('book', W('book'))}<ul class="svc">`)
     for (const v of d.svc) out.push(`<li><button class="svcb" data-t="book" data-svc="${esc(v.id)}"><span class="n">${esc(v.n)}<small>${W('bookMins', { m: v.mins })}${v.note ? ' · ' + esc(v.note) : ''}</small></span><span class="p">${esc(money(v.p, sym))}</span></button></li>`)
     out.push(`</ul><div class="bookui" id="bookui" hidden></div></section>`)
@@ -925,12 +944,14 @@ export function render(site, opt = {}) {
     book: gold && (d.svc.length || (hotel && d.rooms.length)) ? { ahead: d.book.ahead, svc: Object.fromEntries(d.svc.map((v) => [v.id, { cap: v.cap, mins: v.mins, p: v.p }])), rooms: Object.fromEntries(d.rooms.map((r) => [r.id, { g: r.guests, p: r.p, p2: r.p2, rates: r.rates, min: r.min, units: r.units }])), stay: { in: d.stay.in, out: d.stay.out } } : null,
     w: Object.fromEntries(['happening', 'ended', 'farFrom', 'reportAsk', 'send', 'thanks', 'close', 'copied', 'orderHi', 'msgSent', 'msgFail', 'saveQr', 'story', 'drawnTap',
       'bookPick', 'bookNone', 'bookName', 'bookReach', 'bookEmail', 'bookPeople', 'bookNote', 'bookSend', 'bookAsked', 'bookDone', 'bookFail', 'bookDeposit', 'bookScan', 'bookLeft',
-      'newsOpt', 'newsMail', 'roomIn', 'roomOut', 'roomNights', 'roomNight1', 'roomSend', 'roomTotal', 'roomPickIn', 'roomPickOut', 'roomTaken', 'roomMin', 'roomLeft', 'bookRef', 'payNow', 'payHotel', 'payLink', 'yourBooking', 'readIn', 'msgName', 'msgReach', 'msgBody', 'msgSend', 'payScan', 'paySlip', 'payTotal'].map((k) => [k, word(lang, k)])),
+      'newsOpt', 'newsMail', 'roomIn', 'roomOut', 'roomNights', 'roomNight1', 'roomSend', 'roomTotal', 'roomPickIn', 'roomPickOut', 'roomTaken', 'roomMin', 'roomLeft', 'bookRef', 'payNow', 'payHotel', 'payLink', 'yourBooking', 'readIn', 'msgName', 'msgReach', 'msgBody', 'msgSend', 'payScan', 'paySlip', 'payTotal'].map((k) => [k, word(lang, k)]).concat(onl ? onlineW(lang) : [])),
     line: line || '',
   }
   out.push(`<template id="qrsvg">${qrSvg(url, { dark: '#000', light: '#fff', label: url })}</template>`)
   out.push(`<script type="application/json" id="pd">${JSON.stringify(pd).replace(/</g, '\\u003c')}</script>`)
-  out.push(`<script${opt.nonce ? ` nonce="${opt.nonce}"` : ''} src="/s/page.js" defer></script></body></html>`)
+  out.push(`<script${opt.nonce ? ` nonce="${opt.nonce}"` : ''} src="/s/page.js" defer></script>`)
+  if (onl) out.push(`<script${opt.nonce ? ` nonce="${opt.nonce}"` : ''} src="/s/online-page.js" defer></script>`)
+  out.push('</body></html>')
   return out.join('')
 }
 
@@ -981,6 +1002,7 @@ export function amountOf(p) {
 /** The button a page leads with, by kind and by what the page holds: [href, word, icon]. */
 function leadButton(site, d, gold, line) {
   const k = site.kind, c = d.contact, pp = !!d.pay.pp, oa = lineOa(c.line)
+  if (k === 'online') return null // its buttons come from online.mjs
   if ((k === 'food' || k === 'shop') && d.items.length && (pp || oa)) return ['#menu', k === 'food' ? 'ctaOrder' : 'ctaBuy', 'basket']
   if (k === 'stay' && gold && d.rooms.length) return ['#rooms', 'ctaRoom', 'cal']
   if (k === 'service' && gold && d.svc.length) return ['#book', 'ctaBook', 'cal']
@@ -1066,7 +1088,7 @@ function ldJson(site, d, name, url, image, L, sym) {
     return JSON.stringify({ '@context': 'https://schema.org', '@type': 'RealEstateListing', name: L.t, url, image, description: L.note.slice(0, 500) || undefined,
       offers: num ? { '@type': 'Offer', price: num, priceCurrency: d.currency || undefined, availability: L.status === 'open' ? 'https://schema.org/InStock' : 'https://schema.org/SoldOut' } : undefined })
   }
-  const type = { food: 'Restaurant', shop: 'Store', service: d.rooms.length ? 'LodgingBusiness' : 'LocalBusiness', stay: 'LodgingBusiness', homes: 'RealEstateAgent', event: 'Event', group: 'Organization', me: 'Person' }[site.kind] || 'LocalBusiness'
+  const type = { food: 'Restaurant', shop: 'Store', service: d.rooms.length ? 'LodgingBusiness' : 'LocalBusiness', stay: 'LodgingBusiness', homes: 'RealEstateAgent', event: 'Event', group: 'Organization', me: 'Person', online: 'Organization' }[site.kind] || 'LocalBusiness'
   const o = { '@context': 'https://schema.org', '@type': type, name, url, image, description: d.tagline || d.about.slice(0, 300) || undefined }
   if (type !== 'Person' && type !== 'Event') {
     if (d.contact.phone) o.telephone = d.contact.phone
@@ -1074,6 +1096,7 @@ function ldJson(site, d, name, url, image, L, sym) {
     if (geo) o.geo = geo
     if (d.hours.on && !d.hours.always) o.openingHours = osmHours(d.hours).split('; ').filter((x) => !x.endsWith('off'))
   }
+  if (site.kind === 'online' && d.svc.length) o.hasOfferCatalog = packagesLd(d.svc, d.currency)
   if (type === 'Event' && d.event) { o.startDate = d.event.start; if (d.place.addr) o.location = { '@type': 'Place', name, address: d.place.addr } }
   return JSON.stringify(o)
 }

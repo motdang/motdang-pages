@@ -41,7 +41,7 @@ export function normalizeExtras(d, o) {
   })).filter((x) => x.t && x.start && x.end && x.end > x.start).slice(0, MAX.camps))
 
   o.svc = uniqIds((Array.isArray(d.svc) ? d.svc : []).map((x, i) => ({
-    id: idOf(x?.id, i), n: str(x?.n, 80), p: str(x?.p, 24), note: str(x?.note, 200),
+    id: idOf(x?.id, i), n: str(x?.n, 80), p: str(x?.p, 24), note: str(x?.note, 400),
     mins: num(x?.mins, 10, 720, 60), cap: num(x?.cap, 1, 50, 1),
   })).filter((x) => x.n).slice(0, MAX.svc))
   const b = d.book || {}

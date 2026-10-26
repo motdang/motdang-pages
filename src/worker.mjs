@@ -152,6 +152,8 @@ async function route(request, env, ctx) {
   if (path === '/line/cb' && m === 'GET') return guestline.cb(request, env, url, origin)
   const un = /^\/u\/([A-Za-z0-9_.-]{20,300})$/.exec(path)
   if (un && (m === 'GET' || m === 'POST')) return unsubscribe(request, env, un[1], m)
+  const jn = /^\/j\/([A-Za-z0-9_.-]{20,300})$/.exec(path)
+  if (jn && (m === 'GET' || m === 'POST')) return joinConfirm(request, env, jn[1], m, origin)
   if (path === '/robots.txt') return new Response(`User-agent: *\nAllow: /\nAllow: /api/amulet-price\nDisallow: /api/\nDisallow: /make\nDisallow: /admin\nSitemap: ${origin}/sitemap.xml\n`, { headers: { 'content-type': 'text/plain' } })
   if (path === '/sitemap.xml') return sitemap(env, origin)
   if (path === '/llms.txt') return new Response(llms(origin), { headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'public, max-age=3600' } })
@@ -551,6 +553,19 @@ async function api(request, env, ctx, p, url, origin) {
     return J({ ok: true })
   }
 
+  // the news sign-up box on a Gold page (customers.mjs): a link to confirm goes by email, the button on it is the yes
+  if (p === 'join' && m === 'POST') {
+    const b = await body(request)
+    if (b.website || Number(b.ms) < 2500) return J({ ok: true }) // a form filled by a script
+    const who = await sender(request, env)
+    if (!(await customers.joinTry(env, who))) return J({ error: 'quota' }, 429)
+    const s = await env.DB.prepare("SELECT id, name, d, lang, tier, gold_until FROM site WHERE name = ? AND status = 'live'").bind(String(b.n || '')).first()
+    if (!s || !gold.isGold(s)) return J({ error: 'not-found' }, 404)
+    const r = await customers.joinAsk(env, s, normalize(JSON.parse(s.d)), { name: b.name, email: b.email }, origin, rand)
+    if (r.sent) ctx.waitUntil(stats.tap(env, request, s.id, 'join'))
+    return J(r, r.error ? ({ email: 400, off: 404, quota: 429, mail: 502 }[r.error] || 400) : 200)
+  }
+
   if (p === 'notify/ok' && m === 'GET') {
     const k = url.searchParams.get('k') || ''
     const s = /^[a-z0-9]{24,40}$/.test(k) && await env.DB.prepare('SELECT id, name, d FROM site WHERE notify_key = ?').bind(k).first()
@@ -683,6 +698,7 @@ ${s ? `<p>ข้อความถึง ${escHtml(title)} จะส่งสำ
     await env.DB.batch([
       env.DB.prepare('DELETE FROM photo WHERE site_id = ?').bind(s.id),
       env.DB.prepare('DELETE FROM msg WHERE site_id = ?').bind(s.id),
+      env.DB.prepare('DELETE FROM signup WHERE site_id = ?').bind(s.id),
       env.DB.prepare("UPDATE site SET status='removed', name = name || '~' || id, d='{}', notify_email=NULL, notify_ok=0, updated=? WHERE id = ?").bind(new Date().toISOString(), s.id),
     ])
     await gbp.drop(env, s.id)
@@ -1179,6 +1195,17 @@ async function unsubscribe(request, env, key, m) {
   const off = !/(^|&)undo=1(&|$)/.test(await request.text().catch(() => '')) // a form with undo=1 puts the news back; the mail app's one-click post stops it
   await customers.setOff(env, k.siteId, k.email, off)
   return html(unsubPage({ lang, title, done: off, action: '/u/' + key }), 200)
+}
+
+/** /j/<key>: the confirm link of the news sign-up box. A GET only asks (mail scanners open every link); the button on the page is the yes. */
+async function joinConfirm(request, env, key, m, origin) {
+  const k = await customers.readJoinKey(env, key)
+  const s = k && await env.DB.prepare("SELECT name, d, lang FROM site WHERE id = ? AND status != 'removed'").bind(k.siteId).first()
+  if (!s) return html(customers.joinPage({ lang: 'th', title: '', bad: true }), 400)
+  const title = JSON.parse(s.d).name || s.name
+  if (m !== 'POST') return html(customers.joinPage({ lang: s.lang, title, ask: true, action: '/j/' + key }), 200)
+  if (!(await customers.joinConfirm(env, key))) return html(customers.joinPage({ lang: s.lang, title, bad: true }), 400)
+  return html(customers.joinPage({ lang: s.lang, title, done: true, leave: '/u/' + (await customers.unsubKey(env, k.siteId, k.email)) }), 200)
 }
 
 function sameOrigin(request, url) {

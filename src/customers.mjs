@@ -8,7 +8,8 @@
 
 import { dayIn } from '../public/s/extras.mjs'
 import { cw, both } from '../public/s/words-cust.mjs'
-import { check } from './msg.mjs'
+import { check, mail } from './msg.mjs'
+import { ow, owBoth } from '../public/s/words-online.mjs'
 import { rules, aiScreen } from './screen.mjs'
 
 const EMAIL = /^[^\s@<>"]{1,64}@[^\s@<>"]{1,190}\.[a-z]{2,}$/i
@@ -19,6 +20,10 @@ const str = (v, n) => String(v ?? '').replace(/[\u0000-\u0008\u000b\u000c\u000e-
 export const NEWS_MAX = 200 // people one broadcast reaches (var NEWS_MAX)
 export const NEWS_DAY = 600 // emails of this kind all pages send in a day (var NEWS_DAY)
 export const NEWS_TRIES = 12 // tries a person makes in a day at /api/news
+export const JOIN_TRIES = 6 // tries one sender makes in a day at /api/join
+export const JOIN_DAY = 60 // confirm emails one page sends in a day (var JOIN_DAY)
+export const JOIN_ALL = 400 // confirm emails all pages send in a day (var JOIN_ALL)
+export const JOIN_GAP = 600e3 // ms between two confirm emails to one address
 
 export const validEmail = (v) => (EMAIL.test(str(v, 254)) ? str(v, 254).toLowerCase() : '')
 
@@ -38,15 +43,20 @@ export function classify(reach) {
   return h ? ['h', h] : null
 }
 
-/** The customers of a page: [{ name, email, phone, line, first, last, bookings, messages, news, mail }]. news: yes | no | off. */
+const SOURCES = [['b', 'booking'], ['m', 'message'], ['s', 'signup']]
+
+/** The customers of a page: [{ name, email, phone, line, first, last, bookings, messages, source, news, mail }]. news: yes | no | off. */
 export async function list(env, s, d) {
   const tz = d.hours.tz
   const bks = (await env.DB.prepare("SELECT name, reach, email, at, status, news FROM booking WHERE site_id = ? AND status != 'hold' ORDER BY at DESC LIMIT 5000").bind(s.id).all()).results
   const mss = (await env.DB.prepare("SELECT name, reach, email, at, news FROM msg WHERE site_id = ? AND status NOT IN ('gone','held') ORDER BY at DESC LIMIT 5000").bind(s.id).all()).results
   const off = new Set((await env.DB.prepare('SELECT email FROM news_off WHERE site_id = ?').bind(s.id).all()).results.map((r) => r.email))
+  // the news sign-up box: an address counts once its confirm button was pressed
+  const sus = (await env.DB.prepare('SELECT name, email, ok_at FROM signup WHERE site_id = ? AND ok_at IS NOT NULL ORDER BY ok_at DESC LIMIT 5000').bind(s.id).all()).results
   const recs = [
     ...bks.map((r) => ({ k: 'b', live: r.status === 'new' || r.status === 'ok', name: r.name, at: r.at, news: !!r.news, mail: validEmail(r.email), reach: r.reach })),
     ...mss.map((r) => ({ k: 'm', name: r.name, at: r.at, news: !!r.news, mail: validEmail(r.email) || validEmail(r.reach), reach: r.reach })),
+    ...sus.map((r) => ({ k: 's', name: r.name, at: r.ok_at, news: true, mail: validEmail(r.email), reach: r.email })),
   ]
   // union-find over what a record gives: email, phone, LINE id
   const parent = new Map()
@@ -83,6 +93,7 @@ export async function list(env, s, d) {
       line: pick((r) => { const c = classify(r.reach); return c && c[0] === 'h' ? str(r.reach, 60) : '' }),
       first: day(at[0]), last: day(at[at.length - 1]), lastAt: at[at.length - 1],
       bookings: g.filter((r) => r.k === 'b' && r.live).length, messages: g.filter((r) => r.k === 'm').length,
+      source: SOURCES.filter(([k]) => g.some((r) => r.k === k)).map(([, w]) => w), // where the person came from: booking, message, signup
       news: !asked.length ? 'no' : wanted.length && !live.length ? 'off' : 'yes',
       mail: live,
     })
@@ -101,8 +112,8 @@ export function csv(rows) {
     if (/^[=@\t\r]|^[+-](?!\d)/.test(t)) t = "'" + t
     return /[",\n\r]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t
   }
-  const head = ['Name', 'Email', 'Phone', 'LINE or other', 'First contact', 'Last contact', 'Bookings', 'Messages', 'News']
-  const lines = [head, ...rows.map((r) => [r.name, r.email, r.phone, r.line, r.first, r.last, r.bookings, r.messages, r.news === 'yes' ? (r.mail.length ? 'yes' : 'yes, no email') : r.news === 'off' ? 'unsubscribed' : 'no'])]
+  const head = ['Name', 'Email', 'Phone', 'LINE or other', 'First contact', 'Last contact', 'Bookings', 'Messages', 'News', 'Source']
+  const lines = [head, ...rows.map((r) => [r.name, r.email, r.phone, r.line, r.first, r.last, r.bookings, r.messages, r.news === 'yes' ? (r.mail.length ? 'yes' : 'yes, no email') : r.news === 'off' ? 'unsubscribed' : 'no', (r.source || []).join(' + ')])]
   return '﻿' + lines.map((l) => l.map(cell).join(',')).join('\r\n') + '\r\n'
 }
 
@@ -112,6 +123,103 @@ export function csv(rows) {
 export async function optIn(env, siteId, email) {
   const e = validEmail(email)
   if (e) await env.DB.prepare('DELETE FROM news_off WHERE site_id = ? AND email = ?').bind(siteId, e).run()
+}
+
+// ---- the news sign-up box (Nan 2026-10-26) ---------------------------------------------------
+// A visitor types an address in the box on an online business page. A confirm email carries a link; the page
+// that link opens asks once more, and the button on it is the yes. Until then the address is not a customer.
+// The yes joins the page's list like a ticked box does, with the same stop link on every email.
+
+/** The confirm link's key: page id, address, and a signature that fits no other link. */
+export async function joinKey(env, siteId, email) {
+  const e = validEmail(email)
+  return `${siteId}.${b64(e)}.${await sig(env, 'join|' + siteId + '|' + e)}`
+}
+/** { siteId, email } for a good confirm key, else null. */
+export async function readJoinKey(env, key) {
+  const [siteId, e64, sg] = String(key || '').split('.')
+  const email = unb64(e64 || '')
+  if (!siteId || !email || !validEmail(email) || sg !== (await sig(env, 'join|' + siteId + '|' + email))) return null
+  return { siteId, email }
+}
+
+const day0 = () => new Date().toISOString().slice(0, 10)
+/** One try at the box by this sender today: true while under JOIN_TRIES. */
+export async function joinTry(env, who) {
+  const r = await env.DB.prepare("INSERT INTO quota (who, day, what, n) VALUES (?,?,'signup',1) ON CONFLICT(who, day, what) DO UPDATE SET n = n + 1 RETURNING n").bind(String(who).slice(0, 16), day0()).first()
+  return (r?.n || 1) <= JOIN_TRIES
+}
+const giveBack = (env, who) => env.DB.prepare("UPDATE quota SET n = n - 1 WHERE who = ? AND day = ? AND what = 'newsmail'").bind(who, day0()).run()
+/** Room for one more confirm email today, for this page and for all pages. */
+async function mayJoin(env, siteId) {
+  const mine = 'join:' + siteId.slice(0, 10)
+  if (!(await mayCount(env, mine, num(env.JOIN_DAY, JOIN_DAY), 1))) return false
+  if (!(await mayCount(env, 'join:all', num(env.JOIN_ALL, JOIN_ALL), 1))) { await giveBack(env, mine); return false }
+  return true
+}
+
+/** The confirm email: Thai first, the page's language beside it, one button. */
+export function joinMail({ title, link, lang }) {
+  const [hi1, hi2] = owBoth(lang, 'jHi', { n: title }), [b1, b2] = owBoth(lang, 'jBtn'), [ig1, ig2] = owBoth(lang, 'jIgnore'), [s1, s2] = owBoth(lang, 'jSubject', { n: title })
+  return {
+    subject: `${s1} · ${s2}`.slice(0, 120),
+    html: `<div style="font:17px/1.55 system-ui,-apple-system,'Segoe UI',sans-serif;color:#1c1530;max-width:560px">
+<h2 style="margin:0 0 12px;font-size:22px">${esc(title)}</h2>
+<p style="margin:0 0 4px">${esc(hi1)}</p><p style="margin:0 0 16px;color:#5a4f6a">${esc(hi2)}</p>
+<p style="margin:0 0 18px"><a href="${esc(link)}" style="display:inline-block;padding:14px 24px;border-radius:99px;background:#ffb000;color:#000;font-weight:800;text-decoration:none">${esc(b1)} · ${esc(b2)}</a></p>
+<p style="margin:0;font-size:14px;color:#5a4f6a">${esc(ig1)}<br>${esc(ig2)}</p></div>`,
+    text: `${title}\n\n${hi1}\n${hi2}\n\n${b1} · ${b2}: ${link}\n\n${ig1}\n${ig2}\n`,
+  }
+}
+
+/** A visitor typed an address. { ok, sent } or { error }: off · email · quota · mail. The answer is the same
+ *  whether the address is new, waiting or already on the list, so the box does not tell who is on it. */
+export async function joinAsk(env, s, d, { name, email }, origin, rand) {
+  if (!d.signup.on) return { error: 'off' }
+  const e = validEmail(email)
+  if (!e) return { error: 'email' }
+  const nm = str(name, 80)
+  if (check({ name: nm, reach: e, body: '' }) !== 'ok') return { ok: true, sent: false } // a name the check holds: nothing goes out
+  const row = await env.DB.prepare('SELECT id, ok_at, mailed_at FROM signup WHERE site_id = ? AND email = ?').bind(s.id, e).first()
+  const off = await env.DB.prepare('SELECT 1 AS x FROM news_off WHERE site_id = ? AND email = ?').bind(s.id, e).first()
+  if (row?.ok_at && !off) return { ok: true, sent: false } // already on the list
+  if (row?.mailed_at && Date.now() - Date.parse(row.mailed_at) < JOIN_GAP) return { ok: true, sent: false } // a link went a moment ago
+  if (!(await mayJoin(env, s.id))) return { error: 'quota' }
+  const now = new Date().toISOString()
+  let id = row?.id
+  if (!id) {
+    id = rand(14)
+    await env.DB.prepare('INSERT OR IGNORE INTO signup (id, site_id, email, name, at, sender) VALUES (?,?,?,?,?,?)').bind(id, s.id, e, nm, now, null).run()
+  } else if (nm) await env.DB.prepare('UPDATE signup SET name = ? WHERE id = ?').bind(nm, id).run()
+  const link = `${origin}/j/${await joinKey(env, s.id, e)}`
+  const sent = await mail(env, { to: e, ...joinMail({ title: d.name || s.name, link, lang: s.lang }) })
+  if (!sent) { await giveBack(env, 'join:' + s.id.slice(0, 10)); await giveBack(env, 'join:all'); return { error: 'mail' } }
+  await env.DB.prepare('UPDATE signup SET mailed_at = ?, mails = mails + 1 WHERE site_id = ? AND email = ?').bind(now, s.id, e).run()
+  return { ok: true, sent: true }
+}
+
+/** The button on the confirm page was pressed: the address is a customer who said yes. { siteId, email } or null. */
+export async function joinConfirm(env, key) {
+  const k = await readJoinKey(env, key)
+  if (!k) return null
+  const row = await env.DB.prepare('SELECT id FROM signup WHERE site_id = ? AND email = ?').bind(k.siteId, k.email).first()
+  if (!row) return null
+  await env.DB.prepare('UPDATE signup SET ok_at = ? WHERE id = ?').bind(new Date().toISOString(), row.id).run()
+  await optIn(env, k.siteId, k.email) // a yes after an unsubscribe takes the address off the unsubscribed list
+  return k
+}
+
+/** The page behind the confirm link: the question with its button, the result with the way out, or the bad link. */
+export function joinPage({ lang, title, ask, done, bad, action, leave }) {
+  const line = (k, v) => { const [x, y] = owBoth(lang, k, v); return `<span lang="th">${esc(x)}</span><br><span style="opacity:.75;font-size:.8em">${esc(y)}</span>` }
+  const msg = bad ? line('jBad') : done ? line('jDone', { n: title }) : line('jAsk', { n: title })
+  const btn = (href, k, bg) => `<a href="${esc(href)}" style="display:inline-block;min-height:56px;padding:12px 26px;border-radius:99px;background:${bg};color:#000;font:800 18px system-ui;text-decoration:none">${esc(owBoth(lang, k)[0])}<br><span style="font-weight:600;font-size:.8em">${esc(owBoth(lang, k)[1])}</span></a>`
+  const body = bad ? '' : ask
+    ? `<form method="post" action="${esc(action)}"><button type="submit" style="min-height:56px;padding:12px 26px;border:0;border-radius:99px;background:#ffb000;color:#000;font:800 18px system-ui;cursor:pointer">${esc(owBoth(lang, 'jYes')[0])}<br><span style="font-weight:600;font-size:.8em">${esc(owBoth(lang, 'jYes')[1])}</span></button></form>`
+    : btn(leave, 'jLeave', '#ece3d6')
+  return `<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>Mot Dang</title></head>
+<body style="margin:0;display:grid;place-items:center;min-height:100vh;background:#fff7ec;color:#1c1530;font:20px/1.5 system-ui,-apple-system,'Segoe UI',sans-serif;text-align:center;padding:20px">
+<div style="max-width:440px"><h1 style="font-size:26px;margin:0 0 18px">${msg}</h1>${body}</div></body></html>`
 }
 
 const b64 = (s) => btoa(String.fromCharCode(...new TextEncoder().encode(s))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
@@ -154,11 +262,11 @@ ${bad ? '' : `<form method="post" action="${esc(action)}"><input type="hidden" n
 // ---- the broadcast ----------------------------------------------------------------------
 
 /** What the maker may link to: the page, its sections, and each listing, work, amulet or offer. { k, label, url } */
-export function linkOptions(d, name, origin) {
+export function linkOptions(d, name, origin, kind) {
   const page = `${origin}/${name}`
   const o = [{ k: 'page', w: 'n_l_page', url: page }]
   if (d.items.length) o.push({ k: 'menu', w: 'n_l_menu', url: page + '#menu' })
-  if (d.svc.length) o.push({ k: 'book', w: 'n_l_book', url: page + '#book' })
+  if (d.svc.length) o.push({ k: 'book', w: 'n_l_book', url: page + (kind === 'online' ? '#packages' : '#book') })
   if (d.rooms.length) o.push({ k: 'rooms', w: 'n_l_rooms', url: page + '#rooms' })
   for (const x of d.camps.slice(0, 10)) o.push({ k: 'c:' + x.id, w: 'n_l_offer', label: x.t, url: page })
   for (const x of d.lists.slice(0, 60)) o.push({ k: 'l:' + x.id, w: 'n_l_list', label: x.t, url: `${page}/l/${x.id}` })
@@ -177,12 +285,14 @@ export async function state(env, s, d, origin) {
   const month = monthOf(d.hours.tz)
   const sent = (await env.DB.prepare('SELECT * FROM news_sent WHERE site_id = ? ORDER BY at DESC LIMIT 12').bind(s.id).all()).results
   const used = sent.find((x) => x.month === month && x.state !== 'failed') || null
+  const waiting = (await env.DB.prepare('SELECT COUNT(*) AS n FROM signup WHERE site_id = ? AND ok_at IS NULL').bind(s.id).first())?.n || 0
   return {
+    pending: waiting,
     month, next: nextMonth(month), cap: num(env.NEWS_MAX, NEWS_MAX),
     customers: rows.length, yes: rows.filter((r) => r.news === 'yes').length, mail: recipients(rows).length,
     used: used ? { at: used.at, sent: used.sent, failed: used.failed, body: used.body } : null,
     history: sent.map((x) => ({ month: x.month, at: x.at, sent: x.sent, failed: x.failed, body: x.body })),
-    links: linkOptions(d, s.name, origin).map((x) => ({ k: x.k, w: x.w, label: x.label || '', url: x.url })),
+    links: linkOptions(d, s.name, origin, s.kind).map((x) => ({ k: x.k, w: x.w, label: x.label || '', url: x.url })),
   }
 }
 
@@ -245,7 +355,7 @@ export function newsMail({ title, text, link, page, stop, lang, replyTo }) {
 export async function broadcast(env, s, d, { text, link }, origin, rand, log) {
   text = str(text, 600)
   if (text.length < 4) return { error: 'empty' }
-  const opts = linkOptions(d, s.name, origin)
+  const opts = linkOptions(d, s.name, origin, s.kind)
   const chosen = link ? opts.find((x) => x.k === link) : null
   if (link && !chosen) return { error: 'bad' }
   const month = monthOf(d.hours.tz)

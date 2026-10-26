@@ -13,6 +13,7 @@ import { N } from './make-words-cust.mjs'
 import { N as NL } from './make-words-line.mjs'
 import { B } from './make-words-gbp.mjs'
 import { KW } from './make-words-kinds.mjs'
+import { OB } from './make-words-online.mjs'
 
 export const UI_LANGS = { th: 'ไทย', en: 'English', my: 'မြန်မာ', zh: '中文' }
 
@@ -255,6 +256,7 @@ TABLES.push(GM) // reading a menu from a photo, receipts (make-words-gold.mjs)
 TABLES.push(NL) // edit by LINE (make-words-line.mjs)
 TABLES.push(B) // Google profile (make-words-gbp.mjs)
 TABLES.push(KW) // the four kinds of site (make-words-kinds.mjs)
+TABLES.push(OB) // an online business page: packages, questions, news sign-up (make-words-online.mjs)
 export function ui(lang, k) {
   for (const t of TABLES) if (t[lang] && t[lang][k]) return t[lang][k]
   for (const t of TABLES) if (t.en[k]) return t.en[k]

@@ -42,7 +42,7 @@ export const Q = {
     dd_ex_food_3: 'sticky rice and mango on a banana leaf', dd_ex_shop_1: 'a little shop with a striped awning and baskets of colourful bags',
     dd_ex_shop_2: 'a bicycle with a basket full of flowers outside our shop', dd_ex_shop_3: 'hand-woven bags and scarves hanging in a shop window',
     dd_ex_service_1: 'a cosy massage room with candles and orchids', dd_ex_service_2: 'a friendly tuk-tuk full of flowers, ready for a tour',
-    dd_ex_service_3: 'a barber chair, scissors and a mirror', dd_ex_amulet_1: 'a jeweller\'s loupe and a velvet tray', dd_ex_amulet_2: 'a market stall table with a lamp and a glass case', dd_ex_amulet_3: 'a gold locket frame on a red cloth', dd_ex_work_1: 'a designer\'s desk with pencils, a laptop and a cup of coffee',
+    dd_ex_service_3: 'a barber chair, scissors and a mirror', dd_ex_amulet_1: 'a jeweller\'s loupe and a velvet tray', dd_ex_amulet_2: 'a market stall table with a lamp and a glass case', dd_ex_amulet_3: 'a gold locket frame on a red cloth', dd_ex_store_1: 'a market basket with wrapped parcels', dd_ex_store_2: 'a shelf of jars with handwritten labels', dd_ex_store_3: 'a packing table with tape, string and a scale', dd_ex_online_1: 'a laptop on a desk with a cup of tea', dd_ex_online_2: 'a phone leaning on a notebook and a pen', dd_ex_online_3: 'a desk lamp, a headset and a paper calendar', dd_ex_work_1: 'a designer\'s desk with pencils, a laptop and a cup of coffee',
     dd_ex_work_2: 'a camera, a notebook and a mountain view', dd_ex_work_3: 'a hand drawing a map of Chiang Mai',
     dd_ex_stay_1: 'our garden bungalow under the stars', dd_ex_stay_2: 'a hammock between two trees with rice fields behind',
     dd_ex_stay_3: 'a cosy room with a big window and a mountain view',
@@ -53,8 +53,6 @@ export const Q = {
     dd_ex_event_2: 'a big birthday cake with candles and balloons', dd_ex_event_3: 'a stage with a guitar and string lights',
     dd_ex_group_1: 'friends sitting in a circle on the grass sharing food', dd_ex_group_2: 'a running club crossing a bridge at sunrise',
     dd_ex_group_3: 'a crowd of hands holding up a big heart',
-    dd_ex_store_1: 'a parcel tied with string, a red ant riding on top', dd_ex_store_2: 'a shelf of handmade soap, scarves and coffee', dd_ex_store_3: 'a mail van driving over the hills with boxes',
-    dd_ex_online_1: 'a laptop on a café table, steam rising from the coffee', dd_ex_online_2: 'a teacher waving from a video call', dd_ex_online_3: 'a rocket made of books flying over the city',
   },
   th: {
     // the button, the sheet and its fields
@@ -91,7 +89,7 @@ export const Q = {
     dd_ex_shop_1: 'ร้านเล็กๆ มีกันสาดลายทาง และตะกร้ากระเป๋าหลากสี', dd_ex_shop_2: 'จักรยานตะกร้าเต็มไปด้วยดอกไม้หน้าร้านเรา',
     dd_ex_shop_3: 'กระเป๋าและผ้าพันคอทอมือแขวนที่หน้าต่างร้าน', dd_ex_service_1: 'ห้องนวดอบอุ่น มีเทียนและกล้วยไม้',
     dd_ex_service_2: 'ตุ๊กตุ๊กเต็มไปด้วยดอกไม้ พร้อมพาเที่ยว', dd_ex_service_3: 'เก้าอี้ร้านตัดผม กรรไกร และกระจก',
-    dd_ex_amulet_1: 'กล้องส่องพระกับถาดกำมะหยี่', dd_ex_amulet_2: 'โต๊ะแผงในตลาด มีโคมไฟและตู้กระจก', dd_ex_amulet_3: 'กรอบทองบนผ้าแดง', dd_ex_work_1: 'โต๊ะนักออกแบบ มีดินสอ แล็ปท็อป และกาแฟแก้วหนึ่ง', dd_ex_work_2: 'กล้องถ่ายรูป สมุดโน้ต และวิวภูเขา',
+    dd_ex_amulet_1: 'กล้องส่องพระกับถาดกำมะหยี่', dd_ex_amulet_2: 'โต๊ะแผงในตลาด มีโคมไฟและตู้กระจก', dd_ex_amulet_3: 'กรอบทองบนผ้าแดง', dd_ex_store_1: 'ตะกร้าตลาดกับพัสดุห่อกระดาษ', dd_ex_store_2: 'ชั้นวางขวดโหลที่เขียนป้ายด้วยมือ', dd_ex_store_3: 'โต๊ะแพ็กของ มีเทป เชือก และตาชั่ง', dd_ex_online_1: 'แล็ปท็อปบนโต๊ะกับถ้วยชา', dd_ex_online_2: 'มือถือพิงสมุดกับปากกา', dd_ex_online_3: 'โคมไฟตั้งโต๊ะ หูฟัง และปฏิทินกระดาษ', dd_ex_work_1: 'โต๊ะนักออกแบบ มีดินสอ แล็ปท็อป และกาแฟแก้วหนึ่ง', dd_ex_work_2: 'กล้องถ่ายรูป สมุดโน้ต และวิวภูเขา',
     dd_ex_work_3: 'มือกำลังวาดแผนที่เชียงใหม่', dd_ex_stay_1: 'บังกะโลในสวนใต้ท้องฟ้าเต็มดาว',
     dd_ex_stay_2: 'เปลญวนระหว่างต้นไม้สองต้น มีทุ่งนาอยู่ข้างหลัง', dd_ex_stay_3: 'ห้องพักอบอุ่น มีหน้าต่างบานใหญ่และวิวภูเขา',
     dd_ex_homes_1: 'บ้านไม้หลังเล็ก สวนกว้าง มีแมวนั่งหน้าบ้าน', dd_ex_homes_2: 'คอนโดทันสมัย ระเบียงเต็มไปด้วยต้นไม้',
@@ -100,8 +98,6 @@ export const Q = {
     dd_ex_event_1: 'ตลาดกลางคืน มีโคมกระดาษและเวทีเล็กๆ', dd_ex_event_2: 'เค้กวันเกิดก้อนใหญ่ มีเทียนและลูกโป่ง',
     dd_ex_event_3: 'เวทีมีกีตาร์และไฟประดับ', dd_ex_group_1: 'เพื่อนๆ นั่งล้อมวงบนสนามหญ้า แบ่งอาหารกัน',
     dd_ex_group_2: 'ชมรมวิ่งข้ามสะพานตอนพระอาทิตย์ขึ้น', dd_ex_group_3: 'มือหลายมือชูหัวใจดวงใหญ่',
-    dd_ex_store_1: 'กล่องพัสดุผูกเชือก มีมดแดงนั่งอยู่ข้างบน', dd_ex_store_2: 'ชั้นวางสบู่ทำมือ ผ้าพันคอ และกาแฟ', dd_ex_store_3: 'รถส่งของวิ่งข้ามเขา บรรทุกกล่องเต็มคัน',
-    dd_ex_online_1: 'แล็ปท็อปบนโต๊ะร้านกาแฟ ไอกาแฟลอยขึ้น', dd_ex_online_2: 'ครูโบกมือในวิดีโอคอล', dd_ex_online_3: 'จรวดทำจากหนังสือบินเหนือเมือง',
   },
   my: {
     // the button, the sheet and its fields
@@ -149,7 +145,7 @@ export const Q = {
     dd_ex_shop_3: 'ဆိုင်ပြတင်းပေါက်မှာ ချိတ်ဆွဲထားတဲ့ လက်ယက်အိတ်တွေနဲ့ ပဝါတွေ',
     dd_ex_service_1: 'ဖယောင်းတိုင်တွေနဲ့ ပန်းတွေရှိတဲ့ သက်သောင့်သက်သာရှိတဲ့ အနှိပ်ခန်းလေး',
     dd_ex_service_2: 'ပန်းတွေအပြည့်နဲ့ ခရီးထွက်ဖို့ အသင့်ဖြစ်နေတဲ့ တွတ်တွတ် (tuk-tuk) တစ်စီး',
-    dd_ex_service_3: 'ဆံပင်ညှပ်ဆိုင်ထိုင်ခုံ၊ ကတ်ကြေးနဲ့ မှန်တစ်ချပ်', dd_ex_amulet_1: 'မှန်ဘီလူးနဲ့ ကတ္တီပါဗန်း', dd_ex_amulet_2: 'ဈေးဆိုင်စားပွဲ၊ မီးအိမ်နဲ့ မှန်ဗီရို', dd_ex_amulet_3: 'အနီရောင်အထည်ပေါ်က ရွှေဘောင်', dd_ex_work_1: 'ခဲတံ (pencil) တွေ၊ လက်ပ်တော့နဲ့ ကော်ဖီခွက်တစ်ခွက်ရှိတဲ့ ဒီဇိုင်နာစားပွဲ',
+    dd_ex_service_3: 'ဆံပင်ညှပ်ဆိုင်ထိုင်ခုံ၊ ကတ်ကြေးနဲ့ မှန်တစ်ချပ်', dd_ex_amulet_1: 'မှန်ဘီလူးနဲ့ ကတ္တီပါဗန်း', dd_ex_amulet_2: 'ဈေးဆိုင်စားပွဲ၊ မီးအိမ်နဲ့ မှန်ဗီရို', dd_ex_amulet_3: 'အနီရောင်အထည်ပေါ်က ရွှေဘောင်', dd_ex_store_1: 'စက္ကူပတ်ထားသော ပါဆယ်များပါ ဈေးခြင်း', dd_ex_store_2: 'လက်ရေးတံဆိပ်ကပ်ထားသော ဂျာဘူးများ ထားသည့် စင်', dd_ex_store_3: 'တိပ်၊ ကြိုးနှင့် ချိန်ခွင်ပါ ပါဆယ်ထုပ်စားပွဲ', dd_ex_online_1: 'လက်ပ်တော့ပ်နှင့် လက်ဖက်ရည်ခွက် ရှိသော စားပွဲ', dd_ex_online_2: 'မှတ်စုစာအုပ်နှင့် ဘောပင်ကို မှီထားသော ဖုန်း', dd_ex_online_3: 'စားပွဲတင်မီးအိမ်၊ နားကြပ်နှင့် စက္ကူပြက္ခဒိန်', dd_ex_work_1: 'ခဲတံ (pencil) တွေ၊ လက်ပ်တော့နဲ့ ကော်ဖီခွက်တစ်ခွက်ရှိတဲ့ ဒီဇိုင်နာစားပွဲ',
     dd_ex_work_2: 'ကင်မရာတစ်လုံး၊ မှတ်စုစာအုပ်တစ်အုပ်နဲ့ တောင်ပေါ်ရှုခင်း', dd_ex_work_3: 'ချင်းမိုင် (Chiang Mai) မြေပုံကို ဆွဲနေတဲ့ လက်တစ်ဖက်',
     dd_ex_stay_1: 'ကြယ်တွေအောက်က ကိုယ့်ရဲ့ ဥယျာဉ်ဘန်ဂလိုလေး', dd_ex_stay_2: 'စပါးခင်းတွေနောက်ခံနဲ့ သစ်ပင်နှစ်ပင်ကြားက ဟမ်မောက် (hammock) တစ်ခု',
     dd_ex_stay_3: 'ပြတင်းပေါက်ကြီးတစ်ခုနဲ့ တောင်ပေါ်ရှုခင်းရှိတဲ့ သက်သောင့်သက်သာရှိတဲ့ အခန်းလေး',
@@ -161,8 +157,6 @@ export const Q = {
     dd_ex_event_2: 'ဖယောင်းတိုင်တွေနဲ့ ပူဖောင်းတွေပါတဲ့ မွေးနေ့ကိတ်ကြီး', dd_ex_event_3: 'ဂစ်တာတစ်လက်နဲ့ မီးသီးကြိုးလေးတွေပါတဲ့ စင်မြင့်တစ်ခု',
     dd_ex_group_1: 'မြက်ခင်းပေါ်မှာ စက်ဝိုင်းပုံထိုင်ပြီး အစားအသောက် မျှဝေစားနေကြတဲ့ သူငယ်ချင်းတွေ',
     dd_ex_group_2: 'နေထွက်ချိန် တံတားတစ်စင်းကို ဖြတ်ကူးနေတဲ့ အပြေးအသင်း', dd_ex_group_3: 'နှလုံးပုံကြီးတစ်ခုကို မြှောက်ထားတဲ့ လက်တွေအုပ်',
-    dd_ex_store_1: 'ကြိုးချည်ထားတဲ့ ပါဆယ်ထုပ်ပေါ်မှာ ပုရွက်ဆိတ်နီ ထိုင်နေတယ်', dd_ex_store_2: 'လက်လုပ်ဆပ်ပြာ၊ ပုဝါနဲ့ ကော်ဖီ စင်တစ်ခု', dd_ex_store_3: 'သေတ္တာတွေ အပြည့်တင်ပြီး တောင်ကုန်းကျော်နေတဲ့ စာပို့ကား',
-    dd_ex_online_1: 'ကော်ဖီဆိုင်စားပွဲပေါ်က လက်ပ်တော့၊ ကော်ဖီအငွေ့တက်နေတယ်', dd_ex_online_2: 'ဗီဒီယိုခေါ်ဆိုမှုထဲက လက်ပြနေတဲ့ ဆရာ', dd_ex_online_3: 'စာအုပ်တွေနဲ့ လုပ်ထားတဲ့ ဒုံးပျံ မြို့ပေါ်ကနေ ပျံသွားတယ်',
   },
   zh: {
     // the button, the sheet and its fields
@@ -187,12 +181,10 @@ export const Q = {
     // examples to tap, three for each kind of page
     dd_ex_food_1: '一碗清迈咖喱面，蒸汽变成心形', dd_ex_food_2: '我们的面摊，夜晚挂着灯笼', dd_ex_food_3: '香蕉叶上的芒果糯米饭', dd_ex_shop_1: '挂着条纹遮阳棚的小店，门口放着彩色布包篮子',
     dd_ex_shop_2: '店门口的自行车，篮子里装满鲜花', dd_ex_shop_3: '橱窗里挂着手织包和围巾', dd_ex_service_1: '温馨的按摩房，有蜡烛和兰花', dd_ex_service_2: '载满鲜花的嘟嘟车，准备出发游览',
-    dd_ex_service_3: '理发椅、剪刀和镜子', dd_ex_amulet_1: '放大镜和丝绒托盘', dd_ex_amulet_2: '市场摊位的桌子，有一盏灯和玻璃柜', dd_ex_amulet_3: '红布上的金色佛牌框', dd_ex_work_1: '设计师的桌子，有铅笔、笔记本电脑和一杯咖啡', dd_ex_work_2: '相机、笔记本和山景', dd_ex_work_3: '一只手在画清迈地图',
+    dd_ex_service_3: '理发椅、剪刀和镜子', dd_ex_amulet_1: '放大镜和丝绒托盘', dd_ex_amulet_2: '市场摊位的桌子，有一盏灯和玻璃柜', dd_ex_amulet_3: '红布上的金色佛牌框', dd_ex_store_1: '装着包好包裹的市场篮子', dd_ex_store_2: '摆着手写标签罐子的架子', dd_ex_store_3: '有胶带、绳子和秤的打包桌', dd_ex_online_1: '书桌上的笔记本电脑和一杯茶', dd_ex_online_2: '靠着笔记本和笔的手机', dd_ex_online_3: '台灯、耳机和纸质日历', dd_ex_work_1: '设计师的桌子，有铅笔、笔记本电脑和一杯咖啡', dd_ex_work_2: '相机、笔记本和山景', dd_ex_work_3: '一只手在画清迈地图',
     dd_ex_stay_1: '星空下的花园小木屋', dd_ex_stay_2: '两棵树之间的吊床，背后是稻田', dd_ex_stay_3: '有大窗户和山景的温馨房间', dd_ex_homes_1: '带大花园的小木屋，门廊上有只猫',
     dd_ex_homes_2: '阳台摆满绿植的现代公寓楼', dd_ex_homes_3: '系着爱心丝带的房门钥匙', dd_ex_me_1: '长发微笑的人，捧着一杯咖啡', dd_ex_me_2: '开心的自画像，拿着相机，戴着大帽子',
     dd_ex_me_3: '戴着圆眼镜和围巾的猫', dd_ex_event_1: '夜市，有纸灯笼和一个小舞台', dd_ex_event_2: '插着蜡烛、挂着气球的大生日蛋糕', dd_ex_event_3: '有吉他和彩灯的舞台',
     dd_ex_group_1: '朋友们围坐在草地上分享食物', dd_ex_group_2: '日出时跑过桥的跑步俱乐部', dd_ex_group_3: '许多只手托起一颗大爱心',
-    dd_ex_store_1: '一个用绳子捆好的包裹，上面坐着一只红蚂蚁', dd_ex_store_2: '一排手工皂、围巾和咖啡', dd_ex_store_3: '一辆装满箱子的邮车开过山丘',
-    dd_ex_online_1: '咖啡馆桌上的笔记本电脑，咖啡冒着热气', dd_ex_online_2: '在视频通话里挥手的老师', dd_ex_online_3: '一枚用书做成的火箭飞过城市',
   },
 }
