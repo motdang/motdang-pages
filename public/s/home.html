@@ -5,9 +5,9 @@
 <meta name="google" content="notranslate">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>มดแดง · เว็บของคุณเอง · Your own page</title>
-<meta name="description" content="เว็บของร้าน ของกิน งานบริการ หรืองานของคุณ ทำบนมือถือ เสร็จในห้านาที มีภาพวาดร้าน แผนที่วาดมือ ไลน์ แกร็บ และกล่องข้อความ · Your shop, drawn and online in five minutes, from your phone.">
+<meta name="description" content="เว็บร้านคุณ ฟรี เสร็จใน 5 นาที บนมือถือ ขึ้น Google มีปุ่มโทร ไลน์ Grab และรับจอง · Your shop on the web, free, in 5 minutes on your phone: on Google, with call, LINE, Grab and bookings.">
 <meta property="og:title" content="เว็บของคุณเอง · Your own page — Mot Dang">
-<meta property="og:description" content="ร้านคุณ วาดเสร็จ ขึ้นเว็บในห้านาที · Your shop, drawn and online in five minutes. LINE, Grab, a drawn map, messages, and who came.">
+<meta property="og:description" content="เว็บร้านคุณ ฟรี เสร็จใน 5 นาที · Your shop on the web. Free. 5 minutes. On Google, with LINE, Grab and bookings.">
 <meta property="og:url" content="https://sites.motdang.net/">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Mot Dang">
@@ -20,10 +20,10 @@
 <link rel="canonical" href="https://sites.motdang.net/">
 <meta name="theme-color" content="#d7261e">
 <link rel="icon" href="/s/ant.svg">
-<link rel="stylesheet" href="/s/home.css?v=7">
-<link rel="preload" as="image" href="/s/home/lanterns-2000.webp" media="(min-width:1100px)">
-<link rel="preload" as="image" href="/s/home/lanterns-1100.webp" media="(max-width:1099px)">
-<script type="module" src="/s/home.js?v=8"></script>
+<link rel="stylesheet" href="/s/home.css?v=10">
+<link rel="preload" as="image" href="/s/home/hero.webp" media="(min-width:1100px)">
+<link rel="preload" as="image" href="/s/home/hero-s.webp" media="(max-width:1099px)">
+<script type="module" src="/s/home.js?v=10"></script>
 </head>
 <body>
 <header class="bar">
@@ -33,9 +33,10 @@
 </header>
 
 <main id="home">
-  <!-- 2026-10-16: examples and what a customer gets first, then the three steps and the price; the picture studio and the looks come after as extras. Two of the four photo bands (Pai, Wat Chiang Man, the 1890 map) went: one band now opens the studio. -->
+  <!-- 2026-10-26 (Nan): plain words for readers of a second language; photos as taken; the kinds likely to pay first;
+       Free and Gold beside WordPress.com and Wix; one reason to buy Gold. -->
   <section class="hero night">
-    <div class="sky" aria-hidden="true"><img class="fx" src="/s/home/lanterns-1100.webp" srcset="/s/home/lanterns-1100.webp 1100w, /s/home/lanterns-2000.webp 2000w" sizes="100vw" alt=""><canvas id="lanterns"></canvas></div>
+    <div class="sky" aria-hidden="true"><img class="fx" src="/s/home/hero-s.webp" srcset="/s/home/hero-s.webp 1100w, /s/home/hero.webp 2000w" sizes="100vw" alt=""><canvas id="lanterns"></canvas></div>
     <div class="hcopy">
       <p class="kicker" data-w="kicker"></p>
       <h1 data-w="h1"></h1>
@@ -54,10 +55,47 @@
     <div class="rail" id="rail"></div>
   </section>
 
+  <section class="tiers" id="gold">
+    <div class="wrap">
+      <h2 data-w="tiersH"></h2>
+      <p class="reason" id="why"></p>
+      <div class="tcards">
+        <article class="tc free"><h3 data-w="free"></h3><p class="pr">฿0</p><ul id="freeList"></ul><a class="cta" href="/make" data-w="makeFree"></a></article>
+        <article class="tc gold"><svg viewBox="0 0 120 120" class="leaf" aria-hidden="true"><g fill="#e2ac44" stroke="#120d08" stroke-width="2"><path d="M60 96C44 76 46 46 60 22 74 46 76 76 60 96z"/><path d="M60 96C44 76 46 46 60 22 74 46 76 76 60 96z" transform="rotate(-40 60 96)"/><path d="M60 96C44 76 46 46 60 22 74 46 76 76 60 96z" transform="rotate(40 60 96)"/></g></svg>
+          <h3 data-w="gold"></h3><p class="pr" id="goldPrice"></p><ul id="goldList"></ul><a class="cta gold" href="/make" data-w="makeGold"></a><p class="fine" data-w="goldFine"></p></article>
+      </div>
+    </div>
+  </section>
+
+  <section class="cmpw" id="compare">
+    <div class="wrap">
+      <h2 data-w="cmpH"></h2>
+      <div class="cmpscroll"><table class="cmp" id="cmp"></table></div>
+      <p class="src" id="cmpSrc"></p>
+    </div>
+  </section>
+
   <section class="toys">
     <div class="wrap">
       <h2 data-w="toysH"></h2>
       <div class="grid" id="toys"></div>
+    </div>
+  </section>
+
+  <section class="stays" id="hotels">
+    <div class="wrap">
+      <div class="shead"><i data-dingbat="key" data-look="paper"></i><div><h2 data-w="stayH"></h2></div></div>
+      <div class="calc">
+        <label><span data-w="calcNight"></span><b id="cvN"></b><input type="range" id="cN" min="300" max="10000" step="100" value="1200"></label>
+        <label><span data-w="calcNights"></span><b id="cvM"></b><input type="range" id="cM" min="1" max="300" step="1" value="10"></label>
+        <div class="bars">
+          <div class="cbar ota"><span data-w="calcOta"></span><i id="bOta"></i><b id="vOta"></b></div>
+          <div class="cbar flat"><span data-w="calcFlat"></span><i id="bFlat"></i><b id="vFlat"></b></div>
+        </div>
+        <p class="keep"><span data-w="calcKeep"></span> <b id="vKeep"></b></p>
+        <p class="src"><span data-w="calcSrc"></span> <a href="https://zeevou.com/channels/agoda" rel="noopener">Agoda</a> · <a href="https://prenohq.com/blog/ota-commission-rates-expedia-booking-com-more/" rel="noopener">Booking.com</a></p>
+        <a class="cta gold" href="/make#kind=stay" data-w="stayGo"></a>
+      </div>
     </div>
   </section>
 
@@ -73,60 +111,17 @@
     </div>
   </section>
 
-  <section class="tiers" id="gold">
-    <div class="wrap">
-      <h2 data-w="tiersH"></h2>
-      <div class="tcards">
-        <article class="tc free"><h3 data-w="freeH"></h3><p class="pr">฿0</p><ul id="freeList"></ul><a class="cta" href="/make" data-w="makeFree"></a></article>
-        <article class="tc gold"><svg viewBox="0 0 120 120" class="leaf" aria-hidden="true"><g fill="#e2ac44" stroke="#120d08" stroke-width="2"><path d="M60 96C44 76 46 46 60 22 74 46 76 76 60 96z"/><path d="M60 96C44 76 46 46 60 22 74 46 76 76 60 96z" transform="rotate(-40 60 96)"/><path d="M60 96C44 76 46 46 60 22 74 46 76 76 60 96z" transform="rotate(40 60 96)"/></g></svg>
-          <h3 data-w="goldH"></h3><p class="pr" id="goldPrice"></p><ul id="goldList"></ul><a class="cta gold" href="/make" data-w="makeGold"></a><p class="fine" data-w="goldFine"></p></article>
-      </div>
-    </div>
-  </section>
-
-  <section class="stays" id="hotels">
-    <div class="wrap">
-      <div class="shead"><i data-dingbat="key" data-look="paper"></i><div><h2 data-w="stayH"></h2></div></div>
-      <div class="calc">
-        <label><span data-w="calcNight"></span><b id="cvN"></b><input type="range" id="cN" min="300" max="10000" step="100" value="1200"></label>
-        <label><span data-w="calcNights"></span><b id="cvM"></b><input type="range" id="cM" min="5" max="600" step="5" value="60"></label>
-        <div class="bars">
-          <div class="cbar ota"><span data-w="calcOta"></span><i id="bOta"></i><b id="vOta"></b></div>
-          <div class="cbar flat"><span data-w="calcFlat"></span><i id="bFlat"></i><b id="vFlat"></b></div>
-        </div>
-        <p class="keep"><span data-w="calcKeep"></span> <b id="vKeep"></b></p>
-        <p class="src"><span data-w="calcSrc"></span> <a href="https://zeevou.com/channels/agoda" rel="noopener">Agoda</a> · <a href="https://prenohq.com/blog/ota-commission-rates-expedia-booking-com-more/" rel="noopener">Booking.com</a></p>
-        <a class="cta gold" href="/make#kind=stay" data-w="stayGo"></a>
-      </div>
-    </div>
-  </section>
-
   <section class="live" id="live" hidden>
     <div class="wrap"><h2 id="liveH"></h2><div class="latest" id="latest"></div><p><a class="more" href="/all" data-w="allPages"></a></p></div>
-  </section>
-
-  <section class="band" style="--fx:50%;--fy:50%">
-    <img class="fx" src="/s/home/path-1100.webp" srcset="/s/home/path-1100.webp 1100w, /s/home/path-2000.webp 2000w" sizes="100vw" alt="" loading="lazy" decoding="async">
-    <div class="bcap rise"><p class="bk" data-w="bk"></p><h2 data-w="b_path"></h2><small class="cr" data-cr="path"></small></div>
-  </section>
-
-  <section class="pics" id="pictures">
-    <div class="wrap">
-      <h2 data-w="picH"></h2>
-      <div class="studio">
-        <figure class="sframe"><canvas id="sdemo" role="img"></canvas><figcaption id="scap"></figcaption></figure>
-        <div><div class="sbtns" id="sbtns"></div><a class="cta" href="/make" data-w="picGo" style="margin-top:16px"></a></div>
-      </div>
-      <div class="marks">
-        <figure class="mframe"><canvas id="mdemo" role="img"></canvas></figure>
-        <div><h3 data-w="mkH"></h3><p data-w="mkP"></p><button class="cta" id="mshuffle" type="button"><i data-dingbat="sparkle" data-look="mono"></i><span data-w="mkGo"></span></button></div>
-      </div>
-    </div>
   </section>
 
   <section class="looks">
     <div class="wrap"><h2 data-w="looksH"></h2></div>
     <div class="lrail" id="looks"></div>
+  </section>
+
+  <section class="last">
+    <div class="wrap"><h2 data-w="ctaH"></h2><p data-w="ctaP"></p><a class="cta big" href="/make" data-w="make"></a></div>
   </section>
 </main>
 

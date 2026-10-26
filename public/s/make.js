@@ -37,7 +37,7 @@ const TZ = (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZon
 
 const S = {
   lang: store.get('lang', (() => { const l = (navigator.language || 'th').slice(0, 2); return UI_LANGS[l] ? l : 'th' })()),
-  step: 'kind', kind: 'shop', name: '', addr: '', addrTouched: false, look: 'poster', accent: '', peek: '', token: '', status: 'draft', views: 0,
+  step: 'kind', kind: 'stay', name: '', addr: '', addrTouched: false, look: 'lanna', accent: '', peek: '', token: '', status: 'draft', views: 0,
   pageLang: '', d: null, open: new Set(), local: new Map(), big: new Map(), photoGps: null, picker: null, busy: 0,
   tab: 'edit', tier: 'gold', goldUntil: '', notifyEmail: '', notifyOk: false, unread: 0, // a page starts with 30 days of Gold
   trial: false, asks: 0, domain: '', domainState: '', domains: false, price: 3000, dbFam: '', dbQ: '',
@@ -79,7 +79,10 @@ const DEFAULT_OPEN = {
   event: ['pay', 'event', 'words', 'cal', 'photos', 'map', 'contact'],
   group: ['pay', 'words', 'cal', 'photos', 'links', 'contact'],
 }
-const LOOK_FOR = { shop: 'poster', food: 'night', service: 'loom', work: 'clean', amulet: 'lanna', stay: 'lanna', homes: 'clean', me: 'stitch', event: 'poster', group: 'stitch' }
+// new pages start in a look that shows photos as taken (Nan 2026-10-26: less image editing); Poster stays one tap away
+// the kinds most likely to pay come first (Nan 2026-10-26)
+const KIND_ORDER = ['stay', 'service', 'food', 'shop', 'homes', 'work', 'event', 'amulet', 'group', 'me']
+const LOOK_FOR = { shop: 'clean', food: 'night', service: 'loom', work: 'clean', amulet: 'lanna', stay: 'lanna', homes: 'clean', me: 'stitch', event: 'night', group: 'stitch' }
 
 function guessCc() {
   const zone = { 'Asia/Bangkok': 'TH', 'Asia/Yangon': 'MM', 'Asia/Rangoon': 'MM', 'Asia/Vientiane': 'LA', 'Asia/Phnom_Penh': 'KH',
@@ -215,7 +218,7 @@ let EX = {}
 const exReady = fetch('/s/ex/ex.json').then((r) => (r.ok ? r.json() : {})).then((j) => { EX = j || {} }).catch(() => {})
 const exOf = (kind, look) => EX[kind]?.[look] || null
 const exUrl = (kind, look, small) => (exOf(kind, look) ? `/s/ex/${kind}-${look}${small ? '-s' : ''}.webp` : kpicUrl(kind, small))
-const exCredit = (kind, look) => { const e = exOf(kind, look), k = KPIC[kind]; return e ? { title: e.title, by: e.by, src: e.src, license: e.license, licenseUrl: e.licenseUrl, from: 'commons' } : k ? { title: k.title, by: 'Wikimedia Commons', src: k.src, license: k.license, from: 'commons' } : null }
+const exCredit = (kind, look) => { const e = exOf(kind, look), k = KPIC[kind]; return e ? { title: e.title, by: e.by, src: e.src, license: e.license, licenseUrl: e.licenseUrl, from: 'commons' } : k ? { title: k.title, by: k.by || 'Wikimedia Commons', src: k.src, license: k.license, licenseUrl: k.licenseUrl || '', from: /^k:/.test(k.pd || '') ? 'house' : 'commons' } : null }
 
 // On the first screen the phone shows each kind's own parts filled in with examples, so a hotel shows
 // rooms and a noodle shop a menu; the box above it says they are examples. The new page starts empty.
@@ -391,7 +394,7 @@ function drawTry() {
     <div class="tphone"><div class="shell"><div class="url">${icon('globe')}<span>sites.motdang.net/<b id="pvaddr">${esc(S.addr || '…')}</b></span></div><iframe id="tryframe" title="${T('preview')}"></iframe></div>
       <div class="lknav" id="lknav">${lookNav()}</div></div>
     <div class="tkind"><p class="lbl">${T('for')}</p>
-      <div class="kinds">${KINDS.map(kindTile).join('')}</div>
+      <div class="kinds">${KIND_ORDER.filter((k) => KINDS.includes(k)).concat(KINDS.filter((k) => !KIND_ORDER.includes(k))).map(kindTile).join('')}</div>
       <div class="gets" id="gets">${getsHtml()}</div></div>
     <div class="tlook">
       <div class="lbrow"><p class="lbl">${T('look')}</p><button class="dice" id="dice">${ding('sparkle', 'ink')}${T('surprise')}</button></div>

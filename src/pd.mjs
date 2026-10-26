@@ -4,6 +4,8 @@
 // the Cleveland Museum of Art (its open-access works, CC0), and Openverse
 // (public-domain mark and CC0 only). Answers are cached for a day.
 
+import { HOUSE } from '../public/s/kinds/house.mjs'
+
 const UA = 'motdang-pages/1.0 (https://sites.motdang.net; nan@motdang.net)'
 const TIMEOUT = 6000
 
@@ -81,9 +83,13 @@ export async function search(q) {
 /** The picture a maker picked, looked up again at its source so the credit
  *  is the source's, not the browser's. The pick with `big`, its address, or null. */
 export async function lookup(id) {
-  const m = /^([cmo]):([\w-]{1,64})$/.exec(String(id || ''))
+  const m = /^([cmok]):([\w-]{1,64})$/.exec(String(id || ''))
   if (!m) return null
   let pick = null
+  if (m[1] === 'k') { // the kinds' own pictures (public/s/kinds/house.mjs), credited as their licence asks
+    const h = HOUSE[m[2]]
+    return h ? { id, from: 'house', title: cut(h.title, 120), by: cut(h.by, 120) || 'Unknown', src: h.src, license: h.license, licenseUrl: h.licenseUrl || '' } : null
+  }
   if (m[1] === 'c') {
     const j = await get('https://commons.wikimedia.org/w/api.php?action=query&format=json&pageids=' + m[2] +
       '&prop=imageinfo&iiprop=url|extmetadata|size&iiurlwidth=1280&iiextmetadatafilter=LicenseShortName|Artist|ObjectName|LicenseUrl')

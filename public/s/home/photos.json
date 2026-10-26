@@ -1,0 +1,128 @@
+{
+ "hero": {
+  "title": "Lanterns at a temple in northern Thailand",
+  "by": "Vishalcross",
+  "src": "https://www.pexels.com/photo/37250801/",
+  "license": "Pexels License",
+  "licenseUrl": "https://www.pexels.com/license/"
+ },
+ "ex-room1": {
+  "title": "A hotel room with Thai decor",
+  "by": "Pixabay",
+  "src": "https://www.pexels.com/photo/237371/",
+  "license": "Pexels License",
+  "licenseUrl": "https://www.pexels.com/license/"
+ },
+ "ex-room2": {
+  "title": "A room with a carved Thai headboard",
+  "by": "Chrislyn Dsouza",
+  "src": "https://www.pexels.com/photo/34496715/",
+  "license": "Pexels License",
+  "licenseUrl": "https://www.pexels.com/license/"
+ },
+ "ex-room3": {
+  "title": "A bright room with a city view",
+  "by": "Vince",
+  "src": "https://www.pexels.com/photo/28962539/",
+  "license": "Pexels License",
+  "licenseUrl": "https://www.pexels.com/license/"
+ },
+ "ex-somtam": {
+  "title": "Som tam, green papaya salad",
+  "by": "Pixabay",
+  "src": "https://www.pexels.com/photo/162993/",
+  "license": "Pexels License",
+  "licenseUrl": "https://www.pexels.com/license/"
+ },
+ "ex-khaosoi": {
+  "title": "Khao soi with Thai iced tea",
+  "by": "Nguyendesigner",
+  "src": "https://www.pexels.com/photo/31817702/",
+  "license": "Pexels License",
+  "licenseUrl": "https://www.pexels.com/license/"
+ },
+ "ex-noodles": {
+  "title": "A bowl of noodle soup",
+  "by": "Markus Winkler",
+  "src": "https://www.pexels.com/photo/12188484/",
+  "license": "Pexels License",
+  "licenseUrl": "https://www.pexels.com/license/"
+ },
+ "ex-krapow": {
+  "title": "Pad krapow with rice",
+  "by": "Markus Winkler",
+  "src": "https://www.pexels.com/photo/18500865/",
+  "license": "Pexels License",
+  "licenseUrl": "https://www.pexels.com/license/"
+ },
+ "ex-shop": {
+  "title": "Inside a noodle shop",
+  "by": "Billow926",
+  "src": "https://www.pexels.com/photo/18587213/",
+  "license": "Pexels License",
+  "licenseUrl": "https://www.pexels.com/license/"
+ },
+ "ex-tomyum": {
+  "title": "Tom yum and rice",
+  "by": "Jankao",
+  "src": "https://www.pexels.com/photo/10398942/",
+  "license": "Pexels License",
+  "licenseUrl": "https://www.pexels.com/license/"
+ },
+ "ex-white": {
+  "title": "Wat Rong Khun, Chiang Rai",
+  "by": "Ahmetyuksek",
+  "src": "https://www.pexels.com/photo/37650430/",
+  "license": "Pexels License",
+  "licenseUrl": "https://www.pexels.com/license/"
+ },
+ "ex-street": {
+  "title": "Tuk-tuks and scooters on a city street",
+  "by": "Gibson Chan",
+  "src": "https://www.pexels.com/photo/37848281/",
+  "license": "Pexels License",
+  "licenseUrl": "https://www.pexels.com/license/"
+ },
+ "ex-cook": {
+  "title": "Ingredients for a Thai cooking class",
+  "by": "Weldon Kennedy from London, UK",
+  "src": "https://commons.wikimedia.org/wiki/File:Thailand_2016_(150_of_422)_(32365404205).jpg",
+  "license": "CC BY 2.0",
+  "licenseUrl": "https://creativecommons.org/licenses/by/2.0"
+ },
+ "ex-massage": {
+  "title": "A massage bed in a garden",
+  "by": "Mattes",
+  "src": "https://commons.wikimedia.org/wiki/File:L%C3%A4ndliche_Massagepraxis_in_Thailand.JPG",
+  "license": "Public domain",
+  "licenseUrl": ""
+ },
+ "ex-massage2": {
+  "title": "An open-air massage pavilion",
+  "by": "Garonzi Stefania",
+  "src": "https://commons.wikimedia.org/wiki/File:Traditional_Thai_massage.jpg",
+  "license": "CC BY-SA 4.0",
+  "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0"
+ },
+ "ex-trek": {
+  "title": "Walkers on the Doi Inthanon ridge trail",
+  "by": "Douglas Perkins",
+  "src": "https://commons.wikimedia.org/wiki/File:Kew_Mae_Pan_Nature_Trail_Hikers.jpg",
+  "license": "CC BY 4.0",
+  "licenseUrl": "https://creativecommons.org/licenses/by/4.0"
+ },
+ "ex-raft": {
+  "title": "A bamboo raft on a river",
+  "by": "Yuval Haimovits",
+  "src": "https://commons.wikimedia.org/wiki/File:Bamboo_raft.jpg",
+  "license": "CC BY 2.0",
+  "licenseUrl": "https://creativecommons.org/licenses/by/2.0"
+ },
+ "ex-house": {
+  "title": "An old teak house with a lawn, Nan",
+  "by": "Ellnik",
+  "src": "https://commons.wikimedia.org/wiki/File:King_Nan%27s_Teak_House2.jpg",
+  "license": "CC BY-SA 3.0",
+  "licenseUrl": "http://creativecommons.org/licenses/by-sa/3.0/"
+ }
+}

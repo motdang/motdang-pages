@@ -61,8 +61,7 @@ test('fit keeps the shape', () => {
   assert.deepEqual(fit(3, 1000, 100), [1, 100])
 })
 
-test('every style has its name in the builder in all four languages, and on the front page', () => {
+// the front page no longer shows the picture studio (Nan 2026-10-26: photos as taken); the builder keeps it
+test('every style has its name in the builder in all four languages', () => {
   for (const lang of ['th', 'en', 'my', 'zh']) for (const s of STYLES) assert.ok(Z[lang]['st_' + s], `st_${s} in ${lang}`)
-  const home = readFileSync(new URL('../public/s/home.js', import.meta.url), 'utf8')
-  for (const s of STYLES) assert.equal((home.match(new RegExp(`\\bs_${s}:`, 'g')) || []).length, 4, `s_${s} in home.js`)
 })

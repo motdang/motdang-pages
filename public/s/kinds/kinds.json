@@ -1,31 +1,39 @@
 {
  "shop": {
-  "pd": "c:61735841",
-  "title": "Old Bicycle meets Designer (Unsplash)",
-  "src": "https://commons.wikimedia.org/wiki/File:Old_Bicycle_meets_Designer_(Unsplash).jpg",
-  "license": "CC0",
-  "made": "fix"
+  "pd": "k:shop",
+  "title": "A marigold garland stall",
+  "by": "Maria Merlin",
+  "src": "https://www.pexels.com/photo/29155312/",
+  "license": "Pexels License",
+  "licenseUrl": "https://www.pexels.com/license/",
+  "made": "photo"
  },
  "food": {
-  "pd": "c:58876601",
-  "title": "Khao soi - Bangkok - 2017-05-07 (002)",
-  "src": "https://commons.wikimedia.org/wiki/File:Khao_soi_-_Bangkok_-_2017-05-07_(002).jpg",
-  "license": "CC0",
-  "made": "fix"
+  "pd": "k:food",
+  "title": "Som tam, green papaya salad",
+  "by": "Pixabay",
+  "src": "https://www.pexels.com/photo/162993/",
+  "license": "Pexels License",
+  "licenseUrl": "https://www.pexels.com/license/",
+  "made": "photo"
  },
  "service": {
-  "pd": "c:62348750",
-  "title": "Walk the streets of Bangkok (Unsplash)",
-  "src": "https://commons.wikimedia.org/wiki/File:Walk_the_streets_of_Bangkok_(Unsplash).jpg",
-  "license": "CC0",
-  "made": "fix"
+  "pd": "k:service",
+  "title": "A massage bed in a garden",
+  "by": "Mattes",
+  "src": "https://commons.wikimedia.org/wiki/File:L%C3%A4ndliche_Massagepraxis_in_Thailand.JPG",
+  "license": "Public domain",
+  "licenseUrl": "",
+  "made": "photo"
  },
  "work": {
-  "pd": "c:61768601",
-  "title": "Bangkok, Thailand (Unsplash sGkcIX1F A0)",
-  "src": "https://commons.wikimedia.org/wiki/File:Bangkok,_Thailand_(Unsplash_sGkcIX1F_A0).jpg",
-  "license": "CC0",
-  "made": "fix"
+  "pd": "k:work",
+  "title": "Painted paper umbrellas, Bo Sang",
+  "by": "Dennis G. Jarvis",
+  "src": "https://commons.wikimedia.org/wiki/File:DGJ_4039_-_How_do_we_get_to_here._(3725553133).jpg",
+  "license": "CC BY-SA 2.0",
+  "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+  "made": "photo"
  },
  "amulet": {
   "pd": "c:62072302",
@@ -35,38 +43,48 @@
   "made": "fix"
  },
  "stay": {
-  "pd": "c:30184074",
-  "title": "Bungalow in Pai, Thailand",
-  "src": "https://commons.wikimedia.org/wiki/File:Bungalow_in_Pai,_Thailand.JPG",
-  "license": "CC0",
-  "made": "fix"
+  "pd": "k:stay",
+  "title": "A hotel room with Thai decor",
+  "by": "Pixabay",
+  "src": "https://www.pexels.com/photo/237371/",
+  "license": "Pexels License",
+  "licenseUrl": "https://www.pexels.com/license/",
+  "made": "photo"
  },
  "homes": {
-  "pd": "c:62443023",
-  "title": "Siam Society - Bangkok - 2017-07-25 (004)",
-  "src": "https://commons.wikimedia.org/wiki/File:Siam_Society_-_Bangkok_-_2017-07-25_(004).jpg",
-  "license": "CC0",
-  "made": "fix"
+  "pd": "k:homes",
+  "title": "A shophouse on a corner",
+  "by": "Picasjoe",
+  "src": "https://www.pexels.com/photo/11504237/",
+  "license": "Pexels License",
+  "licenseUrl": "https://www.pexels.com/license/",
+  "made": "photo"
  },
  "me": {
-  "pd": "c:61823398",
-  "title": "Jim Thompson Farm Thailand (Unsplash)",
-  "src": "https://commons.wikimedia.org/wiki/File:Jim_Thompson_Farm_Thailand_(Unsplash).jpg",
-  "license": "CC0",
-  "made": "fix"
+  "pd": "k:me",
+  "title": "A street seller in a straw hat",
+  "by": "Maria Merlin",
+  "src": "https://www.pexels.com/photo/29155326/",
+  "license": "Pexels License",
+  "licenseUrl": "https://www.pexels.com/license/",
+  "made": "photo"
  },
  "event": {
-  "pd": "c:160635887",
-  "title": "YI PENG LANTERN FESTIVAL THAILAND",
-  "src": "https://commons.wikimedia.org/wiki/File:YI_PENG_LANTERN_FESTIVAL_THAILAND.jpg",
-  "license": "CC0",
-  "made": "fix"
+  "pd": "k:event",
+  "title": "Lanterns at a temple in northern Thailand",
+  "by": "Vishalcross",
+  "src": "https://www.pexels.com/photo/37250801/",
+  "license": "Pexels License",
+  "licenseUrl": "https://www.pexels.com/license/",
+  "made": "photo"
  },
  "group": {
-  "pd": "c:61660338",
-  "title": "Brunching with Friends (Unsplash)",
-  "src": "https://commons.wikimedia.org/wiki/File:Brunching_with_Friends_(Unsplash).jpg",
-  "license": "CC0",
-  "made": "fix"
+  "pd": "k:group",
+  "title": "Wat Rong Khun, Chiang Rai",
+  "by": "Ahmetyuksek",
+  "src": "https://www.pexels.com/photo/37650430/",
+  "license": "Pexels License",
+  "licenseUrl": "https://www.pexels.com/license/",
+  "made": "photo"
  }
 }

@@ -147,12 +147,13 @@ test('the builder: Gold, and one line under it for hotel booking, in the languag
 })
 
 test('the front page: the Gold card carries one hotel line, a month or a year, in four languages', () => {
-  const src = readFileSync(new URL('../public/s/home.js', import.meta.url), 'utf8')
+  // the words moved to home-words.mjs on 2026-10-26
+  const src = readFileSync(new URL('../public/s/home-words.mjs', import.meta.url), 'utf8')
   const lines = [...src.matchAll(/hotelPrice: '([^']*)'/g)].map((m) => m[1])
   assert.equal(lines.length, 4)
   for (const x of lines) assert.ok(x.includes('{p}') && x.includes('{y}'), x)
   assert.ok(!/calcFlat: '(Gold for hotels|ทองสำหรับโรงแรม|酒店金卡|ဟိုတယ်အတွက် ရွှေ)'/.test(src))
-  assert.match(src, /hotelPrice: 'With hotel booking: ฿\{p\} a month or ฿\{y\} a year'/)
+  assert.match(src, /hotelPrice: 'Room booking for hotels: ฿\{p\} a month or ฿\{y\} a year'/)
 })
 
 test('the trial note names Gold, and for a page with rooms the hotel booking line', async () => {

@@ -3,7 +3,7 @@
 export const B = {
   en: {
     gb_h: 'Google Business Profile', gb_why: 'Your hours, words, phone, link, photos and offers on Google Maps and Search.',
-    gb_soon: 'Automatic sync · Coming soon', gb_connect: 'Connect Google Business Profile', gb_pick: 'Your business on Google', gb_pickHint: 'Pick the one this page matches.',
+    gb_soon: 'Copy each part into your Google profile', gb_connect: 'Connect Google Business Profile', gb_pick: 'Your business on Google', gb_pickHint: 'Pick the one this page matches.',
     gb_none: 'Google shows no business under this sign-in.', gb_linked: 'Linked to', gb_last: 'Last sync', gb_never: 'Not yet', gb_now: 'Send now', gb_drop: 'Disconnect',
     gb_busy: 'Sending…', gb_sent: 'Sent', gb_use: 'Use this one', gb_load: 'Reading your businesses…', gb_connected: 'Connected to Google.',
     gb_sends: 'Sent after each save: hours, description, phone, link, photos, offers.',
@@ -22,7 +22,7 @@ export const B = {
   },
   th: {
     gb_h: 'กูเกิล โปรไฟล์ธุรกิจ', gb_why: 'เวลาเปิด-ปิด คำอธิบาย เบอร์โทร ลิงก์ รูป และโปรโมชันของคุณ บน Google Maps และการค้นหา',
-    gb_soon: 'ซิงก์อัตโนมัติ · เร็ว ๆ นี้', gb_connect: 'เชื่อมต่อ Google Business Profile', gb_pick: 'ธุรกิจของคุณบนกูเกิล', gb_pickHint: 'เลือกอันที่ตรงกับหน้านี้',
+    gb_soon: 'คัดลอกแต่ละส่วนไปใส่โปรไฟล์ Google ของคุณ', gb_connect: 'เชื่อมต่อ Google Business Profile', gb_pick: 'ธุรกิจของคุณบนกูเกิล', gb_pickHint: 'เลือกอันที่ตรงกับหน้านี้',
     gb_none: 'กูเกิลไม่พบธุรกิจในบัญชีนี้', gb_linked: 'เชื่อมกับ', gb_last: 'ซิงก์ล่าสุด', gb_never: 'ยังไม่เคย', gb_now: 'ส่งตอนนี้', gb_drop: 'ยกเลิกการเชื่อมต่อ',
     gb_busy: 'กำลังส่ง…', gb_sent: 'ส่งแล้ว', gb_use: 'ใช้อันนี้', gb_load: 'กำลังอ่านรายการธุรกิจของคุณ…', gb_connected: 'เชื่อมต่อกูเกิลแล้ว',
     gb_sends: 'ส่งทุกครั้งที่บันทึก: เวลาเปิด-ปิด คำอธิบาย เบอร์โทร ลิงก์ รูป โปรโมชัน',
@@ -41,7 +41,7 @@ export const B = {
   },
   my: {
     gb_h: 'Google Business Profile', gb_why: 'သင့်ဖွင့်ချိန်၊ ဖော်ပြချက်၊ ဖုန်း၊ လင့်ခ်၊ ဓာတ်ပုံနှင့် ပရိုမိုးရှင်းများကို Google Maps နှင့် ရှာဖွေမှုတွင် ပြပါ။',
-    gb_soon: 'အလိုအလျောက် ချိတ်ဆက်မှု · မကြာမီ', gb_connect: 'Google Business Profile ကို ချိတ်ဆက်ရန်', gb_pick: 'Google ပေါ်ရှိ သင့်လုပ်ငန်း', gb_pickHint: 'ဤစာမျက်နှာနှင့် ကိုက်ညီသည့်တစ်ခုကို ရွေးပါ။',
+    gb_soon: 'အပိုင်းတစ်ခုစီကို သင့် Google ပရိုဖိုင်ထဲ ကူးထည့်ပါ', gb_connect: 'Google Business Profile ကို ချိတ်ဆက်ရန်', gb_pick: 'Google ပေါ်ရှိ သင့်လုပ်ငန်း', gb_pickHint: 'ဤစာမျက်နှာနှင့် ကိုက်ညီသည့်တစ်ခုကို ရွေးပါ။',
     gb_none: 'ဤအကောင့်အောက်တွင် Google က လုပ်ငန်း မတွေ့ပါ။', gb_linked: 'ချိတ်ဆက်ထားသည်', gb_last: 'နောက်ဆုံး ချိတ်ဆက်မှု', gb_never: 'မရှိသေးပါ', gb_now: 'ယခု ပို့ရန်', gb_drop: 'ဖြတ်ရန်',
     gb_busy: 'ပို့နေသည်…', gb_sent: 'ပို့ပြီး', gb_use: 'ဤတစ်ခုကို သုံးရန်', gb_load: 'သင့်လုပ်ငန်းများကို ဖတ်နေသည်…', gb_connected: 'Google နှင့် ချိတ်ဆက်ပြီး။',
     gb_sends: 'သိမ်းတိုင်း ပို့သည်: ဖွင့်ချိန်၊ ဖော်ပြချက်၊ ဖုန်း၊ လင့်ခ်၊ ဓာတ်ပုံ၊ ပရိုမိုးရှင်း။',
@@ -60,7 +60,7 @@ export const B = {
   },
   zh: {
     gb_h: '谷歌商家资料', gb_why: '把营业时间、简介、电话、链接、照片和优惠，放到 Google 地图和搜索上。',
-    gb_soon: '自动同步 · 即将推出', gb_connect: '连接 Google Business Profile', gb_pick: '你在谷歌上的商家', gb_pickHint: '选择与这个网页对应的那一个。',
+    gb_soon: '把每一项复制到你的 Google 商家资料', gb_connect: '连接 Google Business Profile', gb_pick: '你在谷歌上的商家', gb_pickHint: '选择与这个网页对应的那一个。',
     gb_none: '这个登录下，谷歌没有找到商家。', gb_linked: '已连接', gb_last: '上次同步', gb_never: '还没有', gb_now: '现在发送', gb_drop: '断开连接',
     gb_busy: '发送中…', gb_sent: '已发送', gb_use: '用这个', gb_load: '正在读取你的商家…', gb_connected: '已连接谷歌。',
     gb_sends: '每次保存后发送：营业时间、简介、电话、链接、照片、优惠。',
