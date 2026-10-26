@@ -172,10 +172,11 @@ test('words: every string is in Thai, English, Burmese and Chinese', () => {
   assert.equal(ui('th', 's_faq'), 'คำถามและคำตอบ')
 })
 
-test('the builder: the online kind opens words, face, packages, questions, quotes, sign-up, links, contact; the first screen shows a filled example', () => {
+test('the builder: the online kind opens words, face, packages, downloads, PromptPay, questions, quotes, sign-up, links, contact; the first screen shows a filled example', () => {
   const src = readFileSync(new URL('../public/s/make.js', import.meta.url), 'utf8')
   const open = /\n  online: \[([^\]]*)\],\n\}/.exec(src)[1].match(/'([a-z]+)'/g).map((x) => x.slice(1, -1))
-  assert.deepEqual(open, ['words', 'face', 'svc', 'faq', 'quotes', 'signup', 'links', 'contact'])
+  // with the shop branch merged, the online kind also opens downloads and its PromptPay (2026-10-26)
+  assert.deepEqual(open, ['words', 'face', 'svc', 'dls', 'pay', 'faq', 'quotes', 'signup', 'links', 'contact'])
   const sections = [...src.slice(src.indexOf('const SECTIONS = ['), src.indexOf('\n]', src.indexOf('const SECTIONS = [')))].join('')
   for (const id of ['faq', 'signup']) assert.match(sections, new RegExp(`\\['${id}', '[a-z]+', 's_${id}'`))
   assert.match(src, /faq: \(\) => newFaq\(\)/); assert.match(src, /signup\(\) \{ return signupSec\(/); assert.match(src, /faq\(\) \{ return faqSec\(/)

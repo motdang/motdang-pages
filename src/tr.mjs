@@ -26,6 +26,8 @@ export function texts(d) {
   ;(d.works || []).forEach((x, i) => { add(`works.${i}.t`, x.t); add(`works.${i}.role`, x.role); add(`works.${i}.note`, x.note) })
   ;(d.quotes || []).forEach((x, i) => { add(`quotes.${i}.q`, x.q) })
   ;(d.amulets || []).forEach((x, i) => { add(`amulets.${i}.note`, x.note) })
+  ;(d.products || []).forEach((x, i) => { add(`products.${i}.t`, x.t); add(`products.${i}.note`, x.note) })
+  ;(d.dls || []).forEach((x, i) => { add(`dls.${i}.t`, x.t); add(`dls.${i}.note`, x.note) })
   add('amterms', d.amterms)
   return out
 }

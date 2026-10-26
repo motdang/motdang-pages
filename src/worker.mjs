@@ -25,6 +25,7 @@
 import { promptPayPayload } from './promptpay.mjs'
 import { render, findable, qrSvg, normalize, vcard, ics, sign, KINDS, LOOK_IDS, GOLD_LOOKS, MAX_PHOTOS, photoMax, sceneOf, HOME, lookOk } from '../public/s/render.mjs'
 import { AM_MAX, amCap } from '../public/s/amulet.mjs'
+import { prCap } from '../public/s/store.mjs'
 import { PAGE_LANGS } from '../public/s/words.mjs'
 import { nameProblem, screen } from './screen.mjs'
 import { clean, look, typeOf, MAX_BIG, MAX_SMALL } from './photo.mjs'
@@ -64,8 +65,13 @@ import * as market from './market.mjs'
 import * as line from './lineedit.mjs'
 import * as gbp from './gbp.mjs'
 import * as steps from './steps.mjs'
+import * as orderapi from './orderapi.mjs'
+import * as orderweb from './orderweb.mjs'
+import * as orders from './orders.mjs'
+import * as shipjob from './shipjob.mjs'
+import * as dls from './dls.mjs'
 
-const QUOTA = { menu: 20, site: 3, photo: 200, save: 400, report: 20, msg: 12, news: 12, pd: 200, notify: 3, slip: 10, book: 10, domain: 6, lister: 3, deal: 40, terms: 10, join: 3, founding: 5, gift: 20, backer: 5, tap: 3, tapsave: 60, bump: 300, card: 400, guess: 400, sadhu: 200, here: 2500, linecode: 10, gbp: 60 }
+const QUOTA = { menu: 20, site: 3, photo: 200, save: 400, report: 20, msg: 12, news: 12, pd: 200, notify: 3, slip: 10, book: 10, domain: 6, lister: 3, deal: 40, terms: 10, join: 3, founding: 5, gift: 20, backer: 5, tap: 3, tapsave: 60, bump: 300, card: 400, guess: 400, sadhu: 200, here: 2500, linecode: 10, gbp: 60, order: 20, quote: 400, oslip: 10, dlput: 30 }
 const TRIAL_DAYS = 30 // Nan 2026-10-14: a new page is Gold for its first 30 days
 const MAIN = 'https://motdang.net'
 const PASS = /^\/(vendor|fonts|tiles|data|front)\/|^\/sites\/doodle-map\//
@@ -92,7 +98,7 @@ async function route(request, env, ctx) {
   // a Gold page at its own address: the page's paths without its name
   const host = url.hostname.toLowerCase()
   if (!env.DEV_ORIGIN && !/(^|\.)motdang\.net$|^(localhost|127\.0\.0\.1)$|\.workers\.dev$/.test(host)) {
-    const sub = /^\/(sign|contact\.vcf|event\.ics|calendar\.ics|l\/[a-z0-9]{4,12}|w\/[a-z0-9]{4,12}|a\/[a-z0-9]{4,12}|room\/[a-z0-9]{4,12}\.ics)?\/?$/.exec(path)
+    const sub = /^\/(sign|contact\.vcf|event\.ics|calendar\.ics|l\/[a-z0-9]{4,12}|w\/[a-z0-9]{4,12}|a\/[a-z0-9]{4,12}|p\/[a-z0-9]{4,12}|room\/[a-z0-9]{4,12}\.ics)?\/?$/.exec(path)
     if (sub && m === 'GET') {
       const own = await env.DB.prepare('SELECT name, tier, gold_until FROM site WHERE domain = ? OR domain = ?').bind(host, host.replace(/^www\./, '')).first()
       if (!own || !gold.isGold(own)) return html(notFound(null, request), 404)
@@ -160,6 +166,10 @@ async function route(request, env, ctx) {
   if (path === '/favicon.ico') return asset(request, env, '/s/ant.svg')
   if (path === '/admin' || path.startsWith('/admin/')) return admin(request, env, path.slice(6), url)
   if (path.startsWith('/q/')) return slipPage(request, env, path, url, origin)
+  if (path.startsWith('/o/') || path.startsWith('/sh/')) {
+    const r = await orderweb.route(request, env, path, url, origin, orderDeps(env, ctx))
+    if (r) return r
+  }
   if (path.startsWith('/x/')) return trcheck.route(request, env, path, url, origin, { html, sha, sameOrigin, normalize, log, postPeople: (c) => postTo(env.DISCORD_PEOPLE, 'motdang people', c) })
   if (path === '/sell' || path.startsWith('/sell/') || path.startsWith('/h/') || path.startsWith('/p/')) {
     const r = await sell.route(request, env, path, url, origin, sellDeps(env, ctx))
@@ -195,7 +205,7 @@ async function route(request, env, ctx) {
     if (r) return r
   }
 
-  const pm = /^\/([a-z0-9-]{3,30})(\/sign|\/contact\.vcf|\/event\.ics|\/calendar\.ics|\/l\/[a-z0-9]{4,12}|\/w\/[a-z0-9]{4,12}|\/a\/[a-z0-9]{4,12}|\/room\/[a-z0-9]{4,12}\.ics)?\/?$/.exec(path)
+  const pm = /^\/([a-z0-9-]{3,30})(\/sign|\/contact\.vcf|\/event\.ics|\/calendar\.ics|\/l\/[a-z0-9]{4,12}|\/w\/[a-z0-9]{4,12}|\/a\/[a-z0-9]{4,12}|\/p\/[a-z0-9]{4,12}|\/room\/[a-z0-9]{4,12}\.ics)?\/?$/.exec(path)
   if (pm && m === 'GET') return page(request, env, ctx, pm[1], pm[2] || '', url, origin)
   return html(notFound(null, request), 404)
 }
@@ -273,6 +283,11 @@ async function page(request, env, ctx, name, sub, url, origin, base) {
     const id = sub.slice(3)
     if (!normalize(site.d).amulets.slice(0, amCap(site.tier === 'gold', site.sian)).some((x) => x.id === id)) return html(notFound(null, request), 404)
     opt.amulet = id
+  }
+  if (sub.startsWith('/p/')) {
+    const id = sub.slice(3)
+    if (!normalize(site.d).products.slice(0, prCap(site.tier === 'gold')).some((x) => x.id === id)) return html(notFound(null, request), 404)
+    opt.product = id
   }
   if (site.tier === 'gold' && s.status === 'live') {
     const d = normalize(site.d)
@@ -402,7 +417,7 @@ async function sitemap(env, origin) {
   const mk = [`${origin}/amulets`, `${origin}/amulet-price`, `${origin}/sian`, ...stalls]
     .map((u) => `<url><loc>${u}</loc><lastmod>${today}</lastmod></url>`).join('')
   const body = `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>${origin}/</loc></url><url><loc>${origin}/support</loc></url>${mk}` +
-    rows.map((r) => { const day = r.updated.slice(0, 10); let works = [], ams = []; try { const n = normalize(JSON.parse(r.d)); works = n.works; ams = n.amulets } catch {} return loc(`${origin}/${r.name}`, day) + works.map((x) => loc(`${origin}/${r.name}/w/${x.id}`, day)).join('') + ams.map((x) => loc(`${origin}/${r.name}/a/${x.id}`, day)).join('') }).join('') + '</urlset>'
+    rows.map((r) => { const day = r.updated.slice(0, 10); let works = [], ams = [], prs = []; try { const n = normalize(JSON.parse(r.d)); works = n.works; ams = n.amulets; prs = n.products.slice(0, prCap(gold.isGold(r))) } catch {} return loc(`${origin}/${r.name}`, day) + works.map((x) => loc(`${origin}/${r.name}/w/${x.id}`, day)).join('') + ams.map((x) => loc(`${origin}/${r.name}/a/${x.id}`, day)).join('') + prs.map((x) => loc(`${origin}/${r.name}/p/${x.id}`, day)).join('') }).join('') + '</urlset>'
   return new Response(body, { headers: { 'content-type': 'application/xml', 'cache-control': 'public, max-age=3600' } })
 }
 
@@ -452,6 +467,9 @@ async function api(request, env, ctx, p, url, origin) {
   }
 
   if (p === 'find' && m === 'GET') return J({ results: await find(env, url, origin) }, 200, { 'access-control-allow-origin': '*', 'cache-control': 'public, max-age=60' })
+
+  // an order from a page's shop or downloads, or its quote (orderapi.mjs)
+  if (p === 'order' && m === 'POST') return orderapi.make(request, env, ctx, origin, orderDeps(env, ctx))
 
   if (p === 'hit' && m === 'POST') {
     const b = await body(request)
@@ -602,7 +620,7 @@ ${s ? `<p>ข้อความถึง ${escHtml(title)} จะส่งสำ
     }
     await log(env, id, 'create', name)
     steps.later(ctx, steps.count(env, request, 'made', { who: id, src: seller ? 'seller' : '' }))
-    return J({ id, name, token, status: 'draft', tier: 'gold', gold_until: new Date(Date.now() + TRIAL_DAYS * 864e5).toISOString().slice(0, 10), trial: true, line_on: line.on(env), loaded: now })
+    return J({ id, name, token, status: 'draft', tier: 'gold', gold_until: new Date(Date.now() + TRIAL_DAYS * 864e5).toISOString().slice(0, 10), trial: true, line_on: line.on(env), shipinfo: { fees: shipjob.fees(env), drop: shipjob.dropOf(env) }, loaded: now })
   }
 
   // Google Business Profile: the sign-in returns here, the state it carries names the page (src/gbp.mjs)
@@ -621,6 +639,7 @@ ${s ? `<p>ข้อความถึง ${escHtml(title)} จะส่งสำ
     return J({ id: s.id, name: s.name, status: s.status, kind: s.kind, look: s.look, lang: s.lang, d: JSON.parse(s.d), views: s.views,
       tier: isGold ? 'gold' : 'free', gold_until: s.gold_until, trial: !!s.trial, notify_email: s.notify_email || '', notify_ok: !!s.notify_ok, unread: un?.n || 0,
       asks: (await env.DB.prepare("SELECT COUNT(*) AS n FROM booking WHERE site_id = ? AND status = 'new'").bind(s.id).first())?.n || 0,
+      orders: await orders.unread(env, s.id), shipinfo: { fees: shipjob.fees(env), drop: shipjob.dropOf(env) },
       domain: s.domain || '', domain_state: s.domain_state || '', domains: dom.on(env), price: Number(env.GOLD_THB) || gold.GOLD_THB,
       plan: s.plan || 'gold', hotel: gold.isHotel(s), hotel_until: s.hotel_until || '', plans: gold.PLANS(env),
       sian: s.kind === 'amulet' || normalize(JSON.parse(s.d)).amulets.length ? await sian.thisMonth(env).then((x) => ({ price: x.price, left: x.left, seats: x.seats, member: sian.isSian(s) })).catch(() => null) : null,
@@ -663,7 +682,9 @@ ${s ? `<p>ข้อความถึง ${escHtml(title)} จะส่งสำ
       for (const [id, c] of ok) if (c) { try { d.credits[id] = JSON.parse(c) } catch {} }
     }
     const pool = new Set(d.photos)
-    for (const x of [...(d.rooms || []), ...(d.lists || []), ...(d.works || []), ...(d.amulets || [])]) if (Array.isArray(x.photos)) x.photos = x.photos.filter((id) => pool.has(id))
+    for (const x of [...(d.rooms || []), ...(d.lists || []), ...(d.works || []), ...(d.amulets || []), ...(d.products || [])]) if (Array.isArray(x.photos)) x.photos = x.photos.filter((id) => pool.has(id))
+    const kept = await orders.stockSince(env, s.id, b.stockAt || b.loaded) // stock counts that moved since this browser read them stay as the server has them
+    for (const x of d.products || []) if (x.id in kept) x.stock = kept[x.id]
     const nd = normalize(d)
     let status = s.status, held = null
     const publish = b.publish === true || s.status !== 'draft'
@@ -688,17 +709,20 @@ ${s ? `<p>ข้อความถึง ${escHtml(title)} จะส่งสำ
     if (status !== s.status) await log(env, s.id, status, held || '')
     if (status === 'live' && !s.published) steps.later(ctx, steps.count(env, request, 'online', { who: s.id }))
     if (isGold && status === 'live') ctx.waitUntil(gbp.afterSave(env, s.id, origin)) // Google Business Profile follows the save
-    return J({ status, name, d: nd, look: lookId, added: added.filter((id) => nd.photos.includes(id)), loaded: loadedAt })
+    return J({ status, name, d: nd, look: lookId, added: added.filter((id) => nd.photos.includes(id)), stock: kept, loaded: loadedAt })
   }
 
   if (p === 'site' && m === 'DELETE') {
     const ph = await env.DB.prepare('SELECT id FROM photo WHERE site_id = ?').bind(s.id).all()
     for (const r of ph.results) await env.MEDIA.delete([`p/${r.id}`, `p/${r.id}-s`])
     await line.dropSite(env, s.id)
+    await dls.dropAll(env, s.id)
     await env.DB.batch([
       env.DB.prepare('DELETE FROM photo WHERE site_id = ?').bind(s.id),
       env.DB.prepare('DELETE FROM msg WHERE site_id = ?').bind(s.id),
       env.DB.prepare('DELETE FROM signup WHERE site_id = ?').bind(s.id),
+      env.DB.prepare('DELETE FROM orders WHERE site_id = ?').bind(s.id),
+      env.DB.prepare('DELETE FROM shipjob WHERE site_id = ?').bind(s.id),
       env.DB.prepare("UPDATE site SET status='removed', name = name || '~' || id, d='{}', notify_email=NULL, notify_ok=0, updated=? WHERE id = ?").bind(new Date().toISOString(), s.id),
     ])
     await gbp.drop(env, s.id)
@@ -877,6 +901,11 @@ ${s ? `<p>ข้อความถึง ${escHtml(title)} จะส่งสำ
     return J({ ok: true })
   }
 
+  if (p === 'orders' || p === 'orders.csv' || p.startsWith('orders/') || p === 'dl') {
+    const r = await orderapi.owner(request, env, p, url, origin, s, orderDeps(env, ctx))
+    if (r) return r
+  }
+
   if (p === 'gbp' || p.startsWith('gbp/')) {
     const r = await gbp.route(request, env, ctx, p, origin, s, { J, body, take, sender })
     if (r) return r
@@ -919,7 +948,7 @@ ${s ? `<p>ข้อความถึง ${escHtml(title)} จะส่งสำ
   if (p === 'gold/slip' && m === 'POST') {
     const who = await sender(request, env)
     if (!(await take(env, who, 'slip'))) return J({ error: 'quota' }, 429)
-    const pay = await env.DB.prepare("SELECT * FROM pay WHERE site_id = ? AND status IN ('open','slip') AND COALESCE(plan, '') != 'fee' ORDER BY created DESC LIMIT 1").bind(s.id).first()
+    const pay = await env.DB.prepare("SELECT * FROM pay WHERE site_id = ? AND status IN ('open','slip') AND COALESCE(plan, '') NOT IN ('fee', 'ship') ORDER BY created DESC LIMIT 1").bind(s.id).first()
     if (!pay) return J({ error: 'no-payment' }, 400)
     const form = await request.formData()
     const file = form.get('slip')
@@ -1067,6 +1096,13 @@ const sellDeps = (env, ctx) => ({
   plans: { gold: gold.PLANS(env).gold.baht, hotel: gold.PLANS(env).hotelyear.baht },
   postPeople: (c) => postTo(env.DISCORD_PEOPLE, 'motdang people', c),
 })
+/** What the order code (orderapi.mjs, orderweb.mjs, orders.mjs, shipjob.mjs) needs from here. */
+const orderDeps = (env, ctx) => ({
+  J, body, take, sender, html, sha, rand, sameOrigin, payOk,
+  later: (p) => ctx.waitUntil(Promise.resolve(p).catch((e) => console.error(e))),
+  tellBeer: (t) => tellBeer(env, t),
+  post: (c) => postTo(env.DISCORD_SALES, 'motdang ship', c),
+})
 async function postTo(hook, username, content) {
   if (!hook) return 'off'
   const r = await fetch(hook, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ username, content, allowed_mentions: { parse: [] } }) })
@@ -1086,6 +1122,10 @@ async function payOk(env, id, origin, how) {
   if (p.plan === 'fee') { // a deal's fee: no Gold to grant; the lister's share goes out (deals.mjs)
     await env.DB.prepare("UPDATE pay SET status='paid', note=COALESCE(note,'') || ?, updated=? WHERE id=?").bind(' · ' + how, new Date().toISOString(), id).run()
     await deals.paid(env, id, origin, how, sha).catch((e) => console.error(e))
+    return true
+  }
+  if (p.plan === 'ship') { // Mot Dang's fee and postage for a parcel it shipped: no Gold to grant (shipjob.mjs)
+    await env.DB.prepare("UPDATE pay SET status='paid', note=COALESCE(note,'') || ?, updated=? WHERE id=?").bind(' · ' + how, new Date().toISOString(), id).run()
     return true
   }
   await gold.grant(env, p.site_id, p.months || 12, p.plan || undefined)
@@ -1119,7 +1159,7 @@ async function slipPage(request, env, path, url, origin) {
   }
   const now = await env.DB.prepare('SELECT status, note FROM pay WHERE id = ?').bind(p.id).first()
   const fm = p.plan === 'founding' && await env.DB.prepare('SELECT name FROM founder WHERE pay_id = ?').bind(p.id).first()
-  return html(slipq.page({ title: fm ? `สมาชิกผู้ก่อตั้ง · Founding member · ${fm.name}` : JSON.parse(p.d || '{}').name || p.name, name: fm ? 'founders' : p.name, amount: p.amount, status: now.status, note: now.note, fee: p.plan === 'fee', founding: !!fm }, url.origin + path, origin), 200)
+  return html(slipq.page({ title: fm ? `สมาชิกผู้ก่อตั้ง · Founding member · ${fm.name}` : JSON.parse(p.d || '{}').name || p.name, name: fm ? 'founders' : p.name, amount: p.amount, status: now.status, note: now.note, fee: p.plan === 'fee', ship: p.plan === 'ship', founding: !!fm }, url.origin + path, origin), 200)
 }
 
 async function releasePhoto(env, id) {
@@ -1160,7 +1200,7 @@ async function tidy(env) {
   await env.DB.prepare('DELETE FROM quota WHERE day < ?').bind(day(3)).run()
   await env.DB.prepare('DELETE FROM seen WHERE day < ?').bind(day(2)).run()
   await env.DB.prepare('DELETE FROM bump WHERE made < ?').bind(Date.now() - 60000).run().catch(() => {})
-  await env.DB.prepare("DELETE FROM pay WHERE status = 'open' AND COALESCE(plan, '') NOT IN ('fee', 'founding') AND created < ?").bind(new Date(Date.now() - 14 * 864e5).toISOString()).run()
+  await env.DB.prepare("DELETE FROM pay WHERE status = 'open' AND COALESCE(plan, '') NOT IN ('fee', 'founding', 'ship') AND created < ?").bind(new Date(Date.now() - 14 * 864e5).toISOString()).run()
   // 2026-10-14: room calendars, translations, the monthly note, the trial's end note
   const job = async (name, f) => { try { done[name] = await f() } catch (e) { done[name] = 'error: ' + String(e?.message || e).slice(0, 300); console.error(name, e?.stack || e) } }
   await job('line', () => line.tidyLine(env))

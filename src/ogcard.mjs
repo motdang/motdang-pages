@@ -7,13 +7,14 @@
 
 import { normalize } from '../public/s/render.mjs'
 import { amCap } from '../public/s/amulet.mjs'
+import { prCap } from '../public/s/store.mjs'
 import { ogOf, specOf } from '../public/s/og.mjs'
 import { LOOK_IDS } from '../public/s/looks.mjs'
 import { isGold } from './gold.mjs'
 import { isSian } from './sian.mjs'
 
 const W = 1200, H = 630
-const RX = /^([a-z0-9-]{2,40})(?:\/([alw])\/([a-z0-9-]{1,32}))?\.jpg$/
+const RX = /^([a-z0-9-]{2,40})(?:\/([alwp])\/([a-z0-9-]{1,32}))?\.jpg$/
 
 const jpg = (body, age) => new Response(body, { headers: { 'content-type': 'image/jpeg', 'cache-control': `public, max-age=${age}`, 'access-control-allow-origin': '*', 'x-content-type-options': 'nosniff' } })
 const none = () => new Response('', { status: 404, headers: { 'cache-control': 'no-cache' } })
@@ -21,10 +22,10 @@ const none = () => new Response('', { status: 404, headers: { 'cache-control': '
 /** A page row as the worker reads it for rendering (worker.mjs page()): Gold and Sian as of today. */
 const siteOf = (s) => ({ ...s, tier: isGold(s) ? 'gold' : 'free', sian: isSian(s) })
 
-/** The items a page shows, by kind: listings are Gold only, amulets up to the page's cap. */
+/** The items a page shows, by kind: listings are Gold only, amulets and products up to the page's cap. */
 function itemsOf(site, d, t) {
   const gold = site.tier === 'gold'
-  return t === 'l' ? (gold ? d.lists : []) : t === 'w' ? d.works : t === 'a' ? d.amulets.slice(0, amCap(gold, site.sian)) : []
+  return t === 'l' ? (gold ? d.lists : []) : t === 'w' ? d.works : t === 'a' ? d.amulets.slice(0, amCap(gold, site.sian)) : t === 'p' ? d.products.slice(0, prCap(gold)) : []
 }
 
 /** One card: what it shows and where it is kept. */
@@ -124,7 +125,7 @@ export async function preview(env, s, b, origin) {
   if (!env.CARDS) return new Response('', { status: 503 })
   const d = normalize(b && b.d && typeof b.d === 'object' ? b.d : JSON.parse(s.d || '{}'))
   const site = siteOf({ ...s, look: LOOK_IDS.includes(b?.look) ? b.look : s.look })
-  const t = ['a', 'w', 'l'].includes(b?.t) ? b.t : ''
+  const t = ['a', 'w', 'l', 'p'].includes(b?.t) ? b.t : ''
   const x = t ? itemsOf(site, d, t).find((y) => y.id === b.id) || null : null
   if (t && !x) return new Response('', { status: 404 })
   const o = ogOf(site, d, t, x)
