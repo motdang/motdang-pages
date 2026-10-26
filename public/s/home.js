@@ -6,7 +6,7 @@
 //   4. go
 // The pages are drawn by the real page renderer. Thai, English, Burmese and Chinese; the words are in home-words.mjs.
 
-import { render, LOOKS, designOf, longestWord } from './render.mjs'
+import * as R from './render.mjs'
 import { W, CMP_SRC } from './home-words.mjs'
 
 const $ = (s, el = document) => el.querySelector(s)
@@ -27,7 +27,12 @@ load('/s/db/core.js').then(() => Promise.all(['signals', 'classic', 'kitchen', '
 // [word, the page maker's kind, icon]. A kind's colour is its design's colour (looks.mjs), so the colour on this page
 // is the colour of the page you get.
 const KINDS = [['local', 'stay', 'noodles'], ['store', 'store', 'gift'], ['online', 'online', 'rocket'], ['portfolio', 'work', 'nib']]
-const accent = (i) => LOOKS[designOf(KINDS[i][1])].accent
+// the design of a kind and its colour come from the renderer (looks.mjs); these stand in if it does not say
+const DESIGN = { stay: 'local', store: 'shop', online: 'biz', work: 'folio' }, COLOUR = { local: '#d7261e', shop: '#0e7a59', biz: '#2453d6', folio: '#16131f' }
+const designOf = (mk) => (R.designOf ? R.designOf(mk) : DESIGN[mk])
+const accent = (i) => R.LOOKS?.[designOf(KINDS[i][1])]?.accent || COLOUR[designOf(KINDS[i][1])]
+// the longest word of a name sets how big the page's title can be (render.mjs longestWord)
+const longestWord = (t) => Math.min(16, Math.max(6, ...String(t || '').split(/\s+/).filter((x) => /[\p{Script=Latin}\p{Script=Cyrillic}\p{Script=Greek}\d]/u.test(x)).map((x) => [...x].length)))
 let kind = 0, typed = '', touched = false
 
 const slug = (n) => n.toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 30)
@@ -106,7 +111,7 @@ function pageHtml(i) {
   const x = examples()[i]
   const d = { ...x.d, name: typed || x.d.name, credits: exCredits([...new Set([x.d.cover, ...(x.d.photos || [])].filter(Boolean))]) }
   const s = slug(typed)
-  return render({ ...x, name: s.length >= 3 ? s : x.name, d, status: 'live', views: 1200 + 37 * i }, { preview: true, gold: x.tier === 'gold', hotel: x.kind === 'stay', origin: location.origin, img: exImg })
+  return R.render({ ...x, name: s.length >= 3 ? s : x.name, d, status: 'live', views: 1200 + 37 * i }, { preview: true, gold: x.tier === 'gold', hotel: x.kind === 'stay', origin: location.origin, img: exImg })
 }
 
 // a page shown here is a picture of it: its buttons call, chat and open nothing
@@ -232,8 +237,8 @@ function plans(price, hotel, hotelYear) {
   const fill = (t) => t.replace('{p}', num(hotel)).replace('{y}', num(hotelYear))
   $('#why').textContent = w('why').replace('{y}', num(price)).replace('{m}', num(Math.round(price / 12)))
   $('#freeList').innerHTML = w('free9').map((t) => `<li><span>${esc(t)}</span></li>`).join('')
-  $('#goldList').innerHTML = w('goldG').map(([h, items]) => `<li class="gh"><b>${esc(h)}</b></li>` + items.map((t) => `<li><span>${esc(fill(t))}</span></li>`).join('')).join('') +
-    `<li class="gh"><b>${esc(w('everything'))}</b></li>`
+  $('#goldList').innerHTML = `<li class="base"><span>${esc(w('everything'))}</span></li>` +
+    w('goldG').map(([h, items]) => `<li class="grp"><b>${esc(h)}</b><ul>${items.map((t) => `<li><span>${esc(fill(t))}</span></li>`).join('')}</ul></li>`).join('')
   $('#goldPrice').innerHTML = `฿${num(price)} <small>${w('perYear')}</small><span class="hotelp">${esc(fill(w('hotelPrice')))}</span>`
   const cols = w('cmpCols')
   $('#cmp').innerHTML = `<thead><tr><th></th>${cols.map((c, i) => `<th class="c${i}">${esc(c)}</th>`).join('')}</tr></thead><tbody>` +
