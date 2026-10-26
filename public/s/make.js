@@ -22,6 +22,7 @@ import { cardHtml, cardBind } from './make-card.mjs'
 import { drawCustomers } from './make-customers.mjs'
 import { menuBox, menuInit } from './make-menu.mjs'
 import { gbpBox, bindGbp, GBP_CSS } from './make-gbp.mjs'
+import { productsSec, shipSec, dlsSec, dlSend, drawOrders, newProduct, newDl, storeToggle } from './make-store.mjs'
 
 const $ = (s, el = document) => el.querySelector(s)
 const app = $('#app')
@@ -40,7 +41,7 @@ const S = {
   step: 'kind', kind: 'stay', name: '', addr: '', addrTouched: false, look: 'lanna', accent: '', peek: '', token: '', status: 'draft', views: 0,
   pageLang: '', d: null, open: new Set(), local: new Map(), big: new Map(), photoGps: null, picker: null, busy: 0,
   tab: 'edit', tier: 'gold', goldUntil: '', notifyEmail: '', notifyOk: false, unread: 0, // a page starts with 30 days of Gold
-  trial: false, asks: 0, domain: '', domainState: '', domains: false, price: 3000, dbFam: '', dbQ: '',
+  trial: false, asks: 0, orders: 0, shipinfo: null, domain: '', domainState: '', domains: false, price: 3000, dbFam: '', dbQ: '',
   hotel: true, hotelUntil: '', plans: null, payPlan: '', part: '',
   lineOn: false, line: null, news: [], loaded: '', lineCode: null, // Edit by LINE (lineedit.mjs): the tab, who is linked, the page's dated notes, when this copy was read
 }
@@ -78,8 +79,8 @@ const DEFAULT_OPEN = {
   homes: ['pay', 'words', 'lists', 'photos', 'contact', 'map'],
   event: ['pay', 'event', 'words', 'cal', 'photos', 'map', 'contact'],
   group: ['pay', 'words', 'cal', 'photos', 'links', 'contact'],
-  store: ['words', 'photos', 'items', 'pay', 'contact', 'links'],
-  online: ['words', 'face', 'svc', 'quotes', 'links', 'contact'],
+  store: ['products', 'pay', 'ship', 'words', 'photos', 'contact', 'links'],
+  online: ['words', 'face', 'svc', 'dls', 'pay', 'quotes', 'links', 'contact'],
 }
 // new pages start in a look that shows photos as taken (Nan 2026-10-26: less image editing); Poster stays one tap away
 // the kinds most likely to pay come first (Nan 2026-10-26)
@@ -239,6 +240,16 @@ function examples(kind, lang) {
   if (parts.includes('svc')) x.svc = kind === 'online'
     ? (th ? [{ n: 'คุย 30 นาที', mins: 30, p: '500' }, { n: 'แพ็กเกจเริ่มต้น', mins: 60, p: '3000' }] : [{ n: 'A 30-minute call', mins: 30, p: '500' }, { n: 'Starter package', mins: 60, p: '3000' }])
     : th ? [{ n: 'นวดไทย', mins: 60, p: '300' }, { n: 'นวดน้ำมัน', mins: 90, p: '500' }] : [{ n: 'Thai massage', mins: 60, p: '300' }, { n: 'Oil massage', mins: 90, p: '500' }]
+  if (parts.includes('products')) x.products = [
+    { id: 'exprod1', t: th ? 'ผ้าพันคอทอมือ' : 'Handwoven scarf', p: '450', old: '590', opts: th ? 'สี: แดง, น้ำเงิน' : 'Colour: red, blue', stock: 8, g: 250, photos: [KPIC_ID] },
+    { id: 'exprod2', t: th ? 'สบู่สมุนไพร 3 ก้อน' : 'Herbal soap, 3 bars', p: '199', g: 300, photos: [] },
+    { id: 'exprod3', t: th ? 'กาแฟดอยช้าง 250 กรัม' : 'Doi Chang coffee, 250 g', p: '320', g: 280, photos: [] },
+  ]
+  if (parts.includes('ship')) x.ship = { th: '60', world: '600', free: '1000', mot: false }
+  if (parts.includes('dls')) x.dls = [
+    { id: 'exdl0001', t: th ? 'คู่มืออาหารเชียงใหม่ (PDF)' : 'Chiang Mai food guide (PDF)', p: '150', file: { name: 'guide.pdf', size: 2400000 } },
+    { id: 'exdl0002', t: th ? 'คอร์สทำอาหาร (วิดีโอ)' : 'Cooking course (video)', p: '900', file: { name: 'course.mp4', size: 48000000 } },
+  ]
   if (parts.includes('rooms')) x.rooms = [
     { n: th ? 'ห้องริมสวน' : 'Garden room', guests: 2, beds: th ? 'เตียงควีน 1' : '1 queen bed', p: '900', p2: '1100', photos: [KPIC_ID] },
     { n: th ? 'ห้องครอบครัว' : 'Family room', guests: 4, beds: th ? 'เตียงคู่ 2' : '2 double beds', p: '1500', photos: [] },
@@ -608,11 +619,13 @@ async function create(look, btn) {
   if (S.kind === 'homes') S.d.lists = [NEW_ROW.lists()]
   if (S.kind === 'work') S.d.works = [NEW_ROW.works()]
   if (S.kind === 'amulet') S.d.amulets = [NEW_ROW.amulets()]
+  if (S.kind === 'store') S.d.products = [NEW_ROW.products()]
+  if (S.kind === 'online') S.d.dls = [NEW_ROW.dls()]
   S.pageLang = PAGE_LANGS[S.lang] ? S.lang : 'en'
   try {
     const r = await call('POST', 'sites', { name: S.addr, kind: S.kind, look, lang: S.pageLang, d: S.d, by: new URLSearchParams(location.search).get('by') || '' })
     S.token = r.token; S.name = r.name; S.status = r.status; S.tier = r.tier || 'gold'; S.goldUntil = r.gold_until || ''; S.trial = !!r.trial; S.hotel = !!r.trial
-    S.lineOn = !!r.line_on; S.line = null; S.news = []; S.loaded = r.loaded || ''
+    S.lineOn = !!r.line_on; S.line = null; S.news = []; S.loaded = r.loaded || ''; S.shipinfo = r.shipinfo || null; S.orders = 0
     history.replaceState(null, '', '/make#t=' + S.token)
     remember()
     camStart()
@@ -632,6 +645,7 @@ const SECTIONS = [
   ['pay', 'coin', 's_pay'], ['event', 'cal', 's_event'], ['words', 'note', 's_words'], ['face', 'me', 's_face'], ['works', 'star', 's_works'], ['amulets', 'flower', 's_amulets'], ['drawing', 'sparkle', 's_drawing'], ['photos', 'camera', 's_photos'], ['quotes', 'chat', 's_quotes'],
   ['rooms', 'moon', 's_rooms', 'gold'], ['ota', 'globe', 's_ota', 'gold'], ['lists', 'tag', 's_lists', 'gold'], ['svc', 'clock', 's_svc', 'gold'], ['items', 'tag', 's_items'],
   ['cal', 'cal', 's_cal'], ['camps', 'party', 's_camps', 'gold'],
+  ['products', 'shop', 's_products'], ['ship', 'tag', 's_ship'], ['dls', 'download', 's_dls', 'gold'],
   ['order', 'basket', 's_order'], ['contact', 'phone', 's_contact'], ['map', 'pin', 's_map'], ['spots', 'compass', 's_spots'], ['hours', 'clock', 's_hours'],
   ['links', 'link', 's_links'], ['msg', 'mail', 's_msg'], ['look', 'star', 's_look'], ['card', 'share', 's_card'], ['video', 'camera', 's_video', 'gold'],
 ]
@@ -640,13 +654,14 @@ function hasData(id) {
   const d = S.d
   return { event: !!d.event, words: true, drawing: true, photos: d.photos.length > 0, items: d.items.length > 0, order: !!(d.order.grabfood || d.order.lineman),
     contact: Object.values(d.contact).some(Boolean), map: d.place.lat !== null || !!d.place.addr, hours: d.hours.on, links: d.links.length > 0, msg: true, look: true,
-    video: !!d.video, spots: d.spots.length > 0, cal: d.cal.length > 0, ota: !!(d.ota.agoda || d.ota.booking), camps: d.camps.length > 0, svc: d.svc.length > 0, rooms: d.rooms.length > 0, lists: d.lists.length > 0, face: !!d.avatar, works: d.works.length > 0, amulets: d.amulets.length > 0, quotes: d.quotes.length > 0, card: true }[id]
+    video: !!d.video, spots: d.spots.length > 0, cal: d.cal.length > 0, ota: !!(d.ota.agoda || d.ota.booking), camps: d.camps.length > 0, svc: d.svc.length > 0, rooms: d.rooms.length > 0, lists: d.lists.length > 0, face: !!d.avatar, works: d.works.length > 0, amulets: d.amulets.length > 0, quotes: d.quotes.length > 0, products: d.products.length > 0, dls: d.dls.length > 0, ship: !!(d.ship.th || d.ship.world || d.ship.free || d.ship.mot || d.disc.code), card: true }[id]
 }
 
 function tabs() {
   const t = (id, label, extra = '') => `<button data-tab="${id}"${S.tab === id ? ' class="on"' : ''}>${label}${extra}</button>`
   const bk = S.d && (S.d.svc.length || S.d.rooms.length) ? t('book', T('t_book'), S.asks ? `<span class="dot">${S.asks}</span>` : '') : ''
-  return `<nav class="tabs">${t('edit', T('t_edit'))}${t('msgs', T('t_msgs'), S.unread ? `<span class="dot">${S.unread}</span>` : '')}${bk}${t('cust', T('t_cust'))}${t('stats', T('t_stats'))}${S.lineOn ? t('line', T('t_line')) : ''}${t('gold', (isGold() ? '★ ' : '') + T('t_gold'))}</nav>`
+  const od = S.d && (S.d.products.length || S.d.dls.length || S.orders) ? t('orders', T('t_orders'), S.orders ? `<span class="dot">${S.orders}</span>` : '') : ''
+  return `<nav class="tabs">${t('edit', T('t_edit'))}${t('msgs', T('t_msgs'), S.unread ? `<span class="dot">${S.unread}</span>` : '')}${bk}${od}${t('cust', T('t_cust'))}${t('stats', T('t_stats'))}${S.lineOn ? t('line', T('t_line')) : ''}${t('gold', (isGold() ? '★ ' : '') + T('t_gold'))}</nav>`
 }
 
 // The editor is the page and six parts under it (Nan 2026-10-15: lead with why, try it, be not afraid,
@@ -656,7 +671,7 @@ function tabs() {
 const GROUPS = [
   ['words', ['event', 'words'], 'pencil'],
   ['pics', ['photos', 'drawing', 'face', 'video'], 'camera'],
-  ['offer', ['amulets', 'pay', 'items', 'works', 'svc', 'rooms', 'lists', 'ota', 'cal', 'camps', 'quotes'], 'cart'],
+  ['offer', ['products', 'dls', 'ship', 'amulets', 'pay', 'items', 'works', 'svc', 'rooms', 'lists', 'ota', 'cal', 'camps', 'quotes'], 'cart'],
   ['reach', ['contact', 'order', 'msg', 'links'], 'telephone'],
   ['where', ['map', 'hours', 'spots'], 'compass'],
   ['look', ['look', 'card'], 'sparkle'],
@@ -685,7 +700,7 @@ function thumb(g, ding0) {
     if (c) return img(c)
   }
   if (g === 'offer') {
-    const ph = ['works', 'amulets', 'rooms', 'lists'].flatMap((k) => (d[k] || []).flatMap((x) => x.photos || []))[0]
+    const ph = ['products', 'works', 'amulets', 'rooms', 'lists'].flatMap((k) => (d[k] || []).flatMap((x) => x.photos || []))[0]
     if (ph) return img(imgUrl(ph, true))
     if (KPIC[S.kind]) return img(kpicUrl(S.kind, true))
   }
@@ -703,7 +718,7 @@ function summary(g) {
     if (own) out.push(`${own} ${T('sm_photos')}`); else if (d.photos.length) out.push(T('sm_example'))
     if (d.drawing) out.push(sec('drawing')); if (d.avatar) out.push(sec('face')); if (d.video) out.push(sec('video'))
   }
-  if (g === 'offer') for (const k of ['items', 'works', 'amulets', 'svc', 'rooms', 'lists', 'cal', 'camps', 'quotes']) if (n(k)) out.push(`${sec(k)} · ${n(k)}`)
+  if (g === 'offer') for (const k of ['products', 'dls', 'items', 'works', 'amulets', 'svc', 'rooms', 'lists', 'cal', 'camps', 'quotes']) if (n(k)) out.push(`${sec(k)} · ${n(k)}`)
   if (g === 'offer' && (d.ota.agoda || d.ota.booking)) out.push(sec('ota'))
   if (g === 'reach') {
     const c = d.contact
@@ -1009,9 +1024,19 @@ const NEW_ROW = {
   works: () => ({ id: rid(), t: '', client: '', year: String(new Date().getFullYear()), role: '', tags: '', note: '', u: '', photos: [] }),
   quotes: () => ({ q: '', who: '' }),
   amulets: () => newAmulet(rid),
+  products: () => newProduct(rid),
+  dls: () => newDl(rid),
 }
 
 // ---- the parts added 2026-10-15: an avatar, a portfolio, the picture studio ---------------
+
+// the online shop and the downloads (make-store.mjs)
+const storeH = () => ({ S, T, ui, val, esc, icon, imgUrl, photoPick, rowX, seg, isGold })
+Object.assign(SEC, {
+  products() { return productsSec(storeH()) },
+  ship() { return shipSec(storeH()) },
+  dls() { return dlsSec(storeH()) },
+})
 
 Object.assign(SEC, {
   amulets() { return amuletsSec({ S, val, esc, icon, imgUrl, photoPick, rowX, seg, isGold, lineHref, lang: S.lang, isSian, pairOn: () => pair.on }) },
@@ -1074,8 +1099,8 @@ async function makeOver(id) {
     const swap = (x) => (x === id ? nid : x)
     S.d.photos = S.d.photos.map(swap)
     if (S.d.cover === id) S.d.cover = nid
-    for (const k of ['rooms', 'lists', 'works', 'amulets']) for (const x of S.d[k] || []) x.photos = x.photos.map(swap)
-    redrawSec('photos'); if (S.open.has('works')) redrawSec('works'); if (S.open.has('amulets')) redrawSec('amulets')
+    for (const k of ['rooms', 'lists', 'works', 'amulets', 'products']) for (const x of S.d[k] || []) x.photos = x.photos.map(swap)
+    redrawSec('photos'); if (S.open.has('works')) redrawSec('works'); if (S.open.has('amulets')) redrawSec('amulets'); if (S.open.has('products')) redrawSec('products')
     changed()
   } })
 }
@@ -1159,6 +1184,7 @@ function bindEdit() {
   const form = $('#form')
   cardBind(form, S, { changed, token: () => S.token, toast, T })
   form.addEventListener('toggle', amToggle, true)
+  form.addEventListener('toggle', storeToggle, true)
   form.addEventListener('input', (e) => {
     const k = e.target.dataset.k
     if (!k) return
@@ -1185,6 +1211,8 @@ function bindEdit() {
     const t = e.target
     if (t.id === 'files') addFiles([...t.files])
     if (t.dataset.amfile !== undefined) amFiles(+t.dataset.amfile, [...t.files])
+    if (t.dataset.prfile !== undefined) { prFiles(+t.dataset.prfile, [...t.files]); t.value = '' }
+    if (t.dataset.dlfile !== undefined) { dlSend({ S, T: (k) => ui(S.lang, k), toast, redrawSec, changed }, +t.dataset.dlfile, t.files[0]); t.value = '' }
     if (t.dataset.amcam !== undefined) { camStart(); amcamTake([...t.files]); t.value = '' }
     if (t.dataset.ampair !== undefined) { pair.on = t.checked; pair.open = ''; store.set('amPair', pair.on) }
     if (t.id === 'avfile' && t.files[0]) createImageBitmap(t.files[0], { imageOrientation: 'from-image' }).then((bmp) => avatarStudio(bmp)).catch(() => toast(ui(S.lang, 'e_net')))
@@ -1237,11 +1265,16 @@ function bindEdit() {
       if (last) { last.querySelector('input')?.focus(); last.scrollIntoView({ behavior: 'smooth', block: 'center' }) }
       changed()
     }
-    if (b.dataset.rmrow) { S.d[b.dataset.rmrow].splice(+b.dataset.i, 1); redrawSec(b.dataset.rmrow); changed() }
+    if (b.dataset.rmrow) {
+      if (b.dataset.rmrow === 'dls' && S.d.dls[+b.dataset.i]?.file) call('DELETE', 'dl?id=' + encodeURIComponent(S.d.dls[+b.dataset.i].id)).catch(() => {}) // the file goes with its row
+      S.d[b.dataset.rmrow].splice(+b.dataset.i, 1); redrawSec(b.dataset.rmrow); changed()
+    }
     if (b.dataset.addrate) { const r = S.d.rooms[+b.dataset.addrate]; r.rates = r.rates || []; r.rates.push({ from: '', to: '', p: '' }); redrawSec('rooms') }
     if (b.dataset.rmrate) { const [i, k] = b.dataset.rmrate.split('.').map(Number); S.d.rooms[i].rates.splice(k, 1); redrawSec('rooms'); changed() }
     if (b.dataset.seg === 'stay.pay') redrawSec('rooms')
     if (b.dataset.seg?.startsWith('amulets.')) redrawSec('amulets')
+    if (b.dataset.seg?.startsWith('products.')) redrawSec('products')
+    if (b.dataset.prrm) { const [i, k] = b.dataset.prrm.split('.').map(Number); S.d.products[i]?.photos.splice(k, 1); redrawSec('products'); changed() }
     if (b.dataset.amrm) { const [i, k] = b.dataset.amrm.split('.').map(Number); S.d.amulets[i]?.photos.splice(k, 1); redrawSec('amulets'); changed() }
     if (b.dataset.pp) {
       const path = b.closest('.pickph').dataset.path, [k, i] = path.split('.'), item = S.d[k][+i]
@@ -1298,6 +1331,7 @@ function redrawSec(id) {
   if (id === 'drawing') { drawCv = null; mountDrawing() }
   // the amulets pick from the page's photos: show new ones there too, unless the maker is typing in it
   if (id === 'photos' && S.d.amulets?.length && !$('[data-sec="amulets"]')?.contains(document.activeElement)) redrawSec('amulets')
+  if (id === 'photos' && S.d.products?.length && !$('[data-sec="products"]')?.contains(document.activeElement)) redrawSec('products')
   if (sec.querySelector('iframe[data-th]')) fillThumbs(sec)
 }
 
@@ -1381,6 +1415,7 @@ const PART = [
   ['nav.reach', 'contact'], ['.camp', 'camps'], ['#count', 'event'], ['.when', 'event'], ['#cal', 'cal'], ['figure.drawn', 'drawing'], ['#works', 'works'], ['.quotes', 'quotes'],
   ['ul.menu', 'items'], ['#book', 'svc'], ['#rooms', 'rooms'], ['#lists', 'lists'], ['table.hours', 'hours'], ['.gallery', 'photos'], ['.video', 'video'],
   ['#where', 'map'], ['ol.spots', 'spots'], ['.lineqr', 'contact'], ['.card.links', 'links'], ['.contact', 'contact'], ['#message', 'msg'], ['#amulets', 'amulets'],
+  ['#shop', 'products'], ['#pbuy', 'products'], ['#dls', 'dls'],
   ['.card', 'words'], ['footer', 'look'],
 ]
 const PART_CSS = `[data-part]{cursor:pointer;transition:opacity .3s}[data-part]:hover{outline:3px dashed #d7261e;outline-offset:3px}
@@ -1526,10 +1561,11 @@ async function save(extra = {}) {
     // a live page whose name, picture, avatar or look changed gets a new share card
     if (S.status === 'live' && !extra.publish && cardKey({ look: S.look, name: S.name, kind: S.kind, tier: S.tier }, S.d) !== S.cardKey) await makeCard().catch(() => {})
     const d = { ...S.d, items: S.d.items.filter((x) => x.n || x.p || x.note) }
-    const r = await call('PUT', 'site', { d, look: S.look, lang: S.pageLang, kind: S.kind, loaded: S.loaded, ...extra })
+    const r = await call('PUT', 'site', { d, look: S.look, lang: S.pageLang, kind: S.kind, loaded: S.loaded, stockAt: S.stockAt || S.loaded, ...extra })
     S.status = r.status
     if (r.d) { S.d.credits = r.d.credits; S.d.video = r.d.video }
-    if (r.loaded) S.loaded = r.loaded
+    if (r.loaded) S.loaded = S.stockAt = r.loaded
+    if (r.stock && Object.keys(r.stock).length) { for (const p of S.d.products) if (p.id in r.stock) p.stock = r.stock[p.id]; if (S.open.has('products')) redrawSec('products') }
     // photos that came in by LINE while this copy was open: the server kept them, this copy takes them
     const fresh = (r.added || []).filter((id) => !S.d.photos.includes(id))
     if (fresh.length) { S.d.photos = [...S.d.photos, ...fresh]; redrawSec('photos'); preview() }
@@ -1596,6 +1632,16 @@ async function amFiles(i, files) {
   if (!x) return
   x.photos = [...x.photos, ...S.d.photos.filter((id) => !before.has(id))].slice(0, AM_MAX.photos)
   redrawSec('amulets'); changed()
+}
+
+/** Photos taken for one product: they join the page's photos and that product's, in the order taken. */
+async function prFiles(i, files) {
+  const before = new Set(S.d.photos)
+  await addFiles(files)
+  const x = S.d.products[i]
+  if (!x) return
+  x.photos = [...x.photos, ...S.d.photos.filter((id) => !before.has(id))].slice(0, 10)
+  redrawSec('products'); changed()
 }
 
 // ---- the amulet camera (make-amcam.mjs): each photo a new amulet at the top -------------------
@@ -1865,6 +1911,7 @@ function drawTab() {
   if (S.tab === 'stats') return drawStats()
   if (S.tab === 'book') return drawBookings()
   if (S.tab === 'cust') return drawCustomers($('#tb'), { S, call, ui, esc, toast, icon, goldLocked })
+  if (S.tab === 'orders') return drawOrders($('#tb'), { S, call, ui, esc, toast, icon, tabsRefresh: () => { const nav = app.querySelector('.tabs'); if (nav) { nav.outerHTML = tabs(); bindTabs() } } })
   if (S.tab === 'line' && S.lineOn) return drawLine()
   return drawGold()
 }
@@ -2314,9 +2361,9 @@ async function boot() {
       const r = await call('GET', 'site')
       Object.assign(S, { name: r.name, kind: r.kind, look: lookOf(r.look), pageLang: r.lang, status: r.status, views: r.views, d: normalize(r.d), step: 'edit',
         tier: r.tier, goldUntil: r.gold_until || '', notifyEmail: r.notify_email, notifyOk: r.notify_ok, unread: r.unread,
-        trial: !!r.trial, asks: r.asks || 0, domain: r.domain || '', domainState: r.domain_state || '', domains: !!r.domains, price: r.price || 3000,
+        trial: !!r.trial, asks: r.asks || 0, orders: r.orders || 0, shipinfo: r.shipinfo || null, domain: r.domain || '', domainState: r.domain_state || '', domains: !!r.domains, price: r.price || 3000,
         hotel: !!r.hotel, hotelUntil: r.hotel_until || '', plans: r.plans || null, founders: r.founders || null, sian: r.sian || null, cardUrl: '',
-        lineOn: !!r.line?.on, line: r.line || null, news: r.news || [], loaded: r.loaded || '' })
+        lineOn: !!r.line?.on, line: r.line || null, news: r.news || [], loaded: r.loaded || '', stockAt: r.loaded || '' })
       S.d.event = S.d.event || undefined
       S.open = new Set(DEFAULT_OPEN[S.kind]); S.part = ''
       if (h.get('tab')) S.tab = h.get('tab')

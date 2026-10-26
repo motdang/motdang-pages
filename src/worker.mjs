@@ -605,7 +605,7 @@ ${s ? `<p>ข้อความถึง ${escHtml(title)} จะส่งสำ
     }
     await log(env, id, 'create', name)
     steps.later(ctx, steps.count(env, request, 'made', { who: id, src: seller ? 'seller' : '' }))
-    return J({ id, name, token, status: 'draft', tier: 'gold', gold_until: new Date(Date.now() + TRIAL_DAYS * 864e5).toISOString().slice(0, 10), trial: true, line_on: line.on(env), loaded: now })
+    return J({ id, name, token, status: 'draft', tier: 'gold', gold_until: new Date(Date.now() + TRIAL_DAYS * 864e5).toISOString().slice(0, 10), trial: true, line_on: line.on(env), shipinfo: { fees: shipjob.fees(env), drop: shipjob.dropOf(env) }, loaded: now })
   }
 
   // Google Business Profile: the sign-in returns here, the state it carries names the page (src/gbp.mjs)
@@ -668,6 +668,8 @@ ${s ? `<p>ข้อความถึง ${escHtml(title)} จะส่งสำ
     }
     const pool = new Set(d.photos)
     for (const x of [...(d.rooms || []), ...(d.lists || []), ...(d.works || []), ...(d.amulets || []), ...(d.products || [])]) if (Array.isArray(x.photos)) x.photos = x.photos.filter((id) => pool.has(id))
+    const kept = await orders.stockSince(env, s.id, b.stockAt || b.loaded) // stock counts that moved since this browser read them stay as the server has them
+    for (const x of d.products || []) if (x.id in kept) x.stock = kept[x.id]
     const nd = normalize(d)
     let status = s.status, held = null
     const publish = b.publish === true || s.status !== 'draft'
@@ -692,7 +694,7 @@ ${s ? `<p>ข้อความถึง ${escHtml(title)} จะส่งสำ
     if (status !== s.status) await log(env, s.id, status, held || '')
     if (status === 'live' && !s.published) steps.later(ctx, steps.count(env, request, 'online', { who: s.id }))
     if (isGold && status === 'live') ctx.waitUntil(gbp.afterSave(env, s.id, origin)) // Google Business Profile follows the save
-    return J({ status, name, d: nd, look: lookId, added: added.filter((id) => nd.photos.includes(id)), loaded: loadedAt })
+    return J({ status, name, d: nd, look: lookId, added: added.filter((id) => nd.photos.includes(id)), stock: kept, loaded: loadedAt })
   }
 
   if (p === 'site' && m === 'DELETE') {

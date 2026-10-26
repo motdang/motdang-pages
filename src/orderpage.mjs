@@ -10,7 +10,7 @@ import { state as dlState, DL_TIMES } from './dls.mjs'
 const ESC = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ESC[c])
 const nf = new Intl.NumberFormat('en', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-const money = (satang) => '฿' + nf.format(satang / 100)
+const money = (satang) => (satang < 0 ? '−' : '') + '฿' + nf.format(Math.abs(satang) / 100)
 const refOf = (id) => 'OR' + String(id).slice(0, 6).toUpperCase()
 const linesOf = (o) => { try { const l = JSON.parse(o.lines); return Array.isArray(l) ? l : [] } catch { return [] } }
 

@@ -578,3 +578,100 @@ test('the product page, its card and the sitemap exist; a page that goes takes i
   assert.equal(env.DB.raw.prepare('SELECT COUNT(*) AS n FROM orders WHERE site_id = ?').get(s.id).n, 0)
   assert.ok(![...files.keys()].some((k) => k.startsWith(`dl/${s.id}/`)))
 })
+
+// ---- the rest ------------------------------------------------------------------------------------
+
+test('an order may name its lines without a kind and put the buyer in a buyer object with the plain names', async () => {
+  const s = await site()
+  await upload(s)
+  const r = await post('/api/order', { n: s.name, lines: [{ id: 'soap02', q: 1 }, { id: 'guide1' }], ms: 4000, buyer: { name: 'Mali', phone: '089 111 2222', email: 'mali@example.com', address: '5 Soi 1, Chiang Mai', country: 'th' } })
+  const j = await r.json()
+  assert.equal(r.status, 200, JSON.stringify(j))
+  const o = orderRow(j.id)
+  assert.deepEqual(JSON.parse(o.lines).map((l) => [l.k, l.id]), [['p', 'soap02'], ['d', 'guide1']])
+  assert.deepEqual([o.name, o.reach, o.addr, o.cc], ['Mali', '089 111 2222', '5 Soi 1, Chiang Mai', 'TH'])
+  assert.equal((await post('/api/order', { n: s.name, lines: [{ id: 'nothing' }], ...buyer })).status, 409)
+})
+
+test('a price past a million baht is not a price', () => {
+  const d = normalize(D({ products: [{ id: 'big01', t: 'Big', p: '99999999999' }, { id: 'ok001', t: 'Ok', p: '10' }], ship: { th: '99999999', world: '', free: '' } }))
+  assert.equal(quote(d, true, { lines: [{ id: 'big01' }], cc: 'TH' }).error, 'item')
+  assert.equal(quote(d, true, { lines: [{ id: 'ok001' }], cc: 'TH' }).delivery, 100000000)
+})
+
+test('a product has its share card, and its words reach the translation and the check', async () => {
+  const s = await site()
+  const card = await go(`/card/${s.name}/p/soap02.jpg`)
+  assert.notEqual(card.status, 404) // no card library here: the page's own card
+  assert.equal((await go(`/card/${s.name}/p/nope.jpg`)).status, 404)
+  const { texts } = await import('../src/tr.mjs')
+  const { textOf } = await import('../src/screen.mjs')
+  const d = normalize(D())
+  assert.ok(texts(d).some(([p, v]) => p === 'products.1.t' && v === 'Soap'))
+  assert.ok(texts(d).some(([p]) => p === 'dls.0.t'))
+  assert.ok(textOf(d).includes('Soap') && textOf(d).includes('Guide') && textOf(d).includes('SAVE10')) // the page check reads them
+})
+
+test('the maker\'s words for the shop are in every language and nothing earlier shadows them', async () => {
+  const { SB } = await import('../public/s/make-words-store.mjs')
+  const { ui } = await import('../public/s/make-words.mjs')
+  const keys = Object.keys(SB.en)
+  for (const l of ['th', 'my', 'zh']) assert.deepEqual(Object.keys(SB[l]).sort(), [...keys].sort(), l)
+  for (const l of Object.keys(SB)) for (const k of keys) {
+    assert.ok(String(SB[l][k]).trim().length > 0, `${l} ${k}`)
+    assert.equal(ui(l, k), SB[l][k], `${l} ${k} is answered by another table`)
+  }
+  for (const l of Object.keys(SB)) assert.ok(!/\p{Extended_Pictographic}/u.test(JSON.stringify(SB[l])), 'no emoji ' + l)
+  for (const l of Object.keys(SB)) for (const k of ['sh_fees']) assert.match(SB[l][k], /\{th\}/)
+})
+
+test('the team page takes a form and nothing else, and the maker hears what the parcel costs', async () => {
+  const s = await site({ d: D({ ship: { th: '60', world: '600', free: '', mot: true } }) })
+  const j = await (await order(s, [{ k: 'p', id: 'soap02' }])).json()
+  await apiPost(s, 'orders', { act: 'paid', id: j.id })
+  const job = env.DB.raw.prepare('SELECT * FROM shipjob WHERE order_id = ?').get(j.id)
+  const tp = new URL(await (await import('../src/osign.mjs')).teamLink(env, O, job.id, sha)).pathname
+  const r = await go(tp, { method: 'POST', body: '{"act":"sent"}', headers: { 'content-type': 'application/json' } })
+  assert.notEqual(r.status, 500)
+  assert.equal(env.DB.raw.prepare('SELECT status FROM shipjob WHERE id = ?').get(job.id).status, 'wait')
+  const before = mails().length
+  await go(tp, { method: 'POST', body: new URLSearchParams({ act: 'sent', track: 'EMS999TH', postage: '30' }), headers: { 'content-type': 'application/x-www-form-urlencoded' } })
+  await settle()
+  const m = mails().slice(before)
+  assert.ok(m.some((x) => x.to[0] === 'owner@example.com' && /Parcel shipped/.test(x.subject) && /฿13\d\.\d\d/.test(x.text)), JSON.stringify(m.map((x) => x.subject)))
+  assert.ok(m.some((x) => x.to[0] === 'buyer@example.com' && /EMS999TH/.test(x.subject)))
+  assert.equal((await go(new URL(await (await import('../src/osign.mjs')).teamLink(env, O, 'a'.repeat(12), sha)).pathname)).status, 404) // no such parcel
+})
+
+test('a save from a browser that has old stock counts does not undo what Paid took off', async () => {
+  const s = await site()
+  const first = await (await api(s, 'site')).json()
+  const t0 = first.loaded // this browser read the page now, stock 5
+  const j = await (await order(s, [{ k: 'p', id: 'scarf1', opt: ['S', 'red'], q: 2 }])).json()
+  await new Promise((r) => setTimeout(r, 5))
+  const paid = await (await apiPost(s, 'orders', { act: 'paid', id: j.id })).json()
+  assert.equal(paid.stock.scarf1, 3)
+  const stale = first.d // still says 5
+  const put = (d, extra) => api(s, 'site', { method: 'PUT', body: JSON.stringify({ d, loaded: t0, ...extra }) })
+  const r1 = await (await put({ ...stale, tagline: 'edited' })).json()
+  assert.equal(r1.d.products[0].stock, 3) // the server's count stays
+  assert.deepEqual(r1.stock, { scarf1: 3 })
+  assert.equal(r1.d.tagline, 'edited')
+  // the browser that has the counts (stockAt from Paid) may set its own
+  const mine = { ...stale, products: stale.products.map((x) => (x.id === 'scarf1' ? { ...x, stock: 20 } : x)) }
+  const r2 = await (await put(mine, { stockAt: paid.at })).json()
+  assert.equal(r2.d.products[0].stock, 20)
+  assert.equal(JSON.parse(env.DB.raw.prepare('SELECT d FROM site WHERE id = ?').get(s.id).d).products[0].stock, 20)
+})
+
+test('the grid card has its own button: Buy on a free page, Add to cart on Gold, a link to the options for a product that has them', () => {
+  const base = { name: 'x3', look: 'clean', lang: 'en', kind: 'store', views: 1, status: 'live', d: D() }
+  const gold = render({ ...base, tier: 'gold' })
+  assert.match(gold, /<button class="btn" data-cart="p:soap02" data-t="buy">.*Add to cart<\/button>/) // no options: into the cart
+  assert.match(gold, /<a class="btn ghost" href="\/x3\/p\/scarf1" data-t="product">Buy<\/a>/) // options: choose them on its page
+  assert.ok(!/data-cart="p:gone03"|data-buy="p:gone03"/.test(gold)) // sold
+  const free = render({ ...base, tier: 'free' })
+  assert.match(free, /<button class="btn" data-buy="p:scarf1" data-t="buy">.*Buy<\/button>/) // a free page has no options: Buy
+  assert.ok(!/data-cart=/.test(free))
+  assert.ok(!/data-buy=|data-cart=/.test(render({ ...base, tier: 'gold', d: D({ pay: {} }) }))) // no PromptPay yet: no buttons
+})

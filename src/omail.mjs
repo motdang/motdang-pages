@@ -61,6 +61,15 @@ export async function paid(env, s, o, link, origin) {
     `${sw(lang, 'oPaid')} ${ref(o)}\n${title}\n${plain(o)}\n${dls.map((l) => `${l.t}: ${link}/d/${l.id}`).join('\n')}\n${link}\n`)
 }
 
+/** Mot Dang shipped a parcel: the maker hears what it costs, with the bill to pay in the Orders tab. */
+export async function billed(env, s, o, amount, origin) {
+  if (!isGold(s) || !s.notify_ok || !s.notify_email || !(await mayMail(env, s.id))) return false
+  const title = titleOf(s)
+  return mail(env, { to: s.notify_email, subject: `พัสดุส่งแล้ว · Parcel shipped ${ref(o)} — ${title}`.slice(0, 140),
+    html: box(`<p style="margin:0 0 6px"><b>${esc(ref(o))}</b> · ${esc(o.name)} · ${esc(o.track || '')}</p><p>มดแดงส่งพัสดุแล้ว ค่าบริการและค่าไปรษณีย์ ฿${esc(amount)} ดูบิลและคิวอาร์ในแท็บ "ออเดอร์" · Mot Dang shipped the parcel. Its fee and postage are ฿${esc(amount)}: the bill and its QR are in the Orders tab: <a href="${origin}/make">${origin.replace(/^https:\/\//, '')}/make</a></p>`),
+    text: `${ref(o)} ${o.name} ${o.track || ''}\n฿${amount}\n${origin}/make\n` })
+}
+
 /** The parcel is on its way: the buyer gets the tracking number. */
 export async function shipped(env, s, o, link) {
   const lang = o.lang, title = titleOf(s)

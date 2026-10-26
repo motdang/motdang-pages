@@ -42,7 +42,9 @@ export async function route(request, env, path, url, origin, deps) {
     const d = normalize(JSON.parse(s.d || '{}'))
     let error = ''
     if (m === 'POST' && deps.sameOrigin(request, url)) {
-      const r = await shipjob.act(env, job, o, s, await request.formData(), origin, deps)
+      let form = new FormData()
+      try { form = await request.formData() } catch {}
+      const r = await shipjob.act(env, job, o, s, form, origin, deps)
       if (!r.error) return Response.redirect(origin + path, 303)
       error = r.error === 'track' ? 'ใส่เลขพัสดุ · Write the tracking number' : 'ค่าส่งไม่ถูกต้อง · The postage is not right'
     }

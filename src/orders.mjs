@@ -17,7 +17,8 @@ import * as shipjob from './shipjob.mjs'
 import * as omail from './omail.mjs'
 
 const str = (v, n) => String(v ?? '').replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, '').trim().slice(0, n)
-const sat = (p) => Math.round(amount(p) * 100)
+const MAX_SATANG = 100000000 // a price or a shipping fee past 1,000,000 baht is not a price: it is a typo
+const sat = (p) => Math.min(MAX_SATANG, Math.round(amount(p) * 100))
 
 /** Satang as the baht a bank shows: 45037 → '450.37'. */
 export const baht = (n) => formatAmount(n)
@@ -43,18 +44,19 @@ export function quote(d, gold, b = {}, { strict = false, now = Date.now() } = {}
   const prods = d.products.slice(0, prCap(gold))
   const lines = [], seen = new Map(), perProduct = new Map()
   for (const r of raw) {
-    const k = r?.k === 'p' ? 'p' : r?.k === 'd' ? 'd' : ''
-    const id = String(r?.id || '').slice(0, 12)
+    const id = String(r?.id || r?.dl || '').slice(0, 12)
+    // a line says which it is (k: 'p' or 'd'); without, a product's id and then a download's id are looked for
+    const k = r?.k === 'p' || r?.k === 'd' ? r.k : d.products.some((y) => y.id === id) ? 'p' : d.dls.some((y) => y.id === id) ? 'd' : ''
     if (!k) return { error: 'item' }
     if (k === 'd') {
       if (!gold) return { error: 'gold' }
       const x = d.dls.find((y) => y.id === id)
-      if (!x || !dlForSale(x, gold)) return { error: 'item' }
+      if (!x || !dlForSale(x, gold) || sat(x.p) >= MAX_SATANG) return { error: 'item' }
       if (!seen.has('d:' + id)) { seen.set('d:' + id, true); lines.push({ k, id, t: x.t, opt: [], q: 1, u: sat(x.p), g: 0 }) }
       continue
     }
     const x = prods.find((y) => y.id === id)
-    if (!x || x.status !== 'open' || !(amount(x.p) > 0)) return { error: 'item' }
+    if (!x || x.status !== 'open' || !(amount(x.p) > 0) || sat(x.p) >= MAX_SATANG) return { error: 'item' }
     let opt = []
     const groups = gold ? optsOf(x.opts) : []
     if (groups.length) {
@@ -183,6 +185,19 @@ const stockMap = async (env, siteId) => {
 }
 
 /**
+ * The stock counts a maker's browser may not have: of the products in orders whose counts moved since `since` (when that browser
+ * last had the server's numbers), what the server holds now. A save from that browser keeps these over its own.
+ */
+export async function stockSince(env, siteId, since) {
+  if (!/^\d{4}-\d{2}-\d{2}T[\d:.]+Z$/.test(String(since || ''))) return {}
+  const rows = (await env.DB.prepare('SELECT lines FROM orders WHERE site_id = ? AND moved > ?').bind(siteId, since).all()).results
+  if (!rows.length) return {}
+  const ids = new Set(rows.flatMap((r) => { try { return JSON.parse(r.lines).filter((l) => l.k === 'p').map((l) => l.id) } catch { return [] } }))
+  const now = await stockMap(env, siteId)
+  return Object.fromEntries([...ids].filter((id) => Number.isInteger(now[id])).map((id) => [id, now[id]]))
+}
+
+/**
  * The maker's answer on one order: paid · unpaid · gone · ship (they sent it themselves, with a tracking number) · seen.
  * Paid takes the goods off the stock counts (Gold) and, on a page that ships with Mot Dang, sends the team a parcel job.
  */
@@ -197,18 +212,18 @@ export async function act(env, s, b, origin, deps) {
     await env.DB.prepare("UPDATE orders SET status = 'paid', paid_at = ?, seen = 1 WHERE id = ?").bind(now, o.id).run()
     if (!o.stocked && isGold(s)) {
       await moveStock(env, s, linesOf(o), -1)
-      await env.DB.prepare('UPDATE orders SET stocked = 1 WHERE id = ?').bind(o.id).run()
+      await env.DB.prepare('UPDATE orders SET stocked = 1, moved = ? WHERE id = ?').bind(now, o.id).run()
     }
     const paid = { ...o, status: 'paid', paid_at: now }
     if (o.mot && hasGoods(linesOf(o))) await shipjob.create(env, s, paid, origin, deps)
     deps.later(omail.paid(env, s, paid, await orderLink(env, origin, o.id, deps.sha), origin))
-    return { ok: true, stock: await stockMap(env, s.id) }
+    return { ok: true, stock: await stockMap(env, s.id), at: now }
   }
   if (b.act === 'unpaid' || b.act === 'gone') {
     if (o.stocked) await moveStock(env, s, linesOf(o), +1)
-    await env.DB.prepare('UPDATE orders SET status = ?, paid_at = NULL, stocked = 0, seen = 1 WHERE id = ?').bind(b.act === 'gone' ? 'gone' : 'no', o.id).run()
+    await env.DB.prepare('UPDATE orders SET status = ?, paid_at = NULL, stocked = 0, seen = 1, moved = CASE WHEN stocked = 1 THEN ? ELSE moved END WHERE id = ?').bind(b.act === 'gone' ? 'gone' : 'no', now, o.id).run()
     await env.DB.prepare("DELETE FROM shipjob WHERE order_id = ? AND status = 'wait'").bind(o.id).run() // a parcel nobody has yet
-    return { ok: true, stock: await stockMap(env, s.id) }
+    return { ok: true, stock: await stockMap(env, s.id), at: now }
   }
   if (b.act === 'ship') {
     const track = str(b.track, 60)

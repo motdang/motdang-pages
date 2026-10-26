@@ -83,7 +83,7 @@ export const dlForSale = (x, gold) => !!gold && !!x.file && amount(x.p) > 0
 const fmtSize = (n) => (n >= 1048576 ? (n / 1048576).toFixed(n >= 10485760 ? 0 : 1) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB')
 
 export const SHOP_CSS = `.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px}
-.pcard{display:flex;flex-direction:column;gap:2px;color:var(--ink);text-decoration:none}
+.pcard,.pcard>a{display:flex;flex-direction:column;gap:2px;color:var(--ink);text-decoration:none}.pcard .btn{min-height:44px;margin-top:8px}
 .pcard figure{position:relative;margin:0 0 6px;aspect-ratio:1;border-radius:calc(var(--r) + 2px);overflow:hidden;background:var(--soft)}
 .pcard img{width:100%;height:100%;object-fit:cover;transition:transform .5s}.pcard:hover img{transform:scale(1.05)}
 .pcard .noimg{display:grid;place-items:center;height:100%;font-size:56px}.pcard.gone figure{filter:grayscale(.8)}
@@ -128,15 +128,20 @@ export function shipNote(d, h) {
   return `<p class="shipnote"><b>${S('shipH')}:</b> ${parts.map((p) => `<span>${p}</span>`).join('')}</p>`
 }
 
-/** One product in the grid: photo, status, price. */
+/** One product in the grid: photo, status, price, and a button: Buy (free), Add to cart (Gold), or Buy to its page for a product with options. */
 export function productCard(x, h) {
-  const { site, lang, esc, img, sym, ding, gold } = h
+  const { site, lang, esc, img, sym, ding, gold, icon } = h
   const gone = unitsLeft(x, gold) === 0
   const old = amount(x.old) > amount(x.p) ? `<s>${esc(money(x.old, sym))}</s>` : ''
-  return `<a class="pcard${gone ? ' gone' : ''}" href="/${esc(site.name)}/p/${esc(x.id)}" data-t="product"><figure>` +
+  const href = `/${esc(site.name)}/p/${esc(x.id)}`
+  const S = (k) => esc(sw(lang, k))
+  const own = gold && optsOf(x.opts).length > 0 // options are chosen on the product's page
+  const btn = !h.pp || !forSale(x, gold) ? '' : own ? `<a class="btn ghost" href="${href}" data-t="product">${S('buy')}</a>`
+    : gold ? `<button class="btn" data-cart="p:${esc(x.id)}" data-t="buy">${icon('basket')}${S('addCart')}</button>` : `<button class="btn" data-buy="p:${esc(x.id)}" data-t="buy">${icon('basket')}${S('buy')}</button>`
+  return `<div class="pcard${gone ? ' gone' : ''}"><a href="${href}" data-t="product"><figure>` +
     (x.photos[0] ? `<img src="${esc(img(x.photos[0], true))}" alt="${esc(prAlt(x, h.title || site.name))}" loading="lazy">` : `<span class="noimg">${ding('gift', 'paper')}</span>`) +
-    `${gone ? `<span class="st">${esc(sw(lang, 'sold'))}</span>` : ''}</figure><b>${esc(x.t)}</b>` +
-    `<span class="pr">${amount(x.p) ? old + esc(money(x.p, sym)) : esc(sw(lang, 'noPrice'))}</span></a>`
+    `${gone ? `<span class="st">${S('sold')}</span>` : ''}</figure><b>${esc(x.t)}</b>` +
+    `<span class="pr">${amount(x.p) ? old + esc(money(x.p, sym)) : S('noPrice')}</span></a>${btn}</div>`
 }
 
 /** The shop on the page: the grid, how it ships, the cart bar (Gold) the script fills. */

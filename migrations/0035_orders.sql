@@ -28,6 +28,7 @@ CREATE TABLE orders (
   slip_at    TEXT,
   paid_at    TEXT,
   stocked    INTEGER NOT NULL DEFAULT 0, -- 1: the stock counts took this order's goods off
+  moved      TEXT,                       -- when the stock counts last moved for this order: a browser that read the page before it keeps the server's counts
   seen       INTEGER NOT NULL DEFAULT 0, -- 1: the maker has opened it
   track      TEXT,
   shipped_at TEXT,

@@ -57,7 +57,7 @@ export async function act(env, job, o, s, form, origin, deps) {
       .bind(payId, s.id, formatAmount(fee + postage + tail), now, now, ref(o.id)).run()
     await env.DB.prepare("UPDATE shipjob SET status = 'sent', got_at = COALESCE(got_at, ?), sent_at = ?, track = ?, fee = ?, postage = ?, pay_id = ? WHERE id = ?").bind(now, now, track, fee, postage, payId, job.id).run()
     await env.DB.prepare('UPDATE orders SET track = ?, shipped_at = ? WHERE id = ?').bind(track, now, o.id).run()
-    deps.later(omail.shipped(env, s, { ...o, track }, await orderLink(env, origin, o.id, deps.sha)))
+    deps.later(Promise.all([omail.shipped(env, s, { ...o, track }, await orderLink(env, origin, o.id, deps.sha)), omail.billed(env, s, { ...o, track }, formatAmount(fee + postage + tail), origin)]))
     return { ok: true }
   }
   return { ok: true }

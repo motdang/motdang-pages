@@ -9,13 +9,22 @@ import * as dls from './dls.mjs'
 
 const STATUS = { item: 409, stock: 409, gold: 402 }
 
-/** POST /api/order: { n, lines, name, reach, email, addr, cc, code, note, lang, ms }. quote: true answers the total and saves nothing. */
+/** The buyer's fields at the top, whether they came there or inside `buyer`, with the plain names for them: phone or line for reach, address, country. */
+function flat(b) {
+  const x = { ...(b && typeof b.buyer === 'object' && b.buyer ? b.buyer : {}), ...b }
+  x.reach = x.reach || x.phone || x.line || ''
+  x.addr = x.addr || x.address || ''
+  x.cc = x.cc || x.country || ''
+  return x
+}
+
+/** POST /api/order: { n (the page's name), lines, name, reach, email, addr, cc, code, note, lang, ms }. quote: true answers the total and saves nothing. */
 export async function make(request, env, ctx, origin, deps) {
   const { J, body, take, sender } = deps
-  const b = await body(request)
+  const b = flat(await body(request))
   if (b.website) return J({ ok: true }) // a form filled by a script
   const who = await sender(request, env)
-  const s = await env.DB.prepare("SELECT * FROM site WHERE name = ? AND status = 'live'").bind(String(b.n || '')).first()
+  const s = await env.DB.prepare("SELECT * FROM site WHERE name = ? AND status = 'live'").bind(String(b.n || b.page || '')).first()
   if (!s) return J({ error: 'not-found' }, 404)
   const d = normalize(JSON.parse(s.d || '{}'))
   if (b.quote) {
