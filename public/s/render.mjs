@@ -10,12 +10,12 @@ import { normalizeExtras, upcoming, campsNow, utcOf, money, MAP_NEAR, MAX, UNIT_
 import { normalizeAmulets, amuletSection, amuletBody, amuletLd, amuletDesc, AM_CSS, AM_MAX, amCap } from './amulet.mjs'
 import { normalizeStore, shopSection, dlSection, productBody, productLd, productDesc, shopData, forSale, dlForSale, prCap, SHOP_CSS } from './store.mjs'
 import { LOOKS, LOOK_IDS, GOLD_LOOKS, LOOK_ALIAS, lookOf, HERO_CSS, F_THAI } from './looks.mjs'
-import { lookOk, freeLooks, groupOf, GROUPS, GROUP_OF, GROUP_KINDS } from './kinds.mjs'
+import { lookOk, freeLooks, groupOf, designOf, GROUPS, GROUP_OF, GROUP_KINDS } from './kinds.mjs'
 import { ogOf, normalizeOg } from './og.mjs'
 import { O as ONLINE_WORDS, ow } from './words-online.mjs'
 import { normalizeOnline, faqShown, faqLd, faqSection, packagesSection, packagesLd, signupSection, onlineCta, ctaHtml, onlineW, ONLINE_CSS } from './online.mjs'
 
-export { LOOKS, LOOK_IDS, GOLD_LOOKS, LOOK_ALIAS, lookOf, lookOk, freeLooks, groupOf, GROUPS, GROUP_OF, GROUP_KINDS }
+export { LOOKS, LOOK_IDS, GOLD_LOOKS, LOOK_ALIAS, lookOf, lookOk, freeLooks, groupOf, designOf, GROUPS, GROUP_OF, GROUP_KINDS }
 
 export const KINDS = ['shop', 'food', 'service', 'work', 'amulet', 'stay', 'homes', 'me', 'event', 'group', 'store', 'online']
 export const HOME = 'https://sites.motdang.net'
@@ -576,9 +576,8 @@ export function render(site, opt = {}) {
   const lang = PAGE_LANGS[site.lang] ? site.lang : 'en'
   const gold = opt.gold ?? site.tier === 'gold'
   const hotel = gold && (opt.hotel ?? !!site.hotel) // direct room bookings: the hotel month or the first 30 days
-  const wantLook = lookOf(site.look)
-  // a free page wears its own kind's looks; Gold, a preview and the builder any look (kinds.mjs)
-  const lookId = LOOKS[wantLook] && (opt.preview || lookOk(site.kind, wantLook, gold)) ? wantLook : freeLooks(site.kind)[0]
+  // one design per kind of site, nothing to pick (Nan 2026-10-26: "one style per kind"; looks.mjs, kinds.mjs)
+  const lookId = designOf(site.kind)
   const look = LOOKS[lookId]
   const accent = d.accent || look.accent
   const dl = DING_LOOK[lookId] || 'ink'

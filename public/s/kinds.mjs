@@ -1,9 +1,7 @@
 // kinds.mjs — the four kinds of site (Nan 2026-10-26): "Portfolio site, sell something local site, dropshipping
 // site, run an online business site. Everything except for portfolio site has lots of bells and whistles."
-// The variety is in the kind; a look is how it is dressed. A free page wears its own kind's looks; Gold opens
-// every look ("you should be able to get any style in Gold").
+// The variety is in the kind: each kind of site has one design that puts first what it is for (Nan 2026-10-26).
 
-import { LOOK_IDS } from './looks.mjs'
 
 export const GROUPS = ['local', 'store', 'online', 'portfolio']
 /** Which of the four a page kind belongs to. */
@@ -16,16 +14,11 @@ export const GROUP_KINDS = {
   local: ['stay', 'service', 'food', 'shop', 'homes', 'event', 'amulet', 'group'],
   store: ['store'], online: ['online'], portfolio: ['work', 'me'],
 }
-/** A free page's looks, by its kind of site; the first is where a page lands when Gold ends. */
-export const FREE_LOOKS = {
-  local: ['lanna', 'night', 'loom', 'stitch', 'clean'],
-  store: ['clean', 'night', 'loom'],
-  online: ['clean', 'loom', 'night'],
-  portfolio: ['clean', 'stitch', 'loom'],
-}
 export const groupOf = (kind) => GROUP_OF[kind] || 'local'
-export const freeLooks = (kind) => FREE_LOOKS[groupOf(kind)]
-/** May a page of this kind wear this look? Gold: any look. */
-export const lookOk = (kind, look, gold) => LOOK_IDS.includes(look) && (!!gold || freeLooks(kind).includes(look))
-/** The look a page shows: the one it chose when allowed, else its kind's first free look. */
-export const lookFor = (kind, look, gold) => (lookOk(kind, look, gold) ? look : freeLooks(kind)[0])
+/** The one design a page wears: its kind of site's (looks.mjs). Nan 2026-10-26: "one style per kind". */
+export const DESIGN_OF = { local: 'local', store: 'shop', online: 'biz', portfolio: 'folio' }
+export const designOf = (kind) => DESIGN_OF[groupOf(kind)]
+/** Kept for callers of the picked-look days: a page wears its kind's design, so the only look that fits is that one. */
+export const freeLooks = (kind) => [designOf(kind)]
+export const lookOk = (kind, look) => look === designOf(kind)
+export const lookFor = (kind) => designOf(kind)
