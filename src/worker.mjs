@@ -23,7 +23,7 @@
 // The edit link is the sign-in: a long random token, stored only as its hash.
 
 import { promptPayPayload } from './promptpay.mjs'
-import { render, findable, qrSvg, normalize, vcard, ics, sign, KINDS, LOOK_IDS, GOLD_LOOKS, MAX_PHOTOS, photoMax, sceneOf, HOME, lookOk } from '../public/s/render.mjs'
+import { render, findable, qrSvg, normalize, vcard, ics, sign, KINDS, designOf, MAX_PHOTOS, photoMax, sceneOf, HOME } from '../public/s/render.mjs'
 import { AM_MAX, amCap } from '../public/s/amulet.mjs'
 import { prCap } from '../public/s/store.mjs'
 import { PAGE_LANGS } from '../public/s/words.mjs'
@@ -603,7 +603,7 @@ ${s ? `<p>ข้อความถึง ${escHtml(title)} จะส่งสำ
     const why = nameProblem(name)
     if (why) return J({ error: 'name', why }, 400)
     const kind = KINDS.includes(b.kind) ? b.kind : 'shop'
-    const lookId = LOOK_IDS.includes(b.look) ? b.look : 'poster' // every new page starts in its Gold days
+    const lookId = designOf(kind) // a page wears its kind's design whatever the browser sends (kinds.mjs)
     const lang = PAGE_LANGS[b.lang] ? b.lang : 'th'
     const d = normalize(b.d || {})
     const seller = await sellers.known(env, b.by)
@@ -653,7 +653,7 @@ ${s ? `<p>ข้อความถึง ${escHtml(title)} จะส่งสำ
     const b = await body(request)
     const d = normalize(b.d || JSON.parse(s.d))
     const kind = KINDS.includes(b.kind) ? b.kind : s.kind
-    const lookId = lookOk(kind, b.look, isGold) ? b.look : s.look // a free page wears its kind's looks; Gold any (kinds.mjs)
+    const lookId = designOf(kind) // a page wears its kind's design whatever the browser sends (kinds.mjs)
     const lang = PAGE_LANGS[b.lang] ? b.lang : s.lang
     let name = s.name
     if (b.name && b.name !== s.name) {

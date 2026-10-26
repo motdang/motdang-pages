@@ -19,9 +19,9 @@ test('every part of the form sits in one of the six cards', () => {
   const inCards = [...groups.matchAll(/'([a-z]+)'/g)].map((m) => m[1])
   assert.ok(sections.length > 15)
   for (const id of sections) assert.ok(inCards.includes(id), id)
-  for (const g of ['words', 'pics', 'offer', 'reach', 'where', 'look']) {
+  for (const g of ['words', 'pics', 'offer', 'reach', 'where', 'colour']) {
     assert.ok(X.en['g_' + g] || g === 'offer', g)
     assert.ok(X.en['gw_' + g], 'why ' + g)
   }
-  for (const id of sections) if (!['words', 'look'].includes(id)) assert.ok(X.en['a_' + id] || K.en['a_' + id] || SB.en['a_' + id], 'a_' + id)
+  for (const id of sections) if (!['words', 'colour'].includes(id)) assert.ok(X.en['a_' + id] || K.en['a_' + id] || SB.en['a_' + id], 'a_' + id)
 })

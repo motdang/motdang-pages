@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { render, normalize, openState, zonedToUtc, lineHref, safeUrl, onColor, vcard, ics, sign, LOOK_IDS, grabRide } from '../public/s/render.mjs'
 
-const base = { name: 'khaosoi-mae-sai', look: 'poster', lang: 'th', kind: 'food', views: 7, status: 'live' }
+const base = { name: 'khaosoi-mae-sai', look: 'local', lang: 'th', kind: 'food', views: 7, status: 'live' }
 
 test('maker text is escaped everywhere it lands', () => {
   const evil = '<script>alert(1)</script>"><img src=x onerror=alert(2)>'
@@ -13,18 +13,19 @@ test('maker text is escaped everywhere it lands', () => {
   assert.ok(!html.includes('javascript:'))
 })
 
-test('every look renders a whole page, and the top of it answers a tap', () => {
+test('every design renders a whole page', () => {
+  const KIND_OF = { local: 'food', shop: 'store', biz: 'online', folio: 'work' }
   for (const look of LOOK_IDS) {
-    const html = render({ ...base, look, d: { name: 'ข้าวซอย', tagline: 'อร่อย', hours: { on: true, week: Array(7).fill([['09:00', '18:00']]) } } })
+    const html = render({ ...base, look, kind: KIND_OF[look], d: { name: 'ข้าวซอย', tagline: 'อร่อย', hours: { on: true, week: Array(7).fill([['09:00', '18:00']]) } } })
     assert.match(html, /^<!doctype html>/)
-    assert.match(html, /\.top\.go /, look + ' plays again on a tap')
+    assert.match(html, new RegExp(`data-look="${look}"`), look)
     assert.match(html, /<\/html>$/)
   }
 })
 
-test('a page with a look that was taken out shows the nearest one that stayed', () => {
-  assert.match(render({ ...base, look: 'y1997', d: { name: 'x' } }), /data-look="night"/)
-  assert.match(render({ ...base, look: 'riso', tier: 'gold', d: { name: 'x' } }), /data-look="poster"/)
+test('a page saved with a look that was taken out wears its kind\'s design', () => {
+  assert.match(render({ ...base, look: 'y1997', d: { name: 'x' } }), /data-look="local"/)
+  assert.match(render({ ...base, look: 'riso', kind: 'store', tier: 'gold', d: { name: 'x' } }), /data-look="shop"/)
 })
 
 test('normalize drops unknown keys, bad photo ids, bad urls', () => {

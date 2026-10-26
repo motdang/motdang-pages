@@ -6,7 +6,7 @@ import { mapPage } from '../src/mappage.mjs'
 import { promptPayPayload, verifyPayload } from '../src/promptpay.mjs'
 import { isMachine } from '../src/stats.mjs'
 
-const base = { name: 'khaosoi-mae-sai', look: 'poster', lang: 'th', kind: 'food', views: 7, status: 'live' }
+const base = { name: 'khaosoi-mae-sai', look: 'local', lang: 'th', kind: 'food', views: 7, status: 'live' }
 const req = (ua, h = {}) => ({ headers: new Map(Object.entries({ 'user-agent': ua, ...h })) })
 
 test('pages live at sites.motdang.net/name, with its own share card', () => {
@@ -26,10 +26,10 @@ test('the drawing carries the page facts, hours in OpenStreetMap shape', () => {
   assert.ok(!render({ ...base, d: { name: 'x', drawing: false } }).includes('id="drawn"'))
 })
 
-test('Gold looks, video, places and indexing show only for Gold', () => {
+test('Gold video, places and indexing show only for Gold', () => {
   const d = { name: 'x', video: 'https://youtu.be/dQw4w9WgXcQ', spots: [{ n: 'Wat', lat: 18.79, lng: 98.98 }], place: { lat: 18.79, lng: 98.99, cc: 'TH' } }
-  const free = render({ ...base, look: 'gold', d })
-  assert.match(free, /data-look="lanna"/) // a free page wears its kind's looks; a food page lands on its first (kinds.mjs)
+  const free = render({ ...base, d })
+  assert.match(free, /data-look="local"/) // a page wears its kind's design, free or Gold (kinds.mjs)
   assert.ok(!free.includes('youtube'))
   assert.match(free, /class="spots"/) // up to 3 places on a free page since 2026-10-14
   assert.equal(render({ ...base, d: { ...d, spots: Array.from({ length: 6 }, (_, i) => ({ n: 'P' + i, lat: 18.7 + i / 100, lng: 98.9 })) } }).match(/data-spot=/g).length, 3)
@@ -39,8 +39,8 @@ test('Gold looks, video, places and indexing show only for Gold', () => {
   assert.match(render({ ...base, d: { name: 'x', contact: { line: '@shop' } } }), /content="index,follow,notranslate"/)
   assert.match(render({ ...base, reports: 1, d }), /name="robots" content="noindex,notranslate"/)
   assert.match(render({ ...base, status: 'held', d }), /name="robots" content="noindex,notranslate"/)
-  const gold = render({ ...base, look: 'gold', tier: 'gold', d })
-  assert.match(gold, /data-look="gold"/)
+  const gold = render({ ...base, tier: 'gold', d })
+  assert.match(gold, /data-look="local"/)
   assert.match(gold, /data-kind="youtube" data-id="dQw4w9WgXcQ"/)
   assert.match(gold, /class="spots"/)
   assert.match(gold, /content="index,follow,notranslate"/)

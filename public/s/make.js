@@ -1,9 +1,9 @@
-// make.js — the builder. Three questions (what for, what name, which look),
+// make.js — the builder. Three questions (what for, what name, what colour),
 // then one form with the page itself beside it. Every change saves on its
 // own; "Put it online" is the only button that matters. Beside the page:
 // its messages, its traffic, and Gold.
 
-import { render, normalize, LOOKS, LOOK_IDS, GOLD_LOOKS, lookOf, lookOk, GROUPS as SITE_GROUPS, GROUP_KINDS, groupOf as siteOf, KINDS, ACCENTS, CURRENCY, SCENES, DPROPS, MAX_PHOTOS, photoMax, osmHours, currencyFor, qrSvg, lineShare, lineHref, esc } from './render.mjs'
+import { render, normalize, LOOKS, designOf, GROUPS as SITE_GROUPS, GROUP_KINDS, groupOf as siteOf, KINDS, ACCENTS, CURRENCY, SCENES, DPROPS, MAX_PHOTOS, photoMax, osmHours, currencyFor, qrSvg, lineShare, lineHref, esc } from './render.mjs'
 import { MAX, UNIT_LABEL } from './extras.mjs'
 import { DINGBATS } from './db/names.mjs'
 import { PAGE_LANGS } from './words.mjs'
@@ -39,7 +39,7 @@ const TZ = (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZon
 
 const S = {
   lang: store.get('lang', (() => { const l = (navigator.language || 'th').slice(0, 2); return UI_LANGS[l] ? l : 'th' })()),
-  step: 'kind', kind: 'stay', name: '', addr: '', addrTouched: false, look: 'lanna', accent: '', peek: '', token: '', status: 'draft', views: 0,
+  step: 'kind', kind: 'stay', name: '', addr: '', addrTouched: false, accent: '', token: '', status: 'draft', views: 0,
   pageLang: '', d: null, open: new Set(), local: new Map(), big: new Map(), photoGps: null, picker: null, busy: 0,
   tab: 'edit', tier: 'gold', goldUntil: '', notifyEmail: '', notifyOk: false, unread: 0, // a page starts with 30 days of Gold
   trial: false, asks: 0, orders: 0, shipinfo: null, domain: '', domainState: '', domains: false, price: 3000, dbFam: '', dbQ: '',
@@ -83,10 +83,11 @@ const DEFAULT_OPEN = {
   store: ['products', 'pay', 'ship', 'words', 'photos', 'faq', 'contact', 'links'],
   online: ['words', 'face', 'svc', 'dls', 'pay', 'faq', 'quotes', 'signup', 'links', 'contact'],
 }
-// new pages start in a look that shows photos as taken (Nan 2026-10-26: less image editing); Poster stays one tap away
 // the kinds most likely to pay come first (Nan 2026-10-26)
 const KIND_ORDER = ['stay', 'service', 'food', 'shop', 'homes', 'work', 'event', 'amulet', 'group', 'me', 'store', 'online']
-const LOOK_FOR = { shop: 'clean', food: 'night', service: 'loom', work: 'clean', amulet: 'lanna', stay: 'lanna', homes: 'clean', me: 'stitch', event: 'night', group: 'stitch', store: 'clean', online: 'clean' }
+// a page wears the design of its kind (kinds.mjs); the colour is the maker's one style choice
+const design = () => designOf(S.kind)
+const ownAccent = () => LOOKS[design()].accent
 
 function guessCc() {
   const zone = { 'Asia/Bangkok': 'TH', 'Asia/Yangon': 'MM', 'Asia/Rangoon': 'MM', 'Asia/Vientiane': 'LA', 'Asia/Phnom_Penh': 'KH',
@@ -219,11 +220,7 @@ let KPIC = {}
 const kpicReady = fetch('/s/kinds/kinds.json').then((r) => r.json()).then((j) => { KPIC = j }).catch(() => {})
 const KPIC_ID = 'kindpic000000'
 const kpicUrl = (kind, small) => `/s/kinds/${kind}${small ? '-s' : ''}.webp`
-let EX = {}
-const exReady = fetch('/s/ex/ex.json').then((r) => (r.ok ? r.json() : {})).then((j) => { EX = j || {} }).catch(() => {})
-const exOf = (kind, look) => EX[kind]?.[look] || null
-const exUrl = (kind, look, small) => (exOf(kind, look) ? `/s/ex/${kind}-${look}${small ? '-s' : ''}.webp` : kpicUrl(kind, small))
-const exCredit = (kind, look) => { const e = exOf(kind, look), k = KPIC[kind]; return e ? { title: e.title, by: e.by, src: e.src, license: e.license, licenseUrl: e.licenseUrl, from: 'commons' } : k ? { title: k.title, by: k.by || 'Wikimedia Commons', src: k.src, license: k.license, licenseUrl: k.licenseUrl || '', from: /^k:/.test(k.pd || '') ? 'house' : 'commons' } : null }
+const kindCredit = (kind) => { const k = KPIC[kind]; return k ? { title: k.title, by: k.by || 'Wikimedia Commons', src: k.src, license: k.license, licenseUrl: k.licenseUrl || '', from: /^k:/.test(k.pd || '') ? 'house' : 'commons' } : null }
 
 // On the first screen the phone shows each kind's own parts filled in with examples, so a hotel shows
 // rooms and a noodle shop a menu; the box above it says they are examples. The new page starts empty.
@@ -276,16 +273,16 @@ function examples(kind, lang) {
   return x
 }
 
-function tryData(look = S.look) {
+function tryData() {
   const d = normalize(applyPrefill({ ...starter(S.kind), ...examples(S.kind, S.pageLangTry || 'en'), name: S.name.trim() || ui(S.lang, 'yourName'), accent: S.accent || '' }))
-  const cr = exCredit(S.kind, look)
-  if (cr) { d.cover = KPIC_ID; d.photos = [KPIC_ID]; d.credits = { [KPIC_ID]: cr }; d.coverPos = exOf(S.kind, look)?.focus || null }
+  const cr = kindCredit(S.kind)
+  if (cr) { d.cover = KPIC_ID; d.photos = [KPIC_ID]; d.credits = { [KPIC_ID]: cr }; d.coverPos = null }
   return d
 }
 
-// The two pickers (Nan 2026-10-15, "Level 1/10. Bring it up to 11."; notes/pickers-2026-10-15.txt):
-// every kind on screen with what its page gets, every look a small copy of the page with the
-// maker's name in it, a colour now, and the look changed on the phone itself.
+// The first screen (Nan 2026-10-15, "Level 1/10. Bring it up to 11."; 2026-10-26, "one style per kind"):
+// every kind on screen with what its page gets, the phone showing that kind's page with the maker's
+// name in it, and one style choice: a colour.
 const shownName = () => S.name.trim() || ui(S.lang, 'yourName')
 // (SECTIONS and PART are declared further down, so these are worked out on first use)
 let SEC_ICON = null, PART_AT = null
@@ -313,71 +310,26 @@ function kindTile(k) {
 }
 
 function getsHtml() {
-  return `<p class="gwhy">${T('why_' + S.kind)}</p><p class="gl">${T('gets')} <span>${T('getsTap')} ${T('exNote')}</span></p><div class="getchips">${(DEFAULT_OPEN[S.kind] || []).map((p) => {
+  return `<p class="gwhy">${T('why_' + S.kind)}</p><p class="gl">${T('gets')} <span>${T('getsTap')}</span></p><div class="getchips">${(DEFAULT_OPEN[S.kind] || []).map((p) => {
     const [ic, g] = secIcon(p) || ['star']
     return `<button class="chip" data-at="${p}">${icon(ic)}${T(p === 'svc' && S.kind === 'online' ? 's_pkg' : 's_' + p)}${g ? '<i>★</i>' : ''}</button>`
   }).join('')}</div>`
 }
 
-function lookTile(id) {
-  const L = LOOKS[id]
-  return `<button class="lp${id === S.look ? ' on' : ''}" data-look="${id}" aria-pressed="${id === S.look}">
-    <span class="mp"><iframe data-th="${id}" tabindex="-1" aria-hidden="true" sandbox="allow-same-origin" scrolling="no" loading="lazy" title=""></iframe></span>
-    <span class="lkt"><b>${T('lk_' + id)}${!lookOk(S.kind, id, false) ? `<i class="gtag">★ ${T('tagGold')}</i>` : ''}</b><small>${T('m_' + id)}</small></span></button>`
-}
-
-// Each look tile is the page itself in that look, the top of it, drawn by the same render() and
-// scaled down: what the maker picks is what the page will be.
-const THUMB_W = 390, THUMB_H = 660
-function thumbData(look) { return S.step === 'edit' && S.d ? { ...S.d, name: S.d.name || S.name } : tryData(look) }
-function fillThumbs(root = app) {
-  root.querySelectorAll('iframe[data-th]').forEach((f) => {
-    const id = f.dataset.th
-    const d = thumbData(id)
-    const html = render({ name: S.addr || S.name || 'your-page', look: id, lang: (S.step === 'edit' ? S.pageLang : S.pageLangTry) || 'en', kind: S.kind, d, views: 1234, status: 'live', tier: 'gold' },
-      { preview: true, thumb: true, gold: true, hotel: true, origin: location.origin, img: (x, small) => (x === KPIC_ID ? exUrl(S.kind, id, small) : imgUrl(x, small)) })
-    if (f.dataset.html !== html) { f.dataset.html = html; f.srcdoc = html }
-  })
-  sizeThumbs(root)
-}
-function sizeThumbs(root = app) {
-  root.querySelectorAll('.mp').forEach((m) => m.style.setProperty('--k', String(m.clientWidth / THUMB_W)))
-}
-let thumbTimer = 0
-const thumbsSoon = (ms = 600) => { clearTimeout(thumbTimer); thumbTimer = setTimeout(() => fillThumbs(), ms) }
-addEventListener('resize', () => sizeThumbs())
-
+// the maker's colour: the design's own first, then the others
 function accDots() {
-  const own = LOOKS[S.look].accent
-  return `<button class="ad own${S.accent ? '' : ' on'}" data-acc="" style="--c:${own}" title="${T('lookOwn')}" aria-label="${T('lookOwn')}"></button>` +
+  const own = ownAccent()
+  return `<button class="ad own${S.accent ? '' : ' on'}" data-acc="" style="--c:${own}" title="${T('colourOwn')}" aria-label="${T('colourOwn')}"></button>` +
     ACCENTS.filter((c) => c !== own).map((c) => `<button class="ad${S.accent === c ? ' on' : ''}" data-acc="${c}" style="--c:${c}" aria-label="${c}"></button>`).join('')
 }
 
-function lookNav() {
-  return `<button class="ln" id="lkprev" aria-label="${T('prevLook')}">‹</button><span><b>${T('lk_' + S.look)}</b><small>${T('swipe')}</small></span><button class="ln" id="lknext" aria-label="${T('nextLook')}">›</button>`
-}
-
-// after a kind, look or colour changes: the tiles, the chips and the phone, the name box untouched
+// after a kind or colour changes: the tiles, the chips and the phone, the name box untouched
 function syncPick() {
   app.querySelectorAll('.kind').forEach((x) => { const on = x.dataset.group ? siteOf(S.kind) === x.dataset.group : x.dataset.kind === S.kind; x.classList.toggle('on', on); x.setAttribute('aria-pressed', on) })
   const g = $('#gets'); if (g) g.innerHTML = getsHtml()
-  const l = $('#lks'); if (l) l.innerHTML = LOOK_IDS.map(lookTile).join('')
   const a = $('#accs'); if (a) a.innerHTML = accDots()
-  const n = $('#lknav'); if (n) n.innerHTML = lookNav()
   wirePick()
-  fillThumbs()
 }
-
-function setLook(id, how) {
-  if (!LOOKS[id] || id === S.look) return
-  S.look = S.lookWanted = id
-  if (S.accent === LOOKS[id].accent) S.accent = ''
-  syncPick()
-  const sh = $('.tphone .shell')
-  if (sh) { sh.classList.remove('flip', 'fl', 'fr'); void sh.offsetWidth; sh.classList.add('flip', how === 'prev' ? 'fr' : 'fl') }
-  tryPreview(0)
-}
-const stepLook = (n) => setLook(LOOK_IDS[(LOOK_IDS.indexOf(S.look) + n + LOOK_IDS.length) % LOOK_IDS.length], n < 0 ? 'prev' : 'next')
 
 // "tap one to see it on the page": the phone scrolls to the part and lights it
 function showPart(p) {
@@ -392,26 +344,12 @@ function showPart(p) {
   el.classList.add('mk-flash')
 }
 
-let peekTimer = 0
 function wirePick() {
   app.querySelectorAll('.chip').forEach((b) => (b.onclick = () => {
     app.querySelectorAll('.chip').forEach((x) => x.classList.toggle('on', x === b))
     showPart(b.dataset.at)
   }))
-  app.querySelectorAll('.lp').forEach((b) => {
-    b.onclick = () => { clearTimeout(peekTimer); S.peek = ''; setLook(b.dataset.look, 'next') }
-    // pointing at a look shows it on the phone; moving away puts the picked one back
-    b.onmouseenter = () => {
-      if (!matchMedia('(hover:hover)').matches || b.dataset.look === S.look) return
-      clearTimeout(peekTimer); peekTimer = setTimeout(() => { S.peek = b.dataset.look; tryPreview(0) }, 140)
-    }
-  })
-  const lks = $('#lks')
-  if (lks) lks.onmouseleave = () => { clearTimeout(peekTimer); if (S.peek) { S.peek = ''; tryPreview(0) } }
   app.querySelectorAll('.ad').forEach((b) => (b.onclick = () => { S.accent = b.dataset.acc; syncPick(); tryPreview(0) }))
-  const p = $('#lkprev'), n = $('#lknext')
-  if (p) p.onclick = () => stepLook(-1)
-  if (n) n.onclick = () => stepLook(1)
 }
 
 function drawTry() {
@@ -419,19 +357,15 @@ function drawTry() {
   const mine = store.get('pages', [])
   const pageLang = PAGE_LANGS[S.lang] ? S.lang : 'en'
   app.innerHTML = `<section class="try">
-    <div class="tw"><p class="why">${T('why')}</p><p class="why2">${T('why2')}</p>
+    <div class="tw"><p class="why">${T('why')}</p>
       <h1 class="q">${T('try')}</h1>
       <input id="nm" class="bigname" maxlength="60" autocomplete="off" placeholder="${T('ph')}" value="${esc(S.name)}"></div>
-    <div class="tphone"><div class="shell"><div class="url">${icon('globe')}<span>sites.motdang.net/<b id="pvaddr">${esc(S.addr || '…')}</b></span></div><iframe id="tryframe" title="${T('preview')}"></iframe></div>
-      <div class="lknav" id="lknav">${lookNav()}</div></div>
+    <div class="tphone"><div class="shell"><div class="url">${icon('globe')}<span>sites.motdang.net/<b id="pvaddr">${esc(S.addr || '…')}</b></span></div><iframe id="tryframe" title="${T('preview')}"></iframe></div></div>
     <div class="tkind"><p class="lbl">${T('for')}</p>
       <div class="kinds groups">${SITE_GROUPS.map(groupTile).join('')}</div>
       <div id="subk">${subKinds()}</div>
       <div class="gets" id="gets">${getsHtml()}</div></div>
-    <div class="tlook">
-      <div class="lbrow"><p class="lbl">${T('look')}</p><button class="dice" id="dice">${ding('sparkle', 'ink')}${T('surprise')}</button></div>
-      <div class="lks" id="lks">${LOOK_IDS.map(lookTile).join('')}</div>
-      <div class="accrow"><span>${T('colour')}</span><div class="accs" id="accs">${accDots()}</div></div></div>
+    <div class="tcol"><div class="accrow"><span>${T('colour')}</span><div class="accs" id="accs">${accDots()}</div></div></div>
     <div class="tpick">
       <label class="field taddr"><span>${T('addr')}</span><div class="addr"><span>sites.motdang.net/</span><input id="ad" maxlength="30" autocomplete="off" autocapitalize="off" spellcheck="false" inputmode="url" value="${esc(S.addr)}"></div><span class="avail" id="av"></span></label>
       <div class="row"><button class="go big" id="next">${T('go')} →</button></div>
@@ -444,10 +378,9 @@ function drawTry() {
     S.name = nm.value
     if (!S.addrTouched) { ad.value = S.addr = slugify(nm.value, S.kind) }
     $('#pvaddr').textContent = S.addr || '…'
-    // the name changes in the page and in every look at once; the whole page is drawn again when typing stops
+    // the name changes in the page at once; the whole page is drawn again when typing stops
     const h1 = $('#tryframe').contentDocument?.querySelector('header.top h1')
     if (h1) h1.textContent = shownName()
-    thumbsSoon(700)
     tryPreview(700)
     check()
   }
@@ -458,27 +391,20 @@ function drawTry() {
     const g = b.dataset.group
     if (g) { if (siteOf(S.kind) !== g) S.kind = GROUP_KINDS[g][0] } else S.kind = b.dataset.kind
     const sk = $('#subk'); if (sk) { sk.innerHTML = subKinds(); wireKinds() }
-    if (!S.lookWanted) { S.look = LOOK_FOR[S.kind] || S.look; if (S.accent === LOOKS[S.look].accent) S.accent = '' }
+    if (S.accent === ownAccent()) S.accent = ''
     if (!S.addrTouched && S.name) { ad.value = S.addr = slugify(S.name, S.kind); check() }
     syncPick()
     tryPreview(0)
   })) }
-  $('#dice').onclick = () => {
-    const others = LOOK_IDS.filter((x) => x !== S.look)
-    const id = others[Math.floor(Math.random() * others.length)]
-    S.accent = Math.random() < 0.5 ? '' : ACCENTS[Math.floor(Math.random() * ACCENTS.length)]
-    if (S.accent === LOOKS[id].accent) S.accent = ''
-    setLook(id, 'next')
-  }
   wirePick()
   $('#next').onclick = () => {
     if (!S.name.trim()) { nm.focus(); nm.classList.add('nudge'); setTimeout(() => nm.classList.remove('nudge'), 600); return }
-    if (availOk) create(S.look, $('#next'))
+    if (availOk) create($('#next'))
   }
   app.querySelectorAll('.mine a').forEach((a) => (a.onclick = (e) => { e.preventDefault(); history.replaceState(null, '', a.getAttribute('href')); boot() }))
   S.pageLangTry = pageLang
   if (S.addr) check()
-  Promise.all([kpicReady, exReady]).then(() => { tryPreview(0); fillThumbs() })
+  kpicReady.then(() => tryPreview(0))
 }
 
 let tryTimer = 0
@@ -488,24 +414,17 @@ function tryPreview(ms) {
     const f = $('#tryframe')
     if (!f) return
     const y = f.contentWindow?.scrollY || 0
-    const lk = S.peek || S.look
-    f.srcdoc = render({ name: S.addr || 'your-page', look: lk, lang: S.pageLangTry || 'en', kind: S.kind, d: tryData(lk), views: 1234, status: 'live', tier: 'gold' },
-      { preview: true, gold: true, hotel: true, origin: location.origin, img: (id, small) => (id === KPIC_ID ? exUrl(S.kind, lk, small) : imgUrl(id, small)) })
+    f.srcdoc = render({ name: S.addr || 'your-page', look: design(), lang: S.pageLangTry || 'en', kind: S.kind, d: tryData(), views: 1234, status: 'live', tier: 'gold' },
+      { preview: true, gold: true, hotel: true, origin: location.origin, img: (id, small) => (id === KPIC_ID ? kpicUrl(S.kind, small) : imgUrl(id, small)) })
     f.onload = () => {
       try {
         f.contentWindow.scrollTo(0, y)
-        // a tap on the page's name goes to the name box; links stay inside; a sideways swipe is another look
+        // a tap on the page's name goes to the name box; links stay inside
         const doc = f.contentDocument
         const st = doc.createElement('style')
         st.textContent = '.mk-flash{outline:4px solid #ffb000!important;outline-offset:4px;border-radius:8px;animation:mkf 1.8s ease-out}@keyframes mkf{0%,40%{outline-color:#ffb000}100%{outline-color:#ffb00000}}'
         doc.head.appendChild(st)
         doc.addEventListener('click', (e) => { const a = e.target.closest('a[href]'); if (a && !a.getAttribute('href').startsWith('#')) e.preventDefault(); if (e.target.closest('header.top')) $('#nm')?.focus() }, true)
-        let x0 = 0, y0 = 0
-        doc.addEventListener('touchstart', (e) => { x0 = e.touches[0].clientX; y0 = e.touches[0].clientY }, { passive: true })
-        doc.addEventListener('touchend', (e) => {
-          const dx = e.changedTouches[0].clientX - x0, dy = e.changedTouches[0].clientY - y0
-          if (Math.abs(dx) > 60 && Math.abs(dy) < Math.abs(dx) * 0.6) stepLook(dx < 0 ? 1 : -1)
-        }, { passive: true })
       } catch {}
     }
   }, ms)
@@ -541,18 +460,6 @@ function check() {
       next.disabled = !r.ok
     } catch { av.textContent = ui(S.lang, 'e_net') }
   }, 350)
-}
-
-function lookCard(id, on) {
-  const L = LOOKS[id]
-  const locked = !isGold() && !lookOk(S.kind, id, false)
-  return `<button class="lp${on ? ' on' : ''}" data-look="${id}" aria-pressed="${on}">
-    <span class="mp"><iframe data-th="${id}" tabindex="-1" aria-hidden="true" sandbox="allow-same-origin" scrolling="no" loading="lazy" title=""></iframe></span>
-    <span class="lkt"><b>${T('lk_' + id)}${!lookOk(S.kind, id, false) ? `<i class="gtag">★ ${locked ? T('goldLock') : T('tagGold')}</i>` : ''}</b><small>${T('m_' + id)}</small></span></button>`
-}
-
-function goldTease() {
-  toast(ui(S.lang, 'goldLock') + ' ★')
 }
 
 // A place page on motdang.net sends what its record holds in the hash: pin=lat,lng  tel=  ad=  cc=
@@ -593,10 +500,8 @@ async function starterPic(kind) {
   S.busy++
   redrawSec('photos')
   try {
-    const e = exOf(kind, S.look)
-    const bmp = await createImageBitmap(await (await fetch(e ? exUrl(kind, S.look) : kpicUrl(kind))).blob())
-    await addBitmap(bmp, e ? e.pd : KPIC[kind].pd)
-    if (e?.focus) S.d.coverPos = e.focus
+    const bmp = await createImageBitmap(await (await fetch(kpicUrl(kind))).blob())
+    await addBitmap(bmp, KPIC[kind].pd)
     changed()
   } catch {}
   S.busy--
@@ -611,10 +516,9 @@ function minePage() {
   return store.get('pages', []).find((p) => p.token && (p.name === S.addr || (S.addr && base(p.name) === base(S.addr) && String(p.title || '').trim().toLowerCase() === nm)))
 }
 
-async function create(look, btn) {
+async function create(btn) {
   const mine = minePage()
   if (mine) { location.hash = '#t=' + mine.token; toast(ui(S.lang, 'reopened')); return }
-  S.look = look
   btn.classList.add('on')
   S.d = normalize(applyPrefill({ ...starter(S.kind), name: S.name.trim(), accent: S.accent || '' }))
   if (S.kind === 'event') S.d.event = starter('event').event
@@ -626,7 +530,7 @@ async function create(look, btn) {
   if (S.kind === 'store') S.d.products = [NEW_ROW.products()]
   S.pageLang = PAGE_LANGS[S.lang] ? S.lang : 'en'
   try {
-    const r = await call('POST', 'sites', { name: S.addr, kind: S.kind, look, lang: S.pageLang, d: S.d, by: new URLSearchParams(location.search).get('by') || '' })
+    const r = await call('POST', 'sites', { name: S.addr, kind: S.kind, lang: S.pageLang, d: S.d, by: new URLSearchParams(location.search).get('by') || '' })
     S.token = r.token; S.name = r.name; S.status = r.status; S.tier = r.tier || 'gold'; S.goldUntil = r.gold_until || ''; S.trial = !!r.trial; S.hotel = !!r.trial
     S.lineOn = !!r.line_on; S.line = null; S.news = []; S.loaded = r.loaded || ''; S.shipinfo = r.shipinfo || null; S.orders = 0
     history.replaceState(null, '', '/make#t=' + S.token)
@@ -635,7 +539,7 @@ async function create(look, btn) {
     S.open = new Set(DEFAULT_OPEN[S.kind]); S.part = ''
     S.step = 'edit'
     draw()
-    if (KPIC[S.kind] || exOf(S.kind, S.look)) starterPic(S.kind)
+    if (KPIC[S.kind]) starterPic(S.kind)
   } catch (e) {
     toast(ui(S.lang, e.message === 'quota' ? 'e_quota' : e.message === 'name' ? 'e_name' : 'e_net'))
     if (e.message === 'name') { S.step = 'name'; draw() }
@@ -650,7 +554,7 @@ const SECTIONS = [
   ['cal', 'cal', 's_cal'], ['camps', 'party', 's_camps', 'gold'],
   ['products', 'shop', 's_products'], ['ship', 'tag', 's_ship'], ['dls', 'download', 's_dls', 'gold'],
   ['order', 'basket', 's_order'], ['contact', 'phone', 's_contact'], ['map', 'pin', 's_map'], ['spots', 'compass', 's_spots'], ['hours', 'clock', 's_hours'],
-  ['links', 'link', 's_links'], ['msg', 'mail', 's_msg'], ['look', 'star', 's_look'], ['card', 'share', 's_card'], ['video', 'camera', 's_video', 'gold'],
+  ['links', 'link', 's_links'], ['msg', 'mail', 's_msg'], ['colour', 'star', 'colour'], ['card', 'share', 's_card'], ['video', 'camera', 's_video', 'gold'],
 ]
 
 function hasData(id) {
@@ -677,7 +581,7 @@ const GROUPS = [
   ['offer', ['products', 'dls', 'ship', 'amulets', 'pay', 'items', 'works', 'svc', 'rooms', 'lists', 'ota', 'cal', 'camps', 'faq', 'quotes'], 'cart'],
   ['reach', ['contact', 'order', 'msg', 'signup', 'links'], 'telephone'],
   ['where', ['map', 'hours', 'spots'], 'compass'],
-  ['look', ['look', 'card'], 'sparkle'],
+  ['colour', ['colour', 'card'], 'sparkle'],
 ]
 const groupOf = (id) => (GROUPS.find(([g, ids]) => g === id || ids.includes(id)) || GROUPS[0])[0]
 const secRow = (id) => { const r = SECTIONS.find((x) => x[0] === id); return id === 'svc' && S.kind === 'online' ? [r[0], r[1], 's_pkg'] : r } // an online page's Bookings are its Packages: free pages show them too
@@ -690,14 +594,14 @@ function groupTitle(g) {
 }
 
 function thumb(g, ding0) {
-  const L = LOOKS[S.look], d = S.d
+  const L = LOOKS[design()], d = S.d
   const vars = esc(L.vars.replace(/\s+/g, ' ') + ';--accent:' + (d.accent || L.accent))
   const img = (src) => `<span class="th" data-d="${ding0}"><img src="${esc(src)}" alt="" loading="lazy"></span>`
   if (g === 'words') {
     const nm = (d.name || S.name).slice(0, 24), L = Math.max(4, ...nm.split(/\s+/).map((w) => [...w].length))
     return `<span class="th lookth" style="${vars};--L:${L}"><b>${esc(nm)}</b></span>`
   }
-  if (g === 'look') return `<span class="th lookth" style="${vars}"><b>Aa</b><i class="acc"></i>${d.dings[0] ? `<span class="tdg">${ding(d.dings[0], 'ink')}</span>` : ''}</span>`
+  if (g === 'colour') return `<span class="th lookth" style="${vars}"><b>Aa</b><i class="acc"></i></span>`
   if (g === 'pics') {
     const c = d.cover && d.cover !== KPIC_ID ? imgUrl(d.cover, true) : (d.photos[0] ? imgUrl(d.photos[0], true) : '')
     if (c) return img(c)
@@ -729,7 +633,7 @@ function summary(g) {
     if (d.order.grabfood) out.push('GrabFood'); if (d.order.lineman) out.push('LINE MAN'); if (d.msg) out.push(sec('msg')); if (d.signup.on) out.push(sec('signup')); if (n('links')) out.push(`${sec('links')} · ${n('links')}`)
   }
   if (g === 'where') { if (d.place.lat !== null) out.push(T('pinSet')); else if (d.place.addr) out.push(d.place.addr.slice(0, 40)); if (d.hours.on) out.push(d.hours.always ? T('open24') : sec('hours')); if (n('spots')) out.push(`${sec('spots')} · ${n('spots')}`) }
-  if (g === 'look') { out.push(LOOKS[S.look].label); if (d.dings.length) out.push(`${T('s_dings')} · ${d.dings.length}`) }
+  if (g === 'colour') out.push(PAGE_LANGS[S.pageLang] || '')
   return out.join(' · ')
 }
 
@@ -766,7 +670,6 @@ function drawParts() {
   if (open) {
     if (open.querySelector('#mapel')) mountMap()
     if (open.querySelector('#drawpv')) mountDrawing()
-    if (open.querySelector('iframe[data-th]')) fillThumbs(open)
   }
   lightPart()
 }
@@ -774,7 +677,7 @@ function drawParts() {
 function drawEdit() {
   if (S.tab !== 'edit') { document.body.classList.remove('sheeton'); return drawTab() }
   for (const [id] of SECTIONS) if (hasData(id)) S.open.add(id)
-  S.open.add('look'); S.open.add('drawing'); S.open.add('msg')
+  S.open.add('colour'); S.open.add('drawing'); S.open.add('msg')
   app.innerHTML = tabs() + `<div class="ed">
     <div class="pv" id="pv"><div class="url">${icon('globe')}<span>sites.motdang.net/${esc(S.name)}</span></div><iframe id="frame" title="${T('preview')}"></iframe>
       <p class="taphint">${ding('manicule', 'paper')}${T('tap')}</p></div>
@@ -893,10 +796,9 @@ const SEC = {
       <div ${S.d.msg ? '' : 'hidden'}><label class="field"><span>${T('notifyEmail')}</span><div class="row"><input id="nmail" type="email" autocomplete="email" value="${val(S.notifyEmail)}" style="flex:1;min-width:200px"><button class="go ghost" id="nmailgo">${T('notifyGo')}</button></div></label>
       ${state}${S.notifyEmail ? `<button class="back" id="nmailoff">× ${T('notifyOff')}</button>` : ''}</div>`
   },
-  look() {
-    const acc = S.d.accent || LOOKS[S.look].accent
-    return `<div class="lks">${LOOK_IDS.map((id) => lookCard(id, id === S.look)).join('')}</div>
-      <div><b>${T('colour')}</b><div class="swatches">${[LOOKS[S.look].accent, ...ACCENTS.filter((a) => a !== LOOKS[S.look].accent)].map((a) => `<button data-acc="${a}" style="background:${a}"${a === acc ? ' class="on"' : ''} aria-label="${a}"></button>`).join('')}</div></div>
+  colour() {
+    const acc = S.d.accent || ownAccent()
+    return `<div><b>${T('colour')}</b><div class="swatches">${[ownAccent(), ...ACCENTS.filter((a) => a !== ownAccent())].map((a) => `<button data-acc="${a}" style="background:${a}"${a === acc ? ' class="on"' : ''} aria-label="${a}"></button>`).join('')}</div></div>
       <div><b>${T('s_dings')}</b><p class="hint">${T('dingsHint')}</p>${dingBrowser()}</div>
       <label class="check"><input type="checkbox" class="sw" data-k="counter" ${S.d.counter ? 'checked' : ''}>${T('counter')}</label>
       <label class="field"><span>${T('pageLang')}</span><select id="plang">${Object.entries(PAGE_LANGS).map(([k, v]) => `<option value="${k}"${k === S.pageLang ? ' selected' : ''}>${esc(v)}</option>`).join('')}</select></label>`
@@ -1077,7 +979,7 @@ Object.assign(SEC, {
   },
 })
 
-const accentNow = () => S.d.accent || LOOKS[S.look].accent
+const accentNow = () => S.d.accent || ownAccent()
 
 /** A photo of the page as a bitmap: the copy this browser sent, else the server's. */
 async function bitmapOf(id) {
@@ -1147,7 +1049,7 @@ function avatarDraw() {
 // mock-ups (logo-ui.mjs, loaded when first opened); the avatar gets the square, a cover gets the wide one
 async function markSheet(mode) {
   const { openLogo } = await import('./logo-ui.mjs')
-  openLogo({ name: S.d.name || S.name, tagline: S.d.tagline, kind: S.kind, accent: accentNow(), look: S.look, T, need: (f) => dingbats(f.filter(Boolean)), onUse: async (canvas, { cover, design }) => {
+  openLogo({ name: S.d.name || S.name, tagline: S.d.tagline, kind: S.kind, accent: accentNow(), look: design(), T, need: (f) => dingbats(f.filter(Boolean)), onUse: async (canvas, { cover, design }) => {
     if (mode === 'avatar') {
       S.d.avatar = await sendCanvas(canvas, 640).catch(sendFail)
       S.d.avround = ['badge', 'poster'].includes(design.layout)
@@ -1254,8 +1156,7 @@ function bindEdit() {
     if (b.dataset.rmitem) { S.d.items.splice(+b.dataset.rmitem, 1); redrawSec('items'); changed() }
     if (b.id === 'addlink') { S.d.links.push({ t: '', u: '' }); redrawSec('links'); $(`[data-k="links.${S.d.links.length - 1}.t"]`).focus() }
     if (b.dataset.rmlink) { S.d.links.splice(+b.dataset.rmlink, 1); redrawSec('links'); changed() }
-    if (b.dataset.look) { if (LOOKS[b.dataset.look].gold && !isGold()) { S.tab = 'gold'; draw(); return } S.look = b.dataset.look; S.d.accent = ''; redrawSec('look'); changed() }
-    if (b.dataset.acc) { S.d.accent = b.dataset.acc === LOOKS[S.look].accent ? '' : b.dataset.acc; redrawSec('look'); changed() }
+    if (b.dataset.acc) { S.d.accent = b.dataset.acc === ownAccent() ? '' : b.dataset.acc; redrawSec('colour'); changed() }
     if (b.dataset.ding) {
       const n = b.dataset.ding
       S.d.dings = S.d.dings.includes(n) ? S.d.dings.filter((x) => x !== n) : [...S.d.dings, n].slice(-6)
@@ -1263,7 +1164,7 @@ function bindEdit() {
       const pk = $('.dpicked'); if (pk) pk.innerHTML = S.d.dings.length ? S.d.dings.map((x) => `<button data-ding="${x}" class="on" aria-label="${x}">${ding(x, 'ink')}<span>×</span></button>`).join('') : `<p class="hint" style="margin:0">${T('db_none')}</p>`
       changed()
     }
-    if (b.dataset.dbfam !== undefined) { S.dbFam = b.dataset.dbfam; redrawSec('look') }
+    if (b.dataset.dbfam !== undefined) { S.dbFam = b.dataset.dbfam; redrawSec('colour') }
     if (b.dataset.seg) { setPath(S.d, b.dataset.seg, b.dataset.v); b.parentNode.querySelectorAll('button').forEach((x) => x.classList.toggle('on', x === b)); changed() }
     if (b.dataset.addrow) {
       const k = b.dataset.addrow
@@ -1339,7 +1240,6 @@ function redrawSec(id) {
   // the amulets pick from the page's photos: show new ones there too, unless the maker is typing in it
   if (id === 'photos' && S.d.amulets?.length && !$('[data-sec="amulets"]')?.contains(document.activeElement)) redrawSec('amulets')
   if (id === 'photos' && S.d.products?.length && !$('[data-sec="products"]')?.contains(document.activeElement)) redrawSec('products')
-  if (sec.querySelector('iframe[data-th]')) fillThumbs(sec)
 }
 
 // ---- the drawing preview in the editor ----------------------------------------------------
@@ -1418,12 +1318,12 @@ function drawingPicture(w, h) {
 // it are typed on the page itself.
 
 const PART = [
-  ['header.top img:not(.av)', 'photos'], ['header.top img.av', 'face'], ['header.top .dings', 'look'], ['header.top #st', 'hours'], ['header.top', 'words'],
+  ['header.top img:not(.av)', 'photos'], ['header.top img.av', 'face'], ['header.top #st', 'hours'], ['header.top', 'words'],
   ['nav.reach', 'contact'], ['.camp', 'camps'], ['#count', 'event'], ['.when', 'event'], ['#cal', 'cal'], ['figure.drawn', 'drawing'], ['#works', 'works'], ['.quotes', 'quotes'], ['#faq', 'faq'], ['#join', 'signup'], ['#packages', 'svc'],
   ['ul.menu', 'items'], ['#book', 'svc'], ['#rooms', 'rooms'], ['#lists', 'lists'], ['table.hours', 'hours'], ['.gallery', 'photos'], ['.video', 'video'],
   ['#where', 'map'], ['ol.spots', 'spots'], ['.lineqr', 'contact'], ['.card.links', 'links'], ['.contact', 'contact'], ['#message', 'msg'], ['#amulets', 'amulets'],
   ['#shop', 'products'], ['#pbuy', 'products'], ['#dls', 'dls'],
-  ['.card', 'words'], ['footer', 'look'],
+  ['.card', 'words'], ['footer', 'colour'],
 ]
 const PART_CSS = `[data-part]{cursor:pointer;transition:opacity .3s}[data-part]:hover{outline:3px dashed #d7261e;outline-offset:3px}
 .mk-on{outline:4px solid #ffb000!important;outline-offset:4px;border-radius:8px}body.mk-lit main.wrap>[data-part]:not(.mk-on){opacity:.45}
@@ -1476,7 +1376,7 @@ function lightPart(scroll = true) {
     el.classList.toggle('mk-on', i >= 0)
     if (i >= 0 && i < rank) { first = el; rank = i }
   })
-  doc.body.classList.toggle('mk-lit', !!first && S.part !== 'look')
+  doc.body.classList.toggle('mk-lit', !!first && S.part !== 'colour')
   if (scroll && first) first.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
 
@@ -1533,7 +1433,7 @@ function preview(now) {
     const f = $('#frame')
     if (!f) return
     if (S.inline) return
-    const html = render({ name: S.name, look: S.look, lang: S.pageLang, kind: S.kind, d: S.d, views: S.views || 1234, status: 'live', tier: S.tier }, { preview: true, img: imgUrl, origin: location.origin, hotel: S.hotel, news: shownNews() })
+    const html = render({ name: S.name, look: design(), lang: S.pageLang, kind: S.kind, d: S.d, views: S.views || 1234, status: 'live', tier: S.tier }, { preview: true, img: imgUrl, origin: location.origin, hotel: S.hotel, news: shownNews() })
     const y = f.contentWindow?.scrollY || 0
     f.srcdoc = html
     f.onload = () => { try { f.contentWindow.scrollTo(0, y) } catch {} ; f.contentDocument?.querySelectorAll('a[href]').forEach((a) => a.setAttribute('target', '_blank')); try { wireFrame(f); lightPart(false) } catch {} }
@@ -1557,7 +1457,7 @@ function changed() {
   refreshHead()
   clearTimeout(saveTimer)
   saveTimer = setTimeout(save, 1400)
-  store.set('d:' + S.token, { d: S.d, look: S.look, at: Date.now() })
+  store.set('d:' + S.token, { d: S.d, at: Date.now() })
 }
 
 async function save(extra = {}) {
@@ -1566,9 +1466,9 @@ async function save(extra = {}) {
   const st = $('#state'); if (st) st.textContent = stateText()
   try {
     // a live page whose name, picture, avatar or look changed gets a new share card
-    if (S.status === 'live' && !extra.publish && cardKey({ look: S.look, name: S.name, kind: S.kind, tier: S.tier }, S.d) !== S.cardKey) await makeCard().catch(() => {})
+    if (S.status === 'live' && !extra.publish && cardKey({ look: design(), name: S.name, kind: S.kind, tier: S.tier }, S.d) !== S.cardKey) await makeCard().catch(() => {})
     const d = { ...S.d, items: S.d.items.filter((x) => x.n || x.p || x.note) }
-    const r = await call('PUT', 'site', { d, look: S.look, lang: S.pageLang, kind: S.kind, loaded: S.loaded, stockAt: S.stockAt || S.loaded, ...extra })
+    const r = await call('PUT', 'site', { d, lang: S.pageLang, kind: S.kind, loaded: S.loaded, stockAt: S.stockAt || S.loaded, ...extra })
     S.status = r.status
     if (r.d) { S.d.credits = r.d.credits; S.d.video = r.d.video }
     if (r.loaded) S.loaded = S.stockAt = r.loaded
@@ -1855,7 +1755,7 @@ async function mountMap() {
   const lat = p.lat ?? (S.d.place.cc === 'TH' || !S.d.place.cc ? 18.7883 : 20), lng = p.lng ?? (S.d.place.cc === 'TH' || !S.d.place.cc ? 98.9853 : 0)
   try {
     const m = await import('./map.mjs')
-    S.picker = await m.picker(el, { lat, lng, zoom: p.lat !== null ? p.zoom : (S.d.place.cc === 'TH' || !S.d.place.cc ? 13 : 2), accent: S.d.accent || LOOKS[S.look].accent, onMove: moved })
+    S.picker = await m.picker(el, { lat, lng, zoom: p.lat !== null ? p.zoom : (S.d.place.cc === 'TH' || !S.d.place.cc ? 13 : 2), accent: S.d.accent || ownAccent(), onMove: moved })
     if (!S.picker.covered) { $('#mapwrap').style.display = 'none'; $('#nomap').style.display = '' }
   } catch { $('#mapwrap').style.display = 'none'; $('#nomap').style.display = '' }
 }
@@ -1984,11 +1884,11 @@ function replyHref(reach) {
 function miniShell(id) {
   return `<div class="mshell"><div class="url">${icon('globe')}<span>sites.motdang.net/${esc(S.name)}</span></div><iframe id="${id}" title="${T('preview')}" tabindex="-1"></iframe></div>`
 }
-function fillMini(id, { look, tier, anchor } = {}) {
+function fillMini(id, { tier, anchor } = {}) {
   const f = $('#' + id)
   if (!f) return
   const t = tier || S.tier
-  f.srcdoc = render({ name: S.name, look: look || S.look, lang: S.pageLang, kind: S.kind, d: S.d, views: S.views || 1234, status: 'live', tier: t }, { preview: true, gold: t === 'gold', img: imgUrl, origin: location.origin, hotel: S.hotel, news: shownNews() })
+  f.srcdoc = render({ name: S.name, look: design(), lang: S.pageLang, kind: S.kind, d: S.d, views: S.views || 1234, status: 'live', tier: t }, { preview: true, gold: t === 'gold', img: imgUrl, origin: location.origin, hotel: S.hotel, news: shownNews() })
   f.onload = () => {
     try {
       const doc = f.contentDocument
@@ -2165,14 +2065,12 @@ async function drawGold() {
   let r = null
   const feats = ['g_f7', 'g_f8', 'g_f9', 'g_f1', 'g_f2', 'g_f3', 'g_f4', 'g_f5', 'g_f6']
   const fdings = ['key', 'megaphone', 'chat', 'crown', 'search', 'camera', 'compass', 'calendar', 'star']
-  // the maker's own page in Gold leaf first, then the price, then the list
-  const tryBtn = isGold() && S.look !== 'gold' ? `<button class="go big" id="trygold">${T('g_try')}</button>` : ''
-  const head = `<section class="goldtop"><div class="goldhero">${LOOKS.gold.art}<h2>${T('g_lead')}</h2><p class="gwhy">${T('g_why')}</p>${tryBtn}</div>
+  // the maker's own page with Gold first, then the price, then the list
+  const head = `<section class="goldtop"><div class="goldhero"><h2>${T('g_lead')}</h2><p class="gwhy">${T('g_why')}</p></div>
     <div class="minip"><p class="lbl">${T('g_see')}</p>${miniShell('gmini')}</div></section>`
   const list = `<section class="gfeats"><h3>${T('g_adds')}</h3><ul>${feats.map((k, i) => `<li>${ding(fdings[i], 'paper')}<span>${T(k)}</span></li>`).join('')}</ul></section>`
   const after = () => {
-    fillMini('gmini', { look: 'gold', tier: 'gold' })
-    const tg = $('#trygold'); if (tg) tg.onclick = () => { S.look = 'gold'; S.d.accent = ''; changed(); S.tab = 'edit'; draw(); openPart('look') }
+    fillMini('gmini', { tier: 'gold' })
   }
   const rooms = S.d.rooms.length > 0
   const hotelOn = !!S.hotelUntil && S.hotelUntil >= new Date().toISOString().slice(0, 10) // paid hotel months are running; the free 30 days are S.trial
@@ -2283,14 +2181,14 @@ async function makeCard() {
   await loadFaces()
   const c = document.createElement('canvas')
   c.width = CARD.W; c.height = CARD.H
-  drawCard(c.getContext('2d'), { look: S.look, accent: S.d.accent, name: S.d.name || S.name, tagline: S.d.tagline, url: `${location.host}/${S.name}`, gold: isGold(),
+  drawCard(c.getContext('2d'), { look: design(), accent: S.d.accent, name: S.d.name || S.name, tagline: S.d.tagline, url: `${location.host}/${S.name}`, gold: isGold(),
     cover, drawing, avatar, round: S.d.avround, dings: S.d.dings, D: window.Dingbats || null })
   const blob = await new Promise((ok) => c.toBlob(ok, 'image/jpeg', 0.88))
   if (S.cardUrl) URL.revokeObjectURL(S.cardUrl)
   S.cardUrl = URL.createObjectURL(blob)
   const r = await upload(blob, null, 'card')
   S.d.card = r.id
-  S.cardKey = cardKey({ look: S.look, name: S.name, kind: S.kind, tier: S.tier }, S.d)
+  S.cardKey = cardKey({ look: design(), name: S.name, kind: S.kind, tier: S.tier }, S.d)
 }
 
 async function publish() {
@@ -2366,7 +2264,7 @@ async function boot() {
     S.token = t
     try {
       const r = await call('GET', 'site')
-      Object.assign(S, { name: r.name, kind: r.kind, look: lookOf(r.look), pageLang: r.lang, status: r.status, views: r.views, d: normalize(r.d), step: 'edit',
+      Object.assign(S, { name: r.name, kind: r.kind, pageLang: r.lang, status: r.status, views: r.views, d: normalize(r.d), step: 'edit',
         tier: r.tier, goldUntil: r.gold_until || '', notifyEmail: r.notify_email, notifyOk: r.notify_ok, unread: r.unread,
         trial: !!r.trial, asks: r.asks || 0, orders: r.orders || 0, shipinfo: r.shipinfo || null, domain: r.domain || '', domainState: r.domain_state || '', domains: !!r.domains, price: r.price || 3000,
         hotel: !!r.hotel, hotelUntil: r.hotel_until || '', plans: r.plans || null, founders: r.founders || null, sian: r.sian || null, cardUrl: '',
@@ -2389,23 +2287,21 @@ async function boot() {
   } else if (h.get('pin') || h.get('tel') || h.get('hrs')) {
     S.pre = prefill(h)
     if (h.get('title')) { S.name = h.get('title').slice(0, 60); S.addr = slugify(S.name, h.get('kind') || 'shop') }
-    if (KINDS.includes(h.get('kind'))) { S.kind = h.get('kind'); S.look = LOOK_FOR[S.kind]; S.step = 'name' }
+    if (KINDS.includes(h.get('kind'))) { S.kind = h.get('kind'); S.step = 'name' }
   } else if (h.get('name')) {
     S.addr = h.get('name').toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 30)
     S.addrTouched = true
     if (h.get('title')) S.name = h.get('title').slice(0, 60)
-    if (KINDS.includes(h.get('kind'))) { S.kind = h.get('kind'); S.look = LOOK_FOR[S.kind]; S.step = 'name' }
+    if (KINDS.includes(h.get('kind'))) { S.kind = h.get('kind'); S.step = 'name' }
   } else if (h.get('title') || KINDS.includes(h.get('kind'))) {
     if (h.get('title')) { S.name = h.get('title').slice(0, 60); S.addr = slugify(S.name, h.get('kind') || 'shop') }
-    if (KINDS.includes(h.get('kind'))) { S.kind = h.get('kind'); S.look = LOOK_FOR[S.kind]; S.step = 'name' }
-    if (LOOK_IDS.includes(h.get('look'))) S.look = h.get('look')
+    if (KINDS.includes(h.get('kind'))) { S.kind = h.get('kind'); S.step = 'name' }
   }
-  if (LOOK_IDS.includes(h.get('look'))) S.lookWanted = S.look = h.get('look')
   draw()
-  // from the front page's three steps: what for, a name, a look, and "Put it online"
-  if (h.get('go') && S.step === 'name' && S.name.trim() && LOOK_IDS.includes(h.get('look'))) {
+  // from the front page's steps: what for, a name, and "Put it online"
+  if (h.get('go') && S.step === 'name' && S.name.trim()) {
     history.replaceState(null, '', '/make')
-    create(S.look, document.createElement('b')).then(() => { if (S.step === 'edit') publish() })
+    create(document.createElement('b')).then(() => { if (S.step === 'edit') publish() })
   }
 }
 menuInit({ app, S, call, icon, toast, redrawSec, changed }) // Read a menu photo (make-menu.mjs)
