@@ -34,7 +34,8 @@
     if (!el) return
     const n = cart.reduce((a, l) => a + l.q, 0)
     el.hidden = !n
-    if (n) el.innerHTML = '<b>' + esc(w.cartN.replace('{n}', n)) + ' · ' + esc(money(total(cart))) + '</b><button class="btn" data-checkout>' + esc(w.checkout) + '</button>'
+    var sum = total(cart), need = data.free > 0 && cart.some(function (l) { return l.k === 'p' }) ? data.free - sum : 0
+    if (n) el.innerHTML = '<b>' + esc(w.cartN.replace('{n}', n)) + ' · ' + esc(money(sum)) + (need > 0 ? '<small>' + esc(w.toFree.replace('{p}', money(need))) + '</small>' : '') + '</b><button class="btn" data-checkout>' + esc(w.checkout) + '</button>'
   }
 
   // what a Buy or Add to cart button means: the product or download it names, with the options and amount beside it

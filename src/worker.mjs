@@ -22,8 +22,9 @@
 // motdang.net/~… (the first address, 2026-10-12) answers with a redirect here.
 // The edit link is the sign-in: a long random token, stored only as its hash.
 
+import { rasterType, slipHeaders } from './slipfile.mjs'
 import { promptPayPayload } from './promptpay.mjs'
-import { render, findable, qrSvg, normalize, vcard, ics, sign, KINDS, LOOK_IDS, GOLD_LOOKS, MAX_PHOTOS, photoMax, sceneOf, HOME, lookOk } from '../public/s/render.mjs'
+import { render, findable, qrSvg, normalize, vcard, ics, sign, KINDS, designOf, MAX_PHOTOS, photoMax, sceneOf, HOME } from '../public/s/render.mjs'
 import { AM_MAX, amCap } from '../public/s/amulet.mjs'
 import { prCap } from '../public/s/store.mjs'
 import { PAGE_LANGS } from '../public/s/words.mjs'
@@ -581,7 +582,8 @@ async function api(request, env, ctx, p, url, origin) {
     if (!s || !gold.isGold(s)) return J({ error: 'not-found' }, 404)
     const r = await customers.joinAsk(env, s, normalize(JSON.parse(s.d)), { name: b.name, email: b.email }, origin, rand)
     if (r.sent) ctx.waitUntil(stats.tap(env, request, s.id, 'join'))
-    return J(r, r.error ? ({ email: 400, off: 404, quota: 429, mail: 502 }[r.error] || 400) : 200)
+    // the same answer whether the address was new, waiting or on the list already (CodeRabbit on #72)
+    return r.error ? J(r, { email: 400, off: 404, quota: 429, mail: 502 }[r.error] || 400) : J({ ok: true })
   }
 
   if (p === 'notify/ok' && m === 'GET') {
@@ -603,7 +605,7 @@ ${s ? `<p>ข้อความถึง ${escHtml(title)} จะส่งสำ
     const why = nameProblem(name)
     if (why) return J({ error: 'name', why }, 400)
     const kind = KINDS.includes(b.kind) ? b.kind : 'shop'
-    const lookId = LOOK_IDS.includes(b.look) ? b.look : 'poster' // every new page starts in its Gold days
+    const lookId = designOf(kind) // a page wears its kind's design whatever the browser sends (kinds.mjs)
     const lang = PAGE_LANGS[b.lang] ? b.lang : 'th'
     const d = normalize(b.d || {})
     const seller = await sellers.known(env, b.by)
@@ -653,7 +655,7 @@ ${s ? `<p>ข้อความถึง ${escHtml(title)} จะส่งสำ
     const b = await body(request)
     const d = normalize(b.d || JSON.parse(s.d))
     const kind = KINDS.includes(b.kind) ? b.kind : s.kind
-    const lookId = lookOk(kind, b.look, isGold) ? b.look : s.look // a free page wears its kind's looks; Gold any (kinds.mjs)
+    const lookId = designOf(kind) // a page wears its kind's design whatever the browser sends (kinds.mjs)
     const lang = PAGE_LANGS[b.lang] ? b.lang : s.lang
     let name = s.name
     if (b.name && b.name !== s.name) {
@@ -956,7 +958,9 @@ ${s ? `<p>ข้อความถึง ${escHtml(title)} จะส่งสำ
     if (!file || typeof file === 'string' || !file.size || file.size > 8_000_000) return J({ error: 'slip' }, 400)
     const now = new Date().toISOString()
     const key = `slip/${pay.id}`
-    await env.MEDIA.put(key, await file.arrayBuffer(), { httpMetadata: { contentType: file.type || 'image/jpeg' }, customMetadata: { v: 'slip' } })
+    const bytes = await file.arrayBuffer(), type = rasterType(bytes)
+    if (!type) return J({ error: 'slip' }, 400)
+    await env.MEDIA.put(key, bytes, { httpMetadata: { contentType: type }, customMetadata: { v: 'slip' } })
     const r = await gold.checkSlip(env, file, Number(pay.amount))
     if (r.ok) {
       const until = await gold.grant(env, s.id, pay.months || 12, pay.plan || undefined)
@@ -1057,7 +1061,7 @@ async function admin(request, env, rest, url) {
   const slip = /^\/slip\/([a-z0-9]{12})$/.exec(rest)
   if (slip) {
     const o = await env.MEDIA.get(`slip/${slip[1]}`)
-    return o ? new Response(o.body, { headers: { 'content-type': o.httpMetadata?.contentType || 'image/jpeg', 'cache-control': 'no-store' } }) : new Response('', { status: 404 })
+    return o ? new Response(o.body, { headers: slipHeaders(o.httpMetadata?.contentType) }) : new Response('', { status: 404 })
   }
   if (request.method === 'POST' && rest === '/run' && sameOrigin(request, url)) return J(await tidy(env))
   if (request.method === 'POST' && rest === '/gig' && sameOrigin(request, url)) { // a page check to send out on LINE
@@ -1148,7 +1152,7 @@ async function slipPage(request, env, path, url, origin) {
   if (!p) return new Response('', { status: 404 })
   if (q.img) {
     const o = p.slip && await env.MEDIA.get(p.slip)
-    return o ? new Response(o.body, { headers: { 'content-type': o.httpMetadata?.contentType || 'image/jpeg', 'cache-control': 'no-store' } }) : new Response('', { status: 404 })
+    return o ? new Response(o.body, { headers: slipHeaders(o.httpMetadata?.contentType) }) : new Response('', { status: 404 })
   }
   if (request.method === 'POST' && sameOrigin(request, url)) {
     const act = String((await request.formData()).get('act') || '')
@@ -1199,6 +1203,8 @@ async function tidy(env) {
   const day = (n) => new Date(Date.now() - n * 864e5).toISOString().slice(0, 10)
   await env.DB.prepare('DELETE FROM quota WHERE day < ?').bind(day(3)).run()
   await env.DB.prepare('DELETE FROM seen WHERE day < ?').bind(day(2)).run()
+  // a sign-up nobody confirmed in 30 days goes, address and all (CodeRabbit on #72)
+  await env.DB.prepare('DELETE FROM signup WHERE ok_at IS NULL AND at < ?').bind(new Date(Date.now() - 30 * 864e5).toISOString()).run().catch(() => {})
   await env.DB.prepare('DELETE FROM bump WHERE made < ?').bind(Date.now() - 60000).run().catch(() => {})
   await env.DB.prepare("DELETE FROM pay WHERE status = 'open' AND COALESCE(plan, '') NOT IN ('fee', 'founding', 'ship') AND created < ?").bind(new Date(Date.now() - 14 * 864e5).toISOString()).run()
   // 2026-10-14: room calendars, translations, the monthly note, the trial's end note

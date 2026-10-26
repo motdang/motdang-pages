@@ -2,7 +2,7 @@
 // QR, a slip to send, then downloads and the tracking number), and /sh/<job>.<exp>.<sig>, the team's page for a parcel
 // Mot Dang ships (osign.mjs). The buyer's page wears the shop's look and speaks the language the buyer ordered in.
 
-import { LOOKS, lookOf, onColor, qrSvg } from '../public/s/render.mjs'
+import { LOOKS, lookOf, designOf, onColor, qrSvg } from '../public/s/render.mjs'
 import { sw } from '../public/s/words-store.mjs'
 import { promptPayPayload } from './promptpay.mjs'
 import { state as dlState, DL_TIMES } from './dls.mjs'
@@ -23,7 +23,7 @@ export function payloadFor(d, s, o) {
 /** A buyer's order page. h = { link (the signed address), origin, counts ({ dl: n }), now }. */
 export function buyerPage(o, s, d, h) {
   const lang = o.lang, S = (k, v) => esc(sw(lang, k, v))
-  const look = LOOKS[lookOf(s.look)], accent = d.accent || look.accent
+  const look = LOOKS[s.kind ? designOf(s.kind) : lookOf(s.look)], accent = d.accent || look.accent
   const lines = linesOf(o), goods = lines.some((l) => l.k === 'p')
   const open = ['new', 'slip', 'no'].includes(o.status)
   const stat = { new: ['oWait', '#b45309'], slip: ['oSlipIn', '#b45309'], paid: ['oPaid', '#0b8043'], no: ['oNo', '#b3261e'], gone: ['oGone', '#555'] }[o.status] || ['oWait', '#b45309']

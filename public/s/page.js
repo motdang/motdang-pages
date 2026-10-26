@@ -577,6 +577,27 @@
     }).catch(function () { mk.remove() })
   }
 
+  // ---- the dock comes up once the page's own main button has scrolled away; the jump bar marks where the reader is ----
+  var dock = $('#dock'), lead = $('.top .cta, .top .ctas')
+  if (dock && lead && 'IntersectionObserver' in window) {
+    dock.classList.add('off')
+    new IntersectionObserver(function (es) { dock.classList.toggle('off', es[0].isIntersecting) }).observe(lead)
+  }
+  var tabs = $('.tabs')
+  if (tabs && 'IntersectionObserver' in window) {
+    var links = [].slice.call(tabs.querySelectorAll('a')), byId = {}
+    links.forEach(function (a) { var el = document.getElementById(a.getAttribute('href').slice(1)); if (el) byId[el.id] = a })
+    var seenNow = new IntersectionObserver(function (es) {
+      es.forEach(function (e) {
+        var a = byId[e.target.id]
+        if (!a || !e.isIntersecting) return
+        links.forEach(function (x) { x.classList.toggle('on', x === a) })
+        if (a.scrollIntoView && tabs.scrollWidth > tabs.clientWidth) tabs.scrollTo({ left: a.offsetLeft - 16, behavior: 'smooth' })
+      })
+    }, { rootMargin: '-45% 0px -50% 0px' })
+    Object.keys(byId).forEach(function (id) { seenNow.observe(document.getElementById(id)) })
+  }
+
   // ---- read in your own language, when the page has it ----
   if (pd.langs && pd.langs.length > 1 && !pd.hl && !pd.preview) {
     var want = (navigator.languages || [navigator.language || '']).map(function (x) { return String(x).slice(0, 2).toLowerCase() }).filter(function (x) { return pd.langs.indexOf(x) >= 0 })[0]

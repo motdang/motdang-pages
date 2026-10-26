@@ -25,7 +25,7 @@ test('every example photo on the front page is a file with a credit', () => {
   const js = readFileSync(at('home.js'), 'utf8'), cr = JSON.parse(readFileSync(at('home/photos.json'), 'utf8'))
   const names = [...js.matchAll(/: '(ex-[a-z0-9]+)'/g)].map((m) => m[1])
   assert.ok(names.length >= 10)
-  for (const n of [...names, 'hero']) {
+  for (const n of names) {
     assert.ok(existsSync(at(`home/${n}.webp`)) && existsSync(at(`home/${n}-s.webp`)), n)
     assert.ok(credited(cr[n]), n)
   }

@@ -4,7 +4,7 @@ sites.motdang.net — anyone makes their own page on Mot Dang, from a phone, in 
 
 | Path | What |
 |---|---|
-| `/` | the page maker's front page: the visitor's shop drawn as they type, example pages, the tools, Free and Gold |
+| `/` | the page maker's front page: a kind and a name, and the real page in that kind's design as they type; the four kinds with an example each; Free and Gold, the chart and the hotel sum |
 | `/name` | a page · `/sign` printable A4 · `/contact.vcf` · `/event.ics` · `/w/<id>` a portfolio project · `/a/<id>` an amulet |
 | `/make` | the builder (`#t=<edit token>` opens a page; `#title=…&kind=…` starts one); tabs Page · Messages · Traffic · Gold |
 | `/all` · `/random` | every live page (Gold first) · one at random |
@@ -18,7 +18,7 @@ sites.motdang.net — anyone makes their own page on Mot Dang, from a phone, in 
 | `motdang.net/~…` | the first address (2026-10-12): 301 to the same page here |
 
 One Cloudflare Worker (custom domain `sites.motdang.net`, route `motdang.net/~*`), D1 `motdang-pages`, R2 `motdang-pages`, Workers AI.
-`public/s/render.mjs` draws a page from its JSON; the Worker, the builder's preview and the front page's example phones run the same function.
+`public/s/render.mjs` draws a page from its JSON; the Worker, the builder's preview and the front page's phones run the same function.
 A page carries: a drawing of the place by motdang.net's auto-doodler (`/front/doodler*.js`, lit by the sun where it stands, tap for morning/evening/night), the drawn map, doodle dingbats (`public/s/db/`, built by `tools/dingbats.mjs` from `../doodle-dingbats`), LINE / Grab / directions / ordering, a message form, share buttons with a QR and a 1080×1920 story picture, and credits for library pictures.
 Pictures: the builder searches Wikimedia Commons (public domain and CC0 by structured data), the Cleveland Museum of Art (CC0) and Openverse (PDM, CC0) through `src/pd.mjs`; the credit is looked up again at the source and stored with the photo.
 Picture studio (2026-10-15): `public/s/studio.mjs` turns any photo into a fixed photo, a watercolour, a riso print or a sun print (more styles in the engine for tools/bands.py) in the maker's browser, with its tools in `public/s/studio-core.mjs`; `tools/studiolab.mjs` renders every style over fifteen test photos into sheets (`notes/screens/studio-*.png`); `public/s/mark.mjs` builds an avatar or a cover from parts (shape, colour, pattern, a dingbat, letters, typeface); `public/s/studio-ui.mjs` holds the two sheets. The result uploads like any photo and passes the same check.

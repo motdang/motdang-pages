@@ -253,7 +253,7 @@ test('sign-up: the address is not a customer until the button on the confirm pag
   const s = await site()
   calls.length = 0
   const r = await join(s)
-  assert.equal(r.status, 200); assert.deepEqual(await r.json(), { ok: true, sent: true })
+  assert.equal(r.status, 200); assert.deepEqual(await r.json(), { ok: true })
   // one email: Thai first, English beside it, a link that carries the page and the address
   const m = mailsTo('ann@x.com')
   assert.equal(m.length, 1)
@@ -304,7 +304,7 @@ test('sign-up: the monthly news reaches a confirmed address with the stop link, 
   // a mail asked for the same address after a stop waits for a new confirm, and the confirm puts the news back
   calls.length = 0
   await env.DB.prepare("UPDATE signup SET mailed_at = '2020-01-01T00:00:00Z' WHERE site_id = ?").bind(s.id).run()
-  assert.deepEqual(await (await join(s, { email: 'bea@x.com' })).json(), { ok: true, sent: true })
+  assert.deepEqual(await (await join(s, { email: 'bea@x.com' })).json(), { ok: true })
   assert.equal((await rows(s)).rows.find((x) => x.email === 'bea@x.com').news, 'off', 'asking is not yes')
   await go('/j/' + keyOf('bea@x.com'), { method: 'POST' })
   assert.equal((await rows(s)).rows.find((x) => x.email === 'bea@x.com').news, 'yes')
@@ -324,11 +324,11 @@ test('sign-up: a booking and a sign-up by one address are one customer with both
 test('sign-up: asking twice, or when already on the list, sends nothing more and says the same', async () => {
   const s = await site()
   calls.length = 0
-  assert.deepEqual(await (await join(s, { email: 'eve@x.com' })).json(), { ok: true, sent: true })
-  assert.deepEqual(await (await join(s, { email: 'eve@x.com' })).json(), { ok: true, sent: false }, 'a link went a moment ago')
+  assert.deepEqual(await (await join(s, { email: 'eve@x.com' })).json(), { ok: true })
+  assert.deepEqual(await (await join(s, { email: 'eve@x.com' })).json(), { ok: true }, 'a link went a moment ago')
   assert.equal(mailsTo('eve@x.com').length, 1)
   await go('/j/' + /\/j\/([^"]+)/.exec(mailsTo('eve@x.com')[0].html)[1], { method: 'POST' })
-  assert.deepEqual(await (await join(s, { email: 'eve@x.com' })).json(), { ok: true, sent: false }, 'already on the list')
+  assert.deepEqual(await (await join(s, { email: 'eve@x.com' })).json(), { ok: true }, 'already on the list')
   assert.equal(mailsTo('eve@x.com').length, 1)
   assert.equal((await rows(s)).rows.length, 1)
 })
@@ -346,7 +346,7 @@ test('sign-up: Gold only, on only when the maker turned it on, an address that p
   assert.deepEqual(await (await join(s, { website: 'http://spam.example' })).json(), { ok: true })
   assert.deepEqual(await (await join(s, { ms: 300 })).json(), { ok: true })
   // a name the message check holds: the same answer, no email
-  assert.deepEqual(await (await join(s, { email: 'fay@x.com', name: 'baccarat <script>' })).json(), { ok: true, sent: false })
+  assert.deepEqual(await (await join(s, { email: 'fay@x.com', name: 'baccarat <script>' })).json(), { ok: true })
   assert.equal(mails().length, 0)
   assert.equal(Number((await env.DB.prepare('SELECT COUNT(*) AS n FROM signup WHERE site_id = ?').bind(s.id).first()).n), 0, 'nothing kept for the held ones')
 })

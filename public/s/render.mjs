@@ -10,12 +10,12 @@ import { normalizeExtras, upcoming, campsNow, utcOf, money, MAP_NEAR, MAX, UNIT_
 import { normalizeAmulets, amuletSection, amuletBody, amuletLd, amuletDesc, AM_CSS, AM_MAX, amCap } from './amulet.mjs'
 import { normalizeStore, shopSection, dlSection, productBody, productLd, productDesc, shopData, forSale, dlForSale, prCap, SHOP_CSS } from './store.mjs'
 import { LOOKS, LOOK_IDS, GOLD_LOOKS, LOOK_ALIAS, lookOf, HERO_CSS, F_THAI } from './looks.mjs'
-import { lookOk, freeLooks, groupOf, GROUPS, GROUP_OF, GROUP_KINDS } from './kinds.mjs'
+import { lookOk, freeLooks, groupOf, designOf, GROUPS, GROUP_OF, GROUP_KINDS } from './kinds.mjs'
 import { ogOf, normalizeOg } from './og.mjs'
 import { O as ONLINE_WORDS, ow } from './words-online.mjs'
 import { normalizeOnline, faqShown, faqLd, faqSection, packagesSection, packagesLd, signupSection, onlineCta, ctaHtml, onlineW, ONLINE_CSS } from './online.mjs'
 
-export { LOOKS, LOOK_IDS, GOLD_LOOKS, LOOK_ALIAS, lookOf, lookOk, freeLooks, groupOf, GROUPS, GROUP_OF, GROUP_KINDS }
+export { LOOKS, LOOK_IDS, GOLD_LOOKS, LOOK_ALIAS, lookOf, lookOk, freeLooks, groupOf, designOf, GROUPS, GROUP_OF, GROUP_KINDS }
 
 export const KINDS = ['shop', 'food', 'service', 'work', 'amulet', 'stay', 'homes', 'me', 'event', 'group', 'store', 'online']
 export const HOME = 'https://sites.motdang.net'
@@ -571,14 +571,46 @@ export function findable(site, d, gold = site.tier === 'gold') {
   return !!(String(c.phone || '').trim() || String(c.line || '').trim() || (d?.place && Number.isFinite(d.place.lat) && Number.isFinite(d.place.lng) && d.place.lat !== null))
 }
 
+// Each design's parts in the order its kind of site needs them (Nan 2026-10-26: "design should have PURPOSE"):
+// a local place leads with what it sells and how to get there, a shop with its shelf, a business with its
+// packages and proof, a portfolio with its work. OFF: parts a design leaves out.
+const ORDER = {
+  local: ['camp', 'news', 'event', 'rooms', 'menu', 'book', 'lists', 'amulets', 'shop', 'packages', 'hours', 'where', 'drawing', 'cal', 'gallery', 'video', 'about', 'quotes', 'faq', 'spots', 'pay', 'dls', 'works', 'signup', 'links', 'contact', 'lineqr', 'msg'],
+  shop: ['camp', 'news', 'shop', 'dls', 'about', 'gallery', 'video', 'quotes', 'faq', 'menu', 'hours', 'where', 'pay', 'signup', 'links', 'contact', 'lineqr', 'msg'],
+  biz: ['camp', 'news', 'packages', 'quotes', 'dls', 'faq', 'about', 'signup', 'event', 'cal', 'book', 'gallery', 'video', 'works', 'links', 'contact', 'lineqr', 'msg', 'pay'],
+  folio: ['works', 'about', 'quotes', 'gallery', 'video', 'packages', 'faq', 'links', 'contact', 'lineqr', 'msg', 'pay'],
+}
+const OFF = { local: new Set(['reach']), shop: new Set(['reach', 'drawing']), biz: new Set(['reach', 'drawing']), folio: new Set(['reach', 'drawing']) }
+// the parts worth a place in the jump bar, by their section's address
+const JUMP = new Set(['rooms', 'menu', 'book', 'lists', 'amulets', 'shop', 'packages', 'hours', 'where', 'photos', 'works', 'faq', 'about', 'message'])
+
+/** The dock: up to four things a reader came to do, each once; the main one first. An online shop's dock is its cart bar. */
+function dockOf({ lookId, cta, oc, c, line, hasPin, pl, d, gold, W, Wx }) {
+  const out = [], seen = new Set()
+  const a = (href, label, ic, main, t) => {
+    if (!href || seen.has(href) || out.length >= 4) return
+    seen.add(href)
+    out.push(`<a${main ? ' class="main"' : ''} data-t="${t}" href="${esc(href)}"${/^https?:/.test(href) ? ' rel="nofollow noopener"' : ''}>${icon(ic)}<span>${label}</span></a>`)
+  }
+  if (lookId === 'shop') return out
+  if (lookId === 'biz' && oc) oc.forEach((x, i) => { if (x) a(x[0], Wx(x[1]), x[2], i === 0, 'cta') })
+  else if (cta) a(cta[0], W(cta[1]), cta[2], true, cta[1] === 'give' ? 'give' : 'cta')
+  if (gold && d.give && cta?.[1] !== 'give') a(d.give, W('give'), 'heart', false, 'give')
+  if (c.phone) a(telHref(c.phone), W('call'), 'phone', false, 'call')
+  if (line) a(line, W('line'), 'chat', false, 'line')
+  if (lookId === 'local' && (hasPin || pl.addr)) a('#where', W('dir'), 'route', false, 'dir')
+  if (d.msg) a('#message', W('msg'), 'mail', false, 'msg')
+  if (lookId === 'folio' && c.email) a('mailto:' + c.email, W('email'), 'mail', false, 'email')
+  return out.length >= 2 ? out : []
+}
+
 export function render(site, opt = {}) {
   const d = normalize(site.d)
   const lang = PAGE_LANGS[site.lang] ? site.lang : 'en'
   const gold = opt.gold ?? site.tier === 'gold'
   const hotel = gold && (opt.hotel ?? !!site.hotel) // direct room bookings: the hotel month or the first 30 days
-  const wantLook = lookOf(site.look)
-  // a free page wears its own kind's looks; Gold, a preview and the builder any look (kinds.mjs)
-  const lookId = LOOKS[wantLook] && (opt.preview || lookOk(site.kind, wantLook, gold)) ? wantLook : freeLooks(site.kind)[0]
+  // one design per kind of site, nothing to pick (Nan 2026-10-26: "one style per kind"; looks.mjs, kinds.mjs)
+  const lookId = designOf(site.kind)
   const look = LOOKS[lookId]
   const accent = d.accent || look.accent
   const dl = DING_LOOK[lookId] || 'ink'
@@ -598,7 +630,7 @@ export function render(site, opt = {}) {
   const line = lineHref(c.line)
   const grabOk = hasPin && (GRAB_CC[pl.cc] || (!pl.cc && lang === 'th'))
   const photos = d.photos.slice(0, photoMax(site.kind, gold))
-  const H2 = (k, label) => `<h2>${ding(HEAD_DING[k], dl)}${label}</h2>`
+  const H2 = (k, label) => `<h2>${label}</h2>`
   const out = []
   const L = gold && opt.listing ? d.lists.find((x) => x.id === opt.listing) || null : null
   const Wk = !L && opt.work ? d.works.find((x) => x.id === opt.work) || null : null
@@ -658,7 +690,7 @@ export function render(site, opt = {}) {
   if (cov) out.push(`<div class="pf"><div class="ph"><img src="${esc(img(cov))}" alt="" fetchpriority="high"${cov === d.cover && d.coverPos ? ` style="object-position:${d.coverPos[0] * 100}% ${d.coverPos[1] * 100}%;--fy:${d.coverPos[1]}"` : ''}>${deco.ph || ''}</div>${deco.frame || ''}${d.credits[cov] ? `<p class="cr">${creditLine(d.credits[cov])}</p>` : ''}</div>`)
   out.push(deco.front || '', '<div class="t">')
   const kick = !L && !Wk && !Am && !Pr ? kicker(d) : ''
-  if (kick) out.push(`<p class="kick">${esc(kick)}</p>`)
+  if (kick) out.push(`<p class="kick">${hasPin || pl.addr ? `<a href="#where">${esc(kick)}</a>` : esc(kick)}</p>`)
   if (d.avatar && !L && !Wk && !Am && !Pr) out.push(`<img class="av${d.avround ? ' round' : ''}" src="${esc(img(d.avatar, true))}" alt="" width="104" height="104">`)
   out.push(`<h1 style="--lw:${longestWord(h1)}"${/[\u0E00-\u0E7F]/.test(h1) ? ' class="th"' : ''}>${wordsOf(h1)}</h1><span class="bar"></span>`)
   if (L) out.push(`<p class="tag"><a href="/${esc(site.name)}#lists">${esc(name)}</a></p>`)
@@ -666,7 +698,6 @@ export function render(site, opt = {}) {
   else if (Am) out.push(`<p class="tag"><a href="/${esc(site.name)}#amulets">${esc(name)}</a></p>`)
   else if (Pr) out.push(`<p class="tag"><a href="/${esc(site.name)}#shop">${esc(name)}</a></p>`)
   else if (d.tagline) out.push(`<p class="tag">${esc(d.tagline)}</p>`)
-  if (d.dings.length) out.push(`<p class="dings">${d.dings.map((n) => ding(n, dl)).join('')}</p>`)
   out.push(`<span id="st">${badge(lang, st)}</span>`)
   const cta = !L && !Wk ? leadButton(site, d, gold, line) : null
   // an online business page leads with two buttons: the packages, then LINE or the message form (online.mjs)
@@ -691,6 +722,11 @@ export function render(site, opt = {}) {
   else if (Am) out.push(amuletBody(Am, { site, d, lang, esc, H2, img, icon, paras, sym, ding, line, oa: lineOa(c.line), url: pageUrl, list: ams, W, tel: telHref, sian: sianOn }))
   else {
 
+  // the page's parts, gathered by name, then set out in the order its kind of site needs (ORDER)
+  const B = {}
+  let K = 'misc'
+  const put = (...h) => (B[K] ||= []).push(...h)
+  K = 'reach'
   // reach: the buttons a reader came for
   const reach = []
   if (c.phone) reach.push(`<a class="btn" data-t="call" href="${esc(telHref(c.phone))}">${icon('phone')}${W('call')}</a>`)
@@ -704,205 +740,231 @@ export function render(site, opt = {}) {
   if (gold && d.give && cta?.[1] !== 'give') reach.unshift(giveBtn(d.give, W))
   if (c.whatsapp && !c.phone) reach.push(`<a class="btn" data-t="whatsapp" href="${esc(waHref(c.whatsapp))}" rel="nofollow noopener">${icon('chat')}WhatsApp</a>`)
   if (d.msg && !reach.length) reach.push(`<a class="btn" data-t="msg" href="#message">${icon('mail')}${W('msg')}</a>`)
-  if (reach.length) out.push(`<nav class="reach">${reach.join('')}</nav>`)
+  if (reach.length) put(`<nav class="reach">${reach.join('')}</nav>`)
 
+  K = 'camp'
   // timed campaigns (Gold): only inside their window; the page counts down to the end
   if (gold) for (const { c: k, e } of campsNow(d.camps, tz, now)) {
     let ends
     try { ends = new Intl.DateTimeFormat(lang, { dateStyle: 'medium', timeStyle: 'short', timeZone: tz }).format(new Date(e)) } catch { ends = k.end.replace('T', ' ') }
-    out.push(`<section class="camp" data-e="${e}"><div class="campin">${ding('megaphone', 'mono')}<div class="campt"><b>${esc(k.t)}</b>${k.note ? `<p>${esc(k.note)}</p>` : ''}`,
+    put(`<section class="camp" data-e="${e}"><div class="campin">${ding('megaphone', 'mono')}<div class="campt"><b>${esc(k.t)}</b>${k.note ? `<p>${esc(k.note)}</p>` : ''}`,
       `<p class="cnt"><span data-left="${e}"></span> · ${W('campEnds', { t: esc(ends) })}</p></div>`,
       k.code ? `<button class="code" data-t="code" data-code="${esc(k.code)}" aria-label="${W('campCopy')}"><small>${W('campCode')}</small>${esc(k.code)}</button>` : '', '</div></section>')
   }
 
+  K = 'news'
   // News (Edit by LINE, Gold): dated notes the owner sent from LINE; the newest in full, a few older ones below it
   const news = gold && Array.isArray(opt.news) ? opt.news.filter((n) => n && n.at && n.body).slice(0, 5) : []
   if (news.length) {
     const day = (iso) => { try { return new Intl.DateTimeFormat(lang, { dateStyle: 'medium', timeZone: tz }).format(new Date(iso)) } catch { return String(iso).slice(0, 10) } }
     const item = (n) => `<time datetime="${esc(n.at)}">${esc(day(n.at))}</time>${paras(n.body)}`
-    out.push(`<section class="card rise news" id="news">${H2('news', W('news'))}<article class="n1">${item(news[0])}</article>`,
+    put(`<section class="card rise news" id="news">${H2('news', W('news'))}<article class="n1">${item(news[0])}</article>`,
       news.length > 1 ? `<ol class="nold">${news.slice(1).map((n) => `<li>${item(n)}</li>`).join('')}</ol>` : '', '</section>')
   }
 
+  K = 'event'
   // event
   if (d.event) {
     const s = zonedToUtc(d.event.start, d.event.tz)
     const e = d.event.end ? zonedToUtc(d.event.end, d.event.tz) : s + 3 * 3600e3
     let when
     try { when = new Intl.DateTimeFormat(lang, { dateStyle: 'full', timeStyle: 'short', timeZone: d.event.tz }).format(new Date(s)) } catch { when = d.event.start.replace('T', ' ') }
-    out.push(`<section class="card rise">${H2('when', W('when'))}<div class="when">${esc(when)}</div>`,
+    put(`<section class="card rise">${H2('when', W('when'))}<div class="when">${esc(when)}</div>`,
       `<div class="count" id="count" data-s="${s}" data-e="${e}"></div>`,
       `<div class="tools-row"><a class="btn ghost" data-t="ics" href="/${esc(site.name)}/event.ics">${icon('cal')}${W('addCal')}</a></div></section>`)
   }
 
+  K = 'cal'
   // calendar: the next dates, each to a phone calendar, the whole as a feed
   if (d.cal.length) {
     const seen = new Set()
     const next = upcoming(d.cal, tz, now, 60).filter((x) => !x.item.rep || (!seen.has(x.item.id) && seen.add(x.item.id))).slice(0, 8)
     if (next.length) {
       const fm = (o, ms) => { try { return new Intl.DateTimeFormat(lang, { ...o, timeZone: tz }).format(new Date(ms)) } catch { return '' } }
-      out.push(`<section class="card rise" id="cal">${H2('cal', W('cal'))}<ol class="calz">`)
+      put(`<section class="card rise" id="cal">${H2('cal', W('cal'))}<ol class="calz">`)
       for (const x of next) {
         const rep = x.item.rep === 'weekly' ? W('calEvery', { d: fm({ weekday: 'long' }, x.start) }) : x.item.rep === 'monthly' ? W('calMonthly') : ''
         const live = x.start <= now && now < x.end
-        out.push(`<li${live ? ' class="now"' : ''}><time class="dt" datetime="${new Date(x.start).toISOString()}"><b>${esc(fm({ day: 'numeric' }, x.start))}</b><span>${esc(fm({ month: 'short' }, x.start))}</span></time>`,
+        put(`<li${live ? ' class="now"' : ''}><time class="dt" datetime="${new Date(x.start).toISOString()}"><b>${esc(fm({ day: 'numeric' }, x.start))}</b><span>${esc(fm({ month: 'short' }, x.start))}</span></time>`,
           `<div><b>${esc(x.item.t)}</b><small>${esc(fm({ weekday: 'short', hour: '2-digit', minute: '2-digit' }, x.start))}${rep ? ' · ' + rep : ''}${live ? ` · <em>${W('happening')}</em>` : ''}</small>${x.item.note ? `<p>${esc(x.item.note)}</p>` : ''}</div>`,
           `<a class="add" data-t="calone" href="/${esc(site.name)}/calendar.ics?only=${esc(x.item.id)}" aria-label="${W('addCal')}">${icon('cal')}</a></li>`)
       }
-      out.push(`</ol><div class="tools-row"><a class="btn ghost" data-t="calfollow" href="webcal://${esc(origin.replace(/^https?:\/\//, ''))}/${esc(site.name)}/calendar.ics">${icon('cal')}${W('calFollow')}</a></div></section>`)
+      put(`</ol><div class="tools-row"><a class="btn ghost" data-t="calfollow" href="webcal://${esc(origin.replace(/^https?:\/\//, ''))}/${esc(site.name)}/calendar.ics">${icon('cal')}${W('calFollow')}</a></div></section>`)
     }
   }
 
+  K = 'drawing'
   // the drawing: the auto-doodler draws the place from its own facts, lit by the sun where it stands
   if (d.drawing) {
     const scene = sceneOf(site.kind, d)
     const facts = { id: site.name, name, nameTh: name, nameEn: name, cat: site.kind, sub: [scene], hours: osmHours(d.hours) || undefined, lat: pl.lat ?? undefined, lng: pl.lng ?? undefined, props: d.dprops.length ? d.dprops : undefined, floors: d.floors || undefined }
-    out.push(`<figure class="drawn rise" id="drawn"><canvas data-set="${esc(scene)}" data-seed="${d.dseed}" data-time="${d.dtime}" data-p="${esc(JSON.stringify(facts))}" role="img" aria-label="${W('drawnAlt', { n: name })}"></canvas>`,
-      `<figcaption>${ding('pencil', 'mono')}${W('drawnTap')}</figcaption></figure>`)
+    put(`<figure class="drawn rise" id="drawn"><canvas data-set="${esc(scene)}" data-seed="${d.dseed}" data-time="${d.dtime}" data-p="${esc(JSON.stringify(facts))}" role="img" aria-label="${W('drawnAlt', { n: name })}"></canvas>`,
+      `<figcaption>${W(lookId === 'local' ? 'lookFor' : 'drawnTap')}</figcaption></figure>`)
   }
 
-  if (d.about) out.push(`<section class="card rise">${H2('about', W('about'))}${paras(d.about)}</section>`)
+  K = 'about'
+  if (d.about) put(`<section class="card rise" id="about">${H2('about', W('about'))}${paras(d.about)}</section>`)
 
+  K = 'packages'
   // an online business: its packages come first (online.mjs). Free: Ask; Gold: Book a call.
   if (site.kind === 'online' && d.svc.length) {
     const oa = lineOa(c.line)
     const askHref = (pkg) => (d.msg ? '#message' : oa ? `https://line.me/R/oaMessage/${encodeURIComponent(oa)}/?${encodeURIComponent(ow(lang, 'askPkg', { n: pkg }))}` : line || (c.phone ? telHref(c.phone) : ''))
-    out.push(packagesSection(d.svc, { W: Wx, esc, H2, icon, sym, gold, askHref }))
+    put(packagesSection(d.svc, { W: Wx, esc, H2, icon, sym, gold, askHref }))
   }
+  K = 'shop'
   // the online shop: products, each its own page; the downloads of an online business (store.mjs)
   const shopH = { site, d, lang, esc, H2, img, icon, sym: '฿', ding, gold, pp: shopOn, title: name } // a shop's prices are baht: PromptPay pays them
-  if (prs.length) out.push(shopSection(prs, shopH))
-  if (dls.length) out.push(dlSection(dls, shopH))
+  if (prs.length) put(shopSection(prs, shopH))
+  K = 'dls'
+  if (dls.length) put(dlSection(dls, shopH))
 
+  K = 'amulets'
   // an amulet seller's amulets, each its own page
-  if (ams.length) out.push(amuletSection(ams, { site, lang, esc, H2, img, sym, ding, sian: sianOn }))
+  if (ams.length) put(amuletSection(ams, { site, lang, esc, H2, img, sym, ding, sian: sianOn }))
 
+  K = 'works'
   // a portfolio: the work, filtered by tag, each its own page
   const works = d.works.slice(0, gold ? MAX.works : MAX.worksFree)
   if (works.length) {
     const tags = [...new Set(works.flatMap(tagsOf))]
-    out.push(`<section class="card rise" id="works">${H2('works', W('works'))}`)
-    if (tags.length > 1) out.push(`<div class="lfilter wfilter" role="group"><button class="on" data-tag="">${W('all')}</button>${tags.map((t) => `<button data-tag="${esc(t)}">${esc(t)}</button>`).join('')}</div>`)
-    out.push(`<div class="wgrid">${works.map((x) => workCard(x, { site, img })).join('')}</div></section>`)
+    put(`<section class="card rise" id="works">${H2('works', W('works'))}`)
+    if (tags.length > 1) put(`<div class="lfilter wfilter" role="group"><button class="on" data-tag="">${W('all')}</button>${tags.map((t) => `<button data-tag="${esc(t)}">${esc(t)}</button>`).join('')}</div>`)
+    put(`<div class="wgrid">${works.map((x) => workCard(x, { site, img })).join('')}</div></section>`)
   }
+  K = 'quotes'
   if (d.quotes.length) {
-    out.push(`<section class="card rise quotes">${H2('quotes', W('quotes'))}`)
-    for (const q of d.quotes) out.push(`<figure><blockquote>${paras(q.q)}</blockquote>${q.who ? `<figcaption>${esc(q.who)}</figcaption>` : ''}</figure>`)
-    out.push('</section>')
+    put(`<section class="card rise quotes" id="quotes">${H2('quotes', W('quotes'))}`)
+    for (const q of d.quotes) put(`<figure><blockquote>${paras(q.q)}</blockquote>${q.who ? `<figcaption>${esc(q.who)}</figcaption>` : ''}</figure>`)
+    put('</section>')
   }
-  if (faqList.length) out.push(faqSection(faqList, { W: Wx, esc, H2, paras }))
-  if (gold && d.signup.on) out.push(signupSection(d, { W: Wx, esc, H2, icon, preview: !!opt.preview }))
+  K = 'faq'
+  if (faqList.length) put(faqSection(faqList, { W: Wx, esc, H2, paras }))
+  K = 'signup'
+  if (gold && d.signup.on) put(signupSection(d, { W: Wx, esc, H2, icon, preview: !!opt.preview }))
 
+  K = 'menu'
   if (d.items.length) {
     const oa = lineOa(c.line), pp = !!d.pay.pp
-    out.push(`<section class="card rise" id="menu">${H2(site.kind === 'food' ? 'menu' : 'prices', W(site.kind === 'food' ? 'menu' : gold && d.give ? 'giveList' : 'prices'))}<ul class="menu${oa || pp ? ' orderable' : ''}">`)
-    d.items.forEach((it, i) => out.push(`<li><span class="n">${esc(it.n)}${it.note ? `<small>${esc(it.note)}</small>` : ''}</span><span class="p">${esc(price(it.p, cur))}</span>` +
+    put(`<section class="card rise" id="menu">${H2(site.kind === 'food' ? 'menu' : 'prices', W(site.kind === 'food' ? 'menu' : gold && d.give ? 'giveList' : 'prices'))}<ul class="menu${oa || pp ? ' orderable' : ''}">`)
+    d.items.forEach((it, i) => put(`<li><span class="n">${esc(it.n)}${it.note ? `<small>${esc(it.note)}</small>` : ''}</span><span class="p">${esc(price(it.p, cur))}</span>` +
       (oa || pp ? `<span class="qty" data-i="${i}" data-n="${esc(it.n)}" data-p="${amountOf(it.p)}"><button aria-label="−">−</button><b>0</b><button aria-label="+">+</button></span>` : '') + '</li>'))
-    out.push('</ul>')
-    if (oa || pp) out.push('<div class="orderrow">')
-    if (oa) out.push(`<a class="btn line order" id="lineorder" data-t="order" data-oa="${esc(oa)}" href="${esc(lineHref(c.line))}" rel="nofollow noopener" hidden>${icon('chat')}${W('lineOrder')} <span></span></a>`)
-    if (pp) out.push(`<button class="btn order" id="paytotal" data-t="paytotal" data-sym="${esc(sym)}" data-w="${W('payTotal')}" hidden>${icon('coin')}<span></span></button>`)
-    if (oa || pp) out.push('</div>')
-    out.push('</section>')
+    put('</ul>')
+    if (oa || pp) put('<div class="orderrow">')
+    if (oa) put(`<a class="btn line order" id="lineorder" data-t="order" data-oa="${esc(oa)}" href="${esc(lineHref(c.line))}" rel="nofollow noopener" hidden>${icon('chat')}${W('lineOrder')} <span></span></a>`)
+    if (pp) put(`<button class="btn order" id="paytotal" data-t="paytotal" data-sym="${esc(sym)}" data-w="${W('payTotal')}" hidden>${icon('coin')}<span></span></button>`)
+    if (oa || pp) put('</div>')
+    put('</section>')
   }
 
+  K = 'book'
   if (gold && d.svc.length && site.kind !== 'online') {
-    out.push(`<section class="card rise" id="book">${H2('book', W('book'))}<ul class="svc">`)
-    for (const v of d.svc) out.push(`<li><button class="svcb" data-t="book" data-svc="${esc(v.id)}"><span class="n">${esc(v.n)}<small>${W('bookMins', { m: v.mins })}${v.note ? ' · ' + esc(v.note) : ''}</small></span><span class="p">${esc(money(v.p, sym))}</span></button></li>`)
-    out.push(`</ul><div class="bookui" id="bookui" hidden></div></section>`)
+    put(`<section class="card rise" id="book">${H2('book', W('book'))}<ul class="svc">`)
+    for (const v of d.svc) put(`<li><button class="svcb" data-t="book" data-svc="${esc(v.id)}"><span class="n">${esc(v.n)}<small>${W('bookMins', { m: v.mins })}${v.note ? ' · ' + esc(v.note) : ''}</small></span><span class="p">${esc(money(v.p, sym))}</span></button></li>`)
+    put(`</ul><div class="bookui" id="bookui" hidden></div></section>`)
   }
 
+  K = 'rooms'
   if (gold && d.rooms.length) {
-    out.push(`<section class="card rise" id="rooms">${H2('rooms', W('rooms'))}<p class="facts">${icon('clock')} ${W('roomIn')} ${esc(d.stay.in)} · ${W('roomOut')} ${esc(d.stay.out)}</p><div class="rooms">`)
+    put(`<section class="card rise" id="rooms">${H2('rooms', W('rooms'))}<p class="facts">${icon('clock')} ${W('roomIn')} ${esc(d.stay.in)} · ${W('roomOut')} ${esc(d.stay.out)}</p><div class="rooms">`)
     for (const r of d.rooms) {
-      out.push(`<article class="room" data-room="${esc(r.id)}" data-p="${esc(r.p)}" data-g="${r.guests}">`,
+      put(`<article class="room" data-room="${esc(r.id)}" data-p="${esc(r.p)}" data-g="${r.guests}">`,
         r.photos.length ? `<div class="strip">${r.photos.map((p, i) => `<button data-t="photo" data-big="${esc(img(p))}"><img src="${esc(img(p, true))}" alt="" loading="lazy"${i ? '' : ''}></button>`).join('')}</div>` : '',
         `<div class="rin"><h3>${esc(r.n)}</h3><p class="facts">${icon('people')}${W('roomGuests', { n: r.guests })}${r.beds ? ' · ' + esc(r.beds) : ''}</p>`,
         r.note ? `<p>${esc(r.note)}</p>` : '', r.p ? `<p class="night">${W('roomNight', { p: esc(money(r.p, sym)) })}${r.p2 ? ` <small>· ${W('roomWeekend', { p: esc(money(r.p2, sym)) })}</small>` : ''}</p>` : '',
         r.min > 1 ? `<p class="facts">${W('roomMin', { n: r.min })}</p>` : '',
         hotel ? `<button class="btn" data-t="rooms" data-pick="${esc(r.id)}">${icon('cal')}${W('roomSend')}</button><div class="roomui" hidden></div>` : '', '</div></article>')
     }
-    out.push('</div>')
-    if (!hotel && (d.ota.agoda || d.ota.booking)) out.push(`<div class="tools-row">${d.ota.agoda ? otaBtn('agoda', d.ota.agoda, W) : ''}${d.ota.booking ? otaBtn('booking', d.ota.booking, W) : ''}</div>`)
-    out.push('</section>')
+    put('</div>')
+    if (!hotel && (d.ota.agoda || d.ota.booking)) put(`<div class="tools-row">${d.ota.agoda ? otaBtn('agoda', d.ota.agoda, W) : ''}${d.ota.booking ? otaBtn('booking', d.ota.booking, W) : ''}</div>`)
+    put('</section>')
   }
 
+  K = 'lists'
   if (gold && d.lists.length) {
     const deals = [...new Set(d.lists.map((x) => x.deal))]
-    out.push(`<section class="card rise" id="lists">${H2('lists', W('lists'))}`)
-    if (deals.length > 1) out.push(`<div class="lfilter" role="group"><button class="on" data-deal="">${W('all')}</button>${deals.map((k) => `<button data-deal="${k}">${W(k === 'sale' ? 'forSale' : 'forRent')}</button>`).join('')}</div>`)
-    out.push('<div class="lgrid">')
-    for (const x of d.lists) out.push(listCard(x, { site, W, img, sym }))
-    out.push('</div></section>')
+    put(`<section class="card rise" id="lists">${H2('lists', W('lists'))}`)
+    if (deals.length > 1) put(`<div class="lfilter" role="group"><button class="on" data-deal="">${W('all')}</button>${deals.map((k) => `<button data-deal="${k}">${W(k === 'sale' ? 'forSale' : 'forRent')}</button>`).join('')}</div>`)
+    put('<div class="lgrid">')
+    for (const x of d.lists) put(listCard(x, { site, W, img, sym }))
+    put('</div></section>')
   }
 
+  K = 'hours'
   if (d.hours.on) {
-    out.push(`<section class="card rise">${H2('hours', W('hours'))}`)
-    if (d.hours.always) out.push(`<p><b>${W('open24')}</b></p>`)
+    put(`<section class="card rise" id="hours">${H2('hours', W('hours'))}`)
+    if (d.hours.always) put(`<p><b>${W('open24')}</b></p>`)
     else {
       const today = clockIn(d.hours.tz, opt.now).day
-      out.push('<table class="hours">')
+      put('<table class="hours">')
       for (const i of DAY_ORDER) {
         const r = d.hours.week[i]
-        out.push(`<tr${i === today ? ' class="today"' : ''}><td>${esc(dayName(lang, i))}</td><td>${r ? r.map(([a, b]) => `${a}–${b}`).join(', ') : W('closed')}</td></tr>`)
+        put(`<tr${i === today ? ' class="today"' : ''}><td>${esc(dayName(lang, i))}</td><td>${r ? r.map(([a, b]) => `${a}–${b}`).join(', ') : W('closed')}</td></tr>`)
       }
-      out.push('</table>')
+      put('</table>')
     }
-    if (d.hours.note) out.push(`<p style="margin-top:12px">${esc(d.hours.note)}</p>`)
-    out.push('</section>')
+    if (d.hours.note) put(`<p style="margin-top:12px">${esc(d.hours.note)}</p>`)
+    put('</section>')
   }
 
+  K = 'gallery'
   // on an amulet page the gallery leaves out the amulets' own photos: each is on its amulet already
   const amPh = new Set([...ams.flatMap((a) => a.photos), ...prs.flatMap((a) => a.photos)])
   const gallery = (photos.length === 1 && photos[0] === d.cover ? [] : photos).filter((p) => !amPh.has(p))
   if (gallery.length) {
-    out.push(`<section class="card rise">${H2('photos', W('photos'))}<div class="gallery">`)
+    put(`<section class="card rise" id="photos">${H2('photos', W('photos'))}<div class="gallery">`)
     for (const p of gallery) {
       const cr = d.credits[p]
-      out.push(`<figure><button data-t="photo" data-big="${esc(img(p))}"${cr ? ` data-cap="${esc(creditLine(cr))}"` : ''}><img src="${esc(img(p, true))}" alt="${cr ? esc(tidyTitle(cr.title)) : ''}" loading="lazy"></button>${cr ? `<figcaption>${creditLine(cr)}</figcaption>` : ''}</figure>`)
+      put(`<figure><button data-t="photo" data-big="${esc(img(p))}"${cr ? ` data-cap="${esc(creditLine(cr))}"` : ''}><img src="${esc(img(p, true))}" alt="${cr ? esc(tidyTitle(cr.title)) : ''}" loading="lazy"></button>${cr ? `<figcaption>${creditLine(cr)}</figcaption>` : ''}</figure>`)
     }
-    out.push('</div></section>')
+    put('</div></section>')
   }
 
-  if (gold && d.video) out.push(videoBlock(d.video, d.vposter, H2, W, img))
+  K = 'video'
+  if (gold && d.video) put(videoBlock(d.video, d.vposter, H2, W, img))
 
+  K = 'where'
   if (hasPin || pl.addr) {
-    out.push(`<section class="card mapcard rise" id="where">${H2('where', W('where'))}`)
+    put(`<section class="card mapcard rise" id="where">${H2('where', W('where'))}`)
     if (hasPin) {
       const marks = d.spots.slice(0, gold ? MAX.spotsGold : MAX.spotsFree)
       const q = new URLSearchParams({ pin: `${pl.lat},${pl.lng}`, pn: name, embed: '1', look: d.map.style, s: String(MAP_NEAR[d.map.near]) })
-      out.push(`<div class="dmap" id="dmap" data-marks="${esc(JSON.stringify(marks))}"><iframe src="/map?${esc(q.toString())}" title="${W('mapOpen')}" loading="lazy" allow="geolocation"></iframe></div>`)
+      put(`<div class="dmap" id="dmap" data-marks="${esc(JSON.stringify(marks))}"><iframe src="/map?${esc(q.toString())}" title="${W('mapOpen')}" loading="lazy" allow="geolocation"></iframe></div>`)
     }
-    out.push('<div class="in">')
-    if (pl.addr) out.push(`<p class="addr">${esc(pl.addr)}</p>`)
+    put('<div class="in">')
+    if (pl.addr) put(`<p class="addr">${esc(pl.addr)}</p>`)
     if (hasPin) {
-      out.push('<div class="tools-row">',
+      put('<div class="tools-row">',
         `<a class="btn dark" data-t="dir" href="${esc(dirHref(pl.lat, pl.lng))}" rel="nofollow noopener">${icon('route')}Google Maps</a>`,
         `<a class="btn ghost" data-t="dir" href="${esc(appleHref(pl.lat, pl.lng, name))}" rel="nofollow noopener">${icon('map')}Apple Maps</a>`,
         grabOk ? `<a class="btn grab" data-t="ride" href="${esc(grabRide(pl.lat, pl.lng, name, pl.cc || 'TH'))}" rel="nofollow noopener">${icon('ride')}${W('ride')}</a>` : '',
         `<button class="btn ghost" id="far" data-t="far" data-lat="${pl.lat}" data-lng="${pl.lng}">${icon('near')}${W('far')}</button>`,
         '</div><p class="far" id="farout" aria-live="polite"></p>')
     }
-    out.push('</div></section>')
+    put('</div></section>')
   }
 
+  K = 'spots'
   if (d.spots.length) {
-    out.push(`<section class="card rise">${H2('spots', W('spots'))}<ol class="spots">`)
-    d.spots.slice(0, gold ? MAX.spotsGold : MAX.spotsFree).forEach((x, i) => out.push(`<li><span><b>${esc(x.n)}</b>${x.note ? `<small>${esc(x.note)}</small>` : ''}<br>${hasPin ? `<button data-spot="${i}" data-lat="${x.lat}" data-lng="${x.lng}">${W('spotsMap')}</button>` : `<a data-t="map" href="${esc(dirHref(x.lat, x.lng))}" rel="nofollow noopener">${W('spotsMap')}</a>`}</span></li>`))
-    out.push('</ol></section>')
+    put(`<section class="card rise">${H2('spots', W('spots'))}<ol class="spots">`)
+    d.spots.slice(0, gold ? MAX.spotsGold : MAX.spotsFree).forEach((x, i) => put(`<li><span><b>${esc(x.n)}</b>${x.note ? `<small>${esc(x.note)}</small>` : ''}<br>${hasPin ? `<button data-spot="${i}" data-lat="${x.lat}" data-lng="${x.lng}">${W('spotsMap')}</button>` : `<a data-t="map" href="${esc(dirHref(x.lat, x.lng))}" rel="nofollow noopener">${W('spotsMap')}</a>`}</span></li>`))
+    put('</ol></section>')
   }
 
+  K = 'lineqr'
   if (line) {
-    out.push(`<section class="card rise">${H2('line', 'LINE')}<div class="lineqr">${qrSvg(line, { dark: '#06c755', light: '#0e1f3d', label: word(lang, 'scanLine') })}`,
+    put(`<section class="card rise desk">${H2('line', 'LINE')}<div class="lineqr">${qrSvg(line, { dark: '#06c755', light: '#0e1f3d', label: word(lang, 'scanLine') })}`,
       `<div><p>${W('scanLine')}</p><a class="btn line" data-t="line" href="${esc(line)}" rel="nofollow noopener">${icon('chat')}${W('line')}</a></div></div></section>`)
   }
 
+  K = 'links'
   if (d.links.length) {
-    out.push(`<section class="card links rise">${H2('links', W('links'))}`)
-    for (const l of d.links) out.push(`<a class="btn ghost" data-t="link" href="${esc(l.u)}" rel="ugc nofollow noopener">${icon('link')}${esc(l.t || hostOf(l.u))}</a>`)
-    out.push('</section>')
+    put(`<section class="card links rise">${H2('links', W('links'))}`)
+    for (const l of d.links) put(`<a class="btn ghost" data-t="link" href="${esc(l.u)}" rel="ugc nofollow noopener">${icon('link')}${esc(l.t || hostOf(l.u))}</a>`)
+    put('</section>')
   }
 
+  K = 'contact'
   const rows = []
   if (c.phone) rows.push(`<a data-t="call" href="${esc(telHref(c.phone))}">${icon('phone')}${esc(c.phone)}</a>`)
   if (c.line) rows.push(line ? `<a data-t="line" href="${esc(line)}" rel="nofollow noopener">${icon('chat')}LINE · ${esc(c.line)}</a>` : `<span>${icon('chat')}LINE · ${esc(c.line)}</span>`)
@@ -914,24 +976,26 @@ export function render(site, opt = {}) {
   if (c.email) rows.push(`<a data-t="email" href="mailto:${esc(c.email)}">${icon('mail')}${esc(c.email)}</a>`)
   if (c.web) rows.push(`<a data-t="web" href="${esc(c.web)}" rel="ugc nofollow noopener">${icon('globe')}${esc(hostOf(c.web))}</a>`)
   if (rows.length) {
-    out.push(`<section class="card rise">${H2('contact', W('contact'))}<div class="contact">${rows.join('')}</div>`)
-    if (c.phone || c.email || line) out.push(`<div class="tools-row"><a class="btn ghost" data-t="vcf" href="/${esc(site.name)}/contact.vcf">${icon('download')}${W('saveContact')}</a></div>`)
-    out.push('</section>')
+    put(`<section class="card rise" id="contact">${H2('contact', W('contact'))}<div class="contact">${rows.join('')}</div>`)
+    if (c.phone || c.email || line) put(`<div class="tools-row"><a class="btn ghost" data-t="vcf" href="/${esc(site.name)}/contact.vcf">${icon('download')}${W('saveContact')}</a></div>`)
+    put('</section>')
   }
 
+  K = 'pay'
   // paying by PromptPay: amounts to tap; the Worker draws the QR with the amount in it
   if (d.pay.pp && !L && !Wk) {
     const opts = []
     if (site.kind === 'event' && amountOf(d.pay.price)) opts.push([amountOf(d.pay.price), W('payTicket')])
     if (d.pay.tips) for (const a of [20, 50, 100, 500]) opts.push([a, ''])
-    out.push(`<section class="card rise pay" id="pay">${H2('pay', W('pay'))}<p>${W('payHint', { n: esc(name) })}</p><div class="amts">`,
+    put(`<section class="card rise pay" id="pay">${H2('pay', W('pay'))}<p>${W('payHint', { n: esc(name) })}</p><div class="amts">`,
       opts.map(([a, l]) => `<button class="amt" data-a="${a}" data-t="payamt">${esc(money(String(a), sym))}${l ? `<small>${l}</small>` : ''}</button>`).join(''),
       `<label class="amtin"><span>${esc(sym || '฿')}</span><input type="number" inputmode="decimal" min="1" max="999999" step="any" placeholder="${W('payOther')}" aria-label="${W('payAmt')}"></label>`,
       `<button class="btn" id="paygo" data-t="pay">${icon('coin')}${W('payShow')}</button></div><div class="ppout" id="ppout" hidden></div></section>`)
   }
 
+  K = 'msg'
   if (d.msg) {
-    out.push(`<section class="card msgcard rise" id="message">${H2('msg', W('msg'))}`,
+    put(`<section class="card msgcard rise" id="message">${H2('msg', W('msg'))}`,
       opt.preview ? `<p style="color:var(--mute)">${W('msgPreview')}</p>` : '',
       `<form class="msgf" id="msgf"><input name="name" maxlength="80" autocomplete="name" placeholder="${W('msgName')}" aria-label="${W('msgName')}">`,
       `<input name="reach" maxlength="120" autocomplete="tel" placeholder="${W('msgReach')}" aria-label="${W('msgReach')}">`,
@@ -941,9 +1005,15 @@ export function render(site, opt = {}) {
       `<button class="btn" type="submit"${opt.preview ? ' disabled' : ''}>${icon('mail')}${W('msgSend')}</button></form></section>`)
   }
 
+  const order = ORDER[lookId]
+  const keys = [...order, ...Object.keys(B).filter((k) => !order.includes(k))].filter((k) => B[k] && !OFF[lookId].has(k))
+  const jumps = keys.map((k) => { const h = B[k].join(''); return [/<section[^>]*\sid="([^"]+)"/.exec(h)?.[1], /<h2>(.*?)<\/h2>/.exec(h)?.[1]] }).filter(([id, t]) => id && t && JUMP.has(id))
+  if (jumps.length >= 3 && !opt.thumb) out.push(`<nav class="tabs" aria-label="${W('jump')}">${jumps.map(([id, t]) => `<a href="#${esc(id)}">${t.replace(/<[^>]+>/g, '')}</a>`).join('')}</nav>`)
+  for (const k of keys) out.push(...B[k])
+  // the dock: the few things a reader came to do, in reach once the main button has scrolled away (page.js)
+  const dock = dockOf({ lookId, cta, oc, c, line, hasPin, pl, d, gold, W, Wx })
+  if (dock.length) out.push(`<nav class="dock" id="dock" aria-label="${W('actions')}">${dock.join('')}</nav>`)
   }
-  if (lookId === 'lanna') out.push('<div class="kranok"></div>')
-  if (lookId === 'gold') out.push('<div class="goldrule"></div>')
   if (opt.events) out.push(opt.events) // what its linked calendars have coming (src/events.mjs)
   out.push('</main>', foot(site, d, lang, url, { ...opt, home, langs: gold ? langs : [] }, false, gold, dl))
   const pd = {
@@ -1123,8 +1193,7 @@ function foot(site, d, lang, url, opt, held, gold, dl) {
   const parts = ['<footer class="foot">']
   if (!held) {
     const t = encodeURIComponent(name), u = encodeURIComponent(url)
-    parts.push('<section class="share">', `<h2>${ding('share', dl)}${W('shareTitle')}</h2>`,
-      `<button class="btn big" id="share" data-t="share">${icon('share')}${W('share')}</button><div class="row">`,
+    parts.push('<section class="share">', `<p class="sh">${W('shareTitle')}</p><div class="row">`,
       `<a data-t="shareline" href="${esc(lineShare(name + ' ' + url))}" rel="nofollow noopener">${BRAND.line}LINE</a>`,
       `<a data-t="sharefb" href="https://www.facebook.com/sharer/sharer.php?u=${u}" rel="nofollow noopener">${BRAND.fb}Facebook</a>`,
       `<a data-t="sharewa" href="https://wa.me/?text=${t}%20${u}" rel="nofollow noopener">${BRAND.wa}WhatsApp</a>`,
@@ -1197,7 +1266,7 @@ export function ics(site) {
 export function sign(site, opt = {}) {
   const d = normalize(site.d)
   const lang = PAGE_LANGS[site.lang] ? site.lang : 'en'
-  const look = LOOKS[site.look] || LOOKS.poster
+  const look = LOOKS[designOf(site.kind)]
   const accent = d.accent || look.accent
   const url = `${HOME}/${site.name}`
   const line = lineHref(d.contact.line)

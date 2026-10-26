@@ -92,7 +92,8 @@ export const faqLd = (list) => ({
 export const packagesLd = (svc, cur) => ({
   '@type': 'OfferCatalog', name: 'Packages',
   itemListElement: svc.slice(0, 30).map((v) => {
-    const num = Number(String(v.p).replace(/,/g, '').match(/\d+(\.\d+)?/)?.[0] || '')
+    const m = /^\s*(?:฿|THB|\$|USD)?\s*(\d+(?:\.\d+)?)\s*(?:฿|บาท|baht|THB)?\s*$/i.exec(String(v.p).replace(/,/g, '')) // "3,000" yes; "from 3,000" or "3,000–5,000" no (CodeRabbit on #72)
+    const num = m ? Number(m[1]) : 0
     return { '@type': 'Offer', itemOffered: { '@type': 'Service', name: v.n, description: v.note ? v.note.slice(0, 300) : undefined }, price: num > 0 ? num : undefined, priceCurrency: num > 0 ? cur || undefined : undefined }
   }),
 })

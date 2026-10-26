@@ -163,7 +163,7 @@ export async function drawOrders(tb, h) {
     if (b.dataset.copy) { try { await navigator.clipboard.writeText(b.dataset.copy); toast(ui(S.lang, 'od_copied')) } catch { window.prompt('', b.dataset.copy) } return }
     if (b.dataset.slip) {
       const res = await fetch('/api/orders/slip?id=' + encodeURIComponent(b.dataset.slip), { headers: { 'x-edit': S.token } })
-      if (res.ok) window.open(URL.createObjectURL(await res.blob()), '_blank')
+      if (res.ok) { const v = document.createElement('div'); v.className = 'slipview'; v.innerHTML = `<img alt="" src="${URL.createObjectURL(await res.blob())}">`; v.onclick = () => v.remove(); document.body.appendChild(v) }
       return
     }
     if (!b.dataset.ord) return

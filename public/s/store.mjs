@@ -87,11 +87,11 @@ export const SHOP_CSS = `.pgrid{display:grid;grid-template-columns:repeat(auto-f
 .pcard figure{position:relative;margin:0 0 6px;aspect-ratio:1;border-radius:calc(var(--r) + 2px);overflow:hidden;background:var(--soft)}
 .pcard img{width:100%;height:100%;object-fit:cover;transition:transform .5s}.pcard:hover img{transform:scale(1.05)}
 .pcard .noimg{display:grid;place-items:center;height:100%;font-size:56px}.pcard.gone figure{filter:grayscale(.8)}
-.pcard .st,.pbuy .st{padding:3px 10px;border-radius:99px;background:#111;color:#fff;font:800 12px/1.4 var(--body)}.pcard .st{position:absolute;left:8px;top:8px}
+.pcard .st,.pbuy .st{padding:3px 10px;border-radius:99px;background:#111;color:#fff;font:800 12px/1.4 var(--body)}.pcard .st{position:absolute;left:8px;top:8px}.pcard .st.few{background:#b45309}.pcard .off{position:absolute;right:8px;top:8px;padding:3px 9px;border-radius:99px;background:var(--accent);color:var(--on-accent);font:800 12px/1.4 var(--body)}
 .pcard b{font:800 16px/1.25 var(--display)}.pcard .pr{font:800 16px/1.2 var(--body);color:var(--acc-ink)}.pcard .pr s,.pbuy .aprice s{color:var(--mute);font-weight:400;margin-right:.3em}
 .shipnote{margin:14px 0 0;color:var(--mute);font-size:15px}.shipnote span+span::before{content:" · "}
 .cartbar{position:sticky;bottom:12px;z-index:5;display:flex;align-items:center;gap:12px;margin-top:16px;padding:10px 12px 10px 18px;border-radius:99px;background:var(--ink);color:var(--card);box-shadow:0 6px 20px rgba(0,0,0,.25)}
-.cartbar[hidden]{display:none}.cartbar b{flex:1}.cartbar .btn{min-height:44px;padding:6px 18px}
+.cartbar[hidden]{display:none}.cartbar b{flex:1}.cartbar b small{display:block;font:500 12.5px/1.3 var(--body);opacity:.85}.cartbar .btn{min-height:44px;padding:6px 18px}
 .pshots{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}.pshots figure{margin:0}.pshots figure:first-child{grid-column:1/-1}
 .pshots button{display:block;width:100%;padding:0;border:0;background:var(--soft);border-radius:calc(var(--r)/2);overflow:hidden;cursor:zoom-in}
 .pshots img{display:block;width:100%;aspect-ratio:1;object-fit:cover}.pshots figure:first-child img{aspect-ratio:4/3}
@@ -129,6 +129,10 @@ export function shipNote(d, h) {
 }
 
 /** One product in the grid: photo, status, price, and a button: Buy (free), Add to cart (Gold), or Buy to its page for a product with options. */
+// the shelf says what a buyer weighs: a few left (Gold counts stock), and how much is off the old price (Nan 2026-10-26: decorations do things)
+const few = (x, gold) => { const n = unitsLeft(x, gold); return n > 0 && n <= 5 ? n : 0 }
+const off = (x) => (amount(x.old) > amount(x.p) && amount(x.p) > 0 ? Math.round((1 - amount(x.p) / amount(x.old)) * 100) : 0)
+
 export function productCard(x, h) {
   const { site, lang, esc, img, sym, ding, gold, icon } = h
   const gone = unitsLeft(x, gold) === 0
@@ -140,7 +144,7 @@ export function productCard(x, h) {
     : gold ? `<button class="btn" data-cart="p:${esc(x.id)}" data-t="buy">${icon('basket')}${S('addCart')}</button>` : `<button class="btn" data-buy="p:${esc(x.id)}" data-t="buy">${icon('basket')}${S('buy')}</button>`
   return `<div class="pcard${gone ? ' gone' : ''}"><a href="${href}" data-t="product"><figure>` +
     (x.photos[0] ? `<img src="${esc(img(x.photos[0], true))}" alt="${esc(prAlt(x, h.title || site.name))}" loading="lazy">` : `<span class="noimg">${ding('gift', 'paper')}</span>`) +
-    `${gone ? `<span class="st">${S('sold')}</span>` : ''}</figure><b>${esc(x.t)}</b>` +
+    `${gone ? `<span class="st">${S('sold')}</span>` : few(x, gold) ? `<span class="st few">${esc(sw(lang, 'left', { n: few(x, gold) }))}</span>` : ''}${off(x) ? `<span class="off">−${off(x)}%</span>` : ''}</figure><b>${esc(x.t)}</b>` +
     `<span class="pr">${amount(x.p) ? old + esc(money(x.p, sym)) : S('noPrice')}</span></a>${btn}</div>`
 }
 
@@ -217,7 +221,7 @@ export function productDesc(x, lang, sym) {
 }
 
 /** The words shop.js needs, and the keys it asks for. */
-export const SHOP_WORDS = ['buy', 'addCart', 'buyNow', 'sold', 'qty', 'cart', 'cartN', 'checkout', 'cartEmpty', 'rm', 'added', 'fName', 'fReach', 'fEmail', 'fEmailDl', 'fAddr', 'fCc',
+export const SHOP_WORDS = ['toFree', 'buy', 'addCart', 'buyNow', 'sold', 'qty', 'cart', 'cartN', 'checkout', 'cartEmpty', 'rm', 'added', 'fName', 'fReach', 'fEmail', 'fEmailDl', 'fAddr', 'fCc',
   'fNote', 'fCode', 'fApply', 'tSub', 'tDisc', 'tShip', 'tTotal', 'go', 'goWait', 'payNext', 'eEmpty', 'eLines', 'eItem', 'eStock', 'eOpt', 'eName', 'eReach', 'eEmail', 'eAddr', 'eCc',
   'eAbroad', 'eCode', 'eNopay', 'eGold', 'eQuota', 'eHeld', 'eNet', 'close', 'shThFree']
 

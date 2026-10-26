@@ -1,6 +1,7 @@
 // orderapi.mjs — /api/order (a buyer's order, or its quote) and the maker's calls: /api/orders (the tab, the answers,
 // the CSV, a slip), /api/dl (the file of a download). The Worker (worker.mjs) hands over its helpers in `deps`.
 
+import { slipHeaders } from './slipfile.mjs'
 import { normalize } from '../public/s/render.mjs'
 import { isGold } from './gold.mjs'
 import * as orders from './orders.mjs'
@@ -57,7 +58,7 @@ export async function owner(request, env, p, url, origin, s, deps) {
   if (p === 'orders/slip' && m === 'GET') {
     const o = await env.DB.prepare('SELECT slip FROM orders WHERE id = ? AND site_id = ?').bind(url.searchParams.get('id') || '', s.id).first()
     const f = o?.slip && await env.MEDIA.get(o.slip)
-    return f ? new Response(f.body, { headers: { 'content-type': f.httpMetadata?.contentType || 'image/jpeg', 'cache-control': 'no-store', 'x-content-type-options': 'nosniff' } }) : new Response('', { status: 404 })
+    return f ? new Response(f.body, { headers: slipHeaders(f.httpMetadata?.contentType) }) : new Response('', { status: 404 })
   }
   if (p === 'orders/billslip' && m === 'POST') {
     if (!(await take(env, await sender(request, env), 'slip'))) return J({ error: 'quota' }, 429)

@@ -3,19 +3,19 @@
 
 export const P = {
   en: {
-    ctaOrder: 'Order', ctaBuy: 'Buy', ctaShop: 'Shop now', ctaRoom: 'Book a room', ctaBook: 'Book a time', ctaHomes: 'See the homes', ctaTicket: 'Get a ticket', ctaTip: 'Send a tip', ctaDues: 'Pay dues', ctaHire: 'Hire me', ctaJoin: 'Join us',
+    ctaOrder: 'Order', ctaBuy: 'Buy', ctaShop: 'Shop now', jump: 'Parts of this page', actions: 'Quick actions', lookFor: 'Look for this at the door', ctaRoom: 'Book a room', ctaBook: 'Book a time', ctaHomes: 'See the homes', ctaTicket: 'Get a ticket', ctaTip: 'Send a tip', ctaDues: 'Pay dues', ctaHire: 'Hire me', ctaJoin: 'Join us',
     pay: 'Pay by PromptPay', payHint: 'Scan with any Thai bank app. The money goes to {n}.', payOther: 'Other amount', payShow: 'Show the QR', payAmt: 'Amount', paySlip: 'Send the slip on LINE', payTotal: 'Pay {t}', payScan: 'Scan to pay {t}', payTips: 'A tip', payTicket: 'A ticket', payDues: 'Dues',
   },
   th: {
-    ctaOrder: 'สั่งเลย', ctaBuy: 'ซื้อเลย', ctaShop: 'เลือกซื้อเลย', ctaRoom: 'จองห้องพัก', ctaBook: 'จองคิว', ctaHomes: 'ดูบ้าน', ctaTicket: 'ซื้อบัตร', ctaTip: 'ให้ทิป', ctaDues: 'จ่ายค่าสมาชิก', ctaHire: 'จ้างงาน', ctaJoin: 'มาร่วมกัน',
+    ctaOrder: 'สั่งเลย', ctaBuy: 'ซื้อเลย', ctaShop: 'เลือกซื้อเลย', jump: 'ส่วนต่าง ๆ ของหน้านี้', actions: 'ปุ่มลัด', lookFor: 'หน้าร้านหน้าตาแบบนี้', ctaRoom: 'จองห้องพัก', ctaBook: 'จองคิว', ctaHomes: 'ดูบ้าน', ctaTicket: 'ซื้อบัตร', ctaTip: 'ให้ทิป', ctaDues: 'จ่ายค่าสมาชิก', ctaHire: 'จ้างงาน', ctaJoin: 'มาร่วมกัน',
     pay: 'จ่ายด้วยพร้อมเพย์', payHint: 'สแกนด้วยแอปธนาคารไหนก็ได้ เงินเข้า {n} โดยตรง', payOther: 'จำนวนอื่น', payShow: 'แสดง QR', payAmt: 'จำนวนเงิน', paySlip: 'ส่งสลิปทางไลน์', payTotal: 'จ่าย {t}', payScan: 'สแกนจ่าย {t}', payTips: 'ทิป', payTicket: 'บัตร', payDues: 'ค่าสมาชิก',
   },
   my: {
-    ctaOrder: 'မှာမယ်', ctaBuy: 'ဝယ်မယ်', ctaShop: 'ဈေးဝယ်မယ်', ctaRoom: 'အခန်းကြိုတင်မှာ', ctaBook: 'အချိန်ကြိုတင်မှာ', ctaHomes: 'အိမ်တွေကြည့်', ctaTicket: 'လက်မှတ်ယူ', ctaTip: 'မုန့်ဖိုးပေး', ctaDues: 'အသင်းကြေးပေး', ctaHire: 'ငှားမယ်', ctaJoin: 'ပါဝင်မယ်',
+    ctaOrder: 'မှာမယ်', ctaBuy: 'ဝယ်မယ်', ctaShop: 'ဈေးဝယ်မယ်', jump: 'ဒီစာမျက်နှာရဲ့ အပိုင်းများ', actions: 'အမြန်ခလုတ်', lookFor: 'ဆိုင်ရှေ့က ဒီလိုပုံပါ', ctaRoom: 'အခန်းကြိုတင်မှာ', ctaBook: 'အချိန်ကြိုတင်မှာ', ctaHomes: 'အိမ်တွေကြည့်', ctaTicket: 'လက်မှတ်ယူ', ctaTip: 'မုန့်ဖိုးပေး', ctaDues: 'အသင်းကြေးပေး', ctaHire: 'ငှားမယ်', ctaJoin: 'ပါဝင်မယ်',
     pay: 'PromptPay နဲ့ ပေးချေ', payHint: 'ထိုင်းဘဏ်အက်ပ်တစ်ခုခုနဲ့ စကင်ဖတ်ပါ။ ငွေက {n} ဆီ တိုက်ရိုက်ရောက်တယ်။', payOther: 'အခြားပမာဏ', payShow: 'QR ပြ', payAmt: 'ပမာဏ', paySlip: 'LINE မှာ စလစ်ပို့', payTotal: '{t} ပေး', payScan: '{t} ပေးဖို့ စကင်ဖတ်', payTips: 'မုန့်ဖိုး', payTicket: 'လက်မှတ်', payDues: 'အသင်းကြေး',
   },
   zh: {
-    ctaOrder: '下单', ctaBuy: '购买', ctaShop: '去购物', ctaRoom: '订房', ctaBook: '预约时间', ctaHomes: '看房源', ctaTicket: '买票', ctaTip: '打赏', ctaDues: '交会费', ctaHire: '雇我', ctaJoin: '加入我们',
+    ctaOrder: '下单', ctaBuy: '购买', ctaShop: '去购物', jump: '本页内容', actions: '快捷按钮', lookFor: '店门口是这样的', ctaRoom: '订房', ctaBook: '预约时间', ctaHomes: '看房源', ctaTicket: '买票', ctaTip: '打赏', ctaDues: '交会费', ctaHire: '雇我', ctaJoin: '加入我们',
     pay: '用 PromptPay 付款', payHint: '用任何泰国银行 App 扫码，钱直接到 {n}。', payOther: '其他金额', payShow: '显示二维码', payAmt: '金额', paySlip: '在 LINE 发送转账截图', payTotal: '付 {t}', payScan: '扫码付 {t}', payTips: '打赏', payTicket: '门票', payDues: '会费',
   },
   ja: {

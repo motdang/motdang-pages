@@ -26,10 +26,10 @@ test('the drawing carries the page facts, hours in OpenStreetMap shape', () => {
   assert.ok(!render({ ...base, d: { name: 'x', drawing: false } }).includes('id="drawn"'))
 })
 
-test('Gold looks, video, places and indexing show only for Gold', () => {
+test('video, places and indexing by tier; both tiers wear the kind\'s design', () => {
   const d = { name: 'x', video: 'https://youtu.be/dQw4w9WgXcQ', spots: [{ n: 'Wat', lat: 18.79, lng: 98.98 }], place: { lat: 18.79, lng: 98.99, cc: 'TH' } }
   const free = render({ ...base, look: 'gold', d })
-  assert.match(free, /data-look="lanna"/) // a free page wears its kind's looks; a food page lands on its first (kinds.mjs)
+  assert.match(free, /data-look="local"/) // one design per kind of site (kinds.mjs designOf)
   assert.ok(!free.includes('youtube'))
   assert.match(free, /class="spots"/) // up to 3 places on a free page since 2026-10-14
   assert.equal(render({ ...base, d: { ...d, spots: Array.from({ length: 6 }, (_, i) => ({ n: 'P' + i, lat: 18.7 + i / 100, lng: 98.9 })) } }).match(/data-spot=/g).length, 3)
@@ -40,7 +40,7 @@ test('Gold looks, video, places and indexing show only for Gold', () => {
   assert.match(render({ ...base, reports: 1, d }), /name="robots" content="noindex,notranslate"/)
   assert.match(render({ ...base, status: 'held', d }), /name="robots" content="noindex,notranslate"/)
   const gold = render({ ...base, look: 'gold', tier: 'gold', d })
-  assert.match(gold, /data-look="gold"/)
+  assert.match(gold, /data-look="local"/)
   assert.match(gold, /data-kind="youtube" data-id="dQw4w9WgXcQ"/)
   assert.match(gold, /class="spots"/)
   assert.match(gold, /content="index,follow,notranslate"/)
@@ -64,7 +64,8 @@ test('dingbats: known names only, six at most, and the page loads only their fam
   assert.deepEqual(d.dings, ['lantern', 'noodles', 'heart', 'star', 'sun', 'moon'])
   const html = render({ ...base, d: { name: 'x', dings: ['lantern'] } })
   const pd = JSON.parse(/id="pd">(.*?)<\/script>/.exec(html)[1])
-  assert.ok(pd.fams.includes('lanna'))
+  // dingbats beside the name did nothing, so the page leaves them out and loads none of their families (Nan 2026-10-26)
+  assert.ok(!pd.fams.includes('lanna'))
 })
 
 test('messages: cut to size, spam held, the copy escapes the reader', () => {

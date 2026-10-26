@@ -8,7 +8,7 @@ export const SW = {
   en: {
     shop: 'Shop', buy: 'Buy', addCart: 'Add to cart', buyNow: 'Buy now', sold: 'Sold out', left: 'Only {n} left', qty: 'Quantity',
     more: 'More products', allShop: 'All the products', askAbout: 'Ask about this product', noPrice: 'Ask the price',
-    shipH: 'Shipping', shTh: 'Thailand {p}', shWorld: 'Abroad {p}', shFree: 'Free over {p}', shThFree: 'Free in Thailand', shMot: 'Mot Dang ships your parcel',
+    shipH: 'Shipping', shTh: 'Thailand {p}', shWorld: 'Abroad {p}', shFree: 'Free over {p}', shThFree: 'Free in Thailand', shMot: 'Mot Dang ships your parcel', toFree: '{p} more and shipping in Thailand is free',
     dls: 'Downloads', dl1: 'Download', dlGet: 'You get the file after the shop sees your payment.',
     cart: 'Cart', cartN: '{n} in your cart', checkout: 'Check out', cartEmpty: 'Your cart is empty.', rm: 'Remove', added: 'Added to your cart',
     fName: 'Your name', fReach: 'Phone or LINE', fEmail: 'Email', fEmailDl: 'Email (your download is sent here)', fAddr: 'Address for the parcel',
@@ -28,7 +28,7 @@ export const SW = {
   th: {
     shop: 'ร้านค้า', buy: 'ซื้อ', addCart: 'ใส่ตะกร้า', buyNow: 'ซื้อเลย', sold: 'หมดแล้ว', left: 'เหลือ {n} ชิ้น', qty: 'จำนวน',
     more: 'สินค้าอื่น', allShop: 'สินค้าทั้งหมด', askAbout: 'ถามเรื่องสินค้านี้', noPrice: 'สอบถามราคา',
-    shipH: 'การจัดส่ง', shTh: 'ในประเทศ {p}', shWorld: 'ต่างประเทศ {p}', shFree: 'ส่งฟรีเมื่อซื้อครบ {p}', shThFree: 'ส่งฟรีในประเทศ', shMot: 'มดแดงส่งพัสดุให้',
+    shipH: 'การจัดส่ง', toFree: 'อีก {p} ส่งฟรีในไทย', shTh: 'ในประเทศ {p}', shWorld: 'ต่างประเทศ {p}', shFree: 'ส่งฟรีเมื่อซื้อครบ {p}', shThFree: 'ส่งฟรีในประเทศ', shMot: 'มดแดงส่งพัสดุให้',
     dls: 'ดาวน์โหลด', dl1: 'ดาวน์โหลด', dlGet: 'ได้ไฟล์หลังร้านเห็นว่าเงินเข้าแล้ว',
     cart: 'ตะกร้า', cartN: 'ในตะกร้า {n} ชิ้น', checkout: 'ชำระเงิน', cartEmpty: 'ตะกร้าว่าง', rm: 'เอาออก', added: 'ใส่ตะกร้าแล้ว',
     fName: 'ชื่อของคุณ', fReach: 'เบอร์โทรหรือไลน์', fEmail: 'อีเมล', fEmailDl: 'อีเมล (ส่งไฟล์ให้ที่นี่)', fAddr: 'ที่อยู่จัดส่ง',
@@ -48,7 +48,7 @@ export const SW = {
   my: {
     shop: 'ဆိုင်', buy: 'ဝယ်ရန်', addCart: 'ခြင်းထဲထည့်ရန်', buyNow: 'ယခုဝယ်ရန်', sold: 'ကုန်သွားပြီ', left: '{n} ခုသာ ကျန်တော့သည်', qty: 'အရေအတွက်',
     more: 'အခြားပစ္စည်းများ', allShop: 'ပစ္စည်းအားလုံး', askAbout: 'ဤပစ္စည်းအကြောင်း မေးရန်', noPrice: 'စျေးမေးရန်',
-    shipH: 'ပို့ဆောင်ခ', shTh: 'ထိုင်းနိုင်ငံအတွင်း {p}', shWorld: 'ပြည်ပ {p}', shFree: '{p} ကျော်ရင် အခမဲ့', shThFree: 'ထိုင်းနိုင်ငံအတွင်း အခမဲ့', shMot: 'Mot Dang က ပါဆယ်ပို့ပေးသည်',
+    shipH: 'ပို့ဆောင်ခ', toFree: '{p} ထပ်ဝယ်ရင် ထိုင်းအတွင်း ပို့ခ အခမဲ့', shTh: 'ထိုင်းနိုင်ငံအတွင်း {p}', shWorld: 'ပြည်ပ {p}', shFree: '{p} ကျော်ရင် အခမဲ့', shThFree: 'ထိုင်းနိုင်ငံအတွင်း အခမဲ့', shMot: 'Mot Dang က ပါဆယ်ပို့ပေးသည်',
     dls: 'ဒေါင်းလုဒ်', dl1: 'ဒေါင်းလုဒ်လုပ်ရန်', dlGet: 'ဆိုင်က ငွေရပြီးမှ ဖိုင်ရမည်',
     cart: 'ခြင်း', cartN: 'ခြင်းထဲ {n} ခု', checkout: 'ငွေပေးချေရန်', cartEmpty: 'ခြင်းထဲ ဘာမှမရှိပါ', rm: 'ဖယ်ရန်', added: 'ခြင်းထဲထည့်ပြီး',
     fName: 'သင့်အမည်', fReach: 'ဖုန်း သို့မဟုတ် LINE', fEmail: 'အီးမေးလ်', fEmailDl: 'အီးမေးလ် (ဖိုင်ကို ဤနေရာသို့ ပို့မည်)', fAddr: 'ပါဆယ်ပို့ရန် လိပ်စာ',
@@ -68,7 +68,7 @@ export const SW = {
   zh: {
     shop: '商店', buy: '购买', addCart: '加入购物车', buyNow: '立即购买', sold: '已售完', left: '仅剩 {n} 件', qty: '数量',
     more: '更多商品', allShop: '全部商品', askAbout: '询问这件商品', noPrice: '询价',
-    shipH: '运费', shTh: '泰国境内 {p}', shWorld: '海外 {p}', shFree: '满 {p} 免运费', shThFree: '泰国境内包邮', shMot: 'Mot Dang 帮你寄包裹',
+    shipH: '运费', toFree: '再买 {p}，泰国境内免运费', shTh: '泰国境内 {p}', shWorld: '海外 {p}', shFree: '满 {p} 免运费', shThFree: '泰国境内包邮', shMot: 'Mot Dang 帮你寄包裹',
     dls: '下载', dl1: '下载', dlGet: '店家看到付款后，你就能拿到文件。',
     cart: '购物车', cartN: '购物车里有 {n} 件', checkout: '去结账', cartEmpty: '购物车是空的。', rm: '移除', added: '已加入购物车',
     fName: '你的名字', fReach: '电话或 LINE', fEmail: '邮箱', fEmailDl: '邮箱（下载文件发到这里）', fAddr: '收件地址',
