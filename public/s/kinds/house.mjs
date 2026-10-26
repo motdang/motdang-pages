@@ -1,0 +1,66 @@
+// Written by tools/photos.py from kinds/photos.json: each kind's picture and its credit.
+export const HOUSE = {
+ "food": {
+  "title": "Som tam, green papaya salad",
+  "by": "Pixabay",
+  "src": "https://www.pexels.com/photo/162993/",
+  "license": "Pexels License",
+  "licenseUrl": "https://www.pexels.com/license/"
+ },
+ "shop": {
+  "title": "A marigold garland stall",
+  "by": "Maria Merlin",
+  "src": "https://www.pexels.com/photo/29155312/",
+  "license": "Pexels License",
+  "licenseUrl": "https://www.pexels.com/license/"
+ },
+ "stay": {
+  "title": "A hotel room with Thai decor",
+  "by": "Pixabay",
+  "src": "https://www.pexels.com/photo/237371/",
+  "license": "Pexels License",
+  "licenseUrl": "https://www.pexels.com/license/"
+ },
+ "homes": {
+  "title": "A shophouse on a corner",
+  "by": "Picasjoe",
+  "src": "https://www.pexels.com/photo/11504237/",
+  "license": "Pexels License",
+  "licenseUrl": "https://www.pexels.com/license/"
+ },
+ "event": {
+  "title": "Lanterns at a temple in northern Thailand",
+  "by": "Vishalcross",
+  "src": "https://www.pexels.com/photo/37250801/",
+  "license": "Pexels License",
+  "licenseUrl": "https://www.pexels.com/license/"
+ },
+ "me": {
+  "title": "A street seller in a straw hat",
+  "by": "Maria Merlin",
+  "src": "https://www.pexels.com/photo/29155326/",
+  "license": "Pexels License",
+  "licenseUrl": "https://www.pexels.com/license/"
+ },
+ "group": {
+  "title": "Wat Rong Khun, Chiang Rai",
+  "by": "Ahmetyuksek",
+  "src": "https://www.pexels.com/photo/37650430/",
+  "license": "Pexels License",
+  "licenseUrl": "https://www.pexels.com/license/"
+ },
+ "service": {
+  "title": "A massage bed in a garden",
+  "by": "Mattes",
+  "src": "https://commons.wikimedia.org/wiki/File:L%C3%A4ndliche_Massagepraxis_in_Thailand.JPG",
+  "license": "Public domain",
+  "licenseUrl": ""
+ },
+ "work": {
+  "title": "Painted paper umbrellas, Bo Sang",
+  "by": "Dennis G. Jarvis",
+  "src": "https://commons.wikimedia.org/wiki/File:DGJ_4039_-_How_do_we_get_to_here._(3725553133).jpg",
+  "license": "CC BY-SA 2.0",
+  "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0"
+ }
+}

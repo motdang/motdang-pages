@@ -1,6 +1,7 @@
 // make-words.mjs — the builder's words, and the directory's.
 
 import { Z } from './make-words-more.mjs'
+import { GM } from './make-words-gold.mjs'
 import { Y } from './make-words-try.mjs'
 import { X } from './make-words-edit.mjs'
 import { W } from './make-words-pick.mjs'
@@ -8,6 +9,9 @@ import { A } from './make-words-avatar.mjs'
 import { G } from './make-words-logo.mjs'
 import { Q } from './make-words-doodle.mjs'
 import { K } from './make-words-card.mjs'
+import { N } from './make-words-cust.mjs'
+import { N as NL } from './make-words-line.mjs'
+import { B } from './make-words-gbp.mjs'
 
 export const UI_LANGS = { th: 'ไทย', en: 'English', my: 'မြန်မာ', zh: '中文' }
 
@@ -19,7 +23,7 @@ const U = {
     h_shop: 'Hours · prices · map', h_food: 'Menu · GrabFood · map', h_service: 'Prices · LINE · area', h_me: 'Links · photos',
     h_event: 'Date · place · countdown', h_group: 'About · links · meetings',
     name: 'Name', addr: 'Web address', addrHint: 'small letters a–z, 0–9 and -',
-    a_ok: 'Available', a_taken: 'Taken', a_reserved: 'Not allowed', a_shape: '3 to 30 letters', a_wait: 'Checking…',
+    a_ok: 'Available', a_mine: 'Your page — open it', reopened: 'Your page is here.', a_taken: 'Taken', a_reserved: 'Not allowed', a_shape: '3 to 30 letters', a_wait: 'Checking…',
     s_words: 'Name and words', tagline: 'One line under the name', about: 'About',
     s_photos: 'Photos', cover: 'Top photo', addPhotos: 'Add photos', makeCover: 'Use at the top', remove: 'Remove',
     s_contact: 'Contact', phone: 'Phone', line: 'LINE ID or @ shop ID', whatsapp: 'WhatsApp', facebook: 'Facebook page',
@@ -52,7 +56,7 @@ const U = {
     h_shop: 'เวลาเปิด · ราคา · แผนที่', h_food: 'เมนู · GrabFood · แผนที่', h_service: 'ราคา · ไลน์ · พื้นที่', h_me: 'ลิงก์ · รูป',
     h_event: 'วัน · สถานที่ · นับถอยหลัง', h_group: 'เกี่ยวกับ · ลิงก์ · นัดพบ',
     name: 'ชื่อ', addr: 'ที่อยู่เว็บ', addrHint: 'ตัวอังกฤษพิมพ์เล็ก a–z ตัวเลข 0–9 และ -',
-    a_ok: 'ใช้ได้', a_taken: 'มีคนใช้แล้ว', a_reserved: 'ใช้ชื่อนี้ไม่ได้', a_shape: '3 ถึง 30 ตัว', a_wait: 'กำลังดู…',
+    a_ok: 'ใช้ได้', a_mine: 'เว็บของคุณ กดเปิดได้เลย', reopened: 'เว็บของคุณอยู่ที่นี่', a_taken: 'มีคนใช้แล้ว', a_reserved: 'ใช้ชื่อนี้ไม่ได้', a_shape: '3 ถึง 30 ตัว', a_wait: 'กำลังดู…',
     s_words: 'ชื่อและคำอธิบาย', tagline: 'ประโยคสั้นๆ ใต้ชื่อ', about: 'เกี่ยวกับ',
     s_photos: 'รูป', cover: 'รูปด้านบน', addPhotos: 'เพิ่มรูป', makeCover: 'ใช้เป็นรูปด้านบน', remove: 'เอาออก',
     s_contact: 'ติดต่อ', phone: 'เบอร์โทร', line: 'ไอดีไลน์ หรือ @ไอดีร้าน', whatsapp: 'WhatsApp', facebook: 'เพจเฟซบุ๊ก',
@@ -85,7 +89,7 @@ const U = {
     h_shop: 'ဖွင့်ချိန် · ဈေး · မြေပုံ', h_food: 'မီနူး · GrabFood · မြေပုံ', h_service: 'ဈေး · LINE · နေရာ', h_me: 'လင့်ခ် · ဓာတ်ပုံ',
     h_event: 'ရက် · နေရာ · ရေတွက်ချိန်', h_group: 'အကြောင်း · လင့်ခ် · တွေ့ဆုံပွဲ',
     name: 'နာမည်', addr: 'ဝက်ဘ်လိပ်စာ', addrHint: 'အင်္ဂလိပ်စာလုံးအသေး a–z၊ 0–9 နှင့် -',
-    a_ok: 'သုံးလို့ရသည်', a_taken: 'သုံးပြီးသား', a_reserved: 'ခွင့်မပြု', a_shape: 'စာလုံး ၃ မှ ၃၀', a_wait: 'စစ်နေသည်…',
+    a_ok: 'သုံးလို့ရသည်', a_mine: 'သင့်စာမျက်နှာ — ဖွင့်ပါ', reopened: 'သင့်စာမျက်နှာ ဒီမှာပါ။', a_taken: 'သုံးပြီးသား', a_reserved: 'ခွင့်မပြု', a_shape: 'စာလုံး ၃ မှ ၃၀', a_wait: 'စစ်နေသည်…',
     s_words: 'နာမည်နှင့် စာ', tagline: 'နာမည်အောက်က စာတစ်ကြောင်း', about: 'အကြောင်း',
     s_photos: 'ဓာတ်ပုံ', cover: 'အပေါ်ဓာတ်ပုံ', addPhotos: 'ဓာတ်ပုံထည့်ရန်', makeCover: 'အပေါ်မှာသုံးရန်', remove: 'ဖယ်ရန်',
     s_contact: 'ဆက်သွယ်ရန်', phone: 'ဖုန်း', line: 'LINE ID သို့မဟုတ် @ဆိုင် ID', whatsapp: 'WhatsApp', facebook: 'Facebook စာမျက်နှာ',
@@ -118,7 +122,7 @@ const U = {
     h_shop: '营业时间 · 价格 · 地图', h_food: '菜单 · GrabFood · 地图', h_service: '价格 · LINE · 服务区域', h_me: '链接 · 照片',
     h_event: '日期 · 地点 · 倒计时', h_group: '介绍 · 链接 · 聚会',
     name: '名字', addr: '网址', addrHint: '小写字母 a–z、数字 0–9 和 -',
-    a_ok: '可以用', a_taken: '已被使用', a_reserved: '不能用', a_shape: '3 到 30 个字符', a_wait: '检查中…',
+    a_ok: '可以用', a_mine: '你的网页，打开它', reopened: '你的网页在这里。', a_taken: '已被使用', a_reserved: '不能用', a_shape: '3 到 30 个字符', a_wait: '检查中…',
     s_words: '名字和介绍', tagline: '名字下面的一句话', about: '介绍',
     s_photos: '照片', cover: '顶部大图', addPhotos: '添加照片', makeCover: '放在顶部', remove: '删除',
     s_contact: '联系方式', phone: '电话', line: 'LINE ID 或 @店铺 ID', whatsapp: 'WhatsApp', facebook: 'Facebook 主页',
@@ -169,7 +173,7 @@ const V = {
     dev_phone: 'Phone', dev_tablet: 'Tablet', dev_computer: 'Computer',
     g_lead: 'Your page, in gold.', g_price: '฿{p} a year', g_pay: 'Get Gold', g_scan: 'Scan with any Thai bank app. The amount ends in .{s} so we know it is yours.',
     g_slip: 'Send the bank slip', g_wait: 'Slip received. Gold turns on when it is checked.', g_on: 'Gold until {d}', g_thanks: 'Gold is on.', g_nopp: 'PromptPay is not set up yet.',
-    g_f1: 'The Gold leaf look', g_f2: 'Your page on Google and other search engines', g_f3: '120 photos and a video', g_f4: 'Around here: your own places on your drawn map',
+    g_f1: 'The Gold leaf look', g_f2: 'Customer list, one email a month, reminders the day before', g_f3: '120 photos and a video', g_f4: 'Around here: your own places on your drawn map',
     g_f5: 'A year of traffic, and a CSV of it', g_f6: 'First in the list of pages, with a gold star', g_free: 'Free', g_freeList: 'Everything else on this page',
   },
   th: {
@@ -192,7 +196,7 @@ const V = {
     dev_phone: 'มือถือ', dev_tablet: 'แท็บเล็ต', dev_computer: 'คอมพิวเตอร์',
     g_lead: 'หน้าเว็บของคุณ ฉบับทอง', g_price: '฿{p} ต่อปี', g_pay: 'สมัครทอง', g_scan: 'สแกนด้วยแอปธนาคารไหนก็ได้ ยอดลงท้ายด้วย .{s} เพื่อให้รู้ว่าเป็นของคุณ',
     g_slip: 'ส่งสลิป', g_wait: 'ได้รับสลิปแล้ว ทองเปิดเมื่อตรวจเสร็จ', g_on: 'ทองถึง {d}', g_thanks: 'เปิดทองแล้ว', g_nopp: 'ยังไม่ได้ตั้งพร้อมเพย์',
-    g_f1: 'แบบทองคำเปลว', g_f2: 'หน้าเว็บขึ้นบน Google และเสิร์ชเอนจินอื่น', g_f3: 'รูป 120 รูปและวิดีโอ', g_f4: 'แถวนี้: ที่ของคุณเองบนแผนที่วาดมือ',
+    g_f1: 'แบบทองคำเปลว', g_f2: 'รายชื่อลูกค้า อีเมลเดือนละครั้ง ส่งข้อความก่อนวันนัด', g_f3: 'รูป 120 รูปและวิดีโอ', g_f4: 'แถวนี้: ที่ของคุณเองบนแผนที่วาดมือ',
     g_f5: 'สถิติคนเข้าชมหนึ่งปี และไฟล์ CSV', g_f6: 'ขึ้นก่อนในรายชื่อเว็บ มีดาวทอง', g_free: 'ฟรี', g_freeList: 'ทุกอย่างที่เหลือในหน้านี้',
   },
   my: {
@@ -215,7 +219,7 @@ const V = {
     dev_phone: 'ဖုန်း', dev_tablet: 'တက်ဘလက်', dev_computer: 'ကွန်ပျူတာ',
     g_lead: 'သင့်စာမျက်နှာ ရွှေဖြင့်။', g_price: 'တစ်နှစ် ฿{p}', g_pay: 'ရွှေယူရန်', g_scan: 'ထိုင်းဘဏ်အက်ပ်ဖြင့် စကန်ပါ။ ပမာဏ .{s} ဖြင့်ဆုံးသည်။',
     g_slip: 'ဘဏ်ပြေစာပို့ရန်', g_wait: 'ပြေစာရပြီ။ စစ်ပြီးမှ ရွှေဖွင့်မည်။', g_on: '{d} အထိ ရွှေ', g_thanks: 'ရွှေဖွင့်ပြီ။', g_nopp: 'PromptPay မပြင်ဆင်ရသေးပါ။',
-    g_f1: 'ရွှေဆိုင်းပုံစံ', g_f2: 'Google တွင် ပေါ်သည်', g_f3: 'ဓာတ်ပုံ ၄၈ ပုံနှင့် ဗီဒီယို', g_f4: 'ဤအနီး- သင့်နေရာများ မြေပုံပေါ်တွင်',
+    g_f1: 'ရွှေဆိုင်းပုံစံ', g_f2: 'ဖောက်သည်စာရင်း၊ တစ်လ အီးမေးလ်တစ်စောင်၊ ရက်ချိန်းမတိုင်ခင် သတိပေးချက်', g_f3: 'ဓာတ်ပုံ ၁၂၀ နှင့် ဗီဒီယို', g_f4: 'ဤအနီး- သင့်နေရာများ မြေပုံပေါ်တွင်',
     g_f5: 'တစ်နှစ်စာ စာရင်းနှင့် CSV', g_f6: 'စာရင်းတွင် ရှေ့ဆုံး၊ ရွှေကြယ်', g_free: 'အခမဲ့', g_freeList: 'ကျန်အားလုံး',
   },
   zh: {
@@ -238,14 +242,17 @@ const V = {
     dev_phone: '手机', dev_tablet: '平板', dev_computer: '电脑',
     g_lead: '你的网页，金色版。', g_price: '每年 ฿{p}', g_pay: '开通金卡', g_scan: '用任何泰国银行 App 扫码。金额尾数是 .{s}，这样我们知道是你。',
     g_slip: '发送转账凭证', g_wait: '凭证已收到，核对后开通金卡。', g_on: '金卡到 {d}', g_thanks: '金卡已开通。', g_nopp: 'PromptPay 还没设置好。',
-    g_f1: '金箔样式', g_f2: '网页能出现在 Google 等搜索引擎', g_f3: '120 张照片和一个视频', g_f4: '附近：你的地方标在手绘地图上',
+    g_f1: '金箔样式', g_f2: '客人名单、每月一封邮件、预约前一天提醒', g_f3: '120 张照片和一个视频', g_f4: '附近：你的地方标在手绘地图上',
     g_f5: '一年的访问数据，可下载 CSV', g_f6: '在网页列表里排前面，带金星', g_free: '免费', g_freeList: '本页其他一切',
   },
 }
 
 // each table in turn in the maker's language, then each in English (the tables: words for the steps, the
 // editor, the pickers, the avatar maker, the logo maker, the doodles, the share card)
-const TABLES = [U, V, Z, Y, X, W, A, G, Q, K]
+const TABLES = [U, V, Z, Y, X, W, A, G, Q, K, N]
+TABLES.push(GM) // reading a menu from a photo, receipts (make-words-gold.mjs)
+TABLES.push(NL) // edit by LINE (make-words-line.mjs)
+TABLES.push(B) // Google profile (make-words-gbp.mjs)
 export function ui(lang, k) {
   for (const t of TABLES) if (t[lang] && t[lang][k]) return t[lang][k]
   for (const t of TABLES) if (t.en[k]) return t.en[k]

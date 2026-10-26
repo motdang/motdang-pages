@@ -3,7 +3,7 @@
 # motdang.net/~* route, where the first address (2026-10-12) redirects here;
 # mot-dang-site (motdang.net/*) keeps every other path on motdang.net.
 name = "motdang-pages"
-main = "src/worker.mjs"
+main = "src/entry.mjs" # the Worker (worker.mjs) and the LineEdit entrypoint motdang-line calls (Edit by LINE)
 compatibility_date = "2026-07-01"
 workers_dev = false
 
@@ -39,6 +39,13 @@ service = "mot-dang-site"
 binding = "CARDS" # the share-card library (NaNoBotCo/cards), /card/… and the builder's card preview
 service = "cards"
 
+# The Mot Dang LINE account's door for readers signed in with LINE (motdang-line, class Site in src/entry.js).
+# A guest's "Remind me on LINE" on /bk/<id> hands the reminder to Site.remind; those pushes are metered there.
+[[services]]
+binding = "LINE_BOT"
+service = "motdang-line"
+entrypoint = "Site"
+
 # Llama Guard on page text, Mistral Small on photos. Doodle anything (src/doodle.mjs) draws with FLUX.2 klein.
 [ai]
 binding = "AI"
@@ -73,7 +80,12 @@ GOLD_THB = "3000"
 HOTEL_THB = "555" # a month, for a page that takes room bookings (Nan 2026-10-14)
 HOTEL_YEAR_THB = "5550" # the hotel year paid up front, twelve months for ten (2026-10-15)
 MAIL_FROM = "Mot Dang <pages@motdang.net>"
+ZONE_ID = "a9e92ea931cf4f5b085d8ce8c6a2ff15" # motdang.net, for own addresses (src/domain.mjs); on once the secret CF_SAAS_TOKEN is set
 INVEST_TO = "nan@motdang.net" # an investor's note at /support goes here in full
+# Edit by LINE (src/lineedit.mjs, Nan 2026-10-22): "off" hides the editor's LINE tab and refuses the codes and the LINE
+# Worker's calls; "on" opens them. motdang-line has its own var, PAGE_EDIT, for the chat side.
+LINE_EDIT = "off"
+LINE_OA = "@964yxgnk" # the Official Account the editor opens LINE to
 
 # Secrets (npx wrangler secret put NAME), never in this file:
 #   ADMIN_KEY       password for /admin (any user name)
@@ -83,5 +95,9 @@ INVEST_TO = "nan@motdang.net" # an investor's note at /support goes here in full
 #   SLIPOK_KEY, SLIPOK_BRANCH   the slip check; Gold slips wait at /admin without them
 #   DISCORD_SALES   webhook of the team's #minisites channel; each paid plan is posted there
 #   DISCORD_PEOPLE  webhook of #people-team; each sign-up at /sell is posted there for Beer, and each volunteer at /support
+#   LINE_LOGIN_ID, LINE_LOGIN_SECRET   LINE Login channel 2012126176; "Remind me on LINE" on a guest page. Callback URL to register: https://sites.motdang.net/line/cb
 #   DISCORD_CORE_PLAN  webhook of #core-plan; an investor's note at /support is posted there, without the contact
+# Vars (optional): NEWS_MAX people one monthly news email reaches (200), NEWS_DAY news emails all pages send in a day (600), REMIND_DAY reminder emails a day (400)
+#   GBP_CLIENT_ID, GBP_CLIENT_SECRET, GBP_KEY  Google Business Profile sync (src/gbp.mjs); the Gold tab's Google card shows "Coming soon" until all three exist.
+#                   GBP_KEY is any long random string; it seals the owners' Google refresh tokens in D1
 # SELLER_AUTO = "1" (a var) lets a sign-up sell at once; without it Beer says yes first

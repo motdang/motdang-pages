@@ -23,11 +23,13 @@
 // The edit link is the sign-in: a long random token, stored only as its hash.
 
 import { promptPayPayload } from './promptpay.mjs'
-import { render, qrSvg, normalize, vcard, ics, sign, KINDS, LOOK_IDS, GOLD_LOOKS, MAX_PHOTOS, photoMax, sceneOf, HOME } from '../public/s/render.mjs'
+import { render, findable, qrSvg, normalize, vcard, ics, sign, KINDS, LOOK_IDS, GOLD_LOOKS, MAX_PHOTOS, photoMax, sceneOf, HOME } from '../public/s/render.mjs'
 import { AM_MAX, amCap } from '../public/s/amulet.mjs'
 import { PAGE_LANGS } from '../public/s/words.mjs'
 import { nameProblem, screen } from './screen.mjs'
 import { clean, look, typeOf, MAX_BIG, MAX_SMALL } from './photo.mjs'
+import { readMenu } from './menu.mjs'
+import * as receipt from './receipt.mjs'
 import { directory, notFound, adminPage } from './pages.mjs'
 import * as og from './ogcard.mjs'
 import * as stats from './stats.mjs'
@@ -49,14 +51,21 @@ import * as support from './support.mjs'
 import * as tap from './tap.mjs'
 import * as events from './events.mjs'
 import { readCalendars, monthly, trialNotes } from './cron.mjs'
+import * as customers from './customers.mjs'
+import * as remind from './remind.mjs'
+import * as guestline from './guestline.mjs'
+import { unsubPage } from './customers.mjs'
 import { calIcs, roomIcs, addDays, upcoming, utcOf } from '../public/s/extras.mjs'
 import { guestPage } from './guest.mjs'
 import { doodleRoute } from './doodle.mjs'
 import * as amprice from './amprice.mjs'
 import * as sian from './sian.mjs'
 import * as market from './market.mjs'
+import * as line from './lineedit.mjs'
+import * as gbp from './gbp.mjs'
+import * as steps from './steps.mjs'
 
-const QUOTA = { site: 3, photo: 200, save: 400, report: 20, msg: 12, pd: 200, notify: 3, slip: 10, book: 10, domain: 6, lister: 3, deal: 40, terms: 10, join: 3, founding: 5, gift: 20, backer: 5, tap: 3, tapsave: 60, bump: 300, card: 400, guess: 400, sadhu: 200, here: 2500 }
+const QUOTA = { menu: 20, site: 3, photo: 200, save: 400, report: 20, msg: 12, news: 12, pd: 200, notify: 3, slip: 10, book: 10, domain: 6, lister: 3, deal: 40, terms: 10, join: 3, founding: 5, gift: 20, backer: 5, tap: 3, tapsave: 60, bump: 300, card: 400, guess: 400, sadhu: 200, here: 2500, linecode: 10, gbp: 60 }
 const TRIAL_DAYS = 30 // Nan 2026-10-14: a new page is Gold for its first 30 days
 const MAIN = 'https://motdang.net'
 const PASS = /^\/(vendor|fonts|tiles|data|front)\/|^\/sites\/doodle-map\//
@@ -103,8 +112,8 @@ async function route(request, env, ctx) {
   if (!env.DEV_ORIGIN && (url.hostname === 'motdang.net' || url.hostname === 'www.motdang.net')) return new Response('', { status: 404 })
 
   if (PASS.test(path) && (m === 'GET' || m === 'HEAD')) return passThrough(request, env, url)
-  if (path === '/' || path === '/index.html') return asset(request, env, '/s/home.html', 'home')
-  if (path === '/make' || path === '/make/') return asset(request, env, '/s/make.html', 'make')
+  if (path === '/' || path === '/index.html') { if (m === 'GET') steps.later(ctx, steps.count(env, request, 'home', { src: steps.sourceOf(request, url) })); return asset(request, env, '/s/home.html', 'home') }
+  if (path === '/make' || path === '/make/') { if (m === 'GET') steps.later(ctx, steps.count(env, request, 'make', { src: steps.sourceOf(request, url) })); return asset(request, env, '/s/make.html', 'make') }
   if (path.startsWith('/s/')) return asset(request, env, path)
   if (path.startsWith('/img/')) return image(env, path.slice(5))
   if (path.startsWith('/card/') && (m === 'GET' || m === 'HEAD')) return og.serveCard(env, path.slice(6), origin)
@@ -120,14 +129,29 @@ async function route(request, env, ctx) {
     return body ? html(body, 200, { nonce, map: true, cache: 'public, max-age=3600' }) : new Response('', { status: 400 })
   }
   if (path === '/feed.json') return feed(env, origin)
+  const gr = /^\/bk\/([a-z0-9]{14})\/receipt$/.exec(path)
+  if (gr && m === 'GET') { // a receipt for an accepted booking, to read and save as PDF (receipt.mjs)
+    const bk = await env.DB.prepare('SELECT * FROM booking WHERE id = ?').bind(gr[1]).first()
+    const s = bk && await env.DB.prepare('SELECT * FROM site WHERE id = ?').bind(bk.site_id).first()
+    if (!bk || !s) return html(notFound(null, request), 404)
+    if (bk.status !== 'ok') return html(receipt.noReceipt(bk), 404)
+    const nonce = rand(16)
+    const no = await receipt.issue(env, bk)
+    return html(receipt.receiptPage(bk, s, normalize(JSON.parse(s.d)), { ...no, origin, nonce }), 200, { nonce })
+  }
   const gb = /^\/bk\/([a-z0-9]{14})$/.exec(path)
   if (gb && m === 'GET') {
     const bk = await env.DB.prepare('SELECT * FROM booking WHERE id = ?').bind(gb[1]).first()
     const s = bk && await env.DB.prepare('SELECT * FROM site WHERE id = ?').bind(bk.site_id).first()
     if (!bk || !s) return html(notFound(null, request), 404)
     const nonce = rand(16)
-    return html(guestPage(bk, s, origin, nonce), 200, { nonce })
+    return html(guestPage(bk, s, origin, nonce, env, { line: url.searchParams.get('line') || '' }), 200, { nonce })
   }
+  // LINE sign-in for "Remind me on LINE" on a guest page, and the one-tap unsubscribe from a monthly email
+  if (path === '/line/go' && m === 'GET') return guestline.go(env, url, origin)
+  if (path === '/line/cb' && m === 'GET') return guestline.cb(request, env, url, origin)
+  const un = /^\/u\/([A-Za-z0-9_.-]{20,300})$/.exec(path)
+  if (un && (m === 'GET' || m === 'POST')) return unsubscribe(request, env, un[1], m)
   if (path === '/robots.txt') return new Response(`User-agent: *\nAllow: /\nAllow: /api/amulet-price\nDisallow: /api/\nDisallow: /make\nDisallow: /admin\nSitemap: ${origin}/sitemap.xml\n`, { headers: { 'content-type': 'text/plain' } })
   if (path === '/sitemap.xml') return sitemap(env, origin)
   if (path === '/llms.txt') return new Response(llms(origin), { headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'public, max-age=3600' } })
@@ -192,6 +216,7 @@ async function page(request, env, ctx, name, sub, url, origin, base) {
   const s = await env.DB.prepare('SELECT * FROM site WHERE name = ?').bind(name).first()
   if (!s || s.status === 'removed' || s.status === 'draft') return html(notFound(s ? null : name, request, s?.status), s?.status === 'removed' ? 410 : 404)
   const site = { ...s, d: JSON.parse(s.d), tier: gold.isGold(s) ? 'gold' : 'free', hotel: gold.isHotel(s), sian: sian.isSian(s) }
+  if (site.tier !== 'gold') site.reports = (await env.DB.prepare('SELECT COUNT(*) AS n FROM report WHERE site_id = ?').bind(s.id).first())?.n || 0
   if (sub === '/contact.vcf') {
     if (s.status !== 'live') return new Response('', { status: 404 })
     return new Response(vcard(site), { headers: { 'content-type': 'text/vcard; charset=utf-8', 'content-disposition': `attachment; filename="${name}.vcf"` } })
@@ -231,6 +256,7 @@ async function page(request, env, ctx, name, sub, url, origin, base) {
   }
   const opt = { origin, nonce, ...(base ? { base } : {}) }
   if (s.status === 'live' && !sub) opt.events = await events.siteSection(env, s, s.kind).catch(() => '')
+  if (s.status === 'live' && !sub && site.tier === 'gold') opt.news = await line.shownNews(env, s.id).catch(() => []) // dated notes, Edit by LINE (lineedit.mjs)
   if (sub.startsWith('/l/')) {
     const id = sub.slice(3)
     if (site.tier !== 'gold' || !normalize(site.d).lists.some((x) => x.id === id)) return html(notFound(null, request), 404)
@@ -363,7 +389,8 @@ function llms(origin) {
 }
 
 async function sitemap(env, origin) {
-  const rows = (await env.DB.prepare("SELECT name, updated, tier, gold_until, d FROM site WHERE status='live'").all()).results.filter((r) => gold.isGold(r))
+  const rows = (await env.DB.prepare("SELECT name, updated, tier, gold_until, status, d, (SELECT COUNT(*) FROM report WHERE report.site_id = site.id) AS reports FROM site WHERE status='live'").all()).results
+    .filter((r) => { try { return findable({ ...r, tier: gold.isGold(r) ? 'gold' : 'free' }, normalize(JSON.parse(r.d))) } catch { return false } })
   const loc = (u, day) => `<url><loc>${u}</loc><lastmod>${day}</lastmod></url>`
   // the amulet market, its stalls, the price guide and Sala Sian (market.mjs, amprice.mjs, sian.mjs)
   const P = await amprice.load(env).catch(() => null)
@@ -467,17 +494,19 @@ async function api(request, env, ctx, p, url, origin) {
     ctx.waitUntil(stats.tap(env, request, s.id, b.kind === 'room' ? 'rooms' : 'book'))
     ctx.waitUntil((async () => {
       const bk = await env.DB.prepare('SELECT * FROM booking WHERE id = ?').bind(r.id).first()
+      if (bk.news) await customers.optIn(env, s.id, bk.email)
       await book.tellMaker(env, s, d, bk, origin)
       await book.tellReader(env, s, d, bk, origin, s.lang)
       await log(env, s.id, 'booking', `${bk.kind} ${bk.item} ${bk.start}`)
     })().catch((e) => console.error(e)))
-    return J({ ok: true, status: r.status, deposit: r.deposit, ref: r.ref, total: r.total, link: r.link || '', due: r.due || 0, page: r.ref && b.kind === 'room' ? `${origin}/bk/${r.id}` : '' })
+    return J({ ok: true, status: r.status, deposit: r.deposit, ref: r.ref, total: r.total, link: r.link || '', due: r.due || 0, page: r.ref ? `${origin}/bk/${r.id}` : '' })
   }
   const bkCx = /^bk\/([a-z0-9]{14})\/cancel$/.exec(p)
   if (bkCx && m === 'POST') {
     const bk = await env.DB.prepare("SELECT * FROM booking WHERE id = ? AND status IN ('new','ok')").bind(bkCx[1]).first()
     if (bk) {
       await env.DB.prepare("UPDATE booking SET status = 'gone' WHERE id = ?").bind(bk.id).run()
+      ctx.waitUntil(guestline.cancel(env, bk).catch((e) => console.error(e)))
       const s = await env.DB.prepare('SELECT * FROM site WHERE id = ?').bind(bk.site_id).first()
       if (s) {
         await log(env, s.id, 'booking-cancel', bk.ref || bk.id)
@@ -499,14 +528,18 @@ async function api(request, env, ctx, p, url, origin) {
     if (b.website || Number(b.ms) < 2500) return J({ ok: true }) // a form filled by a script
     const who = await sender(request, env)
     if (!(await take(env, who, 'msg'))) return J({ error: 'quota' }, 429)
-    const s = await env.DB.prepare("SELECT id, name, d, notify_email, notify_ok FROM site WHERE name = ? AND status = 'live'").bind(String(b.n || '')).first()
+    const s = await env.DB.prepare("SELECT id, name, d, notify_email, notify_ok, tier, gold_until FROM site WHERE name = ? AND status = 'live'").bind(String(b.n || '')).first()
     const mm = msg.clean(b)
     if (!s || !mm) return J({ error: 'empty' }, 400)
     if (JSON.parse(s.d).msg === false) return J({ error: 'off' }, 400)
     const verdict = msg.check(mm)
     const id = rand(14)
-    await env.DB.prepare('INSERT INTO msg (id, site_id, at, name, reach, body, status, why, sender) VALUES (?,?,?,?,?,?,?,?,?)')
-      .bind(id, s.id, new Date().toISOString(), mm.name, mm.reach, mm.body, verdict === 'ok' ? 'new' : 'held', verdict === 'ok' ? null : verdict.slice(5), who.slice(0, 16)).run()
+    // the tick on "News from <page>, once a month at most" (Gold pages): the address is the one given for news, else the contact line when it is an email
+    const news = b.news && gold.isGold(s) && verdict === 'ok' ? 1 : 0
+    const email = customers.validEmail(b.email) || customers.validEmail(mm.reach)
+    await env.DB.prepare('INSERT INTO msg (id, site_id, at, name, reach, body, status, why, sender, news, email) VALUES (?,?,?,?,?,?,?,?,?,?,?)')
+      .bind(id, s.id, new Date().toISOString(), mm.name, mm.reach, mm.body, verdict === 'ok' ? 'new' : 'held', verdict === 'ok' ? null : verdict.slice(5), who.slice(0, 16), news, email || null).run()
+    if (news) await customers.optIn(env, s.id, email)
     ctx.waitUntil(stats.tap(env, request, s.id, 'msg'))
     if (verdict === 'ok' && s.notify_ok && s.notify_email) {
       ctx.waitUntil((async () => {
@@ -553,8 +586,12 @@ ${s ? `<p>ข้อความถึง ${escHtml(title)} จะส่งสำ
       throw e
     }
     await log(env, id, 'create', name)
-    return J({ id, name, token, status: 'draft', tier: 'gold', gold_until: new Date(Date.now() + TRIAL_DAYS * 864e5).toISOString().slice(0, 10), trial: true })
+    steps.later(ctx, steps.count(env, request, 'made', { who: id, src: seller ? 'seller' : '' }))
+    return J({ id, name, token, status: 'draft', tier: 'gold', gold_until: new Date(Date.now() + TRIAL_DAYS * 864e5).toISOString().slice(0, 10), trial: true, line_on: line.on(env), loaded: now })
   }
+
+  // Google Business Profile: the sign-in returns here, the state it carries names the page (src/gbp.mjs)
+  if (p === 'gbp/callback' && m === 'GET') return gbp.callback(env, url, origin)
 
   // Everything below needs the edit link.
   const token = request.headers.get('x-edit') || ''
@@ -564,6 +601,7 @@ ${s ? `<p>ข้อความถึง ${escHtml(title)} จะส่งสำ
   const isGold = gold.isGold(s)
 
   if (p === 'site' && m === 'GET') {
+    const loaded = new Date().toISOString()
     const un = await env.DB.prepare("SELECT COUNT(*) AS n FROM msg WHERE site_id = ? AND status = 'new'").bind(s.id).first()
     return J({ id: s.id, name: s.name, status: s.status, kind: s.kind, look: s.look, lang: s.lang, d: JSON.parse(s.d), views: s.views,
       tier: isGold ? 'gold' : 'free', gold_until: s.gold_until, trial: !!s.trial, notify_email: s.notify_email || '', notify_ok: !!s.notify_ok, unread: un?.n || 0,
@@ -571,7 +609,8 @@ ${s ? `<p>ข้อความถึง ${escHtml(title)} จะส่งสำ
       domain: s.domain || '', domain_state: s.domain_state || '', domains: dom.on(env), price: Number(env.GOLD_THB) || gold.GOLD_THB,
       plan: s.plan || 'gold', hotel: gold.isHotel(s), hotel_until: s.hotel_until || '', plans: gold.PLANS(env),
       sian: s.kind === 'amulet' || normalize(JSON.parse(s.d)).amulets.length ? await sian.thisMonth(env).then((x) => ({ price: x.price, left: x.left, seats: x.seats, member: sian.isSian(s) })).catch(() => null) : null,
-      founders: await founding.thisMonth(env).then((f) => ({ price: f.price, left: f.left })).catch(() => null) })
+      founders: await founding.thisMonth(env).then((f) => ({ price: f.price, left: f.left })).catch(() => null),
+      line: await line.describe(env, s).catch(() => ({ on: false })), news: await line.notesFor(env, s.id).catch(() => []), loaded })
   }
 
   if (p === 'site' && m === 'PUT') {
@@ -587,6 +626,11 @@ ${s ? `<p>ข้อความถึง ${escHtml(title)} จะส่งสำ
       name = String(b.name).toLowerCase()
       const why = nameProblem(name)
       if (why) return J({ error: 'name', why }, 400)
+    }
+    // photos that came in by LINE since the editor loaded this page are kept (lineedit.mjs addPhoto)
+    const loadedAt = new Date().toISOString(), added = []
+    if (b.d && /^\d{4}-\d{2}-\d{2}T[\d:.]+Z$/.test(String(b.loaded || ''))) {
+      for (const id of await line.photosSince(env, s.id, b.loaded)) if (!d.photos.includes(id)) { d.photos.push(id); added.push(id) }
     }
     d.photos = d.photos.slice(0, photoMax(kind, isGold))
     // photos named in the page must be this page's own; credits come from the library, not the browser
@@ -627,17 +671,21 @@ ${s ? `<p>ข้อความถึง ${escHtml(title)} จะส่งสำ
       throw e
     }
     if (status !== s.status) await log(env, s.id, status, held || '')
-    return J({ status, name, d: nd, look: lookId })
+    if (status === 'live' && !s.published) steps.later(ctx, steps.count(env, request, 'online', { who: s.id }))
+    if (isGold && status === 'live') ctx.waitUntil(gbp.afterSave(env, s.id, origin)) // Google Business Profile follows the save
+    return J({ status, name, d: nd, look: lookId, added: added.filter((id) => nd.photos.includes(id)), loaded: loadedAt })
   }
 
   if (p === 'site' && m === 'DELETE') {
     const ph = await env.DB.prepare('SELECT id FROM photo WHERE site_id = ?').bind(s.id).all()
     for (const r of ph.results) await env.MEDIA.delete([`p/${r.id}`, `p/${r.id}-s`])
+    await line.dropSite(env, s.id)
     await env.DB.batch([
       env.DB.prepare('DELETE FROM photo WHERE site_id = ?').bind(s.id),
       env.DB.prepare('DELETE FROM msg WHERE site_id = ?').bind(s.id),
       env.DB.prepare("UPDATE site SET status='removed', name = name || '~' || id, d='{}', notify_email=NULL, notify_ok=0, updated=? WHERE id = ?").bind(new Date().toISOString(), s.id),
     ])
+    await gbp.drop(env, s.id)
     await log(env, s.id, 'deleted-by-maker', s.name)
     return J({ ok: true })
   }
@@ -685,6 +733,19 @@ ${s ? `<p>ข้อความถึง ${escHtml(title)} จะส่งสำ
     return J({ id, held: meta.v !== 'ok', credit: credit ? JSON.parse(credit) : null })
   }
 
+  // a photo of a menu or price board, read into rows for the price list; the photo is looked at once and dropped (menu.mjs)
+  if (p === 'menu/read' && m === 'POST') {
+    if (!isGold) return J({ error: 'gold' }, 402)
+    const form = await request.formData()
+    const pic = clean(await form.get('photo')?.arrayBuffer?.() ?? new ArrayBuffer(0), MAX_BIG)
+    if (pic.error) return J({ error: 'photo-' + pic.error }, 400)
+    if (!(await take(env, s.id, 'menu'))) return J({ error: 'quota' }, 429)
+    const r = await readMenu(env.AI, pic.bytes, typeOf(pic.kind), { first: env.MENU_MODEL || '' })
+    await log(env, s.id, 'menu-read', r.error ? r.error : `${r.rows.length} ${r.model}`)
+    if (r.error) return J({ error: r.error }, 502)
+    return J({ rows: r.rows })
+  }
+
   if (p === 'pd' && m === 'GET') {
     const who = await sender(request, env)
     if (!(await take(env, who, 'pd'))) return J({ error: 'quota' }, 429)
@@ -719,6 +780,38 @@ ${s ? `<p>ข้อความถึง ${escHtml(title)} จะส่งสำ
     return J({ ok: true })
   }
 
+  // Customers (Gold): everyone who booked or wrote, as a list and as CSV; one email of news a month
+  if (p === 'customers' && m === 'GET') {
+    if (!isGold) return J({ error: 'gold' }, 402)
+    const d = normalize(JSON.parse(s.d))
+    const rows = await customers.list(env, s, d)
+    return J({ rows: rows.map(({ lastAt, mail, ...r }) => ({ ...r, mail: mail.length > 0 })), news: await customers.state(env, s, d, origin) })
+  }
+  if (p === 'customers.csv' && m === 'GET') {
+    if (!isGold) return J({ error: 'gold' }, 402)
+    return new Response(customers.csv(await customers.list(env, s, normalize(JSON.parse(s.d)))), { headers: { 'content-type': 'text/csv; charset=utf-8', 'content-disposition': `attachment; filename="${s.name}-customers.csv"`, 'cache-control': 'no-store' } })
+  }
+  if (p === 'news' && m === 'POST') {
+    if (!isGold) return J({ error: 'gold' }, 402)
+    if (s.status !== 'live') return J({ error: 'draft' }, 400)
+    const who = await sender(request, env)
+    if (!(await take(env, who, 'news'))) return J({ error: 'quota' }, 429)
+    const b = await body(request)
+    const r = await customers.broadcast(env, s, normalize(JSON.parse(s.d)), { text: b.text, link: b.link ? String(b.link) : '' }, origin, rand, log)
+    return J(r, r.error ? ({ month: 409, quota: 429, busy: 503, mail: 502 }[r.error] || 400) : 200)
+  }
+  // Edit by LINE (lineedit.mjs): the code that links a LINE account, who is linked, and the page's dated notes
+  if (p === 'line' && m === 'GET') return J(await line.describe(env, s))
+  if (p === 'line' && m === 'DELETE') { await line.unlinkSite(env, s.id); await log(env, s.id, 'line-unlinked', 'from the editor'); return J({ ok: true }) }
+  if (p === 'line/code' && m === 'POST') {
+    const who = await sender(request, env)
+    if (!(await take(env, who, 'linecode'))) return J({ error: 'quota' }, 429)
+    const r = await line.mint(env, s, { rand, sha })
+    return r.error ? J(r, r.error === 'gold' ? 402 : 503) : J(r)
+  }
+  if (p === 'notes' && m === 'GET') return J({ notes: await line.notesFor(env, s.id) })
+  if (p === 'notes' && m === 'DELETE') { await line.dropNote(env, s.id, (await body(request)).id); return J({ ok: true }) }
+
   if (p === 'notify' && m === 'PUT') {
     const who = await sender(request, env)
     if (!(await take(env, who, 'notify'))) return J({ error: 'quota' }, 429)
@@ -741,12 +834,12 @@ ${s ? `<p>ข้อความถึง ${escHtml(title)} จะส่งสำ
     const rows = (await env.DB.prepare("SELECT * FROM booking WHERE site_id = ? AND (status NOT IN ('gone') OR at >= ?) AND (status = 'new' OR end >= ?) ORDER BY start LIMIT 300").bind(s.id, new Date(Date.now() - 3 * 864e5).toISOString(), new Date(Date.now() - 2 * 864e5).toISOString().slice(0, 10)).all()).results
     const blocks = (await env.DB.prepare('SELECT room, COUNT(*) AS n FROM blocks WHERE site_id = ? GROUP BY room').bind(s.id).all()).results
     const reads = (await env.DB.prepare('SELECT room, url, at, ok, nights FROM ical_read WHERE site_id = ?').bind(s.id).all()).results
-    return J({ rows: rows.map((r) => ({ ...book.describe(r, d, s.lang), id: r.id, kind: r.kind, item: r.item, start: r.start, end: r.end, people: r.people, name: r.name, reach: r.reach, email: r.email, note: r.note, status: r.status, at: r.at, total: r.total, paid: !!r.paid, ref: r.ref })), blocks, reads })
+    return J({ rows: rows.map((r) => ({ ...book.describe(r, d, s.lang), id: r.id, kind: r.kind, item: r.item, start: r.start, end: r.end, people: r.people, name: r.name, reach: r.reach, email: r.email, note: r.note, status: r.status, at: r.at, total: r.total, paid: r.paid === 1, dep: r.paid === 2, depAsked: r.status === 'ok' ? receipt.depositAsked(r, s, d) : 0, ref: r.ref })), blocks, reads })
   }
   if (p === 'bookings' && m === 'POST') {
     const b = await body(request)
-    if (b.act === 'paid' || b.act === 'unpaid') {
-      await env.DB.prepare('UPDATE booking SET paid = ? WHERE id = ? AND site_id = ?').bind(b.act === 'paid' ? 1 : 0, String(b.id || ''), s.id).run()
+    if (b.act === 'paid' || b.act === 'unpaid' || b.act === 'deposit') { // 1 paid in full, 2 deposit received, 0 not yet
+      await env.DB.prepare('UPDATE booking SET paid = ? WHERE id = ? AND site_id = ?').bind({ paid: 1, deposit: 2, unpaid: 0 }[b.act], String(b.id || ''), s.id).run()
       return J({ ok: true })
     }
     if (b.act === 'close') {
@@ -762,9 +855,15 @@ ${s ? `<p>ข้อความถึง ${escHtml(title)} จะส่งสำ
     const st = { ok: 'ok', no: 'no', gone: 'gone', new: 'new', hold: 'hold' }[b.act]
     const bk = st && await env.DB.prepare('SELECT * FROM booking WHERE id = ? AND site_id = ?').bind(String(b.id || ''), s.id).first()
     if (!bk) return J({ error: 'act' }, 400)
-    await env.DB.prepare('UPDATE booking SET status = ? WHERE id = ?').bind(st, bk.id).run()
+    await env.DB.prepare('UPDATE booking SET status = ?, ok_at = CASE WHEN ? = \'ok\' AND status != \'ok\' THEN ? ELSE ok_at END WHERE id = ?').bind(st, st, new Date().toISOString(), bk.id).run()
+    if (st !== 'ok' && bk.status === 'ok') ctx.waitUntil(guestline.cancel(env, bk).catch((e) => console.error(e))) // a booking no longer accepted has no LINE reminder
     if ((st === 'ok' || st === 'no') && bk.status !== st) ctx.waitUntil(book.tellReader(env, s, normalize(JSON.parse(s.d)), { ...bk, status: st }, origin, s.lang).catch((e) => console.error(e)))
     return J({ ok: true })
+  }
+
+  if (p === 'gbp' || p.startsWith('gbp/')) {
+    const r = await gbp.route(request, env, ctx, p, origin, s, { J, body, take, sender })
+    if (r) return r
   }
 
   if (p === 'domain' && (m === 'PUT' || m === 'GET' || m === 'DELETE')) {
@@ -777,7 +876,7 @@ ${s ? `<p>ข้อความถึง ${escHtml(title)} จะส่งสำ
       if (state !== s.domain_state) await env.DB.prepare('UPDATE site SET domain_state = ? WHERE id = ?').bind(state, s.id).run()
       return J({ domain: s.domain, state, records: dom.records(s.domain) })
     }
-    if (s.domain_id) await dom.drop(env, s.domain_id)
+    if (s.domain_id) await dom.drop(env, s.domain_id, s.domain)
     if (m === 'DELETE') { await env.DB.prepare('UPDATE site SET domain = NULL, domain_id = NULL, domain_state = NULL WHERE id = ?').bind(s.id).run(); return J({ ok: true }) }
     const who = await sender(request, env)
     if (!(await take(env, who, 'domain'))) return J({ error: 'quota' }, 429)
@@ -798,6 +897,7 @@ ${s ? `<p>ข้อความถึง ${escHtml(title)} จะส่งสำ
       if (r.full) return J({ error: 'full' }, 409)
       return J({ ...r, plan: 'sian', tier: isGold ? 'gold' : 'free', gold_until: s.gold_until, member: sian.isSian(s) })
     }
+    steps.later(ctx, steps.count(env, request, 'gold', { who: s.id, src: s.status }))
     return J({ ...(await gold.start(env, s.id, rand, gold.planOf(env, normalize(JSON.parse(s.d)), want))), tier: isGold ? 'gold' : 'free', gold_until: s.gold_until, hotel_until: s.hotel_until || '', hotel_now: gold.isHotel(s) })
   }
   if (p === 'gold/slip' && m === 'POST') {
@@ -807,6 +907,7 @@ ${s ? `<p>ข้อความถึง ${escHtml(title)} จะส่งสำ
     if (!pay) return J({ error: 'no-payment' }, 400)
     const form = await request.formData()
     const file = form.get('slip')
+    if (file && typeof file !== 'string' && file.size) steps.later(ctx, steps.count(env, request, 'slip', { who: pay.id, src: pay.plan || 'gold' }))
     if (!file || typeof file === 'string' || !file.size || file.size > 8_000_000) return J({ error: 'slip' }, 400)
     const now = new Date().toISOString()
     const key = `slip/${pay.id}`
@@ -816,6 +917,7 @@ ${s ? `<p>ข้อความถึง ${escHtml(title)} จะส่งสำ
       const until = await gold.grant(env, s.id, pay.months || 12, pay.plan || undefined)
       await env.DB.prepare("UPDATE pay SET status='paid', slip=?, note=?, updated=? WHERE id=?").bind(key, 'slipok ' + r.ref, now, pay.id).run()
       await log(env, s.id, 'gold', 'slipok ' + r.ref)
+      steps.later(ctx, steps.count(env, null, 'paid', { who: pay.id, src: pay.plan || 'gold' }))
       ctx.waitUntil((async () => {
         const cut = await sellers.credit(env, { siteId: s.id, payId: pay.id, amount: pay.amount })
         await gold.tellSales(env, { title: JSON.parse(s.d).name || s.name, url: `${origin}/${s.name}`, amount: pay.amount, months: pay.months || 12, plan: pay.plan, how: 'SlipOK', cut })
@@ -922,7 +1024,11 @@ async function admin(request, env, rest, url) {
   if (request.method === 'POST' && rest === '/act' && sameOrigin(request, url)) {
     const f = await request.formData()
     const id = String(f.get('id') || ''), act = String(f.get('act') || '')
-    if (act === 'live') await env.DB.prepare("UPDATE site SET status='live', held_why=NULL, published=COALESCE(published, ?) WHERE id=?").bind(new Date().toISOString(), id).run()
+    if (act === 'live') {
+      const was = await env.DB.prepare('SELECT published FROM site WHERE id = ?').bind(id).first()
+      await env.DB.prepare("UPDATE site SET status='live', held_why=NULL, published=COALESCE(published, ?) WHERE id=?").bind(new Date().toISOString(), id).run()
+      if (was && !was.published) await steps.later(null, steps.count(env, null, 'online', { who: id, src: 'admin' }))
+    }
     if (act === 'hold') await env.DB.prepare("UPDATE site SET status='held', held_why='admin' WHERE id=?").bind(id).run()
     if (act === 'remove') await env.DB.prepare("UPDATE site SET status='removed' WHERE id=?").bind(id).run()
     if (act === 'photo-ok') await releasePhoto(env, id)
@@ -968,6 +1074,7 @@ async function payOk(env, id, origin, how) {
   }
   await gold.grant(env, p.site_id, p.months || 12, p.plan || undefined)
   await env.DB.prepare("UPDATE pay SET status='paid', note=COALESCE(note,'') || ?, updated=? WHERE id=?").bind(' · ' + how, new Date().toISOString(), id).run()
+  await steps.later(null, steps.count(env, null, 'paid', { who: id, src: p.plan || 'gold' }))
   const cut = await sellers.credit(env, { siteId: p.site_id, payId: id, amount: p.amount }).catch((e) => console.error(e))
   await gold.tellSales(env, { title: JSON.parse(p.d || '{}').name || p.name, url: `${origin}/${p.name}`, amount: p.amount, months: p.months || 12, plan: p.plan, how, cut }).catch((e) => console.error(e))
   return true
@@ -1022,7 +1129,7 @@ async function tidy(env) {
   const retry = await env.DB.prepare("SELECT * FROM site WHERE status='held' AND held_why LIKE 'guard:guard-%' LIMIT 20").all()
   for (const s of retry.results) {
     const r = await screen(env.AI, JSON.parse(s.d), {})
-    if (r.decision === 'live') { await env.DB.prepare("UPDATE site SET status='live', held_why=NULL, published=COALESCE(published, ?) WHERE id=?").bind(new Date().toISOString(), s.id).run(); await log(env, s.id, 'live', 'retry') }
+    if (r.decision === 'live') { await env.DB.prepare("UPDATE site SET status='live', held_why=NULL, published=COALESCE(published, ?) WHERE id=?").bind(new Date().toISOString(), s.id).run(); await log(env, s.id, 'live', 'retry'); if (!s.published) await steps.later(null, steps.count(env, null, 'online', { who: s.id, src: 'check' })) }
   }
   const ph = await env.DB.prepare("SELECT id FROM photo WHERE verdict='hold' AND (why LIKE 'model-%' OR why = 'unreadable' OR why = 'no-model') LIMIT 20").all()
   for (const p of ph.results) {
@@ -1040,11 +1147,14 @@ async function tidy(env) {
   await env.DB.prepare("DELETE FROM pay WHERE status = 'open' AND COALESCE(plan, '') NOT IN ('fee', 'founding') AND created < ?").bind(new Date(Date.now() - 14 * 864e5).toISOString()).run()
   // 2026-10-14: room calendars, translations, the monthly note, the trial's end note
   const job = async (name, f) => { try { done[name] = await f() } catch (e) { done[name] = 'error: ' + String(e?.message || e).slice(0, 300); console.error(name, e?.stack || e) } }
+  await job('line', () => line.tidyLine(env))
   await job('calendars', () => readCalendars(env, gold.isGold, normalize))
   await job('events', () => events.refresh(env, { normalize, upcoming, utcOf }))
+  await job('gbp', () => gbp.due(env, HOME))
   await job('translate', () => tr.catchUp(env, gold.isGold, normalize))
   await job('monthly', () => monthly(env, gold.isGold, HOME))
   await job('trial', () => trialNotes(env, HOME, gold.PLANS(env)))
+  await job('remind', () => remind.run(env, { isGold: gold.isGold, normalize, origin: HOME }))
   await job('sellers', () => sellers.monthEnd(env, (c) => gold.postSales(env, c), (id) => sell.beerLink(env, sha, HOME, 'p', id, 60), (t) => tellBeer(env, t)))
   await job('deals', () => deals.monthly(env, (c) => gold.postSales(env, c)))
   await job('founding', async () => (await founding.thisMonth(env, Date.now(), (c) => gold.postSales(env, c))).price)
@@ -1056,6 +1166,20 @@ async function tidy(env) {
 
 const ESC = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }
 const escHtml = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ESC[c])
+
+/** /u/<key>: no more news from a page. A tap on the emailed link does it; the button on the page takes it back. */
+async function unsubscribe(request, env, key, m) {
+  const k = await customers.readKey(env, key)
+  const s = k && await env.DB.prepare('SELECT name, d, lang FROM site WHERE id = ?').bind(k.siteId).first()
+  if (!s) return html(unsubPage({ lang: 'th', title: '', bad: true, action: '' }), 400)
+  const lang = s.lang
+  const title = JSON.parse(s.d).name || s.name
+  let off = true
+  if (m === 'POST') off = !/(^|&)undo=1(&|$)/.test(await request.text().catch(() => '')) // a form with undo=1 puts the news back; the mail app's one-click post stops it
+  else await customers.setOff(env, k.siteId, k.email, true)
+  if (m === 'POST') await customers.setOff(env, k.siteId, k.email, off)
+  return html(unsubPage({ lang, title, done: off, action: '/u/' + key }), 200)
+}
 
 function sameOrigin(request, url) {
   const o = request.headers.get('origin')

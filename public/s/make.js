@@ -19,6 +19,9 @@ import { AM_MAX, amCap } from './amulet.mjs'
 import { drawCard, cardKey, CARD } from './card.mjs'
 import { loadFaces } from './mark.mjs'
 import { cardHtml, cardBind } from './make-card.mjs'
+import { drawCustomers } from './make-customers.mjs'
+import { menuBox, menuInit } from './make-menu.mjs'
+import { gbpBox, bindGbp, GBP_CSS } from './make-gbp.mjs'
 
 const $ = (s, el = document) => el.querySelector(s)
 const app = $('#app')
@@ -34,11 +37,12 @@ const TZ = (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZon
 
 const S = {
   lang: store.get('lang', (() => { const l = (navigator.language || 'th').slice(0, 2); return UI_LANGS[l] ? l : 'th' })()),
-  step: 'kind', kind: 'shop', name: '', addr: '', addrTouched: false, look: 'poster', accent: '', peek: '', token: '', status: 'draft', views: 0,
+  step: 'kind', kind: 'stay', name: '', addr: '', addrTouched: false, look: 'lanna', accent: '', peek: '', token: '', status: 'draft', views: 0,
   pageLang: '', d: null, open: new Set(), local: new Map(), big: new Map(), photoGps: null, picker: null, busy: 0,
   tab: 'edit', tier: 'gold', goldUntil: '', notifyEmail: '', notifyOk: false, unread: 0, // a page starts with 30 days of Gold
   trial: false, asks: 0, domain: '', domainState: '', domains: false, price: 3000, dbFam: '', dbQ: '',
   hotel: true, hotelUntil: '', plans: null, payPlan: '', part: '',
+  lineOn: false, line: null, news: [], loaded: '', lineCode: null, // Edit by LINE (lineedit.mjs): the tab, who is linked, the page's dated notes, when this copy was read
 }
 const isGold = () => S.tier === 'gold'
 const ding = (n, look = 'ink', play = 'loop') => `<i data-dingbat="${n}" data-look="${look}" data-play="${play}" aria-hidden="true"></i>`
@@ -75,7 +79,10 @@ const DEFAULT_OPEN = {
   event: ['pay', 'event', 'words', 'cal', 'photos', 'map', 'contact'],
   group: ['pay', 'words', 'cal', 'photos', 'links', 'contact'],
 }
-const LOOK_FOR = { shop: 'poster', food: 'night', service: 'loom', work: 'clean', amulet: 'lanna', stay: 'lanna', homes: 'clean', me: 'stitch', event: 'poster', group: 'stitch' }
+// new pages start in a look that shows photos as taken (Nan 2026-10-26: less image editing); Poster stays one tap away
+// the kinds most likely to pay come first (Nan 2026-10-26)
+const KIND_ORDER = ['stay', 'service', 'food', 'shop', 'homes', 'work', 'event', 'amulet', 'group', 'me']
+const LOOK_FOR = { shop: 'clean', food: 'night', service: 'loom', work: 'clean', amulet: 'lanna', stay: 'lanna', homes: 'clean', me: 'stitch', event: 'night', group: 'stitch' }
 
 function guessCc() {
   const zone = { 'Asia/Bangkok': 'TH', 'Asia/Yangon': 'MM', 'Asia/Rangoon': 'MM', 'Asia/Vientiane': 'LA', 'Asia/Phnom_Penh': 'KH',
@@ -211,7 +218,7 @@ let EX = {}
 const exReady = fetch('/s/ex/ex.json').then((r) => (r.ok ? r.json() : {})).then((j) => { EX = j || {} }).catch(() => {})
 const exOf = (kind, look) => EX[kind]?.[look] || null
 const exUrl = (kind, look, small) => (exOf(kind, look) ? `/s/ex/${kind}-${look}${small ? '-s' : ''}.webp` : kpicUrl(kind, small))
-const exCredit = (kind, look) => { const e = exOf(kind, look), k = KPIC[kind]; return e ? { title: e.title, by: e.by, src: e.src, license: e.license, licenseUrl: e.licenseUrl, from: 'commons' } : k ? { title: k.title, by: 'Wikimedia Commons', src: k.src, license: k.license, from: 'commons' } : null }
+const exCredit = (kind, look) => { const e = exOf(kind, look), k = KPIC[kind]; return e ? { title: e.title, by: e.by, src: e.src, license: e.license, licenseUrl: e.licenseUrl, from: 'commons' } : k ? { title: k.title, by: k.by || 'Wikimedia Commons', src: k.src, license: k.license, licenseUrl: k.licenseUrl || '', from: /^k:/.test(k.pd || '') ? 'house' : 'commons' } : null }
 
 // On the first screen the phone shows each kind's own parts filled in with examples, so a hotel shows
 // rooms and a noodle shop a menu; the box above it says they are examples. The new page starts empty.
@@ -387,7 +394,7 @@ function drawTry() {
     <div class="tphone"><div class="shell"><div class="url">${icon('globe')}<span>sites.motdang.net/<b id="pvaddr">${esc(S.addr || '…')}</b></span></div><iframe id="tryframe" title="${T('preview')}"></iframe></div>
       <div class="lknav" id="lknav">${lookNav()}</div></div>
     <div class="tkind"><p class="lbl">${T('for')}</p>
-      <div class="kinds">${KINDS.map(kindTile).join('')}</div>
+      <div class="kinds">${KIND_ORDER.filter((k) => KINDS.includes(k)).concat(KINDS.filter((k) => !KIND_ORDER.includes(k))).map(kindTile).join('')}</div>
       <div class="gets" id="gets">${getsHtml()}</div></div>
     <div class="tlook">
       <div class="lbrow"><p class="lbl">${T('look')}</p><button class="dice" id="dice">${ding('sparkle', 'ink')}${T('surprise')}</button></div>
@@ -480,6 +487,13 @@ function check() {
   availTimer = setTimeout(async () => {
     try {
       const r = await call('GET', 'name?n=' + encodeURIComponent(S.addr))
+      // taken by a page this browser made: that page opens, not a second one (Nan 2026-10-26)
+      if (!r.ok && (r.why || 'taken') === 'taken' && minePage()) {
+        availOk = true
+        av.className = 'avail ok'; av.innerHTML = `${icon('check')}${T('a_mine')}`
+        next.disabled = false
+        return
+      }
       // a taken address the maker did not type: the next free one, -2, -3 …
       if (!r.ok && (r.why || 'taken') === 'taken' && !S.addrTouched && $('#ad')) {
         const m = /^(.*?)(?:-(\d+))?$/.exec(S.addr)
@@ -554,7 +568,16 @@ async function starterPic(kind) {
   redrawSec('photos')
 }
 
+/** A page this browser made with the same address, or the same name: the one to open instead of making another. */
+function minePage() {
+  const base = (a) => String(a || '').replace(/-\d$/, '')
+  const nm = S.name.trim().toLowerCase()
+  return store.get('pages', []).find((p) => p.token && (p.name === S.addr || (S.addr && base(p.name) === base(S.addr) && String(p.title || '').trim().toLowerCase() === nm) || (nm && String(p.title || '').trim().toLowerCase() === nm)))
+}
+
 async function create(look, btn) {
+  const mine = minePage()
+  if (mine) { location.hash = '#t=' + mine.token; toast(ui(S.lang, 'reopened')); return }
   S.look = look
   btn.classList.add('on')
   S.d = normalize(applyPrefill({ ...starter(S.kind), name: S.name.trim(), accent: S.accent || '' }))
@@ -567,6 +590,7 @@ async function create(look, btn) {
   try {
     const r = await call('POST', 'sites', { name: S.addr, kind: S.kind, look, lang: S.pageLang, d: S.d, by: new URLSearchParams(location.search).get('by') || '' })
     S.token = r.token; S.name = r.name; S.status = r.status; S.tier = r.tier || 'gold'; S.goldUntil = r.gold_until || ''; S.trial = !!r.trial; S.hotel = !!r.trial
+    S.lineOn = !!r.line_on; S.line = null; S.news = []; S.loaded = r.loaded || ''
     history.replaceState(null, '', '/make#t=' + S.token)
     remember()
     camStart()
@@ -600,7 +624,7 @@ function hasData(id) {
 function tabs() {
   const t = (id, label, extra = '') => `<button data-tab="${id}"${S.tab === id ? ' class="on"' : ''}>${label}${extra}</button>`
   const bk = S.d && (S.d.svc.length || S.d.rooms.length) ? t('book', T('t_book'), S.asks ? `<span class="dot">${S.asks}</span>` : '') : ''
-  return `<nav class="tabs">${t('edit', T('t_edit'))}${t('msgs', T('t_msgs'), S.unread ? `<span class="dot">${S.unread}</span>` : '')}${bk}${t('stats', T('t_stats'))}${t('gold', (isGold() ? '★ ' : '') + T('t_gold'))}</nav>`
+  return `<nav class="tabs">${t('edit', T('t_edit'))}${t('msgs', T('t_msgs'), S.unread ? `<span class="dot">${S.unread}</span>` : '')}${bk}${t('cust', T('t_cust'))}${t('stats', T('t_stats'))}${S.lineOn ? t('line', T('t_line')) : ''}${t('gold', (isGold() ? '★ ' : '') + T('t_gold'))}</nav>`
 }
 
 // The editor is the page and six parts under it (Nan 2026-10-15: lead with why, try it, be not afraid,
@@ -769,7 +793,7 @@ const SEC = {
   },
   items() {
     const cur = S.d.currency || currencyFor(S.d.place.cc, S.pageLang)
-    return `<div class="items">${S.d.items.map((it, i) => `<div class="it"><input data-k="items.${i}.n" placeholder="${T('item')}" value="${val(it.n)}" maxlength="80">
+    return menuBox({ S, icon, isGold: isGold() }) + `<div class="items">${S.d.items.map((it, i) => `<div class="it"><input data-k="items.${i}.n" placeholder="${T('item')}" value="${val(it.n)}" maxlength="80">
       <input data-k="items.${i}.p" placeholder="${T('price')}" value="${val(it.p)}" maxlength="24" inputmode="decimal"><button class="x" data-rmitem="${i}" aria-label="${T('remove')}">×</button>
       <input data-k="items.${i}.note" placeholder="${T('details')}" value="${val(it.note)}" maxlength="160"></div>`).join('')}</div>
       <div class="row"><button class="go ghost" id="additem">${icon('plus')}${T('addItem')}</button>
@@ -1445,7 +1469,7 @@ function preview(now) {
     const f = $('#frame')
     if (!f) return
     if (S.inline) return
-    const html = render({ name: S.name, look: S.look, lang: S.pageLang, kind: S.kind, d: S.d, views: S.views || 1234, status: 'live', tier: S.tier }, { preview: true, img: imgUrl, origin: location.origin, hotel: S.hotel })
+    const html = render({ name: S.name, look: S.look, lang: S.pageLang, kind: S.kind, d: S.d, views: S.views || 1234, status: 'live', tier: S.tier }, { preview: true, img: imgUrl, origin: location.origin, hotel: S.hotel, news: shownNews() })
     const y = f.contentWindow?.scrollY || 0
     f.srcdoc = html
     f.onload = () => { try { f.contentWindow.scrollTo(0, y) } catch {} ; f.contentDocument?.querySelectorAll('a[href]').forEach((a) => a.setAttribute('target', '_blank')); try { wireFrame(f); lightPart(false) } catch {} }
@@ -1480,9 +1504,13 @@ async function save(extra = {}) {
     // a live page whose name, picture, avatar or look changed gets a new share card
     if (S.status === 'live' && !extra.publish && cardKey({ look: S.look, name: S.name, kind: S.kind, tier: S.tier }, S.d) !== S.cardKey) await makeCard().catch(() => {})
     const d = { ...S.d, items: S.d.items.filter((x) => x.n || x.p || x.note) }
-    const r = await call('PUT', 'site', { d, look: S.look, lang: S.pageLang, kind: S.kind, ...extra })
+    const r = await call('PUT', 'site', { d, look: S.look, lang: S.pageLang, kind: S.kind, loaded: S.loaded, ...extra })
     S.status = r.status
     if (r.d) { S.d.credits = r.d.credits; S.d.video = r.d.video }
+    if (r.loaded) S.loaded = r.loaded
+    // photos that came in by LINE while this copy was open: the server kept them, this copy takes them
+    const fresh = (r.added || []).filter((id) => !S.d.photos.includes(id))
+    if (fresh.length) { S.d.photos = [...S.d.photos, ...fresh]; redrawSec('photos'); preview() }
     remember()
   } catch (e) {
     toast(ui(S.lang, e.message === 'quota' ? 'e_quota' : e.message === 'edit-link' ? 'e_link' : 'e_net'))
@@ -1814,6 +1842,8 @@ function drawTab() {
   if (S.tab === 'msgs') return drawMsgs()
   if (S.tab === 'stats') return drawStats()
   if (S.tab === 'book') return drawBookings()
+  if (S.tab === 'cust') return drawCustomers($('#tb'), { S, call, ui, esc, toast, icon, goldLocked })
+  if (S.tab === 'line' && S.lineOn) return drawLine()
   return drawGold()
 }
 
@@ -1826,10 +1856,11 @@ async function drawBookings() {
   const card = (x) => {
     const rp = replyHref(x.reach)
     return `<article class="msg bk ${x.status}" data-id="${esc(x.id)}"><header><b>${esc(x.what)}</b><span class="bst">${T('bk_' + x.status)}</span></header>
-      <p class="when">${esc(x.when)}</p><p class="body">${x.ref ? `<code>${esc(x.ref)}</code> · ` : ''}<b>${esc(x.name || '—')}</b>${x.reach ? ' · ' + esc(x.reach) : ''}${x.email ? ' · ' + esc(x.email) : ''}${x.people > 1 ? ` · ${x.people} ${T('bk_people')}` : ''}${x.kind === 'room' && x.status !== 'hold' ? ` · <b class="${x.paid ? 'paidy' : 'paidn'}">${T(x.paid ? 'bk_paid' : 'bk_unpaid')}</b>` : ''}</p>
+      <p class="when">${esc(x.when)}</p><p class="body">${x.ref ? `<code>${esc(x.ref)}</code> · ` : ''}<b>${esc(x.name || '—')}</b>${x.reach ? ' · ' + esc(x.reach) : ''}${x.email ? ' · ' + esc(x.email) : ''}${x.people > 1 ? ` · ${x.people} ${T('bk_people')}` : ''}${(x.kind === 'room' && x.status !== 'hold') || x.status === 'ok' ? ` · <b class="${x.paid || x.dep ? 'paidy' : 'paidn'}">${T(x.paid ? 'bk_paid' : x.dep ? 'bk_depIn' : 'bk_unpaid')}</b>` : ''}</p>
       ${x.note ? `<p class="reach">${esc(x.note)}</p>` : ''}
       <footer>${x.status === 'hold' ? '' : `${x.status !== 'ok' ? `<button class="go small" data-bk="ok">${icon('check')}${T('bk_accept')}</button>` : ''}${x.status !== 'no' ? `<button class="go ghost small" data-bk="no">${T('bk_decline')}</button>` : ''}`}
-      ${x.kind === 'room' && x.status === 'ok' ? `<button class="go ghost small" data-bk="${x.paid ? 'unpaid' : 'paid'}">${T(x.paid ? 'bk_markUnpaid' : 'bk_markPaid')}</button>` : ''}
+      ${x.status === 'ok' ? `${x.paid ? '' : `<button class="go ghost small" data-bk="paid">${T('bk_markPaid')}</button>`}${!x.paid && !x.dep && x.depAsked > 0 ? `<button class="go ghost small" data-bk="deposit">${T('bk_depIn')}</button>` : ''}${x.paid || x.dep ? `<button class="go ghost small" data-bk="unpaid">${T('bk_markUnpaid')}</button>` : ''}
+      <a class="go ghost small" href="/bk/${esc(x.id)}/receipt" target="_blank" rel="noopener">${T('rc_open')}</a>` : ''}
       ${rp ? `<a class="go line small" href="${esc(rp.href)}" target="_blank" rel="noopener">${icon('chat')}${T('m_reply')} · ${esc(rp.label)}</a>` : ''}<button class="go ghost small" data-bk="gone">${T('bk_del')}</button></footer></article>`
   }
   const groups = ['new', 'ok', 'hold', 'no', 'gone'].map((st) => [st, r.rows.filter((x) => x.status === st)]).filter(([, l]) => l.length)
@@ -1845,7 +1876,9 @@ async function drawBookings() {
     let host = x.url; try { host = new URL(x.url).hostname.replace(/^www\./, '') } catch {}
     return `<li>${esc(room ? room.n : x.room)} · ${esc(host)} · ${x.ok ? `${T('bk_read')} ${esc(when(x.at))} · ${x.nights ?? 0}` : `<b style="color:var(--red)">${T('bk_failed')}</b>`}</li>`
   }).join('')}</ul></section>` : ''
-  tb.innerHTML = head + (groups.length ? groups.map(([st, l]) => `<h3 class="bkh">${T('bk_' + st)} · ${l.length}</h3><div class="msgs">${l.map(card).join('')}</div>`).join('') : `<div class="empty">${ding('calendar', 'paper')}<p>${T('bk_none')}</p></div>`) + closeBox + cals
+  const taxBox = `<section class="panel"><h3>${T('rc_head')}</h3><label class="mini"><span>${T('rc_tax')}</span><input id="taxid" maxlength="24" value="${val(S.d.tax)}" inputmode="numeric" autocomplete="off"></label><p class="hint">${T('rc_taxHint')}</p></section>`
+  tb.innerHTML = head + (groups.length ? groups.map(([st, l]) => `<h3 class="bkh">${T('bk_' + st)} · ${l.length}</h3><div class="msgs">${l.map(card).join('')}</div>`).join('') : `<div class="empty">${ding('calendar', 'paper')}<p>${T('bk_none')}</p></div>`) + closeBox + taxBox + cals
+  const taxEl = $('#taxid'); if (taxEl) taxEl.oninput = () => { S.d.tax = taxEl.value; changed() }
   const clgo = $('#clgo')
   if (clgo) clgo.onclick = async () => {
     try { await call('POST', 'bookings', { act: 'close', room: $('#clroom').value, from: $('#clfrom').value, to: $('#clto').value, name: $('#clname').value }); drawBookings() } catch { toast(ui(S.lang, 'e_net')) }
@@ -1879,7 +1912,7 @@ function fillMini(id, { look, tier, anchor } = {}) {
   const f = $('#' + id)
   if (!f) return
   const t = tier || S.tier
-  f.srcdoc = render({ name: S.name, look: look || S.look, lang: S.pageLang, kind: S.kind, d: S.d, views: S.views || 1234, status: 'live', tier: t }, { preview: true, gold: t === 'gold', img: imgUrl, origin: location.origin, hotel: S.hotel })
+  f.srcdoc = render({ name: S.name, look: look || S.look, lang: S.pageLang, kind: S.kind, d: S.d, views: S.views || 1234, status: 'live', tier: t }, { preview: true, gold: t === 'gold', img: imgUrl, origin: location.origin, hotel: S.hotel, news: shownNews() })
   f.onload = () => {
     try {
       const doc = f.contentDocument
@@ -1999,6 +2032,58 @@ async function drawStats(days) {
   dingbats(['signals', 'classic'])
 }
 
+// ---- Edit by LINE and News (src/lineedit.mjs) --------------------------------------------------
+
+const shownNews = () => (S.news || []).filter((n) => n.status === 'shown').slice(0, 5)
+let lineTimer = 0
+
+async function drawLine() {
+  clearInterval(lineTimer)
+  const tb = $('#tb')
+  try {
+    const [l, n] = await Promise.all([call('GET', 'line'), call('GET', 'notes')])
+    S.line = l; S.news = n.notes
+  } catch { tb.innerHTML = `<p class="hint">${T('e_net')}</p>`; return }
+  const linked = !!S.line?.linked
+  const code = S.lineCode && S.lineCode.exp > Date.now() ? S.lineCode : null
+  const head = `<section class="tabhead one"><div><h2 class="th2">${T('line_h')}</h2><p class="why3">${T('line_why')}</p></div></section>`
+  const how = `<ul class="plain linehow">${['line_h1', 'line_h2', 'line_h3', 'line_h4'].map((k) => `<li>${T(k)}</li>`).join('')}</ul>`
+  let box
+  if (!isGold()) box = `${linked ? `<p class="pinstate">${T('line_ended')}</p>` : ''}${goldLocked()}`
+  else {
+    box = (linked ? `<p class="pinstate ok">${icon('check')}${esc(S.line.name ? ui(S.lang, 'line_on').replace('{n}', () => S.line.name) : ui(S.lang, 'line_onNo'))}</p>` : '') + how
+    if (code) {
+      box += `<div class="lcode"><small>${T('line_code')}</small><b>${esc(code.code)}</b></div><p class="hint">${T('line_left')}</p>
+        <p><a class="go" id="lnopen" href="${esc(code.href)}" target="_blank" rel="noopener">${icon('chat')}${T('line_open')}</a></p><p class="hint">${T('line_tap')}</p><p class="pinstate" id="lnwait">${T('line_wait')}</p>`
+    } else box += `<p class="row"><button class="go${linked ? ' ghost' : ' big'}" id="lnlink">${T(linked ? 'line_again' : 'line_link')}</button>${linked ? `<button class="go ghost" id="lnoff">${T('line_off')}</button>` : ''}</p>`
+  }
+  const list = S.news.length ? `<div class="msgs">${S.news.map((x) => `<article class="msg ${x.status === 'held' ? 'held' : ''}" data-id="${esc(x.id)}"><header><b>${esc(when(x.at))}</b></header>
+      ${x.status === 'held' ? `<p class="heldtag">${T('n_held')}</p>` : ''}<p class="body">${esc(x.body)}</p><footer><button class="go ghost small" data-nd="${esc(x.id)}">${T('n_del')}</button></footer></article>`).join('')}</div>`
+    : `<p class="none2">${ding('mailbox', 'paper')}<span>${T('n_none')}</span></p>`
+  tb.innerHTML = `${head}<section class="panel linebox">${box}</section>
+    <section class="tabhead one"><div><h2 class="th2">${T('n_h')}</h2><p class="why3">${T('n_why')}</p></div></section>${list}`
+  dingbats(['signals'])
+  tb.querySelectorAll('[data-tab]').forEach((b) => (b.onclick = (e) => { e.preventDefault(); S.tab = b.dataset.tab; draw(); window.scrollTo(0, 0) }))
+  const link = $('#lnlink')
+  if (link) link.onclick = async () => {
+    link.disabled = true
+    try { S.lineCode = await call('POST', 'line/code'); drawLine() } catch (e) { link.disabled = false; toast(ui(S.lang, e.message === 'quota' ? 'e_quota' : 'e_net')) }
+  }
+  const off = $('#lnoff')
+  if (off) off.onclick = async () => { try { await call('DELETE', 'line'); S.lineCode = null; drawLine() } catch { toast(ui(S.lang, 'e_net')) } }
+  // the page of a code: ask every few seconds until the account has taken it, or the code runs out
+  if (code && isGold()) lineTimer = setInterval(async () => {
+    if (S.tab !== 'line' || !$('#lnwait')) return clearInterval(lineTimer)
+    if (S.lineCode.exp < Date.now()) { clearInterval(lineTimer); S.lineCode = null; return drawLine() }
+    try { const l = await call('GET', 'line'); if (l.linked) { clearInterval(lineTimer); S.lineCode = null; drawLine() } } catch {}
+  }, 4000)
+  tb.onclick = async (e) => {
+    const b = e.target.closest('[data-nd]'); if (!b) return
+    b.disabled = true
+    try { await call('DELETE', 'notes', { id: b.dataset.nd }); S.news = S.news.filter((x) => x.id !== b.dataset.nd); drawLine(); preview(true) } catch { b.disabled = false; toast(ui(S.lang, 'e_net')) }
+  }
+}
+
 async function drawGold() {
   const tb = $('#tb')
   let r = null
@@ -2036,10 +2121,11 @@ async function drawGold() {
   const hotelBanner = hotelOn ? `<p class="goldon">★ ${dated('g_hotelOn', S.hotelUntil)}</p>` : ''
   if (isGold() && !S.trial && !/^hotel/.test(S.payPlan || '') && want !== 'sian') {
     tb.innerHTML = head + goldBanner + hotelBanner + sianBox +
-      (rooms ? `<p style="text-align:center"><button class="go" id="tohotel">${esc(ui(S.lang, hotelOn ? 'g_hotelMore' : 'g_hotelGo').replace('{p}', new Intl.NumberFormat(S.lang).format(S.plans?.hotel?.baht || 555)))}</button></p>` : '') + domainBox() + list
+      (rooms ? `<p style="text-align:center"><button class="go" id="tohotel">${esc(ui(S.lang, hotelOn ? 'g_hotelMore' : 'g_hotelGo').replace('{p}', new Intl.NumberFormat(S.lang).format(S.plans?.hotel?.baht || 555)))}</button></p>` : '') + domainBox() + gbpHtml() + list
     after()
     dingbats(['signals', 'classic', 'curious'])
     bindDomain()
+    bindGbpCard()
     const th = $('#tohotel'); if (th) th.onclick = () => { S.payPlan = 'hotel'; drawGold() }
     bindSian()
     return
@@ -2054,10 +2140,11 @@ async function drawGold() {
   tb.innerHTML = head + (S.trial ? `<p class="goldon">★ ${esc(ui(S.lang, 'g_trial').replace('{d}', S.goldUntil || ''))}</p>` : isGold() ? goldBanner + hotelBanner : '') + pick + (want === 'sian' ? '' : sianBox) + `<section class="goldpay"><p class="price">${want === 'sian' ? AU('sian_pay', { p: nf.format(r.baht) }) : esc(ui(S.lang, r.months === 1 ? 'g_priceMonth' : 'g_price').replace('{p}', nf.format(r.baht)))}</p>${r.hotel ? `<p class="hint">${T(r.months === 1 ? (isGold() && !S.trial ? 'g_hotelAddWhy' : 'g_hotelWhy') : 'g_hotelYearWhy')}</p>` : ''}
     ${r.payload ? `<div class="ppqr">${qrSvg(r.payload, { dark: '#0e3d78', light: '#ffffff', label: 'PromptPay' })}<b>฿${esc(nf.format(Number(r.amount)))}</b><span>PromptPay</span></div>
       <p class="hint">${esc(ui(S.lang, 'g_scan').replace('{s}', tail))}</p>
-      <label class="pick goldslip">${icon('download')}${T('g_slip')}<input type="file" accept="image/*" id="slip"></label><p id="slipstate" class="pinstate"></p>` : `<p class="hint">${T('g_nopp')}</p>`}</section>` + fmBox + list + (isGold() ? domainBox() : '')
+      <label class="pick goldslip">${icon('download')}${T('g_slip')}<input type="file" accept="image/*" id="slip"></label><p id="slipstate" class="pinstate"></p>` : `<p class="hint">${T('g_nopp')}</p>`}</section>` + fmBox + list + (isGold() ? domainBox() + gbpHtml() : '')
   after()
   dingbats(['signals', 'classic', 'curious'])
   bindDomain()
+  bindGbpCard()
   tb.querySelectorAll('[data-seg="payplan"]').forEach((b) => (b.onclick = () => { S.payPlan = b.dataset.v; drawGold() }))
   bindSian()
   const slip = $('#slip')
@@ -2072,6 +2159,14 @@ async function drawGold() {
     } catch { st.textContent = ui(S.lang, 'e_net') }
   }
 }
+
+// the Google card (make-gbp.mjs): the connection to Google Business Profile, and the kit of fields to paste
+function gbpHtml() {
+  if (!isGold()) return ''
+  if (!document.getElementById('gbpcss')) { const st = document.createElement('style'); st.id = 'gbpcss'; st.textContent = GBP_CSS; document.head.append(st) }
+  return gbpBox(S, { T, esc, imgUrl, url: S.domain && S.domainState === 'active' ? `https://${S.domain}` : `${location.origin}/${S.name}` })
+}
+function bindGbpCard() { const r = $('#gbpbox'); if (r) bindGbp(r, S, { call, T, esc, toast, icon }) }
 
 function domainBox() {
   if (!S.domains) return `<section class="panel"><h3>${T('g_domain')}</h3><p class="hint">${T('g_domainOff')}</p></section>`
@@ -2189,7 +2284,8 @@ function toast(msg) {
 
 async function boot() {
   const h = new URLSearchParams(location.hash.slice(1))
-  const t = h.get('t')
+  // back from Google's sign-in: the page is named in the address, its edit link is in this browser
+  const t = h.get('t') || (h.get('gbp') ? (store.get('pages', []).find((p) => p.name === h.get('gbp')) || {}).token : '')
   if (t) {
     S.token = t
     try {
@@ -2197,10 +2293,12 @@ async function boot() {
       Object.assign(S, { name: r.name, kind: r.kind, look: lookOf(r.look), pageLang: r.lang, status: r.status, views: r.views, d: normalize(r.d), step: 'edit',
         tier: r.tier, goldUntil: r.gold_until || '', notifyEmail: r.notify_email, notifyOk: r.notify_ok, unread: r.unread,
         trial: !!r.trial, asks: r.asks || 0, domain: r.domain || '', domainState: r.domain_state || '', domains: !!r.domains, price: r.price || 3000,
-        hotel: !!r.hotel, hotelUntil: r.hotel_until || '', plans: r.plans || null, founders: r.founders || null, sian: r.sian || null, cardUrl: '' })
+        hotel: !!r.hotel, hotelUntil: r.hotel_until || '', plans: r.plans || null, founders: r.founders || null, sian: r.sian || null, cardUrl: '',
+        lineOn: !!r.line?.on, line: r.line || null, news: r.news || [], loaded: r.loaded || '' })
       S.d.event = S.d.event || undefined
       S.open = new Set(DEFAULT_OPEN[S.kind]); S.part = ''
       if (h.get('tab')) S.tab = h.get('tab')
+      if (h.get('gbp')) { S.gbpBack = h.get('gbperr') ? 'err:' + h.get('gbperr') : h.get('gbp2') ? 'ok' : ''; history.replaceState(null, '', '/make#t=' + t) }
       remember()
       camStart()
     } catch (e) {
@@ -2234,6 +2332,7 @@ async function boot() {
     create(S.look, document.createElement('b')).then(() => { if (S.step === 'edit') publish() })
   }
 }
+menuInit({ app, S, call, icon, toast, redrawSec, changed }) // Read a menu photo (make-menu.mjs)
 window.addEventListener('hashchange', boot)
 window.addEventListener('resize', () => { preview(); document.body.classList.toggle('sheeton', S.tab === 'edit' && !!S.part && narrow()) })
 window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && S.tab === 'edit' && S.part && !document.querySelector('.sheet')) closePart() })

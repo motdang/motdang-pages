@@ -19,6 +19,9 @@
 // A row a feed stops carrying goes once that feed has answered without it; every row goes a day
 // after it ends.
 
+import { ogOf } from '../public/s/og.mjs'
+import { isGold } from './gold.mjs'
+
 const MAIN = 'https://motdang.net'
 const HOME = 'https://sites.motdang.net'
 const TZ = 'Asia/Bangkok'
@@ -111,23 +114,48 @@ export function motdangRow(e) {
   }
 }
 
-/** A page's own dated event and calendar as rows. */
-function siteRows(s, d, upcoming, utcOf) {
+/**
+ * A page's own dated event and calendar as rows. A Gold page (2026-10-22) carries more of its calendar, its share card,
+ * and, when motdang.net knows the place it stands on, that place's page (`places`: page address → { href, name }).
+ */
+export function siteRows(s, d, upcoming, utcOf, places = new Map()) {
   const rows = []
   const tz = d.hours?.tz || d.event?.tz || TZ
+  const gold = isGold(s)
+  const place = gold ? places.get(`${HOME}/${s.name}`) : null
   const base = {
     src: 'site', url: `${HOME}/${s.name}`, venue: cut(d.place?.addr, 120), area: '', lat: d.place?.lat ?? null, lng: d.place?.lng ?? null,
     approval: 0, spots: null, host: cut(d.name || s.name, 80), host_url: `${HOME}/${s.name}`, site_id: s.id, feed: 'sites', seen: nowIso(),
+    gold: gold ? 1 : 0, card: gold ? cardOf(s, d) : null, place_href: place?.href || null, place_name: place?.name || null,
   }
   const tech = isTech(d.name, d.tagline, d.about) ? 'tech' : ''
   if (d.event?.start) {
     const st = utcOf(d.event.start, d.event.tz || tz), en = d.event.end ? utcOf(d.event.end, d.event.tz || tz) : null
     if ((en || st + 3 * 3600e3) > Date.now()) rows.push({ ...base, id: `site-${s.id}`, title: cut(d.name || s.name, 160), start: new Date(st).toISOString(), end: en ? new Date(en).toISOString() : null, all_day: 0, cost: d.pay?.price ? `฿${d.pay.price}` : '', kinds: tech })
   }
-  for (const x of upcoming(d.cal || [], tz, Date.now(), 6, 60)) {
+  for (const x of upcoming(d.cal || [], tz, Date.now(), gold ? 12 : 6, gold ? 90 : 60)) {
     rows.push({ ...base, id: `site-${s.id}-${x.item.id}-${x.day}`, title: cut(`${x.item.t} · ${d.name || s.name}`, 160), start: new Date(x.start).toISOString(), end: new Date(x.end).toISOString(), all_day: 0, cost: '', kinds: tech || (isTech(x.item.t, x.item.note) ? 'tech' : '') })
   }
   return rows
+}
+
+/** The page's share card, as the page's own tags name it (src/ogcard.mjs): the address changes when the card would. */
+function cardOf(s, d) {
+  try { return `${HOME}/card/${s.name}.jpg?k=${ogOf({ name: s.name, look: s.look, tier: 'gold' }, d).key}` } catch { return null }
+}
+
+/** Gold pages that stand on a place motdang.net holds: page address → { href: 'cm/p/<slug>.html', name } (motdang.net/ownpages-gold.json). */
+export async function goldPlaces(env) {
+  const out = new Map()
+  try {
+    const r = env.SITE ? await env.SITE.fetch(`${MAIN}/ownpages-gold.json`) : await fetch(`${MAIN}/ownpages-gold.json`)
+    if (!r.ok) return out
+    for (const x of (await r.json()).rows || []) {
+      const own = safe(x.own), href = String(x.u || '')
+      if (own && /^[a-z]{2}\/p\/[\w.-]+\.html$/.test(href)) out.set(own.replace(/\/+$/, ''), { href, name: cut(x.th || x.en, 120) })
+    }
+  } catch {}
+  return out
 }
 
 /** The Luma and Meetup links on a page: [{ kind, key, url }]. */
@@ -178,17 +206,17 @@ function icalRows(text, feed, extra) {
 
 async function put(env, rows) {
   if (!rows.length) return
-  const sql = `INSERT INTO ev (id, src, title, start, end, all_day, url, venue, area, lat, lng, cost, approval, spots, kinds, host, host_url, site_id, place_href, place_name, feed, seen)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+  const sql = `INSERT INTO ev (id, src, title, start, end, all_day, url, venue, area, lat, lng, cost, approval, spots, kinds, host, host_url, site_id, place_href, place_name, feed, seen, gold, card)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     ON CONFLICT(id) DO UPDATE SET src=excluded.src, title=excluded.title, start=excluded.start, end=excluded.end, all_day=excluded.all_day, url=COALESCE(excluded.url, ev.url),
       venue=CASE WHEN excluded.venue <> '' THEN excluded.venue ELSE ev.venue END, area=excluded.area, lat=COALESCE(excluded.lat, ev.lat), lng=COALESCE(excluded.lng, ev.lng),
       cost=CASE WHEN excluded.cost <> '' THEN excluded.cost ELSE ev.cost END, approval=excluded.approval, spots=excluded.spots,
       kinds=CASE WHEN excluded.kinds <> '' THEN excluded.kinds ELSE ev.kinds END, host=CASE WHEN excluded.host <> '' THEN excluded.host ELSE ev.host END,
       host_url=CASE WHEN excluded.host_url <> '' THEN excluded.host_url ELSE ev.host_url END, site_id=COALESCE(excluded.site_id, ev.site_id),
-      place_href=COALESCE(excluded.place_href, ev.place_href), place_name=COALESCE(excluded.place_name, ev.place_name), feed=excluded.feed, seen=excluded.seen`
+      place_href=COALESCE(excluded.place_href, ev.place_href), place_name=COALESCE(excluded.place_name, ev.place_name), feed=excluded.feed, seen=excluded.seen, gold=excluded.gold, card=excluded.card`
   for (let i = 0; i < rows.length; i += 40) {
     await env.DB.batch(rows.slice(i, i + 40).map((r) => env.DB.prepare(sql).bind(r.id, r.src, r.title, r.start, r.end ?? null, r.all_day || 0, safe(r.url), r.venue || '', r.area || '',
-      r.lat ?? null, r.lng ?? null, r.cost || '', r.approval || 0, r.spots ?? null, r.kinds || '', r.host || '', safe(r.host_url) || '', r.site_id ?? null, r.place_href ?? null, r.place_name ?? null, r.feed, r.seen)))
+      r.lat ?? null, r.lng ?? null, r.cost || '', r.approval || 0, r.spots ?? null, r.kinds || '', r.host || '', safe(r.host_url) || '', r.site_id ?? null, r.place_href ?? null, r.place_name ?? null, r.feed, r.seen, r.gold ? 1 : 0, safe(r.card))))
   }
 }
 
@@ -237,15 +265,17 @@ export async function refresh(env, { normalize, upcoming, utcOf }) {
   }
 
   // people's pages: their dated events every run; their Luma and Meetup links in turn
-  const sites = (await env.DB.prepare("SELECT id, name, kind, d FROM site WHERE status = 'live' AND (d LIKE '%\"event\":{\"start\"%' OR d LIKE '%\"cal\":[{%' OR d LIKE '%luma.com%' OR d LIKE '%lu.ma%' OR d LIKE '%meetup.com%') LIMIT 400").all()).results
+  const sites = (await env.DB.prepare("SELECT id, name, kind, look, tier, gold_until, d FROM site WHERE status = 'live' AND (d LIKE '%\"event\":{\"start\"%' OR d LIKE '%\"cal\":[{%' OR d LIKE '%luma.com%' OR d LIKE '%lu.ma%' OR d LIKE '%meetup.com%') ORDER BY (tier = 'gold') DESC, updated DESC LIMIT 400").all()).results
   const own = [], links = []
+  const places = await goldPlaces(env)
   for (const s of sites) {
     let d
     try { d = normalize(JSON.parse(s.d)) } catch { continue }
-    own.push(...siteRows(s, d, upcoming, utcOf))
+    own.push(...siteRows(s, d, upcoming, utcOf, places))
     for (const l of calLinks(d)) links.push({ ...l, site_id: s.id, host: d.name || s.name, host_url: `${HOME}/${s.name}`, about: [d.tagline, d.about].join(' ') })
   }
-  await read('sites', async () => own)
+  // stamped as the read begins its turn: a row built before `since` was taken would be swept out again by settle()
+  await read('sites', async () => { const at = nowIso(); for (const r of own) r.seen = at; return own })
 
   const cals = [...CALS.map(([id, name]) => ({ kind: 'luma', key: id, host: name, about: 'tech AI' })), ...links]
   const queue = cals.map((c) => ({ ...c, fk: `${c.kind}:${c.key}` })).filter((c) => due(c.fk, EVERY.cal))
@@ -277,19 +307,20 @@ export async function refresh(env, { normalize, upcoming, utcOf }) {
 
 // ---- asking ----------------------------------------------------------------------------
 
-/** Rows to come, soonest first. q: { kind, site, place, near:[lat,lng], km, n, days } */
+/** Rows to come, soonest first, a Gold page's before another's at the same minute. q: { kind, site, place, near:[lat,lng], km, n, days, gold } */
 export async function rows(env, q = {}) {
   const where = ['COALESCE(end, start) >= ?'], args = [new Date(Date.now() - 2 * 3600e3).toISOString()]
   if (q.days) { where.push('start <= ?'); args.push(new Date(Date.now() + q.days * 864e5).toISOString()) }
   if (q.kind && q.kind !== 'all') { where.push("(' ' || kinds || ' ') LIKE ?"); args.push(`% ${q.kind} %`) }
   if (q.site) { where.push('site_id = ?'); args.push(q.site) }
   if (q.except) { where.push('src <> ?'); args.push(q.except) }
+  if (q.gold) where.push('gold = 1')
   if (q.place) { where.push('place_href = ?'); args.push(q.place) }
   if (q.near) {
     const [la, ln] = q.near, d = (q.km || 2) / 111
     where.push('lat BETWEEN ? AND ? AND lng BETWEEN ? AND ?'); args.push(la - d, la + d, ln - d / Math.cos(la * Math.PI / 180), ln + d / Math.cos(la * Math.PI / 180))
   }
-  const r = (await env.DB.prepare(`SELECT * FROM ev WHERE ${where.join(' AND ')} ORDER BY start LIMIT ?`).bind(...args, Math.min(q.n || 60, 300)).all()).results
+  const r = (await env.DB.prepare(`SELECT * FROM ev WHERE ${where.join(' AND ')} ORDER BY start, gold DESC LIMIT ?`).bind(...args, Math.min(q.n || 60, 300)).all()).results
   // one listing per title and day: Luma and motdang.net's harvest can both carry it
   const seen = new Set()
   return r.filter((e) => { const k = e.title.toLowerCase().replace(/\W+/g, '') + e.start.slice(0, 10); if (seen.has(k)) return false; seen.add(k); return true })
@@ -305,6 +336,7 @@ export function asData(e) {
   return {
     id: e.id, title: e.title, start: e.start, end: e.end, allDay: !!e.all_day, url: safe(e.url), venue: e.venue, area: e.area, lat: e.lat, lng: e.lng,
     cost: e.cost, approval: !!e.approval, spots: e.spots, kinds: (e.kinds || '').split(' ').filter(Boolean), host: e.host, hostUrl: safe(e.host_url),
+    gold: !!e.gold, card: e.gold ? safe(e.card) : null,
     page: e.site_id ? safe(e.host_url) : null, place: e.place_href ? { url: `${MAIN}/${e.place_href}`, name: e.place_name } : null, ics: `${MAIN}/tech/e/${encodeURIComponent(e.id)}.ics`,
     when: { th: dayOf(e.start, 'th'), en: dayOf(e.start, 'en'), time: e.all_day ? '' : clock(e.start) + (e.end && bkDay(Date.parse(e.end)) === bkDay(Date.parse(e.start)) ? '–' + clock(e.end) : '') },
   }
@@ -341,11 +373,13 @@ h2{font-size:20px;margin:26px 0 10px;border-bottom:2px solid var(--line);padding
 .meta{color:var(--soft);font-size:14px;margin:2px 0}.tags{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 0}
 .tag{font-size:12px;border:1px solid var(--line);border-radius:999px;padding:1px 8px}.tag.free{border-color:#2e7d32;color:#2e7d32}.tag.paid{border-color:var(--gold);color:var(--gold)}
 .acts{display:flex;flex-wrap:wrap;gap:12px;margin:6px 0 0;font-size:14px;font-weight:700}
+.ev.gold{border-color:var(--gold)}.gstar{color:var(--gold)}.tag.gold{border-color:var(--gold);color:var(--gold);font-weight:700}
+.evcard{display:block;margin:8px 0 0;max-width:320px}.evcard img{display:block;width:100%;height:auto;border-radius:8px;border:1px solid var(--line)}
 .none{color:var(--soft)}.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px}.cols a{display:block;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px;text-decoration:none;color:inherit}
 .cols b{display:block}.cols small{color:var(--soft)}.foot{color:var(--soft);font-size:13px;margin:28px 0 40px}
 @media (max-width:420px){.ev{grid-template-columns:52px 1fr;gap:10px}.date{font-size:14px}}`
 
-function card(e, lang) {
+export function card(e, lang) {
   const x = asData(e)
   const where = x.place ? `<a href="${esc(x.place.url)}">${esc(x.place.name)}</a>` : esc(x.venue || x.area || '')
   const map = !x.place && x.lat != null ? ` · <a href="https://www.google.com/maps/search/?api=1&query=${x.lat},${x.lng}" rel="noopener">${t('แผนที่', 'map')}</a>` : ''
@@ -355,11 +389,13 @@ function card(e, lang) {
     Number.isFinite(x.spots) && x.spots > 0 && x.spots <= 15 ? `<span class="tag">${t(`เหลือ ${x.spots} ที่`, `${x.spots} spots left`)}</span>` : '',
   ].join('')
   const day = new Date(Date.parse(e.start) + 7 * 3600e3)
-  return `<article class="ev" id="${esc(x.id)}"><div class="date">${day.getUTCDate()}<small>${t(dayOf(e.start, 'th').split(' ')[0], dayOf(e.start, 'en').split(' ')[0])}</small></div><div>
-<h3>${x.url ? `<a href="${esc(x.url)}" rel="noopener">${esc(x.title)}</a>` : esc(x.title)}</h3>
+  const star = x.gold ? `<span class="tag gold">★ ${t('ทอง', 'Gold')}</span>` : ''
+  const pic = x.gold && x.card ? `<a class="evcard" href="${esc(x.page || x.url || '#')}" rel="noopener"><img src="${esc(x.card)}" alt="" width="1200" height="630" loading="lazy"></a>` : ''
+  return `<article class="ev${x.gold ? ' gold' : ''}" id="${esc(x.id)}"><div class="date">${day.getUTCDate()}<small>${t(dayOf(e.start, 'th').split(' ')[0], dayOf(e.start, 'en').split(' ')[0])}</small></div><div>
+<h3>${x.gold ? '<span class="gstar" aria-hidden="true">★</span> ' : ''}${x.url ? `<a href="${esc(x.url)}" rel="noopener">${esc(x.title)}</a>` : esc(x.title)}</h3>
 <p class="meta">${t(x.when.th, x.when.en)}${x.when.time ? ' · ' + x.when.time : ''}${where ? ' · 📍 ' + where : ''}${map}</p>
 ${x.host ? `<p class="meta">${t('ผู้จัด', 'Host')}: ${x.hostUrl ? `<a href="${esc(x.hostUrl)}" rel="noopener">${esc(x.host)}</a>` : esc(x.host)}</p>` : ''}
-${tags ? `<div class="tags">${tags}</div>` : ''}
+${tags || star ? `<div class="tags">${star}${tags}</div>` : ''}${pic}
 <p class="acts">${x.url ? `<a href="${esc(x.url)}" rel="noopener">${t('สมัคร / รายละเอียด', 'Register / details')} ↗</a>` : ''}<a href="${esc(x.ics)}">🗓 ${t('ใส่ปฏิทิน', 'Add to calendar')}</a></p></div></article>`
 }
 
@@ -391,7 +427,7 @@ export async function page(env, { lang, kind }) {
   const ld = { '@context': 'https://schema.org', '@type': 'ItemList', name: title, itemListElement: list.slice(0, 60).map((e, i) => ({ '@type': 'ListItem', position: i + 1, item: {
     '@type': 'Event', name: e.title, startDate: e.start, ...(e.end ? { endDate: e.end } : {}), eventStatus: 'https://schema.org/EventScheduled', eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
     location: { '@type': 'Place', name: e.place_name || e.venue || e.area || 'Chiang Mai', ...(e.lat != null ? { geo: { '@type': 'GeoCoordinates', latitude: e.lat, longitude: e.lng } } : {}) },
-    ...(e.url ? { url: e.url } : {}), ...(e.host ? { organizer: { '@type': 'Organization', name: e.host, ...(e.host_url ? { url: e.host_url } : {}) } } : {}),
+    ...(e.url ? { url: e.url } : {}), ...(e.gold && safe(e.card) ? { image: safe(e.card) } : {}), ...(e.host ? { organizer: { '@type': 'Organization', name: e.host, ...(e.host_url ? { url: e.host_url } : {}) } } : {}),
     ...(/^free$/i.test(e.cost || '') ? { isAccessibleForFree: true } : {}) } })) }
   const hostList = [...hosts].sort((a, b) => b[1].n - a[1].n).slice(0, 24)
   const venueList = [...venues].sort((a, b) => b[1].n - a[1].n).slice(0, 24)
@@ -424,7 +460,7 @@ ${venueList.length ? `<h2>${t('สถานที่', 'Where')}</h2><div class=
 // ---- what a page carries ---------------------------------------------------------------
 
 const STRIP_CSS = `.mdev{list-style:none;margin:8px 0 0;padding:0}.mdev li{padding:8px 0;border-top:1px solid rgba(127,127,127,.25)}.mdev li:first-child{border-top:0}
-.mdev b{display:block;line-height:1.3}.mdev small{opacity:.75}.mdevmore{display:inline-block;margin-top:8px;font-weight:700}`
+.mdev .mdgold{color:#b8860b;margin-right:2px}.mdev b{display:block;line-height:1.3}.mdev small{opacity:.75}.mdevmore{display:inline-block;margin-top:8px;font-weight:700}`
 
 /** The section an owner's page carries: what its linked calendars have coming, and the way to tech events. */
 export async function siteSection(env, s, kind) {
@@ -434,7 +470,7 @@ export async function siteSection(env, s, kind) {
   if (!mine.length && !techPage) return ''
   const li = mine.slice(0, 8).map((e) => {
     const x = asData(e)
-    return `<li><b>${x.url ? `<a href="${esc(x.url)}" rel="noopener">${esc(x.title)}</a>` : esc(x.title)}</b><small>${esc(x.when.en)}${x.when.time ? ' · ' + x.when.time : ''}${x.place ? ` · <a href="${esc(x.place.url)}">${esc(x.place.name)}</a>` : x.venue ? ' · ' + esc(x.venue) : ''}${x.cost ? ' · ' + esc(x.cost) : ''}</small></li>`
+    return `<li><b>${x.gold ? '<span class="mdgold">★</span> ' : ''}${x.url ? `<a href="${esc(x.url)}" rel="noopener">${esc(x.title)}</a>` : esc(x.title)}</b><small>${esc(x.when.en)}${x.when.time ? ' · ' + x.when.time : ''}${x.place ? ` · <a href="${esc(x.place.url)}">${esc(x.place.name)}</a>` : x.venue ? ' · ' + esc(x.venue) : ''}${x.cost ? ' · ' + esc(x.cost) : ''}</small></li>`
   }).join('')
   const link = `<a class="mdevmore" href="${MAIN}/tech/">💻 Tech &amp; AI events in Chiang Mai · งานเทคและ AI →</a>`
   // no calendar of its own: the way to the town's events, without an empty heading
@@ -447,11 +483,11 @@ ${link}</section>`
 const WIDGET = `(()=>{const M='${MAIN}';const e=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
 const th=/^th/.test(document.documentElement.lang||navigator.language||'');
 document.querySelectorAll('[data-md-events]').forEach(async el=>{const d=el.dataset,q=new URLSearchParams();
-['kind','site','place','near','km','n','days'].forEach(k=>d[k]&&q.set(k,d[k]));if(!q.has('n'))q.set('n','6');
+['kind','site','place','near','km','n','days','gold'].forEach(k=>d[k]&&q.set(k,d[k]));if(!q.has('n'))q.set('n','6');
 try{const r=await fetch(M+'/tech/events.json?'+q);const j=await r.json();const L=j.events||[];
 if(!L.length){if(!d.replace&&d.empty!=='show')el.hidden=true;return}
 if(!document.getElementById('mdevcss')){const s=document.createElement('style');s.id='mdevcss';s.textContent=${JSON.stringify(STRIP_CSS)};document.head.appendChild(s)}
-el.innerHTML=(d.title?'<h3 style="margin:0">'+e(d.title)+'</h3>':'')+'<ul class="mdev">'+L.map(x=>'<li><b>'+(x.url?'<a href="'+e(x.url)+'" rel="noopener">'+e(x.title)+'</a>':e(x.title))+'</b><small>'+e(th?x.when.th:x.when.en)+(x.when.time?' · '+x.when.time:'')+(x.place&&!d.place?' · <a href="'+e(x.place.url)+'">'+e(x.place.name)+'</a>':x.venue&&!d.place?' · '+e(x.venue):'')+(x.cost?' · '+e(x.cost):'')+'</small></li>').join('')+'</ul><a class="mdevmore" href="'+M+(d.place?'/events.html':'/tech/'+(d.kind==='all'?'?all=1':''))+'">'+(th?'ดูทั้งหมด':'See all')+' →</a>';el.hidden=false}catch(_){}})})();`
+el.innerHTML=(d.title?'<h3 style="margin:0">'+e(d.title)+'</h3>':'')+'<ul class="mdev">'+L.map(x=>'<li><b>'+(x.gold?'<span class="mdgold">★</span> ':'')+(x.url?'<a href="'+e(x.url)+'" rel="noopener">'+e(x.title)+'</a>':e(x.title))+'</b><small>'+e(th?x.when.th:x.when.en)+(x.when.time?' · '+x.when.time:'')+(x.place&&!d.place?' · <a href="'+e(x.place.url)+'">'+e(x.place.name)+'</a>':x.venue&&!d.place?' · '+e(x.venue):'')+(x.cost?' · '+e(x.cost):'')+'</small></li>').join('')+'</ul><a class="mdevmore" href="'+M+(d.place?'/events.html':'/tech/'+(d.kind==='all'?'?all=1':''))+'">'+(th?'ดูทั้งหมด':'See all')+' →</a>';el.hidden=false}catch(_){}})})();`
 
 /** Routes under /tech/ (motdang.net) and /events (sites.motdang.net). */
 export async function route(request, env, path, url, { langOf }) {
@@ -468,7 +504,7 @@ export async function route(request, env, path, url, { langOf }) {
     return {
       kind: url.searchParams.get('kind') || 'tech', site: url.searchParams.get('site') || '', place: url.searchParams.get('place') || '',
       near: near.length === 2 && near.every(Number.isFinite) ? near : null, km: Math.min(20, Number(url.searchParams.get('km')) || 2),
-      n: Math.min(300, Number(url.searchParams.get('n')) || 100), days: Math.min(365, Number(url.searchParams.get('days')) || 120),
+      n: Math.min(300, Number(url.searchParams.get('n')) || 100), days: Math.min(365, Number(url.searchParams.get('days')) || 120), gold: url.searchParams.get('gold') === '1',
     }
   }
   if (path === '/tech/events.json') {
