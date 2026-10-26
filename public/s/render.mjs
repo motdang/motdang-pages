@@ -555,6 +555,18 @@ const BRAND = {
 
 /** The whole page. site = { name, look, lang, kind, d, views, status, tier }.
  *  opt = { origin, img(id, small?) → url, preview, nonce, now, gold } */
+/**
+ * On Google and other search engines: a live Gold page; a live free page once it has a way to reach the
+ * maker (a phone, LINE or a pin on the map) and no reports (Nan 2026-10-26: "Free pages should be on google").
+ */
+export function findable(site, d, gold = site.tier === 'gold') {
+  if (site.status !== 'live') return false
+  if (gold) return true
+  if (Number(site.reports) > 0) return false
+  const c = d?.contact || {}
+  return !!(String(c.phone || '').trim() || String(c.line || '').trim() || (d?.place && Number.isFinite(d.place.lat) && Number.isFinite(d.place.lng) && d.place.lat !== null))
+}
+
 export function render(site, opt = {}) {
   const d = normalize(site.d)
   const lang = PAGE_LANGS[site.lang] ? site.lang : 'en'
@@ -610,7 +622,7 @@ export function render(site, opt = {}) {
     `<meta property="og:url" content="${esc(pageUrl)}"><meta property="og:type" content="website"><meta property="og:site_name" content="Mot Dang">`,
     `<meta property="og:image" content="${esc(card)}"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:image:type" content="image/jpeg"><meta property="og:image:alt" content="${esc(cardAlt)}">`,
     `<meta name="twitter:card" content="summary_large_image"><meta name="twitter:image" content="${esc(card)}"><meta name="twitter:image:alt" content="${esc(cardAlt)}">`,
-    `<meta name="robots" content="${gold && site.status === 'live' ? 'index,follow,notranslate' : 'noindex,notranslate'}"><link rel="canonical" href="${esc(opt.hl ? pageUrl + '?hl=' + opt.hl : pageUrl)}">`,
+    `<meta name="robots" content="${findable(site, d, gold) ? 'index,follow,notranslate' : 'noindex,notranslate'}"><link rel="canonical" href="${esc(opt.hl ? pageUrl + '?hl=' + opt.hl : pageUrl)}">`,
     langs.length > 1 && gold && site.status === 'live' ? langs.map((l) => `<link rel="alternate" hreflang="${l}" href="${esc(l === home ? pageUrl : pageUrl + '?hl=' + l)}">`).join('') : '',
     gold && site.status === 'live' && !opt.preview ? `<script type="application/ld+json">${(Am ? JSON.stringify(amuletLd(Am, pageUrl, card, cur)) : ldJson(site, d, name, pageUrl, card, L, sym)).replace(/</g, '\\u003c')}</script>` : '',
     `<meta name="theme-color" content="${/--bg:(#[0-9a-f]+)/i.exec(look.vars)?.[1] || '#ffffff'}">`,

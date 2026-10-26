@@ -23,7 +23,7 @@
 // The edit link is the sign-in: a long random token, stored only as its hash.
 
 import { promptPayPayload } from './promptpay.mjs'
-import { render, qrSvg, normalize, vcard, ics, sign, KINDS, LOOK_IDS, GOLD_LOOKS, MAX_PHOTOS, photoMax, sceneOf, HOME } from '../public/s/render.mjs'
+import { render, findable, qrSvg, normalize, vcard, ics, sign, KINDS, LOOK_IDS, GOLD_LOOKS, MAX_PHOTOS, photoMax, sceneOf, HOME } from '../public/s/render.mjs'
 import { AM_MAX, amCap } from '../public/s/amulet.mjs'
 import { PAGE_LANGS } from '../public/s/words.mjs'
 import { nameProblem, screen } from './screen.mjs'
@@ -216,6 +216,7 @@ async function page(request, env, ctx, name, sub, url, origin, base) {
   const s = await env.DB.prepare('SELECT * FROM site WHERE name = ?').bind(name).first()
   if (!s || s.status === 'removed' || s.status === 'draft') return html(notFound(s ? null : name, request, s?.status), s?.status === 'removed' ? 410 : 404)
   const site = { ...s, d: JSON.parse(s.d), tier: gold.isGold(s) ? 'gold' : 'free', hotel: gold.isHotel(s), sian: sian.isSian(s) }
+  if (site.tier !== 'gold') site.reports = (await env.DB.prepare('SELECT COUNT(*) AS n FROM report WHERE site_id = ?').bind(s.id).first())?.n || 0
   if (sub === '/contact.vcf') {
     if (s.status !== 'live') return new Response('', { status: 404 })
     return new Response(vcard(site), { headers: { 'content-type': 'text/vcard; charset=utf-8', 'content-disposition': `attachment; filename="${name}.vcf"` } })
@@ -388,7 +389,8 @@ function llms(origin) {
 }
 
 async function sitemap(env, origin) {
-  const rows = (await env.DB.prepare("SELECT name, updated, tier, gold_until, d FROM site WHERE status='live'").all()).results.filter((r) => gold.isGold(r))
+  const rows = (await env.DB.prepare("SELECT name, updated, tier, gold_until, status, d, (SELECT COUNT(*) FROM report WHERE report.site_id = site.id) AS reports FROM site WHERE status='live'").all()).results
+    .filter((r) => { try { return findable({ ...r, tier: gold.isGold(r) ? 'gold' : 'free' }, normalize(JSON.parse(r.d))) } catch { return false } })
   const loc = (u, day) => `<url><loc>${u}</loc><lastmod>${day}</lastmod></url>`
   // the amulet market, its stalls, the price guide and Sala Sian (market.mjs, amprice.mjs, sian.mjs)
   const P = await amprice.load(env).catch(() => null)

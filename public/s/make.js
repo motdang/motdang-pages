@@ -484,6 +484,13 @@ function check() {
   availTimer = setTimeout(async () => {
     try {
       const r = await call('GET', 'name?n=' + encodeURIComponent(S.addr))
+      // taken by a page this browser made: that page opens, not a second one (Nan 2026-10-26)
+      if (!r.ok && (r.why || 'taken') === 'taken' && minePage()) {
+        availOk = true
+        av.className = 'avail ok'; av.innerHTML = `${icon('check')}${T('a_mine')}`
+        next.disabled = false
+        return
+      }
       // a taken address the maker did not type: the next free one, -2, -3 …
       if (!r.ok && (r.why || 'taken') === 'taken' && !S.addrTouched && $('#ad')) {
         const m = /^(.*?)(?:-(\d+))?$/.exec(S.addr)
@@ -558,7 +565,16 @@ async function starterPic(kind) {
   redrawSec('photos')
 }
 
+/** A page this browser made with the same address, or the same name: the one to open instead of making another. */
+function minePage() {
+  const base = (a) => String(a || '').replace(/-\d$/, '')
+  const nm = S.name.trim().toLowerCase()
+  return store.get('pages', []).find((p) => p.token && (p.name === S.addr || (S.addr && base(p.name) === base(S.addr) && String(p.title || '').trim().toLowerCase() === nm) || (nm && String(p.title || '').trim().toLowerCase() === nm)))
+}
+
 async function create(look, btn) {
+  const mine = minePage()
+  if (mine) { location.hash = '#t=' + mine.token; toast(ui(S.lang, 'reopened')); return }
   S.look = look
   btn.classList.add('on')
   S.d = normalize(applyPrefill({ ...starter(S.kind), name: S.name.trim(), accent: S.accent || '' }))

@@ -33,7 +33,12 @@ test('Gold looks, video, places and indexing show only for Gold', () => {
   assert.ok(!free.includes('youtube'))
   assert.match(free, /class="spots"/) // up to 3 places on a free page since 2026-10-14
   assert.equal(render({ ...base, d: { ...d, spots: Array.from({ length: 6 }, (_, i) => ({ n: 'P' + i, lat: 18.7 + i / 100, lng: 98.9 })) } }).match(/data-spot=/g).length, 3)
-  assert.match(free, /name="robots" content="noindex,notranslate"/)
+  // free pages go on Google once a reader can reach the maker: a phone, LINE or a pin, and no reports (Nan 2026-10-26)
+  assert.match(free, /name="robots" content="index,follow,notranslate"/)
+  assert.match(render({ ...base, d: { name: 'x' } }), /name="robots" content="noindex,notranslate"/)
+  assert.match(render({ ...base, d: { name: 'x', contact: { line: '@shop' } } }), /content="index,follow,notranslate"/)
+  assert.match(render({ ...base, reports: 1, d }), /name="robots" content="noindex,notranslate"/)
+  assert.match(render({ ...base, status: 'held', d }), /name="robots" content="noindex,notranslate"/)
   const gold = render({ ...base, look: 'gold', tier: 'gold', d })
   assert.match(gold, /data-look="gold"/)
   assert.match(gold, /data-kind="youtube" data-id="dQw4w9WgXcQ"/)
