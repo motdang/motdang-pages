@@ -42,7 +42,7 @@ const S = {
   step: 'kind', kind: 'stay', name: '', addr: '', addrTouched: false, accent: '', token: '', status: 'draft', views: 0,
   pageLang: '', d: null, open: new Set(), local: new Map(), big: new Map(), photoGps: null, picker: null, busy: 0,
   tab: 'edit', tier: 'gold', goldUntil: '', notifyEmail: '', notifyOk: false, unread: 0, // a page starts with 30 days of Gold
-  trial: false, asks: 0, orders: 0, shipinfo: null, domain: '', domainState: '', domains: false, price: 3000, dbFam: '', dbQ: '',
+  trial: false, asks: 0, orders: 0, shipinfo: null, domain: '', domainState: '', domains: false, price: 3000,
   hotel: true, hotelUntil: '', plans: null, payPlan: '', part: '',
   lineOn: false, line: null, news: [], loaded: '', lineCode: null, // Edit by LINE (lineedit.mjs): the tab, who is linked, the page's dated notes, when this copy was read
 }
@@ -58,13 +58,7 @@ function dingbats(fams) {
 dingbats.loaded = new Set()
 dingbats(['signals', 'classic', 'kitchen', 'faces', 'lanna'])
 const KIND_DING = { shop: 'cart', food: 'noodles', service: 'gear', work: 'nib', amulet: 'lotus', stay: 'key', homes: 'home', me: 'wave', event: 'party', group: 'crown', store: 'gift', online: 'rocket' }
-const DB_FAMS = [...new Set(Object.values(DINGBATS))]
 const rid = () => Math.random().toString(36).slice(2, 8).padEnd(6, 'x')
-// the dingbats a maker can put beside the name: a handful from each family
-const DING_PICKS = ['lantern', 'naga', 'lotus', 'krathong', 'elephant', 'tuk-tuk', 'scooter', 'khao-soi', 'mango-rice', 'cha-yen', 'chili', 'frangipani', 'gecko', 'soi-dog',
-  'coffee', 'noodles', 'bubble-tea', 'cake', 'dumplings', 'cocktail', 'beer', 'ice-cream', 'heart', 'star', 'sparkle', 'sun', 'flower', 'crown', 'note', 'scissors',
-  'smile', 'wai', 'party', 'cool', 'heart-eyes', 'rock-on', 'butterfly', 'cat', 'leaf', 'rainbow', 'moon', 'koi', 'owl', 'bee', 'rocket', 'balloon', 'gift', 'camera',
-  'string-lights', 'bunting', 'lai-kham'].filter((n) => DINGBATS[n])
 const T = (k) => esc(ui(S.lang, k))
 
 // ---- starting data per kind ---------------------------------------------------------
@@ -554,13 +548,13 @@ const SECTIONS = [
   ['cal', 'cal', 's_cal'], ['camps', 'party', 's_camps', 'gold'],
   ['products', 'shop', 's_products'], ['ship', 'tag', 's_ship'], ['dls', 'download', 's_dls', 'gold'],
   ['order', 'basket', 's_order'], ['contact', 'phone', 's_contact'], ['map', 'pin', 's_map'], ['spots', 'compass', 's_spots'], ['hours', 'clock', 's_hours'],
-  ['links', 'link', 's_links'], ['msg', 'mail', 's_msg'], ['colour', 'star', 'colour'], ['card', 'share', 's_card'], ['video', 'camera', 's_video', 'gold'],
+  ['links', 'link', 's_links'], ['msg', 'mail', 's_msg'], ['colour', 'star', 'g_colour'], ['card', 'share', 's_card'], ['video', 'camera', 's_video', 'gold'],
 ]
 
 function hasData(id) {
   const d = S.d
   return { event: !!d.event, words: true, drawing: true, photos: d.photos.length > 0, items: d.items.length > 0, order: !!(d.order.grabfood || d.order.lineman),
-    contact: Object.values(d.contact).some(Boolean), map: d.place.lat !== null || !!d.place.addr, hours: d.hours.on, links: d.links.length > 0, msg: true, look: true,
+    contact: Object.values(d.contact).some(Boolean), map: d.place.lat !== null || !!d.place.addr, hours: d.hours.on, links: d.links.length > 0, msg: true, colour: true,
     video: !!d.video, spots: d.spots.length > 0, cal: d.cal.length > 0, ota: !!(d.ota.agoda || d.ota.booking), camps: d.camps.length > 0, svc: d.svc.length > 0, rooms: d.rooms.length > 0, lists: d.lists.length > 0, face: !!d.avatar, works: d.works.length > 0, amulets: d.amulets.length > 0, quotes: d.quotes.length > 0, faq: d.faq.length > 0, signup: d.signup.on, products: d.products.length > 0, dls: d.dls.length > 0, ship: !!(d.ship.th || d.ship.world || d.ship.free || d.ship.mot || d.disc.code), card: true }[id]
 }
 
@@ -599,9 +593,9 @@ function thumb(g, ding0) {
   const img = (src) => `<span class="th" data-d="${ding0}"><img src="${esc(src)}" alt="" loading="lazy"></span>`
   if (g === 'words') {
     const nm = (d.name || S.name).slice(0, 24), L = Math.max(4, ...nm.split(/\s+/).map((w) => [...w].length))
-    return `<span class="th lookth" style="${vars};--L:${L}"><b>${esc(nm)}</b></span>`
+    return `<span class="th typeth" style="${vars};--L:${L}"><b>${esc(nm)}</b></span>`
   }
-  if (g === 'colour') return `<span class="th lookth" style="${vars}"><b>Aa</b><i class="acc"></i></span>`
+  if (g === 'colour') return `<span class="th typeth" style="${vars}"><b>Aa</b><i class="acc"></i></span>`
   if (g === 'pics') {
     const c = d.cover && d.cover !== KPIC_ID ? imgUrl(d.cover, true) : (d.photos[0] ? imgUrl(d.photos[0], true) : '')
     if (c) return img(c)
@@ -799,7 +793,6 @@ const SEC = {
   colour() {
     const acc = S.d.accent || ownAccent()
     return `<div><b>${T('colour')}</b><div class="swatches">${[ownAccent(), ...ACCENTS.filter((a) => a !== ownAccent())].map((a) => `<button data-acc="${a}" style="background:${a}"${a === acc ? ' class="on"' : ''} aria-label="${a}"></button>`).join('')}</div></div>
-      <div><b>${T('s_dings')}</b><p class="hint">${T('dingsHint')}</p>${dingBrowser()}</div>
       <label class="check"><input type="checkbox" class="sw" data-k="counter" ${S.d.counter ? 'checked' : ''}>${T('counter')}</label>
       <label class="field"><span>${T('pageLang')}</span><select id="plang">${Object.entries(PAGE_LANGS).map(([k, v]) => `<option value="${k}"${k === S.pageLang ? ' selected' : ''}>${esc(v)}</option>`).join('')}</select></label>`
   },
@@ -826,16 +819,6 @@ const rowX = (list, i) => `<button class="x" data-rmrow="${list}" data-i="${i}" 
 function photoPick(path, chosen) {
   if (!S.d.photos.length) return ''
   return `<div class="pickph" data-path="${path}">${S.d.photos.map((id) => `<button type="button" data-pp="${id}"${chosen.includes(id) ? ' class="on"' : ''}><img src="${esc(imgUrl(id, true))}" alt=""></button>`).join('')}</div>`
-}
-
-function dingBrowser() {
-  const q = S.dbQ.trim().toLowerCase()
-  const names = Object.keys(DINGBATS).filter((n) => (!S.dbFam || DINGBATS[n] === S.dbFam) && (!q || n.includes(q)))
-  dingbats(S.dbFam ? [S.dbFam] : DB_FAMS)
-  return `<div class="dpicked">${S.d.dings.length ? S.d.dings.map((n) => `<button data-ding="${n}" class="on" aria-label="${n}">${ding(n, 'ink')}<span>×</span></button>`).join('') : `<p class="hint" style="margin:0">${T('db_none')}</p>`}</div>
-    <div class="row" style="margin:8px 0"><input id="dbq" type="search" placeholder="${T('db_find')}" value="${val(S.dbQ)}" style="flex:1;min-width:160px"></div>
-    <div class="chips">${['', ...DB_FAMS].map((f) => `<button type="button" data-dbfam="${f}"${f === S.dbFam ? ' class="on"' : ''}>${f ? esc(f) : T('db_all')}</button>`).join('')}</div>
-    <div class="dpick" id="dpick">${names.map((n) => `<button data-ding="${n}"${S.d.dings.includes(n) ? ' class="on"' : ''} aria-label="${n}" title="${n}">${ding(n, 'ink', 'hover')}</button>`).join('')}</div>`
 }
 
 Object.assign(SEC, {
@@ -1110,11 +1093,6 @@ function bindEdit() {
   form.addEventListener('input', (e) => {
     const t = e.target
     if (t.dataset.ical !== undefined) { const r = S.d.rooms[+t.dataset.ical]; if (r) { r.ical = t.value.split(/\s+/).map((x) => x.trim()).filter(Boolean).slice(0, 4); changed() } }
-    if (t.id === 'dbq') {
-      S.dbQ = t.value
-      const box = $('#dpick'), q = S.dbQ.trim().toLowerCase()
-      if (box) box.innerHTML = Object.keys(DINGBATS).filter((n) => (!S.dbFam || DINGBATS[n] === S.dbFam) && (!q || n.includes(q))).map((n) => `<button data-ding="${n}"${S.d.dings.includes(n) ? ' class="on"' : ''} aria-label="${n}" title="${n}">${ding(n, 'ink', 'hover')}</button>`).join('')
-    }
   })
   form.addEventListener('change', (e) => {
     const t = e.target
@@ -1157,14 +1135,6 @@ function bindEdit() {
     if (b.id === 'addlink') { S.d.links.push({ t: '', u: '' }); redrawSec('links'); $(`[data-k="links.${S.d.links.length - 1}.t"]`).focus() }
     if (b.dataset.rmlink) { S.d.links.splice(+b.dataset.rmlink, 1); redrawSec('links'); changed() }
     if (b.dataset.acc) { S.d.accent = b.dataset.acc === ownAccent() ? '' : b.dataset.acc; redrawSec('colour'); changed() }
-    if (b.dataset.ding) {
-      const n = b.dataset.ding
-      S.d.dings = S.d.dings.includes(n) ? S.d.dings.filter((x) => x !== n) : [...S.d.dings, n].slice(-6)
-      app.querySelectorAll('#dpick [data-ding]').forEach((x) => x.classList.toggle('on', S.d.dings.includes(x.dataset.ding)))
-      const pk = $('.dpicked'); if (pk) pk.innerHTML = S.d.dings.length ? S.d.dings.map((x) => `<button data-ding="${x}" class="on" aria-label="${x}">${ding(x, 'ink')}<span>×</span></button>`).join('') : `<p class="hint" style="margin:0">${T('db_none')}</p>`
-      changed()
-    }
-    if (b.dataset.dbfam !== undefined) { S.dbFam = b.dataset.dbfam; redrawSec('colour') }
     if (b.dataset.seg) { setPath(S.d, b.dataset.seg, b.dataset.v); b.parentNode.querySelectorAll('button').forEach((x) => x.classList.toggle('on', x === b)); changed() }
     if (b.dataset.addrow) {
       const k = b.dataset.addrow
@@ -1384,7 +1354,7 @@ function wireFrame(f) {
   const doc = f.contentDocument
   if (!doc) return
   const st = doc.createElement('style'); st.textContent = PART_CSS; doc.head.appendChild(st)
-  doc.querySelectorAll('header.top img, header.top #st, header.top .dings, header.top, main.wrap > *, footer').forEach((el) => { el.dataset.part = partOf(el) })
+  doc.querySelectorAll('header.top img, header.top #st, header.top, main.wrap > *, footer').forEach((el) => { el.dataset.part = partOf(el) })
   // the name and the line under it, typed on the page
   const top = doc.querySelector('header.top .t')
   const h1 = top?.querySelector('h1')
@@ -1465,7 +1435,7 @@ async function save(extra = {}) {
   S.saving = true
   const st = $('#state'); if (st) st.textContent = stateText()
   try {
-    // a live page whose name, picture, avatar or look changed gets a new share card
+    // a live page whose name, picture, avatar or kind changed gets a new share card
     if (S.status === 'live' && !extra.publish && cardKey({ look: design(), name: S.name, kind: S.kind, tier: S.tier }, S.d) !== S.cardKey) await makeCard().catch(() => {})
     const d = { ...S.d, items: S.d.items.filter((x) => x.n || x.p || x.note) }
     const r = await call('PUT', 'site', { d, lang: S.pageLang, kind: S.kind, loaded: S.loaded, stockAt: S.stockAt || S.loaded, ...extra })
@@ -2063,8 +2033,8 @@ async function drawLine() {
 async function drawGold() {
   const tb = $('#tb')
   let r = null
-  const feats = ['g_f7', 'g_f8', 'g_f9', 'g_f1', 'g_f2', 'g_f3', 'g_f4', 'g_f5', 'g_f6']
-  const fdings = ['key', 'megaphone', 'chat', 'crown', 'search', 'camera', 'compass', 'calendar', 'star']
+  const feats = ['g_f7', 'g_f8', 'g_f9', 'g_f2', 'g_f3', 'g_f4', 'g_f5', 'g_f6']
+  const fdings = ['key', 'megaphone', 'chat', 'search', 'camera', 'compass', 'calendar', 'star']
   // the maker's own page with Gold first, then the price, then the list
   const head = `<section class="goldtop"><div class="goldhero"><h2>${T('g_lead')}</h2><p class="gwhy">${T('g_why')}</p></div>
     <div class="minip"><p class="lbl">${T('g_see')}</p>${miniShell('gmini')}</div></section>`
