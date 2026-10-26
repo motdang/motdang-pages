@@ -16,7 +16,7 @@ export async function drawCustomers(tb, h) {
   const newsLabel = (c) => (c.news === 'yes' ? (c.mail ? T('c_yes') : T('c_noMail')) : c.news === 'off' ? T('c_off') : T('c_no'))
   const card = (c) => `<article class="msg cust ${c.news}"><header><b>${esc(c.name || c.email || c.phone || c.line || '—')}</b><span>${esc(day(c.last))}</span></header>
     <p class="reach">${[c.email, c.phone, c.line].filter(Boolean).map(esc).join(' · ') || '—'}</p>
-    <p class="cmeta"><span>${T('c_first')} ${esc(day(c.first))}</span><span>${T('c_bk')} ${nf.format(c.bookings)}</span><span>${T('c_msgs')} ${nf.format(c.messages)}</span><span class="cnews ${c.news}">${T('c_news')}: ${newsLabel(c)}</span></p></article>`
+    <p class="cmeta"><span>${T('c_first')} ${esc(day(c.first))}</span><span>${T('c_bk')} ${nf.format(c.bookings)}</span><span>${T('c_msgs')} ${nf.format(c.messages)}</span><span class="cnews ${c.news}">${T('c_news')}: ${newsLabel(c)}</span>${(c.source || []).includes('signup') ? `<span>${T('c_signup')}</span>` : ''}</p></article>`
   const n = r.news
   const nextWhen = (() => { try { return new Intl.DateTimeFormat(S.lang, { month: 'long', year: 'numeric' }).format(new Date(n.next + '-01T00:00:00Z')) } catch { return n.next } })()
   const used = n.used
@@ -29,7 +29,7 @@ export async function drawCustomers(tb, h) {
     <p class="nmsg" id="nmsg" aria-live="polite"></p>
     <div class="row"><button class="go" id="nsend"${used || !n.mail ? ' disabled' : ''}>${icon('mail')}${T('n_send')}</button><a class="go line" id="nline" href="#" target="_blank" rel="noopener">${icon('chat')}${T('n_line')}</a></div></section>`
   const hist = n.history.length ? `<section class="panel"><h3>${T('n_hist')}</h3><ul class="plain">${n.history.map((x) => `<li><b>${esc(x.month)}</b> · ${nf.format(x.sent)}${x.failed ? ` (${T('n_failed', { n: nf.format(x.failed) })})` : ''}<br><span class="m">${esc(x.body.slice(0, 120))}</span></li>`).join('')}</ul></section>` : ''
-  tb.innerHTML = head + tiles + `<p style="text-align:right"><button class="go ghost small" id="ccsv">${icon('download')}${T('c_csv')}</button></p>` +
+  tb.innerHTML = head + tiles + (n.pending ? `<p class="hint">${T('c_pending', { n: nf.format(n.pending) })}</p>` : '') + `<p style="text-align:right"><button class="go ghost small" id="ccsv">${icon('download')}${T('c_csv')}</button></p>` +
     (r.rows.length ? `<div class="msgs">${r.rows.map(card).join('')}</div>` : `<p class="none2"><span>${T('c_none')}</span></p>`) + compose + hist
   // the LINE link follows the words and the chosen link
   const text = tb.querySelector('#ntext'), sel = tb.querySelector('#nlink'), ln = tb.querySelector('#nline'), msg = tb.querySelector('#nmsg')

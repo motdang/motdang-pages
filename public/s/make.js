@@ -22,6 +22,7 @@ import { cardHtml, cardBind } from './make-card.mjs'
 import { drawCustomers } from './make-customers.mjs'
 import { menuBox, menuInit } from './make-menu.mjs'
 import { gbpBox, bindGbp, GBP_CSS } from './make-gbp.mjs'
+import { faqSec, signupSec, packageRows, newFaq, onlineExamples } from './make-online.mjs'
 
 const $ = (s, el = document) => el.querySelector(s)
 const app = $('#app')
@@ -79,7 +80,7 @@ const DEFAULT_OPEN = {
   event: ['pay', 'event', 'words', 'cal', 'photos', 'map', 'contact'],
   group: ['pay', 'words', 'cal', 'photos', 'links', 'contact'],
   store: ['words', 'photos', 'items', 'pay', 'contact', 'links'],
-  online: ['words', 'face', 'svc', 'quotes', 'links', 'contact'],
+  online: ['words', 'face', 'svc', 'faq', 'quotes', 'signup', 'links', 'contact'],
 }
 // new pages start in a look that shows photos as taken (Nan 2026-10-26: less image editing); Poster stays one tap away
 // the kinds most likely to pay come first (Nan 2026-10-26)
@@ -107,6 +108,7 @@ function starter(kind) {
   if (kind === 'stay') d.rooms = [{ id: rid(), n: '', guests: 2, beds: '', p: '', note: '', photos: [], ical: [] }]
   if (kind === 'homes') d.lists = [{ id: rid(), t: '', deal: 'sale', status: 'open', p: '', area: '', unit: 'm2', beds: 0, baths: 0, kind: '', note: '', photos: [] }]
   if (kind === 'service' || kind === 'online') d.svc = []
+  if (kind === 'online') { d.faq = []; d.signup = { on: true, t: '', note: '' } }
   if (kind === 'event') {
     const t = new Date(Date.now() + 7 * 864e5)
     const p = (n) => String(n).padStart(2, '0')
@@ -236,9 +238,7 @@ function examples(kind, lang) {
     service: th ? [['นวดไทย 1 ชั่วโมง', '300'], ['นวดเท้า', '250']] : [['Thai massage, 1 hour', '300'], ['Foot massage', '250']],
     store: th ? [['ผ้าพันคอทอมือ', '450'], ['สบู่สมุนไพร 3 ก้อน', '199'], ['กาแฟดอยช้าง 250 กรัม', '320']] : [['Handwoven scarf', '450'], ['Herbal soap, 3 bars', '199'], ['Doi Chang coffee, 250 g', '320']],
   }[kind]?.map(([n, p]) => ({ n, p, note: '' }))
-  if (parts.includes('svc')) x.svc = kind === 'online'
-    ? (th ? [{ n: 'คุย 30 นาที', mins: 30, p: '500' }, { n: 'แพ็กเกจเริ่มต้น', mins: 60, p: '3000' }] : [{ n: 'A 30-minute call', mins: 30, p: '500' }, { n: 'Starter package', mins: 60, p: '3000' }])
-    : th ? [{ n: 'นวดไทย', mins: 60, p: '300' }, { n: 'นวดน้ำมัน', mins: 90, p: '500' }] : [{ n: 'Thai massage', mins: 60, p: '300' }, { n: 'Oil massage', mins: 90, p: '500' }]
+  if (parts.includes('svc')) x.svc = th ? [{ n: 'นวดไทย', mins: 60, p: '300' }, { n: 'นวดน้ำมัน', mins: 90, p: '500' }] : [{ n: 'Thai massage', mins: 60, p: '300' }, { n: 'Oil massage', mins: 90, p: '500' }]
   if (parts.includes('rooms')) x.rooms = [
     { n: th ? 'ห้องริมสวน' : 'Garden room', guests: 2, beds: th ? 'เตียงควีน 1' : '1 queen bed', p: '900', p2: '1100', photos: [KPIC_ID] },
     { n: th ? 'ห้องครอบครัว' : 'Family room', guests: 4, beds: th ? 'เตียงคู่ 2' : '2 double beds', p: '1500', photos: [] },
@@ -252,6 +252,7 @@ function examples(kind, lang) {
     { t: th ? 'รูปเมนูร้านกาแฟ' : 'Menu photos for a café', year: '2025', tags: th ? 'อาหาร' : 'food', photos: [KPIC_ID] },
   ]
   if (parts.includes('quotes')) x.quotes = [{ q: th ? 'เร็ว ใจดี และรูปสวยมาก' : 'Quick, kind, and the photos were beautiful.', who: 'Ploy' }]
+  if (kind === 'online') Object.assign(x, onlineExamples(th), { signup: { on: true, t: '', note: '' } }) // a tutor in Chiang Mai: three packages, three questions, two client quotes (make-online.mjs)
   if (parts.includes('links')) x.links = [{ t: 'Facebook', u: 'https://www.facebook.com/' }, { t: 'Instagram', u: 'https://www.instagram.com/' }]
   x.pay = { pp: '0812345678', tips: ['me', 'work', 'group', 'service'].includes(kind), price: kind === 'event' ? '150' : '' }
   x.contact = { line: '@yourpage' }
@@ -275,7 +276,7 @@ function tryData(look = S.look) {
 const shownName = () => S.name.trim() || ui(S.lang, 'yourName')
 // (SECTIONS and PART are declared further down, so these are worked out on first use)
 let SEC_ICON = null, PART_AT = null
-const secIcon = (p) => (SEC_ICON ||= Object.fromEntries(SECTIONS.map(([id, ic, , g]) => [id, [ic, g]])))[p]
+const secIcon = (p) => (p === 'svc' && S.kind === 'online' ? ['clock'] : (SEC_ICON ||= Object.fromEntries(SECTIONS.map(([id, ic, , g]) => [id, [ic, g]])))[p])
 // where each part sits on the page, for "tap one to see it"
 function partAt(p) {
   if (!PART_AT) { PART_AT = { photos: '.gallery, header.top img:not(.av)', ota: '#rooms', face: 'header.top', order: 'nav.reach, ul.menu', event: '.when, #count' }; for (const [sel, part] of PART) if (!PART_AT[part]) PART_AT[part] = sel }
@@ -301,7 +302,7 @@ function kindTile(k) {
 function getsHtml() {
   return `<p class="gwhy">${T('why_' + S.kind)}</p><p class="gl">${T('gets')} <span>${T('getsTap')} ${T('exNote')}</span></p><div class="getchips">${(DEFAULT_OPEN[S.kind] || []).map((p) => {
     const [ic, g] = secIcon(p) || ['star']
-    return `<button class="chip" data-at="${p}">${icon(ic)}${T('s_' + p)}${g ? '<i>★</i>' : ''}</button>`
+    return `<button class="chip" data-at="${p}">${icon(ic)}${T(p === 'svc' && S.kind === 'online' ? 's_pkg' : 's_' + p)}${g ? '<i>★</i>' : ''}</button>`
   }).join('')}</div>`
 }
 
@@ -608,6 +609,7 @@ async function create(look, btn) {
   if (S.kind === 'homes') S.d.lists = [NEW_ROW.lists()]
   if (S.kind === 'work') S.d.works = [NEW_ROW.works()]
   if (S.kind === 'amulet') S.d.amulets = [NEW_ROW.amulets()]
+  if (S.kind === 'online') { S.d.svc = [NEW_ROW.svc()]; S.d.faq = [NEW_ROW.faq()] }
   S.pageLang = PAGE_LANGS[S.lang] ? S.lang : 'en'
   try {
     const r = await call('POST', 'sites', { name: S.addr, kind: S.kind, look, lang: S.pageLang, d: S.d, by: new URLSearchParams(location.search).get('by') || '' })
@@ -630,7 +632,7 @@ async function create(look, btn) {
 
 const SECTIONS = [
   ['pay', 'coin', 's_pay'], ['event', 'cal', 's_event'], ['words', 'note', 's_words'], ['face', 'me', 's_face'], ['works', 'star', 's_works'], ['amulets', 'flower', 's_amulets'], ['drawing', 'sparkle', 's_drawing'], ['photos', 'camera', 's_photos'], ['quotes', 'chat', 's_quotes'],
-  ['rooms', 'moon', 's_rooms', 'gold'], ['ota', 'globe', 's_ota', 'gold'], ['lists', 'tag', 's_lists', 'gold'], ['svc', 'clock', 's_svc', 'gold'], ['items', 'tag', 's_items'],
+  ['rooms', 'moon', 's_rooms', 'gold'], ['ota', 'globe', 's_ota', 'gold'], ['lists', 'tag', 's_lists', 'gold'], ['svc', 'clock', 's_svc', 'gold'], ['faq', 'note', 's_faq'], ['signup', 'mail', 's_signup', 'gold'], ['items', 'tag', 's_items'],
   ['cal', 'cal', 's_cal'], ['camps', 'party', 's_camps', 'gold'],
   ['order', 'basket', 's_order'], ['contact', 'phone', 's_contact'], ['map', 'pin', 's_map'], ['spots', 'compass', 's_spots'], ['hours', 'clock', 's_hours'],
   ['links', 'link', 's_links'], ['msg', 'mail', 's_msg'], ['look', 'star', 's_look'], ['card', 'share', 's_card'], ['video', 'camera', 's_video', 'gold'],
@@ -640,7 +642,7 @@ function hasData(id) {
   const d = S.d
   return { event: !!d.event, words: true, drawing: true, photos: d.photos.length > 0, items: d.items.length > 0, order: !!(d.order.grabfood || d.order.lineman),
     contact: Object.values(d.contact).some(Boolean), map: d.place.lat !== null || !!d.place.addr, hours: d.hours.on, links: d.links.length > 0, msg: true, look: true,
-    video: !!d.video, spots: d.spots.length > 0, cal: d.cal.length > 0, ota: !!(d.ota.agoda || d.ota.booking), camps: d.camps.length > 0, svc: d.svc.length > 0, rooms: d.rooms.length > 0, lists: d.lists.length > 0, face: !!d.avatar, works: d.works.length > 0, amulets: d.amulets.length > 0, quotes: d.quotes.length > 0, card: true }[id]
+    video: !!d.video, spots: d.spots.length > 0, cal: d.cal.length > 0, ota: !!(d.ota.agoda || d.ota.booking), camps: d.camps.length > 0, svc: d.svc.length > 0, rooms: d.rooms.length > 0, lists: d.lists.length > 0, face: !!d.avatar, works: d.works.length > 0, amulets: d.amulets.length > 0, quotes: d.quotes.length > 0, faq: d.faq.length > 0, signup: d.signup.on, card: true }[id]
 }
 
 function tabs() {
@@ -656,13 +658,13 @@ function tabs() {
 const GROUPS = [
   ['words', ['event', 'words'], 'pencil'],
   ['pics', ['photos', 'drawing', 'face', 'video'], 'camera'],
-  ['offer', ['amulets', 'pay', 'items', 'works', 'svc', 'rooms', 'lists', 'ota', 'cal', 'camps', 'quotes'], 'cart'],
-  ['reach', ['contact', 'order', 'msg', 'links'], 'telephone'],
+  ['offer', ['amulets', 'pay', 'items', 'works', 'svc', 'rooms', 'lists', 'ota', 'cal', 'camps', 'faq', 'quotes'], 'cart'],
+  ['reach', ['contact', 'order', 'msg', 'signup', 'links'], 'telephone'],
   ['where', ['map', 'hours', 'spots'], 'compass'],
   ['look', ['look', 'card'], 'sparkle'],
 ]
 const groupOf = (id) => (GROUPS.find(([g, ids]) => g === id || ids.includes(id)) || GROUPS[0])[0]
-const secRow = (id) => SECTIONS.find((x) => x[0] === id)
+const secRow = (id) => { const r = SECTIONS.find((x) => x[0] === id); return id === 'svc' && S.kind === 'online' ? [r[0], r[1], 's_pkg'] : r } // an online page's Bookings are its Packages: free pages show them too
 const narrow = () => window.innerWidth < 980
 
 function groupTitle(g) {
@@ -703,12 +705,12 @@ function summary(g) {
     if (own) out.push(`${own} ${T('sm_photos')}`); else if (d.photos.length) out.push(T('sm_example'))
     if (d.drawing) out.push(sec('drawing')); if (d.avatar) out.push(sec('face')); if (d.video) out.push(sec('video'))
   }
-  if (g === 'offer') for (const k of ['items', 'works', 'amulets', 'svc', 'rooms', 'lists', 'cal', 'camps', 'quotes']) if (n(k)) out.push(`${sec(k)} · ${n(k)}`)
+  if (g === 'offer') for (const k of ['items', 'works', 'amulets', 'svc', 'rooms', 'lists', 'cal', 'camps', 'faq', 'quotes']) if (n(k)) out.push(`${sec(k)} · ${n(k)}`)
   if (g === 'offer' && (d.ota.agoda || d.ota.booking)) out.push(sec('ota'))
   if (g === 'reach') {
     const c = d.contact
     if (c.phone) out.push(T('phone')); if (c.line) out.push('LINE'); if (c.facebook || c.instagram || c.tiktok) out.push('Facebook · Instagram · TikTok'.split(' · ').filter((x, i) => [c.facebook, c.instagram, c.tiktok][i]).join(' · '))
-    if (d.order.grabfood) out.push('GrabFood'); if (d.order.lineman) out.push('LINE MAN'); if (d.msg) out.push(sec('msg')); if (n('links')) out.push(`${sec('links')} · ${n('links')}`)
+    if (d.order.grabfood) out.push('GrabFood'); if (d.order.lineman) out.push('LINE MAN'); if (d.msg) out.push(sec('msg')); if (d.signup.on) out.push(sec('signup')); if (n('links')) out.push(`${sec('links')} · ${n('links')}`)
   }
   if (g === 'where') { if (d.place.lat !== null) out.push(T('pinSet')); else if (d.place.addr) out.push(d.place.addr.slice(0, 40)); if (d.hours.on) out.push(d.hours.always ? T('open24') : sec('hours')); if (n('spots')) out.push(`${sec('spots')} · ${n('spots')}`) }
   if (g === 'look') { out.push(LOOKS[S.look].label); if (d.dings.length) out.push(`${T('s_dings')} · ${d.dings.length}`) }
@@ -939,18 +941,18 @@ Object.assign(SEC, {
       ${S.d.camps.length < MAX.camps ? `<button class="go ghost" data-addrow="camps">${icon('plus')}${T('o_add')}</button>` : ''}`
   },
   svc() {
-    const b = S.d.book
-    return `<p class="hint">${T('b_hint')}</p><div class="rows">${S.d.svc.map((x, i) => `<div class="rowc">${rowX('svc', i)}
+    const b = S.d.book, online = S.kind === 'online' // an online business: its Packages (make-online.mjs); the times and deposits are Gold's
+    return `<p class="hint">${online ? T('pk_hint') + (isGold() ? ' ' + T('pk_hours') : '') : T('b_hint')}</p><div class="rows">${online ? packageRows({ S, T, val, rowX, num, isGold }) : S.d.svc.map((x, i) => `<div class="rowc">${rowX('svc', i)}
       <label class="field"><span>${T('b_svc')}</span><input data-k="svc.${i}.n" value="${val(x.n)}" maxlength="80"></label>
       <div class="grid3f">${num(`svc.${i}.mins`, x.mins, T('b_mins'), 'min="10" max="720" step="5"')}<label class="mini"><span>${T('price')}</span><input data-k="svc.${i}.p" value="${val(x.p)}" maxlength="24" inputmode="decimal"></label>${num(`svc.${i}.cap`, x.cap, T('b_cap'), 'min="1" max="50"')}</div>
       <label class="field"><span>${T('details')}</span><input data-k="svc.${i}.note" value="${val(x.note)}" maxlength="200"></label></div>`).join('')}</div>
-      ${S.d.svc.length < MAX.svc ? `<button class="go ghost" data-addrow="svc">${icon('plus')}${T('b_add')}</button>` : ''}
-      <div class="grid3f" style="margin-top:16px"><label class="mini"><span>${T('b_step')}</span>${sel('book.step', String(b.step), [['15', '15 min'], ['30', '30 min'], ['60', '1 h'], ['120', '2 h']])}</label>
+      ${S.d.svc.length < MAX.svc ? `<button class="go ghost" data-addrow="svc">${icon('plus')}${T(online ? 'pk_add' : 'b_add')}</button>` : ''}
+      ${online && !isGold() ? '' : `<div class="grid3f" style="margin-top:16px"><label class="mini"><span>${T('b_step')}</span>${sel('book.step', String(b.step), [['15', '15 min'], ['30', '30 min'], ['60', '1 h'], ['120', '2 h']])}</label>
       ${num('book.lead', b.lead, T('b_lead'), 'min="0" max="168"')}${num('book.ahead', b.ahead, T('b_ahead'), 'min="1" max="180"')}</div>
       <label class="check"><input type="checkbox" class="sw" data-k="book.auto" ${b.auto ? 'checked' : ''}>${T('b_auto')}</label>
       <details${b.pp ? ' open' : ''}><summary style="cursor:pointer;font-weight:700;margin:0 0 10px">${T('b_dep')}</summary><p class="hint">${T('b_depHint')}</p>
       <div class="grid2f"><label class="mini"><span>${T('b_depAmt')}</span><input data-k="book.deposit" value="${val(b.deposit)}" inputmode="decimal" maxlength="12"></label>
-      <label class="mini"><span>${T('b_pp')}</span><input data-k="book.pp" value="${val(b.pp)}" inputmode="numeric" maxlength="20"></label></div></details>`
+      <label class="mini"><span>${T('b_pp')}</span><input data-k="book.pp" value="${val(b.pp)}" inputmode="numeric" maxlength="20"></label></div></details>`}`
   },
   ota() {
     return `<p class="hint">${T('o_otaHint')}</p>` + field('ota.agoda', 'Agoda', S.d.ota.agoda, 'url', 'placeholder="https://www.agoda.com/…"') +
@@ -1008,6 +1010,7 @@ const NEW_ROW = {
   lists: () => ({ id: rid(), t: '', deal: 'sale', status: 'open', p: '', area: '', unit: 'm2', beds: 0, baths: 0, kind: '', note: '', photos: [], lat: null, lng: null }),
   works: () => ({ id: rid(), t: '', client: '', year: String(new Date().getFullYear()), role: '', tags: '', note: '', u: '', photos: [] }),
   quotes: () => ({ q: '', who: '' }),
+  faq: () => newFaq(),
   amulets: () => newAmulet(rid),
 }
 
@@ -1038,6 +1041,8 @@ Object.assign(SEC, {
       ${S.status === 'live' && x.id && x.t ? `<a class="linkbtn" href="/${esc(S.name)}/w/${esc(x.id)}" target="_blank">${icon('globe')}${T('l_open')}</a>` : ''}</div>`).join('')}</div>
       ${S.d.works.length < MAX.works ? `<button class="go ghost" data-addrow="works">${icon('plus')}${T('w_add')}</button>` : ''}`
   },
+  faq() { return faqSec({ S, T, val, icon, rowX, isGold }) },
+  signup() { return signupSec({ S, T, val, esc, icon }) },
   quotes() {
     return `<div class="rows">${S.d.quotes.map((x, i) => `<div class="rowc">${rowX('quotes', i)}
       <label class="field"><span>${T('q_q')}</span><textarea data-k="quotes.${i}.q" maxlength="400" style="min-height:80px">${val(x.q)}</textarea></label>
@@ -1168,6 +1173,7 @@ function bindEdit() {
     if (k === 'hours.on' || k === 'hours.always' || k === 'place.cc') redrawSec(k.split('.')[0] === 'place' ? 'items' : 'hours')
     if (k === 'drawing') { redrawSec('drawing') }
     if (k === 'msg') redrawSec('msg')
+    if (k === 'signup.on') redrawSec('signup')
     if (/^cal\.\d+\.rep$/.test(k)) redrawSec('cal')
     if (k === 'name' || k.startsWith('hours')) drawPreviewSoon()
     changed()
@@ -1378,7 +1384,7 @@ function drawingPicture(w, h) {
 
 const PART = [
   ['header.top img:not(.av)', 'photos'], ['header.top img.av', 'face'], ['header.top .dings', 'look'], ['header.top #st', 'hours'], ['header.top', 'words'],
-  ['nav.reach', 'contact'], ['.camp', 'camps'], ['#count', 'event'], ['.when', 'event'], ['#cal', 'cal'], ['figure.drawn', 'drawing'], ['#works', 'works'], ['.quotes', 'quotes'],
+  ['nav.reach', 'contact'], ['.camp', 'camps'], ['#count', 'event'], ['.when', 'event'], ['#cal', 'cal'], ['figure.drawn', 'drawing'], ['#works', 'works'], ['.quotes', 'quotes'], ['#faq', 'faq'], ['#join', 'signup'], ['#packages', 'svc'],
   ['ul.menu', 'items'], ['#book', 'svc'], ['#rooms', 'rooms'], ['#lists', 'lists'], ['table.hours', 'hours'], ['.gallery', 'photos'], ['.video', 'video'],
   ['#where', 'map'], ['ol.spots', 'spots'], ['.lineqr', 'contact'], ['.card.links', 'links'], ['.contact', 'contact'], ['#message', 'msg'], ['#amulets', 'amulets'],
   ['.card', 'words'], ['footer', 'look'],
@@ -1988,7 +1994,7 @@ async function drawMsgs() {
 
 const TAP_WORD = { call: 'call', line: 'line', dir: 'dir', ride: 'ride', food: 'food', lineman: 'lineman', share: 'share', copy: 'copy', map: 'map', far: 'far', vcf: 'saveContact',
   ics: 'addCal', sign: 'sign', order: 'lineOrder', msg: 'msg', link: 'links', photo: 'photos', video: 'video', email: 'email', web: 'web', qr: 'qr', story: 'story' }
-const TAP_EXTRA = { get amulet() { return amUi(S.lang, 'tap_amulet') }, get reserve() { return amUi(S.lang, 'tap_reserve') }, shareline: 'LINE', sharefb: 'Facebook', sharex: 'X', sharewa: 'WhatsApp', sharetg: 'Telegram', social: 'Facebook · Instagram · TikTok', whatsapp: 'WhatsApp' }
+const TAP_EXTRA = { get ask() { return ui(S.lang, 'tap_ask') }, get join() { return ui(S.lang, 'tap_join') }, get amulet() { return amUi(S.lang, 'tap_amulet') }, get reserve() { return amUi(S.lang, 'tap_reserve') }, shareline: 'LINE', sharefb: 'Facebook', sharex: 'X', sharewa: 'WhatsApp', sharetg: 'Telegram', social: 'Facebook · Instagram · TikTok', whatsapp: 'WhatsApp' }
 
 function shareBox() {
   const url = `${location.origin}/${S.name}`
