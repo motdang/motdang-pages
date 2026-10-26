@@ -13,18 +13,20 @@ test('maker text is escaped everywhere it lands', () => {
   assert.ok(!html.includes('javascript:'))
 })
 
-test('every look renders a whole page, and the top of it answers a tap', () => {
+// one design per kind of site (Nan 2026-10-26): each renders a whole page with its own name on it
+const KIND_OF_DESIGN = { local: 'food', shop: 'store', biz: 'online', folio: 'work' }
+test('every design renders a whole page for its kind of site', () => {
   for (const look of LOOK_IDS) {
-    const html = render({ ...base, look, d: { name: 'ข้าวซอย', tagline: 'อร่อย', hours: { on: true, week: Array(7).fill([['09:00', '18:00']]) } } })
+    const html = render({ ...base, kind: KIND_OF_DESIGN[look], look: 'poster', d: { name: 'ข้าวซอย', tagline: 'อร่อย', hours: { on: true, week: Array(7).fill([['09:00', '18:00']]) } } })
     assert.match(html, /^<!doctype html>/)
-    assert.match(html, /\.top\.go /, look + ' plays again on a tap')
+    assert.match(html, new RegExp(`data-look="${look}"`))
     assert.match(html, /<\/html>$/)
   }
 })
 
-test('a page with a look that was taken out shows the nearest one that stayed', () => {
-  assert.match(render({ ...base, look: 'y1997', d: { name: 'x' } }), /data-look="night"/)
-  assert.match(render({ ...base, look: 'riso', tier: 'gold', d: { name: 'x' } }), /data-look="poster"/)
+test('a page that picked one of the old looks wears its kind of site\'s design', () => {
+  assert.match(render({ ...base, look: 'y1997', d: { name: 'x' } }), /data-look="local"/)
+  assert.match(render({ ...base, kind: 'store', look: 'gold', tier: 'gold', d: { name: 'x' } }), /data-look="shop"/)
 })
 
 test('normalize drops unknown keys, bad photo ids, bad urls', () => {
@@ -87,7 +89,7 @@ test('vcard, ics, sign', () => {
 test('accent text keeps 4.5:1 on its card in every look and swatch', async () => {
   const { LOOKS, ACCENTS, contrast } = await import('../public/s/render.mjs')
   for (const [id, L] of Object.entries(LOOKS)) for (const a of [L.accent, ...ACCENTS]) {
-    const html = render({ ...base, look: id, d: { name: 'x', accent: a } }, { gold: true })
+    const html = render({ ...base, kind: KIND_OF_DESIGN[id], d: { name: 'x', accent: a } }, { gold: true })
     const ink = /--acc-ink:(#[0-9a-f]{6})/.exec(html)[1]
     const card = /--card:(#[0-9a-f]{6})/i.exec(L.vars)[1]
     assert.ok(contrast(ink, card) >= 4.5, `${id} ${a}`)

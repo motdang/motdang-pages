@@ -84,7 +84,8 @@ export const HERO_CSS = `.top{position:relative;overflow:hidden;color:var(--ink)
 .dock a{flex:1 1 0;max-width:180px;display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 6px;border-radius:14px;font:600 13px/1.15 var(--body);text-decoration:none;color:var(--ink);text-align:center}
 .dock a .i{width:24px;height:24px}
 .dock a.main{background:var(--accent);color:var(--on-accent)}
-body.has-dock{padding-bottom:84px}
-.lineqr.desk{display:none}@media (min-width:900px){.lineqr.desk{display:flex}}
+body:has(.dock){padding-bottom:84px}
+section.desk{display:none}@media (min-width:900px){section.desk{display:block}}
+.drawn figcaption{font:600 15px/1.3 var(--body);color:var(--mute)}
 @keyframes grow{from{transform:scaleX(0)}}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}`
