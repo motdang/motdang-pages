@@ -1,5 +1,5 @@
-// make-words-pick.mjs — the first screen's two pickers, "It is for" and "Look" (Nan 2026-10-15:
-// "Level 1/10. Bring it up to 11."): each look's name and a few words, what a kind's page gets.
+// make-words-pick.mjs — the first screen's "It is for": what a kind's page gets (Nan 2026-10-15:
+// "Level 1/10. Bring it up to 11."), and the standard colour.
 
 export const W = {
   en: {
@@ -11,11 +11,8 @@ export const W = {
     d_place: 'Your place', d_do: 'What you do', d_shuffle: 'Shuffle', d_cover: 'Make it the cover', d_save: 'Save the picture', d_things: 'Also in the picture', d_floors: 'Floors',
     t_now: 'Now', t_dawn: 'Dawn', t_day: 'Day', t_dusk: 'Dusk', t_night: 'Night',
     p_wifi: 'Wi-Fi', p_aircon: 'Air-con', p_parking: 'Parking', p_wheelchair: 'Wheelchair access', p_pool: 'Pool', p_tables: 'Tables outside', p_takeaway: 'Takeaway', p_lights: 'String lights', p_water: 'Water', p_farm: 'Farm', p_camp: 'Camping', p_chicken: 'Chickens', p_rooster: 'Rooster', p_noodles: 'Noodles', p_pizza: 'Pizza', p_bubbletea: 'Bubble tea',
-    lk_poster: 'Poster', lk_loom: 'Loom', lk_stitch: 'Stitch', lk_night: 'Night market', lk_clean: 'Clean', lk_lanna: 'Lanna gold', lk_gold: 'Gold leaf',
-    m_poster: 'Big and loud, like a gig poster', m_loom: 'Warm and woven', m_stitch: 'Bright as hill-tribe stitching', m_night: 'Lanterns and neon after dark', 
-    m_clean: 'White, calm, easy to read', m_lanna: 'Lacquer red and gold, a temple gable', m_gold: 'Gold on black, an arched window',
-    gets: 'Your page gets', getsTap: 'Tap one to see it on the page.', surprise: 'Surprise me', swipe: 'Swipe the page for another look',
-    prevLook: 'Previous look', nextLook: 'Next look', lookOwn: 'The look’s own colour', exNote: 'The phone shows examples; yours go in next.', tagGold: 'Gold',
+    gets: 'Your page gets', getsTap: 'Tap one to see it. The phone shows examples.',
+    colourOwn: 'Standard colour',
   },
   th: {
     s_pay: 'รับเงิน', pay_why: 'ใส่เบอร์พร้อมเพย์ หน้าเว็บจะมีปุ่มจ่ายเงิน ลูกค้าสแกนด้วยแอปธนาคาร เงินเข้าบัญชีคุณ', pay_pp: 'เบอร์พร้อมเพย์ (เบอร์โทรหรือเลขบัตรประชาชน)', pay_price: 'ราคาบัตร', pay_tips: 'ให้คนส่งทิปได้',
@@ -26,11 +23,8 @@ export const W = {
     d_place: 'ร้านของคุณ', d_do: 'สิ่งที่คุณทำ', d_shuffle: 'สุ่มใหม่', d_cover: 'ใช้เป็นภาพปก', d_save: 'บันทึกภาพ', d_things: 'ใส่ในภาพด้วย', d_floors: 'จำนวนชั้น',
     t_now: 'ตอนนี้', t_dawn: 'เช้าตรู่', t_day: 'กลางวัน', t_dusk: 'เย็น', t_night: 'กลางคืน',
     p_wifi: 'Wi-Fi', p_aircon: 'แอร์', p_parking: 'ที่จอดรถ', p_wheelchair: 'ทางรถเข็น', p_pool: 'สระว่ายน้ำ', p_tables: 'โต๊ะนอกร้าน', p_takeaway: 'สั่งกลับบ้าน', p_lights: 'ไฟประดับ', p_water: 'น้ำ', p_farm: 'ฟาร์ม', p_camp: 'ลานกางเต็นท์', p_chicken: 'ไก่', p_rooster: 'ไก่ตัวผู้', p_noodles: 'ก๋วยเตี๋ยว', p_pizza: 'พิซซ่า', p_bubbletea: 'ชานมไข่มุก',
-    lk_poster: 'โปสเตอร์', lk_loom: 'ผ้าทอ', lk_stitch: 'ผ้าปัก', lk_night: 'ตลาดกลางคืน', lk_clean: 'เรียบ', lk_lanna: 'ทองล้านนา', lk_gold: 'ทองคำเปลว',
-    m_poster: 'ตัวใหญ่ ชัด เหมือนโปสเตอร์คอนเสิร์ต', m_loom: 'อบอุ่น นุ่ม เหมือนผ้าทอมือ', m_stitch: 'สีสดเหมือนผ้าปักชาวเขา', m_night: 'โคมไฟและแสงนีออนยามค่ำ', 
-    m_clean: 'ขาว สงบ อ่านง่าย', m_lanna: 'แดงชาด ลายทอง หน้าบันวัด', m_gold: 'ทองบนพื้นดำ หน้าต่างโค้ง',
-    gets: 'หน้าของคุณมี', getsTap: 'แตะเพื่อดูบนหน้าเว็บ', surprise: 'สุ่มให้หน่อย', swipe: 'ปัดหน้าเว็บเพื่อเปลี่ยนแบบ',
-    prevLook: 'แบบก่อนหน้า', nextLook: 'แบบถัดไป', lookOwn: 'สีของแบบนี้', exNote: 'บนจอเป็นตัวอย่าง ใส่ของคุณเองในขั้นต่อไป', tagGold: 'ทอง',
+    gets: 'หน้าของคุณมี', getsTap: 'แตะดูบนจอ จอนี้เป็นตัวอย่าง',
+    colourOwn: 'สีมาตรฐาน',
   },
   my: {
     s_pay: 'ငွေလက်ခံ', pay_why: 'PromptPay နံပါတ်ထည့်ရင် စာမျက်နှာမှာ ငွေပေးခလုတ်ပါမယ်။ ဖောက်သည်က ဘဏ်အက်ပ်နဲ့ စကင်ဖတ်ပြီး ငွေက သင့်အကောင့်ထဲ ရောက်တယ်။', pay_pp: 'PromptPay နံပါတ် (ဖုန်း သို့မဟုတ် မှတ်ပုံတင်)', pay_price: 'လက်မှတ်ဈေး', pay_tips: 'မုန့်ဖိုးပေးခွင့်ပြု',
@@ -41,11 +35,8 @@ export const W = {
     d_place: 'သင့်နေရာ', d_do: 'သင်လုပ်တာ', d_shuffle: 'ကျပန်း', d_cover: 'ကာဗာအဖြစ်သုံး', d_save: 'ပုံသိမ်း', d_things: 'ပုံထဲမှာ ထပ်ထည့်', d_floors: 'အထပ်',
     t_now: 'အခု', t_dawn: 'အရုဏ်', t_day: 'နေ့', t_dusk: 'ညနေ', t_night: 'ည',
     p_wifi: 'Wi-Fi', p_aircon: 'အဲယားကွန်း', p_parking: 'ကားပါကင်', p_wheelchair: 'ဘီးတပ်ကုလားထိုင်လမ်း', p_pool: 'ရေကူးကန်', p_tables: 'အပြင်ဘက်စားပွဲ', p_takeaway: 'ပါဆယ်', p_lights: 'မီးကြိုး', p_water: 'ရေ', p_farm: 'ခြံ', p_camp: 'စခန်းချ', p_chicken: 'ကြက်', p_rooster: 'ကြက်ဖ', p_noodles: 'ခေါက်ဆွဲ', p_pizza: 'ပီဇာ', p_bubbletea: 'ပုလဲနို့လက်ဖက်ရည်',
-    lk_poster: 'ပိုစတာ', lk_loom: 'ယက်ကန်း', lk_stitch: 'ပန်းထိုး', lk_night: 'ညဈေး', lk_clean: 'ရှင်းရှင်း', lk_lanna: 'လန်နာရွှေ', lk_gold: 'ရွှေဆိုင်း',
-    m_poster: 'ဖျော်ဖြေပွဲပိုစတာလို ကြီးကြီးနဲ့ ပြတ်ပြတ်သားသား', m_loom: 'လက်ယက်ထည်လို နွေးထွေး', m_stitch: 'တောင်ပေါ်ပန်းထိုးလို အရောင်တောက်', m_night: 'ညဘက် မီးအိမ်နဲ့ နီယွန်မီး', 
-    m_clean: 'ဖြူ၊ ငြိမ်၊ ဖတ်ရလွယ်', m_lanna: 'ယွန်းနီ၊ ရွှေ၊ ပန်းနွယ်', m_gold: 'အနက်ပေါ်က ရွှေဆိုင်း',
-    gets: 'သင့်စာမျက်နှာမှာ ပါမယ်', getsTap: 'စာမျက်နှာပေါ်မှာ ကြည့်ဖို့ နှိပ်ပါ။', surprise: 'ကျပန်းရွေးပေး', swipe: 'ပုံစံပြောင်းဖို့ စာမျက်နှာကို ပွတ်ဆွဲပါ',
-    prevLook: 'ယခင်ပုံစံ', nextLook: 'နောက်ပုံစံ', lookOwn: 'ဒီပုံစံရဲ့ အရောင်', exNote: 'ဖုန်းပေါ်မှာ နမူနာတွေပါ၊ ကိုယ့်ဟာကို နောက်တစ်ဆင့်မှာ ထည့်ပါ။', tagGold: 'Gold',
+    gets: 'သင့်စာမျက်နှာမှာ ပါမယ်', getsTap: 'နှိပ်ကြည့်ပါ။ ဖုန်းပေါ်က နမူနာပါ။',
+    colourOwn: 'ပုံမှန်အရောင်',
   },
   zh: {
     s_pay: '收款', pay_why: '填上 PromptPay 号码，网页就有付款按钮。顾客用银行 App 扫码，钱进你的账户。', pay_pp: 'PromptPay 号码（手机号或身份证号）', pay_price: '票价', pay_tips: '允许别人打赏',
@@ -56,10 +47,7 @@ export const W = {
     d_place: '你的店', d_do: '你做的事', d_shuffle: '换一个', d_cover: '用作封面', d_save: '保存图片', d_things: '画里还有', d_floors: '楼层',
     t_now: '现在', t_dawn: '清晨', t_day: '白天', t_dusk: '傍晚', t_night: '夜晚',
     p_wifi: 'Wi-Fi', p_aircon: '空调', p_parking: '停车场', p_wheelchair: '无障碍通道', p_pool: '泳池', p_tables: '户外座位', p_takeaway: '外带', p_lights: '彩灯', p_water: '水', p_farm: '农场', p_camp: '露营', p_chicken: '鸡', p_rooster: '公鸡', p_noodles: '面条', p_pizza: '披萨', p_bubbletea: '珍珠奶茶',
-    lk_poster: '海报', lk_loom: '织布', lk_stitch: '刺绣', lk_night: '夜市', lk_clean: '简洁', lk_lanna: '兰纳金', lk_gold: '金箔',
-    m_poster: '大字醒目，像演出海报', m_loom: '温暖，像手织布', m_stitch: '像山地民族刺绣一样鲜艳', m_night: '灯笼和夜晚的霓虹', 
-    m_clean: '白色、安静、好读', m_lanna: '漆红和金色，寺庙山墙', m_gold: '黑底金箔，拱形窗',
-    gets: '你的网页有', getsTap: '点一下，在网页上看。', surprise: '随机来一个', swipe: '滑动网页，换个样式',
-    prevLook: '上一个样式', nextLook: '下一个样式', lookOwn: '样式自带的颜色', exNote: '手机上是示例，下一步换成你自己的。', tagGold: '金卡',
+    gets: '你的网页有', getsTap: '点一下看看。手机上是示例。',
+    colourOwn: '默认颜色',
   },
 }

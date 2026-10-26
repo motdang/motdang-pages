@@ -1,6 +1,6 @@
 #!/bin/zsh
-# run.sh [looks|all] [kinds|all] — every look with every kind as a real page, shot at phone size and
-# laid side by side in one picture (Nan 2026-10-16). Needs `npm run dev` (or LAB_ORIGIN for another
+# run.sh [designs|all] [kinds|all] — each design with the kinds that wear it, as real pages shot at phone size and
+# laid side by side in one picture (Nan 2026-10-16; one design for each kind of site, 2026-10-26). Needs `npm run dev` (or LAB_ORIGIN for another
 # port). The sheet lands in notes/screens/; the lab pages are removed before this ends.
 set -e
 cd "${0:A:h}/../.."
