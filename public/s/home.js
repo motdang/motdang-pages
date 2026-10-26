@@ -104,14 +104,16 @@ const EXAMPLES = () => [
     cover: 'exkhaosoi0000', photos: pics('exkhaosoi0000', 'exnoodles0000', 'exkrapow00000', 'exsomtam00000', 'exshop0000000'),
     items: [{ n: th() ? 'ข้าวซอยไก่' : 'Khao soi, chicken', p: '60' }, { n: th() ? 'ก๋วยเตี๋ยวเรือ' : 'Boat noodles', p: '50' }, { n: th() ? 'ผัดกะเพรา' : 'Pad krapow', p: '60' }, { n: th() ? 'ส้มตำ' : 'Som tam', p: '50' }],
     hours: { on: true, tz: 'Asia/Bangkok', week: all7('09:00', '16:00') }, contact: { line: '@example', phone: '053 000 000' }, place: { lat: 18.7953, lng: 98.9937, cc: 'TH', zoom: 17 }, msg: true } },
-  { name: 'example-tours', look: 'night', lang: L, kind: 'service', tier: 'gold', label: 'k_tour', d: {
-    name: th() ? 'บ้านมด ทัวร์' : 'Ant House Tours', tagline: th() ? 'ทัวร์ไปกลับจากเชียงใหม่ วัดร่องขุ่น หมู่บ้านบนดอย น้ำตก' : 'Day trips from Chiang Mai: the White Temple, hill villages, waterfalls.',
-    cover: 'exwhite000000', photos: pics('exwhite000000', 'extrek0000000', 'exraft0000000'), drawing: false,
-    svc: [
-      { id: 't1white', n: th() ? 'วัดร่องขุ่น ไปกลับ' : 'White Temple day trip', mins: 660, p: '1500', note: '07:30', cap: 8 },
-      { id: 't2doi', n: th() ? 'ดอยอินทนนท์ ไปกลับ' : 'Doi Inthanon day trip', mins: 600, p: '1800', note: '08:00', cap: 8 },
+  { name: 'example-shop', look: 'clean', lang: L, kind: 'store', tier: 'gold', label: 'k_store', d: {
+    name: th() ? 'บ้านมด ของทำมือ' : 'Ant House Handmade', tagline: th() ? 'ผ้าทอ ร่ม และงานไม้จากเชียงใหม่ ส่งทั่วโลกโดยมดแดง' : 'Weaving, umbrellas and wood from Chiang Mai, shipped anywhere by Mot Dang',
+    cover: 'extextile0000', photos: pics('extextile0000', 'exumbrella000', 'excarve000000'), drawing: false,
+    products: [
+      { id: 'p1cloth', t: th() ? 'ผ้าทอไทลื้อ' : 'Tai Lue woven cloth', p: '1200', old: '1500', opts: th() ? 'สี: แดง, น้ำเงิน' : 'Colour: red, blue', stock: 6, g: 300, photos: pics('extextile0000') },
+      { id: 'p2umb', t: th() ? 'ร่มกระดาษสา' : 'Paper umbrella', p: '650', g: 700, photos: pics('exumbrella000') },
+      { id: 'p3wood', t: th() ? 'ช้างไม้แกะสลัก' : 'Carved wooden elephant', p: '890', stock: 3, g: 900, photos: pics('excarve000000') },
     ],
-    contact: { line: '@example', whatsapp: '66530000000' }, place: { lat: 18.7883, lng: 98.9853, cc: 'TH', zoom: 15 }, msg: true } },
+    ship: { th: '60', world: '600', free: '2000', mot: true }, pay: { pp: '0812345678' },
+    contact: { line: '@example' }, msg: true } },
   { name: 'example-online', look: 'clean', lang: L, kind: 'online', tier: 'gold', label: 'k_online', d: {
     name: th() ? 'เรียนอังกฤษกับครูมด' : 'English with Teacher Mot', tagline: th() ? 'เรียนออนไลน์ตัวต่อตัว สำหรับงานและการเดินทาง' : 'One-to-one English lessons online, for work and travel',
     cover: 'exlatte000000', photos: pics('exlatte000000'), drawing: false,

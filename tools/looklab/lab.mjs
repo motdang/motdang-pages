@@ -11,8 +11,8 @@ try { EX = JSON.parse(readFileSync(ROOT + '/public/s/ex/ex.json', 'utf8')) } cat
 const KPIC_ID = 'kindpic000000'
 const ORIGIN = process.env.LAB_ORIGIN || 'http://127.0.0.1:8790'
 const day = (n, hh) => { const t = new Date(Date.now() + n * 864e5); const p = (x) => String(x).padStart(2, '0'); return `${t.getFullYear()}-${p(t.getMonth() + 1)}-${p(t.getDate())}T${hh}` }
-const NAMES = { shop: 'Ban Suan Shop', food: 'Noi Noodles', service: 'Hands of Mae Ping', work: 'Ploy Studio', stay: 'Ban Suan Guesthouse', homes: 'Teak House Homes', me: 'Annika', event: 'Loi Krathong Night', group: 'Chiang Mai Runners' }
-const TAG = { shop: 'Cotton, tea and paper, made in the valley', food: 'Khao soi since 1987', service: 'Thai massage by the river', work: 'Photographs of weddings and food', stay: 'Six rooms in a garden by the river', homes: 'Houses to buy or rent around Chiang Mai', me: 'Writer and walker', event: 'Lanterns over the Ping river', group: 'We run every Saturday at six' }
+const NAMES = { store: 'Ban Suan Handmade', online: 'English with Ploy', shop: 'Ban Suan Shop', food: 'Noi Noodles', service: 'Hands of Mae Ping', work: 'Ploy Studio', stay: 'Ban Suan Guesthouse', homes: 'Teak House Homes', me: 'Annika', event: 'Loi Krathong Night', group: 'Chiang Mai Runners' }
+const TAG = { store: 'Woven cloth and paper umbrellas, shipped anywhere', online: 'One-to-one English lessons online', shop: 'Cotton, tea and paper, made in the valley', food: 'Khao soi since 1987', service: 'Thai massage by the river', work: 'Photographs of weddings and food', stay: 'Six rooms in a garden by the river', homes: 'Houses to buy or rent around Chiang Mai', me: 'Writer and walker', event: 'Lanterns over the Ping river', group: 'We run every Saturday at six' }
 function data(kind) {
   const x = {
     name: NAMES[kind], tagline: TAG[kind], about: 'We opened in 1987 on a small soi off Tha Phae Road. Everything is made here, by the three of us, the same way every day.',
@@ -29,6 +29,8 @@ function data(kind) {
   if (kind === 'work') { x.works = [{ t: 'A wedding on Doi Suthep', year: '2026', tags: 'weddings', photos: [KPIC_ID] }, { t: 'Menu photos for a café', year: '2025', tags: 'food', photos: [KPIC_ID] }]; x.quotes = [{ q: 'Quick, kind, and the photos were beautiful.', who: 'Ploy' }] }
   if (kind === 'me' || kind === 'work' || kind === 'group') x.links = [{ t: 'Facebook', u: 'https://www.facebook.com/' }, { t: 'Instagram', u: 'https://www.instagram.com/' }]
   if (kind === 'event') x.event = { start: day(7, '18:00'), end: '', tz: 'Asia/Bangkok' }
+  if (kind === 'store') { x.products = [{ id: 'p1cloth', t: 'Woven cloth', p: '1200', old: '1500', opts: 'Colour: red, blue', stock: 6, photos: [KPIC_ID] }, { id: 'p2umb', t: 'Paper umbrella', p: '650', photos: [KPIC_ID] }, { id: 'p3wood', t: 'Carved elephant', p: '890', photos: [] }]; x.ship = { th: '60', world: '600', free: '2000', mot: true } }
+  if (kind === 'online') { x.svc = [{ id: 'k1', n: 'Trial lesson', mins: 30, p: '300', note: 'Find your level\nA plan for you' }, { id: 'k2', n: '10 lessons', mins: 60, p: '4500', note: 'One hour each' }, { id: 'k3', n: 'English for work', mins: 60, p: '6000' }]; x.faq = [{ q: 'How do we meet?', a: 'Zoom or a LINE video call.' }, { q: 'Can I cancel?', a: 'Yes, with 24 hours notice.' }]; x.signup = { on: true } }
   x.pay = { pp: '0812345678', tips: ['me', 'work', 'group', 'service'].includes(kind), price: kind === 'event' ? '150' : '' }
   if (kind === 'event' || kind === 'group') x.cal = [{ t: 'Monthly meet-up', start: day(5, '18:00'), end: '20:00', rep: 'monthly' }, { t: 'Saturday market', start: day(2, '16:00'), end: '21:00', rep: 'weekly' }]
   return x

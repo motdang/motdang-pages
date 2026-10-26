@@ -1017,6 +1017,7 @@ export function amountOf(p) {
 function leadButton(site, d, gold, line) {
   const k = site.kind, c = d.contact, pp = !!d.pay.pp, oa = lineOa(c.line)
   if (k === 'online') return null // its buttons come from online.mjs
+  if (k === 'store' && d.products.length) return ['#shop', 'ctaShop', 'basket'] // an online shop leads with its products (store.mjs)
   if ((k === 'food' || k === 'shop') && d.items.length && (pp || oa)) return ['#menu', k === 'food' ? 'ctaOrder' : 'ctaBuy', 'basket']
   if (k === 'stay' && gold && d.rooms.length) return ['#rooms', 'ctaRoom', 'cal']
   if (k === 'service' && gold && d.svc.length) return ['#book', 'ctaBook', 'cal']
