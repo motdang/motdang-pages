@@ -28,7 +28,7 @@ load('/s/db/core.js').then(() => Promise.all(['signals', 'classic', 'kitchen', '
 // is the colour of the page you get.
 const KINDS = [['local', 'stay', 'noodles'], ['store', 'store', 'gift'], ['online', 'online', 'rocket'], ['portfolio', 'work', 'nib']]
 const accent = (i) => LOOKS[designOf(KINDS[i][1])].accent
-let kind = 0, typed = ''
+let kind = 0, typed = '', touched = false
 
 const slug = (n) => n.toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 30)
 const shownSlug = () => { const s = slug(typed); return s.length >= 3 ? s : w('yourAddr') }
@@ -177,26 +177,30 @@ function kinds() {
 }
 function pick(i) {
   if (i === kind) return
-  kind = i
+  kind = i; touched = true
   $('#kinds4').querySelectorAll('button').forEach((b, j) => { b.setAttribute('aria-checked', j === i); b.tabIndex = j === i ? 0 : -1 })
   $('#top').style.setProperty('--k', accent(i))
+  $('#khint').textContent = w('h_' + KINDS[i][0])
+  named()
   phone()
 }
 function named() {
   $('#hslug').textContent = shownSlug()
+  // the bar's button and the docked one carry what was chosen
+  document.querySelectorAll('.mk, #dock').forEach((a) => (a.href = touched ? makeHref(kind) : '/make'))
   pf.forEach((f) => { if (f.srcdoc) setName(f) })
   document.querySelectorAll('#krail .cta').forEach((a) => (a.href = makeHref(+a.dataset.k)))
 }
-$('#tn').addEventListener('input', (e) => { typed = e.target.value.trim(); named() })
+$('#tn').addEventListener('input', (e) => { typed = e.target.value.trim(); touched = true; named() })
 $('#try').onsubmit = (e) => { e.preventDefault(); location.href = makeHref(kind) }
 
 // ---- 2. the four kinds, one example page each -----------------------------------------------
 function cards() {
-  $('#krail').innerHTML = KINDS.map(([id, , d], i) => `<article class="kb" style="--k:${accent(i)}">
+  $('#krail').innerHTML = KINDS.map(([id, , d], i) => `<div class="kbw"><article class="kb" style="--k:${accent(i)}">
     <h3><i data-dingbat="${d}" data-look="ink" data-play="hover"></i>${esc(w('k_' + id))}</h3>
     <div class="phone"><div class="shell"><div class="screen"><iframe class="on" title="${esc(w('ex'))}" data-i="${i}" tabindex="-1"></iframe></div></div></div>
     <ul>${w('l_' + id).map((t) => (t.startsWith('★ ') ? `<li class="g"><span>${esc(t.slice(2))} <em>${esc(w('gold'))}</em></span></li>` : `<li><span>${esc(t)}</span></li>`)).join('')}</ul>
-    <a class="cta go" data-k="${i}" href="${esc(makeHref(i))}">${esc(w('likeThis'))}</a></article>`).join('')
+    <a class="cta go" data-k="${i}" href="${esc(makeHref(i))}">${esc(w('likeThis'))}</a></article></div>`).join('')
   fit()
   const io = new IntersectionObserver((es) => es.forEach((e) => {
     if (!e.isIntersecting) return
@@ -257,6 +261,7 @@ let COUNT = null
 function all() {
   fit(); words(); kinds(); cards(); plans(COUNT?.price || 3000, COUNT?.hotel || 555, COUNT?.hotelYear || 5550); credits(); named(); phone()
   $('#top').style.setProperty('--k', accent(kind))
+  $('#khint').textContent = w('h_' + KINDS[kind][0])
   watchDock()
 }
 

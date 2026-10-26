@@ -36,10 +36,8 @@
 
   <!-- 1. Choose. The phone is the real page in the kind's own design, with the name typed in the box. -->
   <section class="hero" id="top" style="--k:#d7261e">
-    <div class="hcopy">
-      <h1 data-w="h1"></h1>
-      <p class="lead" data-w="lead"></p>
-    </div>
+    <div class="hcopy"><h1 data-w="h1"></h1></div>
+    <p class="lead" data-w="lead"></p>
     <form class="try" id="try">
       <div class="fname">
         <label for="tn" data-w="tryLabel"></label>
@@ -48,6 +46,7 @@
       <fieldset class="fkinds">
         <legend id="kl" data-w="kindLabel"></legend>
         <div class="kinds4" id="kinds4" role="radiogroup" aria-labelledby="kl"></div>
+        <p class="khint" id="khint" aria-live="polite"></p>
       </fieldset>
       <div class="fgo"><button class="cta big go" type="submit"><span data-w="tryGo"></span> →</button></div>
     </form>
