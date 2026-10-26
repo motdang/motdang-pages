@@ -5,6 +5,7 @@
 // Worker, NaNoBotCo/cards) from specOf(); the maker chooses d.og in the builder (make-card.mjs).
 
 import { LOOKS, lookOf } from './looks.mjs'
+import { designOf } from './kinds.mjs'
 
 const fnv = (s) => { let h = 0x811c9dc5; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193) } return (h >>> 0).toString(36) }
 const PHOTO_ID = /^[a-z0-9]{12,24}$/
@@ -41,7 +42,7 @@ export function ogOf(site, d, t = '', x = null) {
   const photo = x ? (Array.isArray(x.photos) && x.photos[0]) || '' : g.photo || d.cover || (Array.isArray(d.photos) && d.photos[0]) || ''
   const path = x ? `${site.name}/${t}/${x.id}` : site.name
   const o = { t, id: x ? x.id : '', path, title: x ? String(x.t || name) : g.title || name, tagline: x ? name : g.line || d.tagline || '', photo, gold,
-    look: site.look, accent: g.accent || d.accent || '', avatar: d.avatar || '', round: d.avround, dings: d.dings || [],
+    look: site.kind ? designOf(site.kind) : lookOf(site.look), accent: g.accent || d.accent || '', avatar: d.avatar || '', round: d.avround, dings: d.dings || [],
     layout: g.layout || '', font: g.font || '', fx: x ? 0.5 : g.fx ?? 0.5, fy: x ? 0.5 : g.fy ?? 0.5 }
   o.key = fnv(JSON.stringify(['v5', o.title, o.tagline, o.photo, o.gold, o.look, o.accent, o.avatar, o.round, o.layout, o.font, o.fx, o.fy, path]))
   return o

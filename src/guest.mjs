@@ -2,7 +2,7 @@
 // long random key in the guest's email; the page shows the stay, what to pay
 // the hotel and how, the way to the door, and a button to cancel.
 
-import { normalize, lineHref, telHref, dirHref, LOOKS, lookOf, onColor } from '../public/s/render.mjs'
+import { normalize, lineHref, telHref, dirHref, LOOKS, lookOf, designOf, onColor } from '../public/s/render.mjs'
 import { payFor, describe } from './book.mjs'
 import { cw, both } from '../public/s/words-cust.mjs'
 import * as guestline from './guestline.mjs'
@@ -17,7 +17,7 @@ const WORDS = {
 
 export function guestPage(bk, s, origin, nonce, env = {}, q = {}) {
   const d = normalize(JSON.parse(s.d))
-  const look = LOOKS[lookOf(s.look)]
+  const look = LOOKS[s.kind ? designOf(s.kind) : lookOf(s.look)]
   const accent = d.accent || look.accent
   const x = describe(bk, d, 'en')
   const xt = describe(bk, d, 'th')
