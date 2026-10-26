@@ -1174,10 +1174,10 @@ async function unsubscribe(request, env, key, m) {
   if (!s) return html(unsubPage({ lang: 'th', title: '', bad: true, action: '' }), 400)
   const lang = s.lang
   const title = JSON.parse(s.d).name || s.name
-  let off = true
-  if (m === 'POST') off = !/(^|&)undo=1(&|$)/.test(await request.text().catch(() => '')) // a form with undo=1 puts the news back; the mail app's one-click post stops it
-  else await customers.setOff(env, k.siteId, k.email, true)
-  if (m === 'POST') await customers.setOff(env, k.siteId, k.email, off)
+  // a GET only asks: mail scanners open every link, and a link that stopped the news would stop it for them (CodeRabbit on #70)
+  if (m !== 'POST') return html(unsubPage({ lang, title, done: false, ask: true, action: '/u/' + key }), 200)
+  const off = !/(^|&)undo=1(&|$)/.test(await request.text().catch(() => '')) // a form with undo=1 puts the news back; the mail app's one-click post stops it
+  await customers.setOff(env, k.siteId, k.email, off)
   return html(unsubPage({ lang, title, done: off, action: '/u/' + key }), 200)
 }
 

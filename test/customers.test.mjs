@@ -151,11 +151,14 @@ test('news: once a month, checked, with a way out; a no stays a no', async () =>
   // the state says so
   const st = (await (await api(s, 'customers')).json()).news
   assert.equal(st.used.sent, 2)
-  // one tap on the emailed link stops the news
+  // opening the emailed link asks (a mail scanner opens it too); the button on that page stops the news
   const key = /\/u\/([^>]+)>/.exec(m.find((x) => x.to[0] === 'a@x.com').headers['List-Unsubscribe'])[1]
   const u = await go('/u/' + key)
   assert.equal(u.status, 200)
-  assert.match(await u.text(), /ไม่รับข่าวจาก ร้านนวด A&amp;B แล้ว/)
+  assert.match(await u.text(), /ไม่รับข่าวจาก ร้านนวด A&amp;B อีก\?/)
+  assert.equal((await (await api(s, 'customers')).json()).rows.find((x) => x.email === 'a@x.com').news, 'yes')
+  const stop = await go('/u/' + key, { method: 'POST', body: 'undo=0', headers: { 'content-type': 'application/x-www-form-urlencoded' } })
+  assert.match(await stop.text(), /ไม่รับข่าวจาก ร้านนวด A&amp;B แล้ว/)
   assert.equal((await (await api(s, 'customers')).json()).rows.find((x) => x.email === 'a@x.com').news, 'off')
   assert.equal((await go('/u/' + key.replace(/.$/, (c) => (c === 'a' ? 'b' : 'a')))).status, 400)
   // next month: only the one still saying yes

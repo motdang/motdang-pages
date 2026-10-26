@@ -140,9 +140,9 @@ export async function setOff(env, siteId, email, off) {
 }
 
 /** The page behind the unsubscribe link: the result, and a button to undo it (or to stop again). */
-export function unsubPage({ lang, title, done, bad, action }) {
+export function unsubPage({ lang, title, done, bad, action, ask }) {
   const line = (k, v) => { const [x, y] = both(lang, k, v); return `<span lang="th">${esc(x)}</span><br><span style="opacity:.75;font-size:.8em">${esc(y)}</span>` }
-  const msg = bad ? line('unsubBad') : done ? line('unsubDone', { n: title }) : line('unsubBack', { n: title })
+  const msg = bad ? line('unsubBad') : ask ? line('unsubAsk', { n: title }) : done ? line('unsubDone', { n: title }) : line('unsubBack', { n: title })
   const btn = done ? 'unsubUndo' : 'newsStop'
   return `<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>Mot Dang</title></head>
 <body style="margin:0;display:grid;place-items:center;min-height:100vh;background:#fff7ec;color:#1c1530;font:20px/1.5 system-ui,-apple-system,'Segoe UI',sans-serif;text-align:center;padding:20px">
@@ -262,7 +262,11 @@ export async function broadcast(env, s, d, { text, link }, origin, rand, log) {
   try {
     await env.DB.prepare("DELETE FROM news_sent WHERE site_id = ? AND month = ? AND state = 'failed'").bind(s.id, month).run()
     await env.DB.prepare("INSERT INTO news_sent (id, site_id, month, at, body, link, asked, state) VALUES (?,?,?,?,?,?,?,'sending')").bind(id, s.id, month, new Date().toISOString(), text, chosen ? chosen.k : null, to.length).run()
-  } catch { return { error: 'month' } }
+  } catch {
+    // another press or tab took the month first: give its share of the day's mail back
+    await env.DB.prepare("UPDATE quota SET n = n - ? WHERE who = ? AND day = ? AND what = 'newsmail'").bind(to.length, 'news:all', new Date().toISOString().slice(0, 10)).run()
+    return { error: 'month' }
+  }
   const title = d.name || s.name
   const page = `${origin}/${s.name}`
   const mails = []
