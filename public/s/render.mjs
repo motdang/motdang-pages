@@ -403,6 +403,7 @@ img{max-width:100%;display:block}a{color:inherit}.i{width:22px;height:22px;flex:
 .mapcard{padding:0;overflow:hidden}.mapcard>h2,.mapcard>.in{padding:0 22px}.mapcard>h2{padding-top:22px}.mapcard>.in{padding-bottom:22px}
 .dmap{position:relative;height:min(62vh,440px);background:#f5ecd7}.dmap iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
 .dmap.full{position:fixed;inset:0;z-index:60;height:auto}
+.dmap .dshield{position:absolute;inset:0;z-index:2;width:100%;padding:0;border:0;background:transparent;cursor:pointer}.dmap.full .dshield{display:none}
 .mapbox{position:relative;display:block;width:100%;padding:0;border:0;overflow:hidden;aspect-ratio:16/10;background:#e8e2d4;cursor:pointer}
 .mapbox img,.mapbox>svg:first-child{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.mapbox .pin{position:absolute;left:50%;top:50%;width:46px;height:46px;transform:translate(-50%,-100%);animation:bob 2.6s ease-in-out infinite}
 @keyframes bob{50%{transform:translate(-50%,-112%)}}.mapbox .go{position:absolute;right:10px;bottom:10px;display:flex;gap:6px;align-items:center;padding:8px 12px;border-radius:99px;background:#fff;color:#111;font:600 15px/1 var(--body);box-shadow:0 2px 8px rgba(0,0,0,.25)}
@@ -941,7 +942,7 @@ export function render(site, opt = {}) {
     if (hasPin) {
       const marks = d.spots.slice(0, gold ? MAX.spotsGold : MAX.spotsFree)
       const q = new URLSearchParams({ pin: `${pl.lat},${pl.lng}`, pn: name, embed: '1', look: d.map.style, s: String(MAP_NEAR[d.map.near]) })
-      put(`<div class="dmap" id="dmap" data-marks="${esc(JSON.stringify(marks))}"><iframe src="/map?${esc(q.toString())}" title="${W('mapOpen')}" loading="lazy" allow="geolocation"></iframe></div>`)
+      put(`<div class="dmap" id="dmap" data-marks="${esc(JSON.stringify(marks))}"><iframe src="/map?${esc(q.toString())}" title="${W('mapOpen')}" loading="lazy" allow="geolocation"></iframe><button type="button" class="dshield" data-t="map" aria-label="${W('mapOpen')}"></button></div>`)
     }
     put('<div class="in">')
     if (pl.addr) put(`<p class="addr">${esc(pl.addr)}</p>`)
@@ -1159,7 +1160,7 @@ function listingBody(x, { site, d, W, H2, img, sym, name }) {
   const lat = x.lat ?? d.place.lat, lng = x.lng ?? d.place.lng
   if (lat !== null && lng !== null) {
     const q = new URLSearchParams({ pin: `${lat},${lng}`, pn: x.t, embed: '1', look: d.map.style, s: String(MAP_NEAR[d.map.near]) })
-    out.push(`<section class="card mapcard rise" id="where">${H2('where', W('where'))}<div class="dmap" id="dmap" data-marks="[]"><iframe src="/map?${esc(q.toString())}" title="${W('mapOpen')}" loading="lazy"></iframe></div>`,
+    out.push(`<section class="card mapcard rise" id="where">${H2('where', W('where'))}<div class="dmap" id="dmap" data-marks="[]"><iframe src="/map?${esc(q.toString())}" title="${W('mapOpen')}" loading="lazy"></iframe><button type="button" class="dshield" data-t="map" aria-label="${W('mapOpen')}"></button></div>`,
       `<div class="in"><div class="tools-row"><a class="btn dark" data-t="dir" href="${esc(dirHref(lat, lng))}" rel="nofollow noopener">${icon('route')}Google Maps</a></div></div></section>`)
   }
   const c = d.contact, line = lineHref(c.line)

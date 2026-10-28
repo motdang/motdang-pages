@@ -13,8 +13,7 @@ export const FILE = /^[a-z0-9_-][a-z0-9._-]*(\/[a-z0-9_-][a-z0-9._-]*)*\.[a-z0-9
 /** Whether a site's record turns its own design on. */
 export const ownOn = (d) => !!(d && d.own && typeof d.own === 'object' && /^[a-z0-9-]{4,40}$/.test(String(d.own.v || '')))
 
-// stylecheck: allow — 'unsafe-inline' is the CSP keyword for inline styles
-export const CSP_OWN = (nonce) => `default-src 'self'; img-src 'self' data: blob: https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; ` +
+export const CSP_OWN = (nonce) => `default-src 'self'; img-src 'self' data: blob: https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; ` + // stylecheck: allow (a CSP keyword)
   `script-src 'self' 'nonce-${nonce}' https://static.cloudflareinsights.com; connect-src 'self' https://cloudflareinsights.com; frame-src 'self' https://www.openstreetmap.org; ` +
   `frame-ancestors 'self'; base-uri 'none'; form-action 'self'`
 
