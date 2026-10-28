@@ -129,6 +129,33 @@ export async function create(env, s, d, b, who, origin, deps) {
   return { ok: true, id, total: baht(o.total), link }
 }
 
+/** Post it home (post.mjs): a visitor's home address for work the page finishes after they leave. One line, the page's
+ *  own postage for the country; the maker presses Paid when the postage is paid (Mot Dang then opens a parcel job when
+ *  the page ships with it), and Shipped with the tracking number. */
+export async function postHome(env, s, d, b, who, origin, deps) {
+  if (!isGold(s) || !d.post.on) return { error: 'item' }
+  const name = str(b.name, 80), reach = str(b.reach, 120), addr = str(b.addr, 400), note = str(b.note, 400)
+  const email = validEmail(b.email)
+  const cc = String(b.cc || '').toUpperCase()
+  if (!name) return { error: 'name' }
+  if (!email) return { error: 'email' }
+  if (addr.length < 8) return { error: 'addr' }
+  if (!/^[A-Z]{2}$/.test(cc)) return { error: 'cc' }
+  if (check({ name, reach, body: `${addr}\n${note}` }) !== 'ok') return { error: 'held' }
+  const delivery = sat(cc === 'TH' ? d.ship.th : d.ship.world)
+  const tail = delivery ? 1 + Math.floor(Math.random() * 99) : 0
+  const lines = [{ k: 'p', id: 'post', t: note ? `${POST_LINE}: ${note}` : POST_LINE, opt: [], q: 1, u: 0, g: 0 }]
+  const id = deps.rand(14)
+  const lang = PAGE_LANGS[b.lang] ? b.lang : s.lang
+  await env.DB.prepare('INSERT INTO orders (id, site_id, at, status, lang, lines, name, reach, email, addr, cc, note, code, sub, disc, delivery, tail, total, grams, mot, sender) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)')
+    .bind(id, s.id, new Date().toISOString(), 'new', lang, JSON.stringify(lines), name, reach, email, addr, cc, note, '', 0, 0, delivery, tail, delivery + tail, 0, d.ship.mot ? 1 : 0, String(who).slice(0, 16)).run()
+  const o = await env.DB.prepare('SELECT * FROM orders WHERE id = ?').bind(id).first()
+  const link = await orderLink(env, origin, id, deps.sha)
+  deps.later(omail.created(env, s, d, o, link, origin))
+  return { ok: true, id, total: baht(o.total), link }
+}
+export const POST_LINE = 'Post it home'
+
 // ---- what the maker sees ------------------------------------------------------------------
 
 /** Orders not opened yet, for the tab's dot. */

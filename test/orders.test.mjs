@@ -681,3 +681,37 @@ test('the grid card has its own button: Buy on a free page, Add to cart on Gold,
   assert.ok(!/data-cart=/.test(free))
   assert.ok(!/data-buy=|data-cart=/.test(render({ ...base, tier: 'gold', d: D({ pay: {} }) }))) // no PromptPay yet: no buttons
 })
+
+// ---- Post it home (post.mjs, Nan 2026-10-28): a visitor's home address for work finished after they leave ----------------
+
+test('Post it home: an address comes in as an order with the page postage; Paid opens Mot Dang’s parcel job', async () => {
+  const pd = { name: 'Fashion King', post: { on: true, note: '' }, ship: { th: '300', world: '1500', mot: true }, place: { cc: 'TH' } }
+  const s = await site({ kind: 'service', d: pd })
+  const h = render({ name: s.name, kind: 'service', lang: 'en', status: 'live', tier: 'gold', d: pd })
+  assert.match(h, /id="post"/)
+  assert.match(h, /In Thailand ฿300 · Abroad ฿1500/)
+  assert.match(h, /id="postf"/)
+  assert.doesNotMatch(render({ name: s.name, kind: 'service', lang: 'en', status: 'live', tier: 'free', d: pd }), /id="post"/)
+  const bad = await (await post('/api/order', { n: s.name, post: 1, name: 'Anna', email: 'nope', addr: 'Hauptstrasse 1, 10115 Berlin', cc: 'DE', ms: 5000 })).json()
+  assert.equal(bad.error, 'email')
+  const r = await post('/api/order', { n: s.name, post: 1, name: 'Anna', email: 'anna@example.com', addr: 'Hauptstrasse 1, 10115 Berlin', cc: 'DE', note: 'Grey suit SQ-004', ms: 5000 })
+  const j = await r.json()
+  assert.equal(r.status, 200, JSON.stringify(j))
+  const o = orderRow(j.id)
+  assert.equal(o.delivery, 150000)
+  assert.ok(o.total > 150000 && o.total < 150100)
+  assert.equal(o.mot, 1)
+  assert.equal(o.cc, 'DE')
+  assert.match(JSON.parse(o.lines)[0].t, /^Post it home: Grey suit SQ-004$/)
+  await settle()
+  const pr = await apiPost(s, 'orders', { act: 'paid', id: j.id })
+  assert.equal(pr.status, 200)
+  await settle()
+  assert.ok(env.DB.raw.prepare('SELECT * FROM shipjob WHERE order_id = ?').get(j.id), 'a parcel job for Mot Dang')
+})
+
+test('Post it home is off unless the page switches it on', async () => {
+  const s = await site({ kind: 'service', d: { name: 'Shop', place: { cc: 'TH' } } })
+  const r = await post('/api/order', { n: s.name, post: 1, name: 'Anna', email: 'anna@example.com', addr: 'Hauptstrasse 1, 10115 Berlin', cc: 'DE', ms: 5000 })
+  assert.equal(r.status, 409)
+})

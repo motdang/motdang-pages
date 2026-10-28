@@ -5,6 +5,7 @@
 import { Y } from './words-more.mjs'
 import { P } from './words-pay.mjs'
 import { C } from './words-cust.mjs'
+import { PKW } from './words-picks.mjs'
 
 export const PAGE_LANGS = {
   th: 'ไทย', en: 'English', my: 'မြန်မာ', zh: '中文', ja: '日本語', ko: '한국어',
@@ -208,7 +209,7 @@ const X = {
 
 /** The label `k` in `lang`, English when missing; `{t}` and `{d}` filled from `vars`. */
 export function word(lang, k, vars) {
-  let s = (W[lang] && W[lang][k]) || (X[lang] && X[lang][k]) || (Y[lang] && Y[lang][k]) || (P[lang] && P[lang][k]) || (C[lang] && C[lang][k]) || W.en[k] || X.en[k] || Y.en[k] || P.en[k] || C.en[k] || k
+  let s = (W[lang] && W[lang][k]) || (X[lang] && X[lang][k]) || (Y[lang] && Y[lang][k]) || (P[lang] && P[lang][k]) || (C[lang] && C[lang][k]) || (PKW[lang] && PKW[lang][k]) || W.en[k] || X.en[k] || Y.en[k] || P.en[k] || C.en[k] || PKW.en[k] || k
   if (vars) for (const [a, b] of Object.entries(vars)) s = s.replace('{' + a + '}', b)
   return s
 }

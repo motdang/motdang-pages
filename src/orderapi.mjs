@@ -35,7 +35,7 @@ export async function make(request, env, ctx, origin, deps) {
   }
   if (Number(b.ms) < 2000) return J({ ok: true })
   if (!(await take(env, who, 'order'))) return J({ error: 'quota' }, 429)
-  const r = await orders.create(env, s, d, b, who, origin, deps)
+  const r = b.post ? await orders.postHome(env, s, d, b, who, origin, deps) : await orders.create(env, s, d, b, who, origin, deps)
   return r.error ? J({ error: r.error }, STATUS[r.error] || 400) : J({ ok: true, id: r.id, total: r.total, page: r.link })
 }
 
