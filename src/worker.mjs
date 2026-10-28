@@ -26,6 +26,7 @@ import { rasterType, slipHeaders } from './slipfile.mjs'
 import { promptPayPayload } from './promptpay.mjs'
 import { render, findable, qrSvg, normalize, vcard, ics, sign, KINDS, designOf, MAX_PHOTOS, photoMax, sceneOf, HOME } from '../public/s/render.mjs'
 import { pickPhotos, PK_MAX } from '../public/s/picks.mjs'
+import * as own from './own.mjs'
 import { AM_MAX, amCap } from '../public/s/amulet.mjs'
 import { prCap } from '../public/s/store.mjs'
 import { PAGE_LANGS } from '../public/s/words.mjs'
@@ -209,6 +210,13 @@ async function route(request, env, ctx) {
 
   const pm = /^\/([a-z0-9-]{3,30})(\/sign|\/contact\.vcf|\/event\.ics|\/calendar\.ics|\/l\/[a-z0-9]{4,12}|\/w\/[a-z0-9]{4,12}|\/a\/[a-z0-9]{4,12}|\/p\/[a-z0-9]{4,12}|\/room\/[a-z0-9]{4,12}\.ics)?\/?$/.exec(path)
   if (pm && m === 'GET') return page(request, env, ctx, pm[1], pm[2] || '', url, origin)
+  // a Gold page with its own design: its files under /<name>/ (own.mjs)
+  const om = /^\/([a-z0-9-]{3,30})\/(.+)$/.exec(path)
+  if (om && (m === 'GET' || m === 'HEAD') && own.FILE.test(om[2])) {
+    const s = await env.DB.prepare("SELECT id, d, tier, gold_until, status FROM site WHERE name = ? AND status = 'live'").bind(om[1]).first()
+    const r = s && gold.isGold(s) && own.ownOn(JSON.parse(s.d)) ? await own.ownFile(env, s.id, om[2]) : null
+    if (r) return r
+  }
   return html(notFound(null, request), 404)
 }
 
@@ -257,6 +265,9 @@ async function page(request, env, ctx, name, sub, url, origin, base) {
     return new Response(roomIcs(name, room, nights), { headers: { 'content-type': 'text/calendar; charset=utf-8', 'cache-control': 'no-cache' } })
   }
   const nonce = rand(16)
+  // a Gold page with its own design (own.mjs): at /<name>/ so the files it names resolve under it
+  const ownNow = !sub && s.status === 'live' && site.tier === 'gold' && own.ownOn(site.d)
+  if (ownNow && !base && !url.pathname.endsWith('/')) return new Response(null, { status: 301, headers: { location: `${origin}/${name}/${url.search}` } })
   if (sub === '/sign') {
     if (s.status !== 'live') return html(notFound(null, request), 404)
     return html(sign(site, { nonce }), 200, { nonce })
@@ -268,6 +279,7 @@ async function page(request, env, ctx, name, sub, url, origin, base) {
     })().catch((e) => console.error(e)))
     site.views = s.views + 1
   }
+  if (ownNow) { const r = await own.ownPage(env, s.id, nonce); if (r) return r }
   const opt = { origin, nonce, ...(base ? { base } : {}) }
   if (s.status === 'live' && !sub) opt.events = await events.siteSection(env, s, s.kind).catch(() => '')
   if (s.status === 'live' && !sub && site.tier === 'gold') opt.news = await line.shownNews(env, s.id).catch(() => []) // dated notes, Edit by LINE (lineedit.mjs)
