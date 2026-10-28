@@ -25,6 +25,7 @@
 import { rasterType, slipHeaders } from './slipfile.mjs'
 import { promptPayPayload } from './promptpay.mjs'
 import { render, findable, qrSvg, normalize, vcard, ics, sign, KINDS, designOf, MAX_PHOTOS, photoMax, sceneOf, HOME } from '../public/s/render.mjs'
+import { pickPhotos, PK_MAX } from '../public/s/picks.mjs'
 import { AM_MAX, amCap } from '../public/s/amulet.mjs'
 import { prCap } from '../public/s/store.mjs'
 import { PAGE_LANGS } from '../public/s/words.mjs'
@@ -671,10 +672,14 @@ ${s ? `<p>ข้อความถึง ${escHtml(title)} จะส่งสำ
     d.photos = d.photos.slice(0, photoMax(kind, isGold))
     // photos named in the page must be this page's own; credits come from the library, not the browser
     const ids = [...new Set([d.cover, d.card, d.avatar, d.place.snap, d.og?.photo, ...d.photos].filter(Boolean))]
+    const pkIds = pickPhotos(d.picks) // the swatch book shows on Gold pages; its photos stay through a lapse (picks.mjs)
     d.credits = {}
-    if (ids.length) {
-      const own = await env.DB.prepare(`SELECT id, credit FROM photo WHERE site_id = ? AND id IN (${ids.map(() => '?').join(',')})`).bind(s.id, ...ids).all()
-      const ok = new Map(own.results.map((r) => [r.id, r.credit]))
+    if (ids.length || pkIds.length) {
+      // the page's photos in one ask (a page can name more photos than D1 takes as bound values)
+      const own = await env.DB.prepare('SELECT id, credit FROM photo WHERE site_id = ?').bind(s.id).all()
+      const used = new Set([...ids, ...pkIds])
+      const ok = new Map(own.results.filter((r) => used.has(r.id)).map((r) => [r.id, r.credit]))
+      for (const g of d.picks.groups) g.items = g.items.filter((x) => ok.has(x.ph))
       if (!ok.has(d.cover)) d.cover = ''
       if (!ok.has(d.card)) d.card = ''
       if (d.og && typeof d.og === 'object' && !ok.has(d.og.photo)) d.og.photo = ''
@@ -742,7 +747,7 @@ ${s ? `<p>ข้อความถึง ${escHtml(title)} จะส่งสำ
     const who = await sender(request, env)
     if (!(await take(env, who, 'photo'))) return J({ error: 'quota' }, 429)
     const have = await env.DB.prepare('SELECT COUNT(*) AS n FROM photo WHERE site_id = ?').bind(s.id).first()
-    if ((have?.n || 0) >= photoMax(s.kind, isGold) * 2 + 10) return J({ error: 'too-many' }, 400)
+    if ((have?.n || 0) >= photoMax(s.kind, isGold) * 2 + 10 + (isGold ? PK_MAX.total : 0)) return J({ error: 'too-many' }, 400)
     const form = await request.formData()
     const role = ['photo', 'map', 'card'].includes(form.get('role')) ? form.get('role') : 'photo'
     const big = clean(await form.get('big')?.arrayBuffer?.() ?? new ArrayBuffer(0), MAX_BIG)

@@ -13,6 +13,8 @@ import { LOOKS, LOOK_IDS, GOLD_LOOKS, LOOK_ALIAS, lookOf, HERO_CSS, F_THAI } fro
 import { lookOk, freeLooks, groupOf, designOf, GROUPS, GROUP_OF, GROUP_KINDS } from './kinds.mjs'
 import { ogOf, normalizeOg } from './og.mjs'
 import { O as ONLINE_WORDS, ow } from './words-online.mjs'
+import { normalizePicks, picksSection, PICKS_CSS } from './picks.mjs'
+import { normalizePost, postSection, postW, POST_CSS } from './post.mjs'
 import { normalizeOnline, faqShown, faqLd, faqSection, packagesSection, packagesLd, signupSection, onlineCta, ctaHtml, onlineW, ONLINE_CSS } from './online.mjs'
 
 export { LOOKS, LOOK_IDS, GOLD_LOOKS, LOOK_ALIAS, lookOf, lookOk, freeLooks, groupOf, designOf, GROUPS, GROUP_OF, GROUP_KINDS }
@@ -178,7 +180,7 @@ export function normalize(d = {}) {
   o.event = LOCAL_DT.test(e.start || '')
     ? { start: e.start, end: LOCAL_DT.test(e.end || '') && e.end > e.start ? e.end : '', tz: validTz(e.tz) }
     : null
-  return normalizeOnline(d, normalizeStore(d, normalizeAmulets(d, normalizeExtras(d, o))))
+  return normalizePost(d, normalizePicks(d, normalizeOnline(d, normalizeStore(d, normalizeAmulets(d, normalizeExtras(d, o))))))
 }
 
 /** A YouTube, Vimeo or Google Drive address as { kind, id }, else null. */
@@ -575,14 +577,14 @@ export function findable(site, d, gold = site.tier === 'gold') {
 // a local place leads with what it sells and how to get there, a shop with its shelf, a business with its
 // packages and proof, a portfolio with its work. OFF: parts a design leaves out.
 const ORDER = {
-  local: ['camp', 'news', 'event', 'rooms', 'menu', 'book', 'lists', 'amulets', 'shop', 'packages', 'hours', 'where', 'drawing', 'cal', 'gallery', 'video', 'about', 'quotes', 'faq', 'spots', 'pay', 'dls', 'works', 'signup', 'links', 'contact', 'lineqr', 'msg'],
-  shop: ['camp', 'news', 'shop', 'dls', 'about', 'gallery', 'video', 'quotes', 'faq', 'menu', 'hours', 'where', 'pay', 'signup', 'links', 'contact', 'lineqr', 'msg'],
-  biz: ['camp', 'news', 'packages', 'quotes', 'dls', 'faq', 'about', 'signup', 'event', 'cal', 'book', 'gallery', 'video', 'works', 'links', 'contact', 'lineqr', 'msg', 'pay'],
+  local: ['camp', 'news', 'event', 'rooms', 'menu', 'picks', 'book', 'post', 'lists', 'amulets', 'shop', 'packages', 'hours', 'where', 'drawing', 'cal', 'gallery', 'video', 'about', 'quotes', 'faq', 'spots', 'pay', 'dls', 'works', 'signup', 'links', 'contact', 'lineqr', 'msg'],
+  shop: ['camp', 'news', 'shop', 'picks', 'dls', 'about', 'gallery', 'video', 'quotes', 'faq', 'menu', 'hours', 'where', 'pay', 'signup', 'links', 'contact', 'lineqr', 'msg'],
+  biz: ['camp', 'news', 'packages', 'picks', 'post', 'quotes', 'dls', 'faq', 'about', 'signup', 'event', 'cal', 'book', 'gallery', 'video', 'works', 'links', 'contact', 'lineqr', 'msg', 'pay'],
   folio: ['works', 'about', 'quotes', 'gallery', 'video', 'packages', 'faq', 'links', 'contact', 'lineqr', 'msg', 'pay'],
 }
 const OFF = { local: new Set(['reach']), shop: new Set(['reach', 'drawing']), biz: new Set(['reach', 'drawing']), folio: new Set(['reach', 'drawing']) }
 // the parts worth a place in the jump bar, by their section's address
-const JUMP = new Set(['rooms', 'menu', 'book', 'lists', 'amulets', 'shop', 'packages', 'hours', 'where', 'photos', 'works', 'faq', 'about', 'message'])
+const JUMP = new Set(['rooms', 'menu', 'picks', 'book', 'lists', 'amulets', 'shop', 'packages', 'hours', 'where', 'photos', 'works', 'faq', 'about', 'message'])
 
 /** The dock: up to four things a reader came to do, each once; the main one first. An online shop's dock is its cart bar. */
 function dockOf({ lookId, cta, oc, c, line, hasPin, pl, d, gold, W, Wx }) {
@@ -652,6 +654,8 @@ export function render(site, opt = {}) {
 
   const faqList = !L && !Wk && !Am ? faqShown(d, gold) : []
   const onl = site.kind === 'online' || d.signup.on // the page carries online parts: their style and script
+  const pkOn = gold && !L && !Wk && !Am && !Pr && d.picks.groups.some((g) => g.items.length) // the swatch book (picks.mjs)
+  const postOn = gold && !L && !Wk && !Am && !Pr && d.post.on // Post it home (post.mjs)
 
   // head
   const desc = (L && L.note.slice(0, 160)) || (Wk && (Wk.note.slice(0, 160) || [Wk.client, Wk.year].filter(Boolean).join(' · '))) || (Am && amuletDesc(Am, lang)) || (Pr && productDesc(Pr, lang, '฿')) || d.tagline || d.about.slice(0, 160) || name
@@ -674,7 +678,7 @@ export function render(site, opt = {}) {
     faqList.length && site.status === 'live' && !opt.preview && findable(site, d, gold) ? `<script type="application/ld+json">${JSON.stringify(faqLd(faqList)).replace(/</g, '\\u003c')}</script>` : '',
     `<meta name="theme-color" content="${/--bg:(#[0-9a-f]+)/i.exec(look.vars)?.[1] || '#ffffff'}">`,
     `<link rel="icon" href="${d.avatar ? esc(img(d.avatar, true)) : '/s/ant.svg'}">`,
-    `<style>${faces(look.fonts)}:root{${look.vars};--accent:${accent};--on-accent:${onColor(accent)};--acc-ink:${accInk(look, accent)};--soft:color-mix(in srgb,var(--ink) 6%,var(--card))}${BASE_CSS}${HERO_CSS}${ams.length ? AM_CSS : ''}${onl || faqList.length ? ONLINE_CSS : ''}${prs.length || dls.length ? SHOP_CSS : ''}${look.css}</style></head><body>`)
+    `<style>${faces(look.fonts)}:root{${look.vars};--accent:${accent};--on-accent:${onColor(accent)};--acc-ink:${accInk(look, accent)};--soft:color-mix(in srgb,var(--ink) 6%,var(--card))}${BASE_CSS}${HERO_CSS}${ams.length ? AM_CSS : ''}${onl || faqList.length ? ONLINE_CSS : ''}${prs.length || dls.length ? SHOP_CSS : ''}${pkOn ? PICKS_CSS : ''}${postOn ? POST_CSS : ''}${look.css}</style></head><body>`)
 
   if (site.status === 'held' && !opt.preview) {
     out.push(`<main class="wrap"><section class="card checking"><h1 style="font:700 28px var(--display)">${esc(name)}</h1><p>${W('checking')}</p></section></main>`,
@@ -857,6 +861,13 @@ export function render(site, opt = {}) {
     put('</section>')
   }
 
+  K = 'picks'
+  // the swatch book (Gold): a tap picks a sample; the picks ride into the booking note, the message and LINE (page.js)
+  if (pkOn) put(picksSection(d.picks, { W, esc, H2, img, sym, money, icon, book: d.svc.length > 0 && site.kind !== 'online' ? '#book' : d.svc.length ? '#packages' : '', line, oa: lineOa(c.line), msg: d.msg }))
+
+  K = 'post'
+  if (postOn) put(postSection({ lang, esc, H2, icon, d, money, sym: '฿' })) // shipping prices are baht, as orders are
+
   K = 'book'
   if (gold && d.svc.length && site.kind !== 'online') {
     put(`<section class="card rise" id="book">${H2('book', W('book'))}<ul class="svc">`)
@@ -1026,7 +1037,7 @@ export function render(site, opt = {}) {
     book: gold && (d.svc.length || (hotel && d.rooms.length)) ? { ahead: d.book.ahead, svc: Object.fromEntries(d.svc.map((v) => [v.id, { cap: v.cap, mins: v.mins, p: v.p }])), rooms: Object.fromEntries(d.rooms.map((r) => [r.id, { g: r.guests, p: r.p, p2: r.p2, rates: r.rates, min: r.min, units: r.units }])), stay: { in: d.stay.in, out: d.stay.out } } : null,
     w: Object.fromEntries(['happening', 'ended', 'farFrom', 'reportAsk', 'send', 'thanks', 'close', 'copied', 'orderHi', 'msgSent', 'msgFail', 'saveQr', 'story', 'drawnTap',
       'bookPick', 'bookNone', 'bookName', 'bookReach', 'bookEmail', 'bookPeople', 'bookNote', 'bookSend', 'bookAsked', 'bookDone', 'bookFail', 'bookDeposit', 'bookScan', 'bookLeft',
-      'newsOpt', 'newsMail', 'roomIn', 'roomOut', 'roomNights', 'roomNight1', 'roomSend', 'roomTotal', 'roomPickIn', 'roomPickOut', 'roomTaken', 'roomMin', 'roomLeft', 'bookRef', 'payNow', 'payHotel', 'payLink', 'yourBooking', 'readIn', 'msgName', 'msgReach', 'msgBody', 'msgSend', 'payScan', 'paySlip', 'payTotal'].map((k) => [k, word(lang, k)]).concat(onl ? onlineW(lang) : [])),
+      'newsOpt', 'newsMail', 'roomIn', 'roomOut', 'roomNights', 'roomNight1', 'roomSend', 'roomTotal', 'roomPickIn', 'roomPickOut', 'roomTaken', 'roomMin', 'roomLeft', 'bookRef', 'payNow', 'payHotel', 'payLink', 'yourBooking', 'readIn', 'msgName', 'msgReach', 'msgBody', 'msgSend', 'payScan', 'paySlip', 'payTotal'].map((k) => [k, word(lang, k)]).concat(onl ? onlineW(lang) : []).concat(postOn ? postW(lang) : [])),
     line: line || '',
   }
   out.push(`<template id="qrsvg">${qrSvg(url, { dark: '#000', light: '#fff', label: url })}</template>`)

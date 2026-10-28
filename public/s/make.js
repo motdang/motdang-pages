@@ -4,6 +4,7 @@
 // its messages, its traffic, and Gold.
 
 import { render, normalize, LOOKS, designOf, GROUPS as SITE_GROUPS, GROUP_KINDS, groupOf as siteOf, KINDS, ACCENTS, CURRENCY, SCENES, DPROPS, MAX_PHOTOS, photoMax, osmHours, currencyFor, qrSvg, lineShare, lineHref, esc } from './render.mjs'
+import { PK_MAX } from './picks.mjs'
 import { MAX, UNIT_LABEL } from './extras.mjs'
 import { DINGBATS } from './db/names.mjs'
 import { PAGE_LANGS } from './words.mjs'
@@ -546,7 +547,7 @@ const SECTIONS = [
   ['pay', 'coin', 's_pay'], ['event', 'cal', 's_event'], ['words', 'note', 's_words'], ['face', 'me', 's_face'], ['works', 'star', 's_works'], ['amulets', 'flower', 's_amulets'], ['drawing', 'sparkle', 's_drawing'], ['photos', 'camera', 's_photos'], ['quotes', 'chat', 's_quotes'],
   ['rooms', 'moon', 's_rooms', 'gold'], ['ota', 'globe', 's_ota', 'gold'], ['lists', 'tag', 's_lists', 'gold'], ['svc', 'clock', 's_svc', 'gold'], ['faq', 'note', 's_faq'], ['signup', 'mail', 's_signup', 'gold'], ['items', 'tag', 's_items'],
   ['cal', 'cal', 's_cal'], ['camps', 'party', 's_camps', 'gold'],
-  ['products', 'shop', 's_products'], ['ship', 'tag', 's_ship'], ['dls', 'download', 's_dls', 'gold'],
+  ['products', 'shop', 's_products'], ['picks', 'tag', 's_picks', 'gold'], ['post', 'route', 's_post', 'gold'], ['ship', 'tag', 's_ship'], ['dls', 'download', 's_dls', 'gold'],
   ['order', 'basket', 's_order'], ['contact', 'phone', 's_contact'], ['map', 'pin', 's_map'], ['spots', 'compass', 's_spots'], ['hours', 'clock', 's_hours'],
   ['links', 'link', 's_links'], ['msg', 'mail', 's_msg'], ['colour', 'star', 'g_colour'], ['card', 'share', 's_card'], ['video', 'camera', 's_video', 'gold'],
 ]
@@ -555,13 +556,13 @@ function hasData(id) {
   const d = S.d
   return { event: !!d.event, words: true, drawing: true, photos: d.photos.length > 0, items: d.items.length > 0, order: !!(d.order.grabfood || d.order.lineman),
     contact: Object.values(d.contact).some(Boolean), map: d.place.lat !== null || !!d.place.addr, hours: d.hours.on, links: d.links.length > 0, msg: true, colour: true,
-    video: !!d.video, spots: d.spots.length > 0, cal: d.cal.length > 0, ota: !!(d.ota.agoda || d.ota.booking), camps: d.camps.length > 0, svc: d.svc.length > 0, rooms: d.rooms.length > 0, lists: d.lists.length > 0, face: !!d.avatar, works: d.works.length > 0, amulets: d.amulets.length > 0, quotes: d.quotes.length > 0, faq: d.faq.length > 0, signup: d.signup.on, products: d.products.length > 0, dls: d.dls.length > 0, ship: !!(d.ship.th || d.ship.world || d.ship.free || d.ship.mot || d.disc.code), card: true }[id]
+    video: !!d.video, spots: d.spots.length > 0, cal: d.cal.length > 0, ota: !!(d.ota.agoda || d.ota.booking), camps: d.camps.length > 0, svc: d.svc.length > 0, rooms: d.rooms.length > 0, lists: d.lists.length > 0, face: !!d.avatar, works: d.works.length > 0, amulets: d.amulets.length > 0, quotes: d.quotes.length > 0, faq: d.faq.length > 0, signup: d.signup.on, products: d.products.length > 0, dls: d.dls.length > 0, picks: d.picks.groups.some((g) => g.items.length), post: d.post.on, ship: !!(d.ship.th || d.ship.world || d.ship.free || d.ship.mot || d.disc.code), card: true }[id]
 }
 
 function tabs() {
   const t = (id, label, extra = '') => `<button data-tab="${id}"${S.tab === id ? ' class="on"' : ''}>${label}${extra}</button>`
   const bk = S.d && (S.d.svc.length || S.d.rooms.length) ? t('book', T('t_book'), S.asks ? `<span class="dot">${S.asks}</span>` : '') : ''
-  const od = S.d && (S.d.products.length || S.d.dls.length || S.orders) ? t('orders', T('t_orders'), S.orders ? `<span class="dot">${S.orders}</span>` : '') : ''
+  const od = S.d && (S.d.products.length || S.d.dls.length || S.d.post.on || S.orders) ? t('orders', T('t_orders'), S.orders ? `<span class="dot">${S.orders}</span>` : '') : ''
   return `<nav class="tabs">${t('edit', T('t_edit'))}${t('msgs', T('t_msgs'), S.unread ? `<span class="dot">${S.unread}</span>` : '')}${bk}${od}${t('cust', T('t_cust'))}${t('stats', T('t_stats'))}${S.lineOn ? t('line', T('t_line')) : ''}${t('gold', (isGold() ? '★ ' : '') + T('t_gold'))}</nav>`
 }
 
@@ -572,7 +573,7 @@ function tabs() {
 const GROUPS = [
   ['words', ['event', 'words'], 'pencil'],
   ['pics', ['photos', 'drawing', 'face', 'video'], 'camera'],
-  ['offer', ['products', 'dls', 'ship', 'amulets', 'pay', 'items', 'works', 'svc', 'rooms', 'lists', 'ota', 'cal', 'camps', 'faq', 'quotes'], 'cart'],
+  ['offer', ['products', 'dls', 'ship', 'post', 'amulets', 'pay', 'items', 'picks', 'works', 'svc', 'rooms', 'lists', 'ota', 'cal', 'camps', 'faq', 'quotes'], 'cart'],
   ['reach', ['contact', 'order', 'msg', 'signup', 'links'], 'telephone'],
   ['where', ['map', 'hours', 'spots'], 'compass'],
   ['colour', ['colour', 'card'], 'sparkle'],
@@ -621,6 +622,7 @@ function summary(g) {
   }
   if (g === 'offer') for (const k of ['products', 'dls', 'items', 'works', 'amulets', 'svc', 'rooms', 'lists', 'cal', 'camps', 'faq', 'quotes']) if (n(k)) out.push(`${sec(k)} · ${n(k)}`)
   if (g === 'offer' && (d.ota.agoda || d.ota.booking)) out.push(sec('ota'))
+  if (g === 'offer') { const sw = d.picks.groups.reduce((a, x) => a + x.items.length, 0); if (sw) out.push(`${sec('picks')} · ${sw}`) }
   if (g === 'reach') {
     const c = d.contact
     if (c.phone) out.push(T('phone')); if (c.line) out.push('LINE'); if (c.facebook || c.instagram || c.tiktok) out.push('Facebook · Instagram · TikTok'.split(' · ').filter((x, i) => [c.facebook, c.instagram, c.tiktok][i]).join(' · '))
@@ -952,6 +954,28 @@ Object.assign(SEC, {
       ${S.status === 'live' && x.id && x.t ? `<a class="linkbtn" href="/${esc(S.name)}/w/${esc(x.id)}" target="_blank">${icon('globe')}${T('l_open')}</a>` : ''}</div>`).join('')}</div>
       ${S.d.works.length < MAX.works ? `<button class="go ghost" data-addrow="works">${icon('plus')}${T('w_add')}</button>` : ''}`
   },
+  // the swatch book (picks.mjs): groups, each with photos and a code under each photo
+  picks() {
+    const pk = S.d.picks, total = pk.groups.reduce((a, g) => a + g.items.length, 0)
+    return `<p class="hint">${T('sw_hint')}</p>
+      <label class="field"><span>${T('sw_title')}</span><input data-k="picks.t" value="${val(pk.t)}" maxlength="40" placeholder="${T('sw_titleHint')}"></label>
+      <div class="rows">${pk.groups.map((g, i) => `<div class="rowc"><button class="x" data-swgrm="${i}" aria-label="${T('remove')}">×</button>
+      <label class="field"><span>${T('sw_group')}</span><input data-k="picks.groups.${i}.t" value="${val(g.t)}" maxlength="60" placeholder="${T('sw_groupHint')}"></label>
+      <div class="grid3f"><label class="mini"><span>${T('sw_from')}</span><input data-k="picks.groups.${i}.p" value="${val(g.p)}" maxlength="24" inputmode="decimal"></label></div>
+      <label class="field"><span>${T('sw_note')}</span><input data-k="picks.groups.${i}.note" value="${val(g.note)}" maxlength="240"></label>
+      <div class="swed">${g.items.map((x, j) => `<div class="swi"><img src="${esc(imgUrl(x.ph, true))}" alt=""><input data-k="picks.groups.${i}.items.${j}.c" value="${val(x.c)}" maxlength="24" placeholder="${T('sw_code')}" aria-label="${T('sw_code')}"><button class="x" data-swrm="${i}.${j}" aria-label="${T('remove')}">×</button></div>`).join('')}</div>
+      ${total < PK_MAX.total && g.items.length < PK_MAX.items ? `<label class="shoot">${icon('camera')}${T('sw_photos')}<input type="file" accept="image/*" multiple data-swfile="${i}"></label>` : `<p class="hint">${T('sw_full')}</p>`}
+      <small>${ui(S.lang, 'sw_n').replace('{n}', g.items.length)}</small></div>`).join('')}</div>
+      ${pk.groups.length < PK_MAX.groups ? `<button class="go ghost" data-swadd="1">${icon('plus')}${T('sw_add')}</button>` : ''}`
+  },
+  // Post it home (post.mjs): on or off and a line of its own; the postage and Ship with Mot Dang live in Shipping
+  post() {
+    const sh = S.d.ship, money = (p) => (/^[\d.,]+$/.test(p) ? '฿' + p : p)
+    return `<p class="hint">${T('po_hint')}</p>
+      <label class="check"><input type="checkbox" class="sw" data-k="post.on" ${S.d.post.on ? 'checked' : ''}>${T('po_on')}</label>
+      <label class="field"><span>${T('po_note')}</span><input data-k="post.note" value="${val(S.d.post.note)}" maxlength="240" placeholder="${T('po_noteHint')}"></label>
+      <p class="hint">${sh.th || sh.world ? esc([sh.th && 'TH ' + money(sh.th), sh.world && '🌍 ' + money(sh.world)].filter(Boolean).join(' · ')) + (sh.mot ? ' · ' + T('sh_mot') : '') : T('po_noPrice')} <button class="linkbtn" data-add="ship">${T('s_ship')} →</button></p>`
+  },
   faq() { return faqSec({ S, T, val, icon, rowX, isGold }) },
   signup() { return signupSec({ S, T, val, esc, icon }) },
   quotes() {
@@ -1098,6 +1122,7 @@ function bindEdit() {
     const t = e.target
     if (t.id === 'files') addFiles([...t.files])
     if (t.dataset.amfile !== undefined) amFiles(+t.dataset.amfile, [...t.files])
+    if (t.dataset.swfile !== undefined) swFiles(+t.dataset.swfile, [...t.files])
     if (t.dataset.prfile !== undefined) { prFiles(+t.dataset.prfile, [...t.files]); t.value = '' }
     if (t.dataset.dlfile !== undefined) { dlSend({ S, T: (k) => ui(S.lang, k), toast, redrawSec, changed }, +t.dataset.dlfile, t.files[0]); t.value = '' }
     if (t.dataset.amcam !== undefined) { camStart(); amcamTake([...t.files]); t.value = '' }
@@ -1136,6 +1161,9 @@ function bindEdit() {
     if (b.dataset.rmlink) { S.d.links.splice(+b.dataset.rmlink, 1); redrawSec('links'); changed() }
     if (b.dataset.acc) { S.d.accent = b.dataset.acc === ownAccent() ? '' : b.dataset.acc; redrawSec('colour'); changed() }
     if (b.dataset.seg) { setPath(S.d, b.dataset.seg, b.dataset.v); b.parentNode.querySelectorAll('button').forEach((x) => x.classList.toggle('on', x === b)); changed() }
+    if (b.dataset.swadd) { S.d.picks.groups.push({ id: rid(), t: '', note: '', p: '', items: [] }); redrawSec('picks'); changed() }
+    if (b.dataset.swgrm) { S.d.picks.groups.splice(+b.dataset.swgrm, 1); redrawSec('picks'); changed() }
+    if (b.dataset.swrm) { const [gi, j] = b.dataset.swrm.split('.').map(Number); S.d.picks.groups[gi]?.items.splice(j, 1); redrawSec('picks'); changed() }
     if (b.dataset.addrow) {
       const k = b.dataset.addrow
       S.d[k].push(NEW_ROW[k]()); redrawSec(k)
@@ -1519,6 +1547,27 @@ async function prFiles(i, files) {
   if (!x) return
   x.photos = [...x.photos, ...S.d.photos.filter((id) => !before.has(id))].slice(0, 10)
   redrawSec('products'); changed()
+}
+
+/** Swatch photos for one group of the swatch book: square-ish and small, kept apart from the page's photos (picks.mjs). */
+async function swFiles(gi, files) {
+  const g = S.d.picks.groups[gi]
+  if (!g) return
+  const total = () => S.d.picks.groups.reduce((a, x) => a + x.items.length, 0)
+  files = files.slice(0, Math.max(0, Math.min(PK_MAX.items - g.items.length, PK_MAX.total - total())))
+  for (const file of files) {
+    try {
+      const bmp = await createImageBitmap(file, { imageOrientation: 'from-image' })
+      const big = await shrink(bmp, 900, 0.84), small = await shrink(bmp, 320, 0.8)
+      const r = await upload(big.blob, small.blob, 'photo', big.w, big.h)
+      S.local.set(r.id, URL.createObjectURL(small.blob))
+      g.items.push({ c: '', ph: r.id, n: '' })
+      redrawSec('picks')
+    } catch (e) {
+      toast(ui(S.lang, e.message === 'photo-refused' ? 'e_refused' : e.message === 'quota' ? 'e_quota' : 'e_net'))
+    }
+  }
+  changed()
 }
 
 // ---- the amulet camera (make-amcam.mjs): each photo a new amulet at the top -------------------

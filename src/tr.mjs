@@ -28,6 +28,8 @@ export function texts(d) {
   ;(d.amulets || []).forEach((x, i) => { add(`amulets.${i}.note`, x.note) })
   ;(d.products || []).forEach((x, i) => { add(`products.${i}.t`, x.t); add(`products.${i}.note`, x.note) })
   ;(d.dls || []).forEach((x, i) => { add(`dls.${i}.t`, x.t); add(`dls.${i}.note`, x.note) })
+  add('picks.t', d.picks?.t)
+  ;(d.picks?.groups || []).forEach((g, i) => { add(`picks.groups.${i}.t`, g.t); add(`picks.groups.${i}.note`, g.note); g.items.forEach((x, j) => add(`picks.groups.${i}.items.${j}.n`, x.n)) })
   add('amterms', d.amterms)
   return out
 }

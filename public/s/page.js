@@ -401,6 +401,78 @@
     }
   })
 
+  // ---- the swatch book: a tap picks a sample; the picks ride into the booking note, the message and LINE (picks.mjs) ----
+  var pk = $('#picks'), PK = []
+  function pkNote() { return pk && PK.length ? (pk.getAttribute('data-title') || '') + ': ' + PK.join(', ') : '' }
+  if (pk) (function () {
+    var tray = $('#pk-tray'), chips = $('.pk-chips', tray), max = +pk.getAttribute('data-max') || 8, KEY = 'pk:' + pd.name
+    var sws = $$('.pk-sw', pk), e2 = function (x) { return String(x == null ? '' : x).replace(/[&<>"']/g, function (ch) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch] }) }
+    var swOf = function (n) { for (var i = 0; i < sws.length; i++) if (sws[i].getAttribute('data-sw') === n) return sws[i]; return null }
+    function paint() {
+      sws.forEach(function (b) { b.setAttribute('aria-pressed', PK.indexOf(b.getAttribute('data-sw')) >= 0 ? 'true' : 'false') })
+      tray.hidden = !PK.length
+      chips.innerHTML = PK.map(function (n) { var b = swOf(n), im = b && b.querySelector('img'); return '<button type="button" data-pk="' + e2(n) + '">' + (im ? '<img src="' + e2(im.currentSrc || im.src) + '" alt="">' : '') + e2(n) + '</button>' }).join('')
+      var ln = $('[data-t=pkline]', tray)
+      if (ln && ln.getAttribute('data-oa')) ln.href = 'https://line.me/R/oaMessage/' + encodeURIComponent(ln.getAttribute('data-oa')) + '/?' + encodeURIComponent(pkNote())
+      try { localStorage.setItem(KEY, JSON.stringify(PK)) } catch (x) {}
+    }
+    try { PK = (JSON.parse(localStorage.getItem(KEY) || '[]') || []).filter(function (n) { return !!swOf(n) }).slice(0, max) } catch (x) { PK = [] }
+    sws.forEach(function (b) {
+      b.onclick = function () {
+        var n = b.getAttribute('data-sw'), i = PK.indexOf(n)
+        if (i >= 0) PK.splice(i, 1)
+        else { if (PK.length >= max) PK.shift(); PK.push(n) }
+        paint()
+      }
+    })
+    tray.addEventListener('click', function (e) {
+      var t = e.target, c = t.closest && t.closest('[data-pk]')
+      if (c) { PK.splice(PK.indexOf(c.getAttribute('data-pk')), 1); paint(); return }
+      if (t.closest('.pk-clear')) { PK = []; paint(); return }
+      if (t.closest('[data-t=pkask]')) {
+        var ta = $('#msgf textarea[name=body]'), title = pk.getAttribute('data-title') || ''
+        if (ta) { var rest = ta.value.split('\n').filter(function (l) { return l.indexOf(title + ': ') !== 0 }).join('\n').trim(); ta.value = pkNote() + (rest ? '\n' + rest : '\n'); setTimeout(function () { ta.focus({ preventScroll: true }) }, 400) }
+        return
+      }
+      if (t.closest('[data-t=pkbook]')) {
+        var one = $$('.svcb'); if (one.length === 1 && $('#bookui') && $('#bookui').hidden) one[0].click()
+        return
+      }
+      var ln = t.closest('[data-t=pkline]')
+      if (ln && !ln.getAttribute('data-oa') && navigator.clipboard) { // a personal LINE takes no message in the link: the picks are copied first
+        e.preventDefault()
+        var go = function () { location.href = ln.href }
+        navigator.clipboard.writeText(pkNote()).then(function () { ln.lastChild.textContent = w.copied || '✓'; setTimeout(go, 900) }, go)
+      }
+    })
+    paint()
+  })()
+
+  // ---- Post it home: a visitor's home address comes in as an order the maker sees in the Orders tab (post.mjs) ----
+  var pf = $('#postf')
+  if (pf) (function () {
+    var born = Date.now(), sel = pf.querySelector('select[name=cc]'), dn = null
+    var CC = 'TH US GB AU CA DE FR NL BE CH AT IT ES PT IE SE NO DK FI PL CZ GR IL IN CN JP KR TW HK SG MY ID PH VN KH LA MM AE SA ZA NZ BR MX AR'.split(' ')
+    try { dn = new Intl.DisplayNames([lang], { type: 'region' }) } catch (x) {}
+    var e3 = function (x) { return String(x).replace(/[&<>"]/g, function (ch) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch] }) }
+    var list = CC.map(function (c) { return [c, dn ? dn.of(c) : c] }).sort(function (a, b) { return a[1].localeCompare(b[1], lang) })
+    sel.insertAdjacentHTML('beforeend', list.map(function (r) { return '<option value="' + r[0] + '">' + e3(r[1]) + '</option>' }).join(''))
+    pf.onsubmit = function (ev) {
+      ev.preventDefault()
+      if (pd.preview) return
+      var f = new FormData(pf), btn = pf.querySelector('button[type=submit]'), body = { n: pd.name, post: 1, lang: lang, ms: Date.now() - born }
+      ;['name', 'email', 'reach', 'addr', 'cc', 'note', 'website'].forEach(function (k) { body[k] = f.get(k) || '' })
+      btn.disabled = true
+      fetch('/api/order', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
+        .then(function (r) { return r.json().then(function (j) { if (!r.ok) throw j; return j }) })
+        .then(function (j) {
+          pf.innerHTML = '<p class="ok" style="display:flex;gap:10px;align-items:center;font-weight:800;font-size:20px;color:var(--acc-ink)"><i data-dingbat="envelope" data-play="once" style="font-size:1.6em"></i>' + e3(w.postDone || 'OK') + '</p>' +
+            (j.page ? '<a class="btn ghost" href="' + e3(j.page) + '">' + e3(w.postPage || '') + '</a>' : '')
+        })
+        .catch(function (e) { btn.disabled = false; btn.lastChild.textContent = e && /^(name|email|addr|cc)$/.test(e.error) ? w.postBad : w.postFail })
+    }
+  })()
+
   // ---- bookings: a service, a day, a free time, a name ----
   var esc = function (x) { return String(x == null ? '' : x).replace(/[&<>"']/g, function (ch) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch] }) }
   var todayIn = function () { try { return new Intl.DateTimeFormat('en-CA', { timeZone: pd.tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date()) } catch (e) { return new Date().toISOString().slice(0, 10) } }
@@ -418,7 +490,7 @@
       '<input name="reach" maxlength="120" autocomplete="tel" required placeholder="' + esc(w.bookReach) + '" aria-label="' + esc(w.bookReach) + '">' +
       '<input name="email" type="email" maxlength="254" autocomplete="email" placeholder="' + esc(w.bookEmail) + '" aria-label="' + esc(w.bookEmail) + '">' +
       (people > 1 ? '<label style="display:flex;gap:10px;align-items:center;font-weight:700">' + esc(w.bookPeople) + '<input name="people" type="number" min="1" max="' + people + '" value="1" style="width:90px"></label>' : '') +
-      '<textarea name="note" maxlength="600" placeholder="' + esc(w.bookNote) + '" aria-label="' + esc(w.bookNote) + '" style="min-height:70px"></textarea>' +
+      '<textarea name="note" maxlength="600" placeholder="' + esc(w.bookNote) + '" aria-label="' + esc(w.bookNote) + '" style="min-height:70px">' + esc(pkNote()) + '</textarea>' +
       '<label class="newsopt"><input type="checkbox" name="news" value="1"><span>' + esc((w.newsOpt || '').replace('{n}', pd.title || '')) + '</span></label>' +
       '<input class="hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true"><button class="btn" type="submit">' + esc(label || w.bookSend) + '</button></form>'
   }
