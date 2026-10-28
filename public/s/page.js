@@ -140,6 +140,9 @@
       if (e.origin !== location.origin || e.source !== fr.contentWindow || !e.data) return
       if (e.data.type === 'md-map') { dmap.classList.toggle('full', !!e.data.tool); document.body.style.overflow = e.data.tool ? 'hidden' : '' }
     })
+    // the cover over the picture: a trackpad or wheel scroll goes to the page; a tap or Enter opens the map full screen
+    var shield = dmap.querySelector('.dshield')
+    if (shield) shield.onclick = function () { post({ type: 'md-map', tool: true }); dmap.classList.add('full'); document.body.style.overflow = 'hidden' }
     $$('[data-spot]').forEach(function (b) {
       b.onclick = function () {
         dmap.scrollIntoView({ behavior: REDUCED ? 'auto' : 'smooth', block: 'center' })
