@@ -136,6 +136,7 @@ export function normalize(d = {}) {
     o.credits[id] = { title: str(c.title, 120), by: str(c.by, 120), src: safeUrl(c.src), license: str(c.license, 40), licenseUrl: safeUrl(c.licenseUrl), from: str(c.from, 20) }
   }
   o.video = videoUrl(d.video)
+  o.own = d.own && typeof d.own === 'object' && /^[a-z0-9-]{4,40}$/.test(String(d.own.v || '')) ? { v: String(d.own.v) } : null // a design of its own (src/own.mjs)
   o.vposter = PHOTO_ID.test(d.vposter || '') ? d.vposter : ''
   o.give = safeUrl(d.give)
   o.spots = (Array.isArray(d.spots) ? d.spots : []).map((x) => ({ n: str(x?.n, 60), note: str(x?.note, 160), lat: Number(x?.lat), lng: Number(x?.lng) }))
