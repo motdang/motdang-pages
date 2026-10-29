@@ -8,5 +8,8 @@
     "dev": "wrangler dev --port 8790 --local",
     "test": "node --test test/*.test.mjs",
     "check": "for f in src/*.mjs public/s/*.mjs public/s/*.js; do node --check \"$f\" || exit 1; done"
+  },
+  "dependencies": {
+    "ical.js": "2.2.1"
   }
 }

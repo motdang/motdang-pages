@@ -50,6 +50,7 @@ export function normalizeExtras(d, o) {
     lead: num(b.lead, 0, 168, 2), ahead: num(b.ahead, 1, 180, 30),
     auto: !!b.auto, deposit: str(b.deposit, 12).replace(/[^\d.]/g, ''),
     pp: str(b.pp, 20).replace(/[^\d]/g, ''),
+    ical: (Array.isArray(b.ical) ? b.ical : []).map((u) => icalUrl(u)).filter(Boolean).slice(0, 3), // the maker's own calendar (src/busy.mjs)
   }
 
   o.rooms = uniqIds((Array.isArray(d.rooms) ? d.rooms : []).map((x, i) => ({
