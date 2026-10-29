@@ -855,7 +855,9 @@ Object.assign(SEC, {
       <label class="check"><input type="checkbox" class="sw" data-k="book.auto" ${b.auto ? 'checked' : ''}>${T('b_auto')}</label>
       <details${b.pp ? ' open' : ''}><summary style="cursor:pointer;font-weight:700;margin:0 0 10px">${T('b_dep')}</summary><p class="hint">${T('b_depHint')}</p>
       <div class="grid2f"><label class="mini"><span>${T('b_depAmt')}</span><input data-k="book.deposit" value="${val(b.deposit)}" inputmode="decimal" maxlength="12"></label>
-      <label class="mini"><span>${T('b_pp')}</span><input data-k="book.pp" value="${val(b.pp)}" inputmode="numeric" maxlength="20"></label></div></details>`}`
+      <label class="mini"><span>${T('b_pp')}</span><input data-k="book.pp" value="${val(b.pp)}" inputmode="numeric" maxlength="20"></label></div></details>
+      ${isGold() ? `<details${b.ical.length ? ' open' : ''}><summary style="cursor:pointer;font-weight:700;margin:14px 0 10px">${T('b_cal')}</summary>${calFeed()}
+      <label class="field"><span>${T('b_ical')}</span><textarea data-bical style="min-height:64px" placeholder="https://calendar.google.com/calendar/ical/…/basic.ics">${val(b.ical.join('\n'))}</textarea><small>${T('b_icalHint')}</small></label></details>` : ''}`}`
   },
   ota() {
     return `<p class="hint">${T('o_otaHint')}</p>` + field('ota.agoda', 'Agoda', S.d.ota.agoda, 'url', 'placeholder="https://www.agoda.com/…"') +
@@ -1117,6 +1119,7 @@ function bindEdit() {
   form.addEventListener('input', (e) => {
     const t = e.target
     if (t.dataset.ical !== undefined) { const r = S.d.rooms[+t.dataset.ical]; if (r) { r.ical = t.value.split(/\s+/).map((x) => x.trim()).filter(Boolean).slice(0, 4); changed() } }
+    if (t.dataset.bical !== undefined) { S.d.book.ical = t.value.split(/\s+/).map((x) => x.trim()).filter(Boolean).slice(0, 3); changed() }
   })
   form.addEventListener('change', (e) => {
     const t = e.target
@@ -1866,19 +1869,21 @@ async function drawBookings() {
   const money = (n) => '฿' + new Intl.NumberFormat(S.lang).format(n)
   const tot = sumOk.reduce((a, x) => a + (Number(x.total) || 0), 0), paidT = sumOk.filter((x) => x.paid).reduce((a, x) => a + (Number(x.total) || 0), 0)
   const head = sumOk.length ? `<div class="tiles"><div class="tile"><b>${sumOk.length}</b><span>${T('bk_ok')}</span></div><div class="tile"><b>${money(tot)}</b><span>${T('bk_total')}</span></div><div class="tile"><b>${money(paidT)}</b><span>${T('bk_paid')}</span></div></div>` : ''
-  const cals = (r.reads || []).length ? `<section class="panel"><h3>${T('bk_cal')}</h3><ul class="plain">${r.reads.map((x) => {
-    const room = S.d.rooms.find((y) => y.id === x.room)
+  const feedBox = S.calfeed && S.tier === 'gold' ? `<section class="panel"><h3>${T('b_feed')}</h3>${calFeed()}</section>` : ''
+  const cals = (r.reads || []).length ? `<section class="panel"><h3>${T(r.reads.some((x) => x.room !== '@svc') ? 'bk_cal' : 'b_cal')}</h3><ul class="plain">${r.reads.map((x) => {
+    const room = x.room === '@svc' ? { n: T('b_cal') } : S.d.rooms.find((y) => y.id === x.room)
     let host = x.url; try { host = new URL(x.url).hostname.replace(/^www\./, '') } catch {}
-    return `<li>${esc(room ? room.n : x.room)} · ${esc(host)} · ${x.ok ? `${T('bk_read')} ${esc(when(x.at))} · ${x.nights ?? 0}` : `<b style="color:var(--red)">${T('bk_failed')}</b>`}</li>`
+    return `<li>${esc(room ? room.n : x.room)} · ${esc(host)} · ${x.ok ? `${T('bk_read')} ${esc(when(x.at))} · ${x.nights ?? 0}${x.room === '@svc' ? ' ' + T('b_busy') : ''}` : `<b style="color:var(--red)">${T('bk_failed')}</b>`}</li>`
   }).join('')}</ul></section>` : ''
   const taxBox = `<section class="panel"><h3>${T('rc_head')}</h3><label class="mini"><span>${T('rc_tax')}</span><input id="taxid" maxlength="24" value="${val(S.d.tax)}" inputmode="numeric" autocomplete="off"></label><p class="hint">${T('rc_taxHint')}</p></section>`
-  tb.innerHTML = head + (groups.length ? groups.map(([st, l]) => `<h3 class="bkh">${T('bk_' + st)} · ${l.length}</h3><div class="msgs">${l.map(card).join('')}</div>`).join('') : `<div class="empty">${ding('calendar', 'paper')}<p>${T('bk_none')}</p></div>`) + closeBox + taxBox + cals
+  tb.innerHTML = head + (groups.length ? groups.map(([st, l]) => `<h3 class="bkh">${T('bk_' + st)} · ${l.length}</h3><div class="msgs">${l.map(card).join('')}</div>`).join('') : `<div class="empty">${ding('calendar', 'paper')}<p>${T('bk_none')}</p></div>`) + closeBox + feedBox + taxBox + cals
   const taxEl = $('#taxid'); if (taxEl) taxEl.oninput = () => { S.d.tax = taxEl.value; changed() }
   const clgo = $('#clgo')
   if (clgo) clgo.onclick = async () => {
     try { await call('POST', 'bookings', { act: 'close', room: $('#clroom').value, from: $('#clfrom').value, to: $('#clto').value, name: $('#clname').value }); drawBookings() } catch { toast(ui(S.lang, 'e_net')) }
   }
   tb.onclick = async (e) => {
+    const c = e.target.closest('.cp'); if (c) return copy(c.dataset.copy)
     const b = e.target.closest('[data-bk]'); if (!b) return
     const id = b.closest('[data-id]')?.dataset.id
     b.disabled = true
@@ -2251,6 +2256,14 @@ function done() {
   box.querySelector('#cpedit').onclick = () => copy(edit)
 }
 
+/** The page's bookings as a calendar the maker adds once (src/busy.mjs): the private address, and buttons that open it. */
+function calFeed() {
+  if (!S.calfeed) return ''
+  const wc = S.calfeed.replace(/^https?:/, 'webcal:')
+  return `<p class="hint">${T('b_feedHint')}</p><p><code class="cp" data-copy="${esc(S.calfeed)}">${esc(S.calfeed.replace(/^https?:\/\//, '').replace(/\?k=.*/, '?k=…'))}</code></p>
+    <p style="display:flex;flex-wrap:wrap;gap:8px"><a class="go ghost small" href="${esc(wc)}">${T('b_feedAdd')}</a><a class="go ghost small" href="https://calendar.google.com/calendar/r?cid=${encodeURIComponent(wc)}" target="_blank" rel="noopener">Google Calendar</a></p>`
+}
+
 function copy(t) {
   (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => toast(ui(S.lang, 'copied')), () => prompt('', t))
 }
@@ -2287,7 +2300,7 @@ async function boot() {
         tier: r.tier, goldUntil: r.gold_until || '', notifyEmail: r.notify_email, notifyOk: r.notify_ok, unread: r.unread,
         trial: !!r.trial, asks: r.asks || 0, orders: r.orders || 0, shipinfo: r.shipinfo || null, domain: r.domain || '', domainState: r.domain_state || '', domains: !!r.domains, price: r.price || 3000,
         hotel: !!r.hotel, hotelUntil: r.hotel_until || '', plans: r.plans || null, founders: r.founders || null, sian: r.sian || null, cardUrl: '',
-        lineOn: !!r.line?.on, line: r.line || null, news: r.news || [], loaded: r.loaded || '', stockAt: r.loaded || '' })
+        lineOn: !!r.line?.on, line: r.line || null, news: r.news || [], loaded: r.loaded || '', stockAt: r.loaded || '', calfeed: r.calfeed || '' })
       S.d.event = S.d.event || undefined
       S.open = new Set(DEFAULT_OPEN[S.kind]); S.part = ''
       if (h.get('tab')) S.tab = h.get('tab')

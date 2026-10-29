@@ -11,6 +11,7 @@ import { slots, utcOf, dayIn, addDays, stayTotal } from '../public/s/extras.mjs'
 import { promptPayPayload } from './promptpay.mjs'
 import { mail, mayMail } from './msg.mjs'
 import { squash } from './screen.mjs'
+import { busyTimes } from './busy.mjs'
 
 const DAY = /^\d{4}-\d{2}-\d{2}$/
 const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/
@@ -36,7 +37,9 @@ export async function freeTimes(env, s, d, item, day, now = Date.now()) {
   if (!svc || !DAY.test(day)) return []
   const today = dayIn(tz, now)
   if (day < today || day > addDays(today, d.book.ahead)) return []
-  return slots(d, svc, day, await heldTimes(env, s.id, item, day, tz), now).map((x) => ({ t: x.t, left: x.left }))
+  // the maker's own calendar, when the page lists it: a busy time takes every place in a service (busy.mjs)
+  const busy = (await busyTimes(env, s.id, d)).flatMap((x) => Array.from({ length: svc.cap }, () => x))
+  return slots(d, svc, day, (await heldTimes(env, s.id, item, day, tz)).concat(busy), now).map((x) => ({ t: x.t, left: x.left }))
 }
 
 /** Rooms of a type in use each night from today on: bookings asked, accepted or closed by the hotel,

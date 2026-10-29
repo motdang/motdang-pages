@@ -42,6 +42,7 @@ import * as pd from './pd.mjs'
 import * as gold from './gold.mjs'
 import { mapPage } from './mappage.mjs'
 import * as book from './book.mjs'
+import * as busy from './busy.mjs'
 import * as tr from './tr.mjs'
 import * as dom from './domain.mjs'
 import { tellBeer } from './line.mjs'
@@ -208,7 +209,7 @@ async function route(request, env, ctx) {
     if (r) return r
   }
 
-  const pm = /^\/([a-z0-9-]{3,30})(\/sign|\/contact\.vcf|\/event\.ics|\/calendar\.ics|\/l\/[a-z0-9]{4,12}|\/w\/[a-z0-9]{4,12}|\/a\/[a-z0-9]{4,12}|\/p\/[a-z0-9]{4,12}|\/room\/[a-z0-9]{4,12}\.ics)?\/?$/.exec(path)
+  const pm = /^\/([a-z0-9-]{3,30})(\/sign|\/contact\.vcf|\/event\.ics|\/calendar\.ics|\/bookings\.ics|\/l\/[a-z0-9]{4,12}|\/w\/[a-z0-9]{4,12}|\/a\/[a-z0-9]{4,12}|\/p\/[a-z0-9]{4,12}|\/room\/[a-z0-9]{4,12}\.ics)?\/?$/.exec(path)
   if (pm && m === 'GET') return page(request, env, ctx, pm[1], pm[2] || '', url, origin)
   // a Gold page with its own design: its files under /<name>/ (own.mjs)
   const om = /^\/([a-z0-9-]{3,30})\/(.+)$/.exec(path)
@@ -247,6 +248,14 @@ async function page(request, env, ctx, name, sub, url, origin, base) {
     const body = s.status === 'live' && ics(site)
     if (!body) return new Response('', { status: 404 })
     return new Response(body, { headers: { 'content-type': 'text/calendar; charset=utf-8', 'content-disposition': `attachment; filename="${name}.ics"` } })
+  }
+  // the page's bookings for the maker's own calendar app; the address with its key is shown only in the editor (busy.mjs)
+  if (sub === '/bookings.ics') {
+    const k = url.searchParams.get('k') || ''
+    if (site.tier !== 'gold' || !/^[a-f0-9]{24}$/.test(k) || k !== (await busy.feedKey(env, s.id, sha))) return new Response('', { status: 404 })
+    const rows = (await env.DB.prepare("SELECT * FROM booking WHERE site_id = ? AND status IN ('new','ok') AND end >= ? ORDER BY start LIMIT 500")
+      .bind(s.id, new Date(Date.now() - 30 * 864e5).toISOString().slice(0, 10)).all()).results
+    return new Response(busy.bookingsIcs(rows, normalize(site.d), s, origin, book.describe), { headers: { 'content-type': 'text/calendar; charset=utf-8', 'cache-control': 'private, no-store', 'x-robots-tag': 'noindex' } })
   }
   if (sub === '/calendar.ics') {
     const d = normalize(site.d)
@@ -659,7 +668,8 @@ ${s ? `<p>ข้อความถึง ${escHtml(title)} จะส่งสำ
       plan: s.plan || 'gold', hotel: gold.isHotel(s), hotel_until: s.hotel_until || '', plans: gold.PLANS(env),
       sian: s.kind === 'amulet' || normalize(JSON.parse(s.d)).amulets.length ? await sian.thisMonth(env).then((x) => ({ price: x.price, left: x.left, seats: x.seats, member: sian.isSian(s) })).catch(() => null) : null,
       founders: await founding.thisMonth(env).then((f) => ({ price: f.price, left: f.left })).catch(() => null),
-      line: await line.describe(env, s).catch(() => ({ on: false })), news: await line.notesFor(env, s.id).catch(() => []), loaded })
+      line: await line.describe(env, s).catch(() => ({ on: false })), news: await line.notesFor(env, s.id).catch(() => []), loaded,
+      calfeed: isGold ? await busy.feedUrl(env, origin, s, sha) : '' })
   }
 
   if (p === 'site' && m === 'PUT') {

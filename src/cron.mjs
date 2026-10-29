@@ -3,6 +3,7 @@
 // before a page's 30 Gold days end.
 
 import { icalNights, icalUrl } from '../public/s/extras.mjs'
+import { busySpans, busyKey, sha12 as busySha } from './busy.mjs'
 import { mail, mayMail } from './msg.mjs'
 import * as stats from './stats.mjs'
 
@@ -10,7 +11,8 @@ const ESC = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ESC[c])
 const nf = (n) => new Intl.NumberFormat('en').format(n)
 
-/** Airbnb, Booking.com, Agoda … calendars of Gold rooms, oldest read first, every 30 minutes at most. */
+/** Airbnb, Booking.com, Agoda … calendars of Gold rooms, and makers' own calendars (room '@svc', src/busy.mjs),
+ *  oldest read first, every 30 minutes at most. */
 export async function readCalendars(env, isGold, normalize, max = 12) {
   const rows = (await env.DB.prepare("SELECT id, d, tier, gold_until FROM site WHERE status = 'live' AND tier = 'gold' AND d LIKE '%\"ical\":[\"%' LIMIT 200").all()).results
   const due = []
@@ -19,6 +21,7 @@ export async function readCalendars(env, isGold, normalize, max = 12) {
     if (!isGold(s)) continue
     const d = normalize(JSON.parse(s.d))
     for (const r of d.rooms) for (const u of r.ical) due.push({ site: s.id, room: r.id, url: u })
+    for (const u of d.book.ical) due.push({ site: s.id, room: '@svc', url: u, tz: d.hours.tz, ahead: d.book.ahead })
   }
   if (!due.length) return 0
   const last = new Map((await env.DB.prepare('SELECT site_id, room, url, at FROM ical_read').all()).results.map((x) => [`${x.site_id}|${x.room}|${x.url}`, x.at]))
@@ -29,11 +32,18 @@ export async function readCalendars(env, isGold, normalize, max = 12) {
     try {
       const r = await fetch(icalUrl(x.url), { headers: { 'user-agent': 'sites.motdang.net calendar reader', accept: 'text/calendar,*/*' }, cf: { cacheTtl: 0 } })
       const t = r.ok ? await r.text() : ''
-      if (r.ok && t.includes('BEGIN:VCALENDAR') && t.length < 3e6) nights = icalNights(t)
+      if (r.ok && t.includes('BEGIN:VCALENDAR') && t.length < 3e6) {
+        if (x.room !== '@svc') nights = icalNights(t)
+        else { // the maker's busy times, from yesterday to the last day a reader can book
+          const now = Date.now(), spans = busySpans(t, now - 864e5, now + (x.ahead + 2) * 864e5, x.tz)
+          await env.MEDIA.put(busyKey(x.site, await busySha(x.url)), JSON.stringify({ at: new Date(now).toISOString(), spans }), { httpMetadata: { contentType: 'application/json' } })
+          nights = spans
+        }
+      }
     } catch {}
     await env.DB.prepare('INSERT INTO ical_read (site_id, room, url, at, ok, nights) VALUES (?,?,?,?,?,?) ON CONFLICT(site_id, room, url) DO UPDATE SET at = excluded.at, ok = excluded.ok, nights = excluded.nights')
       .bind(x.site, x.room, x.url, new Date().toISOString(), nights ? 1 : 0, nights ? nights.length : null).run()
-    if (nights) read.push({ ...x, nights }) // a calendar that did not answer keeps its last nights
+    if (nights && x.room !== '@svc') read.push({ ...x, nights }) // a calendar that did not answer keeps its last nights (or busy times)
   }
   // each calendar's nights replace that calendar's last reading; a room type with several rooms counts each calendar as one
   for (const x of read) {
