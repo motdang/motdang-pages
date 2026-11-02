@@ -95,6 +95,11 @@ const homeOf = (url, env) => env.DEV_ORIGIN || (/^(localhost|127\.0\.0\.1)$/.tes
 
 async function route(request, env, ctx) {
   const url = new URL(request.url)
+  // http answered pages too (2026-11-02); the page lives at https
+  if (url.protocol === 'http:' && url.hostname === 'sites.motdang.net') {
+    url.protocol = 'https:'
+    return new Response(null, { status: 301, headers: { location: url.toString() } })
+  }
   const path = decodeURIComponent(url.pathname)
   const m = request.method
   const origin = homeOf(url, env)
@@ -434,13 +439,14 @@ async function sitemap(env, origin) {
   const loc = (u, day) => `<url><loc>${u}</loc><lastmod>${day}</lastmod></url>`
   // the amulet market, its stalls, the price guide and Sala Sian (market.mjs, amprice.mjs, sian.mjs)
   const P = await amprice.load(env).catch(() => null)
-  const today = new Date().toISOString().slice(0, 10)
   let stalls = []
   try { stalls = P ? market.front(P).stalls.map((x) => `${origin}/amulets/${x.slug}`) : [] } catch (e) { console.error(e) }
+  // no lastmod: these had the day of the request, so every fetch said "changed today" (2026-11-02)
   const mk = [`${origin}/amulets`, `${origin}/amulet-price`, `${origin}/sian`, ...stalls]
-    .map((u) => `<url><loc>${u}</loc><lastmod>${today}</lastmod></url>`).join('')
+    .map((u) => `<url><loc>${u}</loc></url>`).join('')
   const body = `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>${origin}/</loc></url><url><loc>${origin}/support</loc></url>${mk}` +
-    rows.map((r) => { const day = r.updated.slice(0, 10); let works = [], ams = [], prs = []; try { const n = normalize(JSON.parse(r.d)); works = n.works; ams = n.amulets; prs = n.products.slice(0, prCap(gold.isGold(r))) } catch {} return loc(`${origin}/${r.name}`, day) + works.map((x) => loc(`${origin}/${r.name}/w/${x.id}`, day)).join('') + ams.map((x) => loc(`${origin}/${r.name}/a/${x.id}`, day)).join('') + prs.map((x) => loc(`${origin}/${r.name}/p/${x.id}`, day)).join('') }).join('') + '</urlset>'
+    // a Gold page with its own design lives at /<name>/ (route() sends /<name> there)
+    rows.map((r) => { const day = r.updated.slice(0, 10); let works = [], ams = [], prs = [], slash = ''; try { const raw = JSON.parse(r.d); const n = normalize(raw); works = n.works; ams = n.amulets; prs = n.products.slice(0, prCap(gold.isGold(r))); if (gold.isGold(r) && own.ownOn(raw)) slash = '/' } catch {} return loc(`${origin}/${r.name}${slash}`, day) + works.map((x) => loc(`${origin}/${r.name}/w/${x.id}`, day)).join('') + ams.map((x) => loc(`${origin}/${r.name}/a/${x.id}`, day)).join('') + prs.map((x) => loc(`${origin}/${r.name}/p/${x.id}`, day)).join('') }).join('') + '</urlset>'
   return new Response(body, { headers: { 'content-type': 'application/xml', 'cache-control': 'public, max-age=3600' } })
 }
 

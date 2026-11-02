@@ -60,3 +60,15 @@ test('without its files, or once Gold has lapsed, the page draws as every page d
   const l = await go('/own-lapsed'); assert.equal(l.status, 200); const t = await l.text(); assert.doesNotMatch(t, /Made for us/); assert.match(t, /data-look="local"/)
   assert.equal((await go('/own-lapsed/img/fb/one.jpg')).status, 404)
 })
+
+test('the sitemap names a page with its own design at its own address, with the slash', async () => {
+  const x = await (await go('/sitemap.xml')).text()
+  assert.match(x, /<loc>http:\/\/localhost\/own-shop\/<\/loc>/)
+  assert.doesNotMatch(x, /<loc>http:\/\/localhost\/own-lapsed\/<\/loc>/)
+})
+
+test('http on sites.motdang.net moves to https', async () => {
+  const r = await worker.fetch(new Request('http://sites.motdang.net/own-shop/?hl=th', { redirect: 'manual' }), env, ctx)
+  assert.equal(r.status, 301)
+  assert.equal(r.headers.get('location'), 'https://sites.motdang.net/own-shop/?hl=th')
+})
