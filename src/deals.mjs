@@ -9,6 +9,10 @@
 //   /t/<link>      the owner reads the fee and agrees; the page stays Gold while the terms stand
 //   /f/<link>      the owner's bill: the fee worked out, a PromptPay QR, the slip
 //   /ya/<link>     Beer: yes to a lister          /yo/<link>  Beer: the lister's share is sent
+//   /leads-in      fbgroups.py: the Facebook-group homes (LEADS_KEY); a team seller's board lists them (leads.mjs)
+//
+// A team seller (seller.team = 1; Beer, NaN 2026-11-17: "a 51% owner of the company AND the only paid ft
+// employee") takes no share: every fee is motdang's, and there is no monthly statement or share step.
 //
 // The owner pays the whole fee to motdang's PromptPay; once the slip is good the
 // lister's share goes to Beer on LINE to send that day, and to #sales.
@@ -20,6 +24,7 @@ import { qrSvg } from '../public/s/render.mjs'
 import { tellBeer } from './line.mjs'
 import * as gold from './gold.mjs'
 import { kitLink } from './sell.mjs'
+import * as leads from './leads.mjs'
 
 export const USES = ['residential', 'commercial', 'industrial']
 export const TRADES = ['handyman', 'maid', 'gardener', 'plumber', 'electrician', 'mover']
@@ -111,7 +116,7 @@ const baht = (a) => { const [w, t] = String(a).split('.'); return nf(Number(w)) 
 const bkkMonth = (t = Date.now()) => new Date(t + 7 * 3600e3).toISOString().slice(0, 7)
 const lineShare = (t) => 'https://line.me/R/share?text=' + encodeURIComponent(t)
 
-function shell(title, body, og = '') {
+function shell(title, body, og = '', css = '', js = '') {
   return `<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex">
 <title>${esc(title)}</title>${og}
 <style>body{margin:0;font:17px/1.45 system-ui,sans-serif;background:#fff8e7;color:#1c1530}main{max-width:560px;margin:0 auto;padding:18px 16px 48px}
@@ -120,7 +125,7 @@ h1{font-size:24px;margin:0 0 6px}h2{font-size:19px;margin:26px 0 8px}.amt{font-s
 label{display:block;font-weight:700;margin:10px 0 4px}input,select{font:inherit;width:100%;box-sizing:border-box;padding:12px;border:2px solid #1c1530;border-radius:10px;background:#fff}
 button,.btn{display:inline-block;font:inherit;font-weight:800;padding:14px 16px;border-radius:12px;border:2px solid #1c1530;cursor:pointer;background:#f5c518;color:#000;text-decoration:none;text-align:center}
 .ghost{background:#fff;color:#1c1530}.line{background:#06c755;color:#fff;border-color:#06c755}table{width:100%;border-collapse:collapse;font-size:15px}td,th{padding:6px 4px;border-bottom:1px solid #d8d0c0;text-align:left;vertical-align:top}
-.ok{color:#0a7a32;font-weight:800}.wait{color:#9a5b00;font-weight:800}ul{padding-left:20px}li{margin:6px 0}svg.qr,.qr svg{width:min(260px,72vw);height:auto;display:block;margin:10px auto}a{color:#1c1530}.hp{position:absolute;left:-9999px}</style></head>
+.ok{color:#0a7a32;font-weight:800}.wait{color:#9a5b00;font-weight:800}ul{padding-left:20px}li{margin:6px 0}svg.qr,.qr svg{width:min(260px,72vw);height:auto;display:block;margin:10px auto}a{color:#1c1530}.hp{position:absolute;left:-9999px}${css}</style>${js}</head>
 <body><main>${body}</main></body></html>`
 }
 const note = (th, en) => shell(en, `<p style="font-size:19px">${esc(th)}<br>${esc(en)}</p>`)
@@ -188,7 +193,8 @@ async function boardData(env, s) {
 }
 
 /** /me/<token> — everything the lister needs on one page. */
-async function boardPage(env, s, token, origin, sha, made) {
+async function boardPage(env, s, token, origin, sha, made, url) {
+  if (s.team) return teamBoard(env, s, origin, sha, made, url)
   const { sites, taps, terms, deals } = await boardData(env, s)
   const month = bkkMonth()
   const mine = deals.filter((d) => d.status === 'paid')
@@ -234,6 +240,124 @@ async function boardPage(env, s, token, origin, sha, made) {
     out.push('</table>')
   }
   return shell(s.name + ' · motdang', out.join(''))
+}
+
+// ---- the team's board (Beer, 2026-11-17): the Facebook homes first, no share, built for a phone ----------
+// NaN: "set it up and make it fly as hell for beer" … "check it hard at phone size--beer has no computer."
+
+const TEAM_CSS = `main{padding-top:12px}
+.hi{font-size:15px;color:#4a4458;margin:2px 0 10px}
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:10px 0 6px}
+.tile{display:block;background:#fff;border:2px solid #1c1530;border-radius:12px;padding:6px 4px;color:#1c1530;text-decoration:none;min-height:44px;text-align:center}
+.tile b{display:block;font-size:22px;line-height:1.15}.tile span{display:block;font-size:12px;line-height:1.25;color:#4a4458}
+.tile.on{background:#1c1530;color:#fff8e7}.tile.on span{color:#f1e9d8}
+.money{font-size:14px;color:#4a4458;margin:0 0 4px;text-align:center}.money b{color:#1c1530}
+.chips{position:sticky;top:0;z-index:5;background:#fff8e7;display:flex;gap:6px;padding:8px 0;margin:6px 0 0}
+.chips a{flex:1;min-height:44px;display:flex;align-items:center;justify-content:center;border:2px solid #1c1530;border-radius:99px;color:#1c1530;text-decoration:none;font-weight:700;font-size:15px;background:#fff}
+.chips a.on{background:#1c1530;color:#fff8e7}
+.lead{background:#fff;border:2px solid #1c1530;border-radius:16px;padding:12px;margin:12px 0;scroll-margin-top:72px}
+.lead .top{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.badge{font-size:13px;font-weight:800;padding:2px 10px;border-radius:99px;border:2px solid #1c1530;white-space:nowrap}
+.badge.rent{background:#d6f5e1}.badge.sale{background:#f5c518}.badge.agent{background:#fff;border-style:dashed;font-weight:700}
+.price{font-size:19px;font-weight:800;overflow-wrap:anywhere}
+.lead h3{font-size:17px;margin:6px 0 2px;overflow-wrap:anywhere}
+.lead .sum{font-size:15px;color:#4a4458;margin:4px 0;overflow-wrap:anywhere}
+.lead .src{font-size:13px;color:#4a4458;margin:4px 0 0;overflow-wrap:anywhere}
+.acts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.acts button{width:100%;min-height:50px;padding:8px 6px;font-size:16px;line-height:1.2}
+.acts .btn{min-height:50px;padding:8px 6px;font-size:16px;display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.2;overflow-wrap:anywhere}
+.acts .wide{grid-column:1/-1}
+.btn.call{background:#1c1530;color:#fff8e7;white-space:nowrap;font-size:15px;padding:8px 4px}.btn.via{background:#fff;color:#4a4458;border-style:dashed;font-weight:600}
+.say{margin-top:10px;border-top:1px solid #d8d0c0;padding-top:4px}.say summary{min-height:44px;display:flex;align-items:center;font-weight:700;cursor:pointer}
+.say textarea{width:100%;box-sizing:border-box;font:inherit;font-size:15px;min-height:210px;padding:10px;border:2px solid #1c1530;border-radius:10px;background:#fffdf7}
+.marks{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px}
+.marks form{margin:0}.marks button{width:100%;min-height:48px;padding:6px 4px;font-size:14px;line-height:1.2;background:#fff;color:#1c1530}
+.marks button.go{background:#f5c518}
+.empty{text-align:center;color:#4a4458;margin:24px 0}
+.more{display:flex;min-height:50px;align-items:center;justify-content:center;margin:14px 0}
+.dcard{background:#fff;border:2px solid #1c1530;border-radius:14px;padding:10px 12px;margin:8px 0}.dcard .amt{font-size:22px;margin:2px 0}
+details.box{background:#fff;border:2px solid #1c1530;border-radius:14px;padding:4px 12px;margin:12px 0}details.box>summary{min-height:48px;display:flex;align-items:center;font-weight:800;cursor:pointer}`
+
+// a post an agent made (the reader's summary or contact says so): likely no owner to sign up
+const agentish = (L) => /\bagent|agency|นายหน้า|co-?broke|realt/i.test(`${L.summary || ''} ${L.contact || ''}`)
+const LEAD_STATES = { new: ['ใหม่', 'New'], called: ['โทรแล้ว', 'Called'], listed: ['ลงแล้ว', 'Listed'], no: ['ข้าม', 'Skipped'] }
+const telShow = (t) => `${t.slice(0, 3)}-${t.slice(3, 6)}-${t.slice(6)}`
+const lineLink = (id) => (id.startsWith('@') ? `https://line.me/R/ti/p/${encodeURIComponent(id)}` : `https://line.me/ti/p/~${encodeURIComponent(id)}`)
+const dayTh = (d) => { if (!d) return ''; const x = new Date(d + 'T12:00:00Z'); return x.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', timeZone: 'Asia/Bangkok' }) + ' · ' + x.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) }
+
+function leadCard(L, s, origin, here) {
+  const c = leads.contactOf(L.contact)
+  const title = [L.type, L.place].filter(Boolean).join(' · ')
+  const mk = `/make?by=${encodeURIComponent(s.id)}#kind=homes&title=${encodeURIComponent(title.slice(0, 60))}${c.tel ? '&tel=' + c.tel : ''}`
+  const say = leads.opener(L, s.id === 'beer' ? 'เบียร์' : s.name)
+  const mark = (state, th, en, go) => `<form method="post" action="${esc(here)}"><input type="hidden" name="act" value="lead"><input type="hidden" name="id" value="${esc(L.id)}"><input type="hidden" name="state" value="${state}"><button${go ? ' class="go"' : ''} type="submit">${th}<br>${en}</button></form>`
+  const marks = L.state === 'new' ? mark('called', '✓ โทรแล้ว', 'Called', true) + mark('listed', '🏠 ลงแล้ว', 'Listed') + mark('no', '✕ ข้าม', 'Skip')
+    : L.state === 'called' ? mark('listed', '🏠 ลงแล้ว', 'Listed', true) + mark('no', '✕ ข้าม', 'Skip') + mark('new', '↩ ใหม่', 'Back')
+      : L.state === 'listed' ? mark('called', '↩ โทรแล้ว', 'Back') + mark('no', '✕ ข้าม', 'Skip') + mark('new', '↩ ใหม่', 'New')
+        : mark('new', '↩ กลับมา', 'Bring back', true) + mark('called', '✓ โทรแล้ว', 'Called') + mark('listed', '🏠 ลงแล้ว', 'Listed')
+  const tid = 'say-' + L.id
+  return `<article class="lead" id="l-${esc(L.id)}"><div class="top">${L.deal ? `<span class="badge ${L.deal}">${L.deal === 'sale' ? 'ขาย · Sale' : 'เช่า · Rent'}</span>` : ''}${agentish(L) ? '<span class="badge agent">นายหน้า? · Agent?</span>' : ''}<span class="price">${esc(L.price || '฿ ?')}</span></div>
+<h3>${esc(title || 'บ้าน · Home')}</h3>${L.summary ? `<p class="sum">${esc(L.summary)}</p>` : ''}<p class="src">${esc(dayTh(L.posted))}${L.grp ? ' · ' + esc(L.grp) : ''}</p>
+<div class="acts">${c.tel ? `<a class="btn call${c.line ? '' : ' wide'}" href="tel:${c.tel}">📞 ${telShow(c.tel)}</a>` : ''}${c.line ? `<a class="btn line${c.tel ? '' : ' wide'}" href="${esc(lineLink(c.line))}">LINE ${esc(c.line)}</a>` : ''}${!c.tel && !c.line ? `<span class="btn via wide">ติดต่อทางโพสต์ · Contact through the post</span>` : ''}
+<a class="btn ghost" href="${esc(L.url)}" target="_blank" rel="noopener">ดูโพสต์ · Post</a><a class="btn" href="${esc(mk)}">🏠 ทำหน้า · Page</a></div>
+<details class="say"><summary>💬 ข้อความถึงเจ้าของ · Message to the owner</summary><textarea id="${tid}" aria-label="ข้อความ · Message">${esc(say)}</textarea>
+<div class="acts"><button class="ghost" type="button" data-copy="${tid}">คัดลอก · Copy</button><a class="btn line" href="${esc(lineShare(say))}">ส่งทาง LINE · LINE</a></div></details>
+<div class="marks">${marks}</div></article>`
+}
+
+async function teamBoard(env, s, origin, sha, made, url) {
+  const { sites, terms, deals } = await boardData(env, s)
+  const q = url?.searchParams || new URLSearchParams()
+  const st = leads.STATES.includes(q.get('l')) ? q.get('l') : 'new'
+  const deal = ['rent', 'sale'].includes(q.get('d')) ? q.get('d') : ''
+  const n = Math.max(20, Math.min(400, Number(q.get('n')) || 20))
+  // the board's own links stay on the address Beer opened
+  const here = `/me/${url ? url.pathname.split('/')[2] : ''}`
+  const qs = (o) => { const p = new URLSearchParams({ ...(st !== 'new' && { l: st }), ...(deal && { d: deal }), ...o }); for (const [k, v] of [...p]) if (!v || (k === 'l' && v === 'new')) p.delete(k); const t = p.toString(); return here + (t ? '?' + t : '') }
+  const [count, list] = await Promise.all([leads.counts(env), leads.list(env, st, deal, n + 1)])
+  const month = bkkMonth()
+  const paidIn = deals.filter((d) => d.status === 'paid' && d.at.slice(0, 7) === month).reduce((a, d) => a + (d.fee || 0), 0)
+  const waiting = deals.filter((d) => d.status === 'billed').reduce((a, d) => a + (d.fee || 0), 0)
+  const out = [`<h1>สวัสดี ${esc(s.id === 'beer' ? 'เบียร์' : s.name)} 👋</h1><p class="hi">บ้านจากกลุ่มเฟซบุ๊ก: โทรหาเจ้าของ ทำหน้า แล้วทำบิลเมื่อปิดดีล<br>Homes from the Facebook groups: call the owner, make the page, bill when the deal closes.</p>`]
+  if (s.status !== 'ok') out.push('<p class="wait">ยังไม่เปิด · Not open yet</p>')
+  if (made) out.push(`<div class="card"><p class="ok">บิลพร้อม · Bill ready — ฿${nf(made.fee)}</p><p class="hint">ส่งให้เจ้าของ · Send it to the owner:</p><p style="word-break:break-all"><a href="${esc(made.link)}">${esc(made.link)}</a></p><a class="btn line" href="${esc(lineShare('ค่าธรรมเนียม motdang · motdang fee\n' + made.link))}">ส่งทาง LINE · Send on LINE</a></div>`)
+  out.push(`<div class="tiles">${leads.STATES.map((k) => `<a class="tile${k === st ? ' on' : ''}" href="${esc(qs({ l: k, n: '', d: '' }))}#list"><b>${count[k] || 0}</b><span>${LEAD_STATES[k][0]}</span><span>${LEAD_STATES[k][1]}</span></a>`).join('')}</div>`,
+    `<p class="money">เข้าบริษัทเดือนนี้ · In this month <b>฿${nf(paidIn)}</b> · รอจ่าย · To be paid <b>฿${nf(waiting)}</b></p>`)
+  out.push(`<nav class="chips" id="list" aria-label="เช่า ขาย · Rent or sale">${[['', 'ทั้งหมด · All'], ['rent', 'เช่า · Rent'], ['sale', 'ขาย · Sale']].map(([k, l]) => `<a class="${k === deal ? 'on' : ''}" href="${esc(qs({ d: k, n: '' }))}#list">${l}</a>`).join('')}</nav>`)
+  if (!list.length) out.push(`<p class="empty">${st === 'new' ? 'ไม่มีบ้านใหม่ตอนนี้ บอทหาเพิ่มทุกจันทร์ พุธ ศุกร์ · No new homes right now. The bot finds more every Mon, Wed and Fri.' : 'ยังไม่มี · None yet.'}</p>`)
+  for (const L of list.slice(0, n)) out.push(leadCard(L, s, origin, qs({})))
+  if (list.length > n) out.push(`<a class="btn ghost more" href="${esc(qs({ n: String(n + 20) }))}#l-${esc(list[n - 1].id)}">ดูเพิ่ม · Show more</a>`)
+  if (s.status === 'ok') out.push(`<h2>ทำหน้าใหม่ · Make a page</h2><p><a class="btn" style="display:flex;justify-content:center;min-height:50px;align-items:center" href="/make?by=${esc(s.id)}#kind=homes">+ หน้าใหม่ · New page</a></p><p class="hint">ทำกับเจ้าของ แล้วส่งเงื่อนไขให้กดตกลง · Make it with the owner, then send the terms to agree.</p>`)
+  // the pages, the deal form and the deals, folded so the homes stay on top
+  const pageCards = []
+  for (const x of sites) {
+    const d = JSON.parse(x.d || '{}'), t = terms[x.id]
+    const tl = t ? '' : await link(env, origin, 't', x.id, sha)
+    pageCards.push(`<div class="card"><b><a href="${origin}/${esc(x.name)}">${esc(d.name || x.name)}</a></b> <span class="hint">· ${esc(x.kind)}${x.status !== 'live' ? ' · ' + esc(x.status) : ''}</span><br>` +
+      (t ? `<span class="ok">✓ ตกลงแล้ว · Terms agreed</span> <span class="hint">${esc(t.name)} · ${t.at.slice(0, 10)}</span>`
+        : `<span class="wait">ยังไม่ตกลง · Terms not agreed</span><div class="acts"><a class="btn line wide" href="${esc(lineShare('เงื่อนไข motdang · motdang terms\n' + tl))}">ส่งเงื่อนไขทาง LINE · Send terms on LINE</a></div>`) + '</div>')
+  }
+  out.push(`<details class="box"${sites.length ? ' open' : ''}><summary>หน้าของคุณ · Your pages (${sites.length})</summary>${pageCards.join('') || '<p class="hint">ยังไม่มี · None yet.</p>'}</details>`)
+  const agreed = sites.filter((x) => terms[x.id])
+  if (agreed.length && s.status === 'ok') {
+    const opts = agreed.map((x) => { const d = JSON.parse(x.d || '{}'); return `<option value="${esc(x.id)}">${esc(d.name || x.name)}</option>` + (Array.isArray(d.lists) ? d.lists.map((l) => `<option value="${esc(x.id)}~${esc(l.id)}">↳ ${esc(l.t)}</option>`).join('') : '') }).join('')
+    out.push(`<details class="box"><summary>💰 ปิดดีลได้ ทำบิล · A deal closed: make the bill</summary><form method="post" action="${esc(here)}"><input type="hidden" name="act" value="deal">
+<label>หน้า · Page<select name="page" required>${opts}</select></label>
+<label>ดีล · Deal<select name="what"><option value="rent">${two('rent')}</option><option value="buy">${two('buy')}</option><option value="help">${two('help')}</option></select></label>
+<label>ประเภท · Use<select name="use">${USES.map((u) => `<option value="${u}">${two(u)}</option>`).join('')}</select></label>
+<label>งาน (งานบ้าน) · Trade (home help)<select name="trade">${TRADES.map((u) => `<option value="${u}">${two(u)}</option>`).join('')}</select></label>
+<label>ค่าเช่าต่อเดือน ราคาขาย หรือค่างาน (บาท) · Rent a month, price, or the job (baht)<input name="basis" required inputmode="numeric" maxlength="12"></label>
+<label>สัญญากี่เดือน (เช่า) · Lease months (rent)<input name="months" inputmode="numeric" maxlength="3" value="12"></label>
+<label>ลูกค้า · Customer<input name="who" maxlength="80" placeholder="ชื่อ หรือ LINE · name or LINE"></label>
+<p><button type="submit" style="width:100%;min-height:52px">ทำบิล · Make the bill</button></p></form></details>`)
+  }
+  if (deals.length) {
+    out.push(`<details class="box"><summary>ดีล · Deals (${deals.length})</summary>` + deals.map((d) => {
+      const stt = d.status === 'paid' ? '<span class="ok">✓ จ่ายแล้ว · paid</span>' : d.status === 'void' ? 'ยกเลิก · void' : '<span class="wait">รอเจ้าของจ่าย · owner to pay</span>'
+      return `<div class="dcard"><span class="hint">${d.at.slice(0, 10)} · ${esc(two(d.what))}</span><br><b>${esc(d.page)}</b><div class="amt">฿${nf(d.fee)}</div>${stt}</div>`
+    }).join('') + '</details>')
+  }
+  return shell(`${s.name} · motdang`, out.join(''), '', TEAM_CSS, '<script src="/s/board.js" defer></script>')
 }
 
 /** Record a deal from the board: the fee worked out, a payment opened, the bill link. */
@@ -326,12 +450,12 @@ export async function paid(env, payId, origin, how, sha) {
   await env.DB.prepare("UPDATE deal SET status = 'paid' WHERE id = ?").bind(r.id).run()
   const s = r.seller && await env.DB.prepare("SELECT * FROM seller WHERE id = ? AND status = 'ok'").bind(r.seller).first()
   const title = JSON.parse(r.d || '{}').name || r.page
-  const sp = s ? split(r.fee, s.deal_rate) : { lister: 0, motdang: r.fee }
+  const sp = s && !s.team ? split(r.fee, s.deal_rate) : { lister: 0, motdang: r.fee }
   if (s) await env.DB.prepare("INSERT OR IGNORE INTO earn (pay_id, seller, site_id, baht, rate, cut, month, at, kind) VALUES (?,?,?,?,?,?,?,?,'fee')")
     .bind(payId, s.id, r.site_id, r.fee, s.deal_rate, sp.lister, bkkMonth(), new Date().toISOString()).run()
   const kind = `${two(r.what)}${r.use ? ' · ' + two(r.use) : ''}${r.trade ? ' · ' + two(r.trade) : ''}`
   await gold.postSales(env, `🏠 **Deal fee** · ฿${r.amount} · ${title} · ${kind}\n${origin}/${r.page} · ${how}` +
-    (s ? `\n${s.name} ฿${nf(sp.lister)} (${s.deal_rate}%) · motdang ฿${nf(sp.motdang)}` : '')).catch((e) => console.error(e))
+    (s ? (s.team ? `\n${s.name} · all to motdang ฿${nf(sp.motdang)}` : `\n${s.name} ฿${nf(sp.lister)} (${s.deal_rate}%) · motdang ฿${nf(sp.motdang)}`) : '')).catch((e) => console.error(e))
   if (s && sp.lister > 0) await tellBeer(env, `โอนส่วนแบ่ง · Send a lister's share\n${s.name} ฿${nf(sp.lister)} → พร้อมเพย์ PromptPay ${s.promptpay || '(ถาม · ask ' + (s.phone || s.name) + ')'}\n${title} · ค่าธรรมเนียม fee ฿${nf(r.fee)}\nโอนแล้วกด · Tap once sent:\n${await link(env, origin, 'yo', payId, sha, 30)}`)
   return { lister: sp.lister, motdang: sp.motdang }
 }
@@ -344,7 +468,7 @@ export async function monthly(env, post) {
   const month = bkk.toISOString().slice(0, 7)
   const prev = bkkMonth(Date.now() - 2 * 864e5)
   let n = 0
-  const rows = (await env.DB.prepare("SELECT * FROM seller WHERE status = 'ok' AND (deal_closed IS NULL OR deal_closed < ?)").bind(month).all()).results
+  const rows = (await env.DB.prepare("SELECT * FROM seller WHERE status = 'ok' AND team = 0 AND (deal_closed IS NULL OR deal_closed < ?)").bind(month).all()).results
   for (const s of rows) {
     await env.DB.prepare('UPDATE seller SET deal_closed = ? WHERE id = ?').bind(month, s.id).run()
     const pages = (await env.DB.prepare('SELECT COUNT(*) AS n FROM terms WHERE seller = ? AND ended IS NULL').bind(s.id).first()).n
@@ -388,17 +512,29 @@ export async function route(request, env, path, url, origin, H) {
     const board = await apply(env, f, origin, H)
     return board ? H.html(applyPage(board), 200) : H.html(note('ใส่ชื่อ โทร และพร้อมเพย์ (10 หรือ 13 หลัก)', 'Name, phone and PromptPay (10 or 13 digits), please.'), 400)
   }
+  if (path === '/leads-in') {
+    if (m !== 'POST' || !env.LEADS_KEY || request.headers.get('x-key') !== env.LEADS_KEY) return new Response('no', { status: 401 })
+    const b = await request.json().catch(() => ({}))
+    const n = await leads.take(env, b.homes, H.sha)
+    return new Response(JSON.stringify({ ok: true, new: n }), { headers: { 'content-type': 'application/json' } })
+  }
   const me = /^\/me\/([a-z0-9]{24})\/?$/.exec(path)
   if (me) {
     const s = await lister(env, me[1], H.sha)
     if (!s) return H.html(note('ไม่พบ', 'Not found.'), 404)
     let made = null
     if (post) {
+      const f = await request.formData()
+      // a lead to called, listed or skipped: back to the same list
+      if (f.get('act') === 'lead' && s.team && s.status === 'ok') {
+        await leads.mark(env, f.get('id'), f.get('state'), s.id)
+        return Response.redirect(url.origin + path + url.search + '#list', 303)
+      }
       if (s.status !== 'ok' || !(await H.take(env, await H.sender(request, env), 'deal'))) return H.html(note('ยังทำไม่ได้', 'Not now.'), 429)
-      made = await record(env, s, await request.formData(), origin, H)
+      made = await record(env, s, f, origin, H)
       if (!made) return H.html(note('ตรวจตัวเลขอีกครั้ง', 'Check the numbers and try again.'), 400)
     }
-    return H.html(await boardPage(env, s, me[1], origin, H.sha, made), 200)
+    return H.html(await boardPage(env, s, me[1], origin, H.sha, made, url), 200)
   }
   const k = /^\/(t|f|ya|yo)\//.exec(path)?.[1]
   if (!k) return null
