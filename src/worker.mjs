@@ -209,7 +209,7 @@ async function route(request, env, ctx) {
     const r = await founding.route(request, env, path, url, origin, { html, sha, rand, sameOrigin, take, sender, log, slipLink: (id) => slipq.link(env, origin, id, sha) })
     if (r) return r
   }
-  if (/^\/(lister|me|t|f|ya|yo)(\/|$)/.test(path)) {
+  if (/^\/(lister|me|t|f|ya|yo|leads-in)(\/|$)/.test(path)) {
     const r = await deals.route(request, env, path, url, origin, { html, sha, rand, sameOrigin, take, sender, log, slipLink: (id) => slipq.link(env, origin, id, sha) })
     if (r) return r
   }

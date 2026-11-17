@@ -82,7 +82,7 @@ export async function monthEnd(env, post, payLink = async () => '', tell = async
   const month = bkk.toISOString().slice(0, 7)
   const prev = bkkMonth(Date.now() - 2 * 864e5)
   // a lister who has made no page and sold no plan gets no statement (deals.mjs has its own)
-  const rows = (await env.DB.prepare("SELECT * FROM seller WHERE status = 'ok' AND (closed IS NULL OR closed < ?) AND (created <= '2026-10-15' OR id IN (SELECT seller FROM site WHERE seller IS NOT NULL) OR id IN (SELECT seller FROM earn WHERE kind = 'plan'))").bind(month).all()).results
+  const rows = (await env.DB.prepare("SELECT * FROM seller WHERE status = 'ok' AND team = 0 AND (closed IS NULL OR closed < ?) AND (created <= '2026-10-15' OR id IN (SELECT seller FROM site WHERE seller IS NOT NULL) OR id IN (SELECT seller FROM earn WHERE kind = 'plan'))").bind(month).all()).results
   const toBeer = []
   for (const s of rows) {
     await env.DB.prepare('UPDATE seller SET closed = ? WHERE id = ?').bind(month, s.id).run()
