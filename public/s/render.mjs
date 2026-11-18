@@ -184,9 +184,12 @@ export function normalize(d = {}) {
   return normalizePost(d, normalizePicks(d, normalizeOnline(d, normalizeStore(d, normalizeAmulets(d, normalizeExtras(d, o))))))
 }
 
-/** A YouTube, Vimeo or Google Drive address as { kind, id }, else null. */
+// an .mp4 file on nanobotco.github.io plays in the page's own player (media-src in the worker's CSP)
+const MP4 = /^https:\/\/nanobotco\.github\.io\/[\w./%-]{1,300}\.mp4$/
+
+/** A YouTube, Vimeo or Google Drive address, or an .mp4 file on nanobotco.github.io, as { kind, id }, else null. */
 export function videoUrl(v) {
-  if (v && typeof v === 'object') return (v.kind === 'youtube' && /^[\w-]{11}$/.test(v.id)) || (v.kind === 'vimeo' && /^\d{6,12}$/.test(v.id)) || (v.kind === 'drive' && /^[\w-]{20,80}$/.test(v.id)) ? { kind: v.kind, id: v.id } : null
+  if (v && typeof v === 'object') return (v.kind === 'youtube' && /^[\w-]{11}$/.test(v.id)) || (v.kind === 'vimeo' && /^\d{6,12}$/.test(v.id)) || (v.kind === 'drive' && /^[\w-]{20,80}$/.test(v.id)) || (v.kind === 'mp4' && MP4.test(v.id) && !v.id.includes('..')) ? { kind: v.kind, id: v.id } : null
   const u = safeUrl(v)
   if (!u) return null
   let m = /^https:\/\/(?:www\.|m\.)?(?:youtube\.com\/(?:watch\?(?:.*&)?v=|shorts\/|embed\/|live\/)|youtu\.be\/)([\w-]{11})/.exec(u)
@@ -195,6 +198,7 @@ export function videoUrl(v) {
   if (m) return { kind: 'vimeo', id: m[1] }
   m = /^https:\/\/drive\.google\.com\/(?:file\/d\/|open\?id=)([\w-]{20,80})/.exec(u)
   if (m) return { kind: 'drive', id: m[1] }
+  if (MP4.test(u) && !u.includes('..')) return { kind: 'mp4', id: u }
   return null
 }
 

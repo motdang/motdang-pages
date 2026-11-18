@@ -279,6 +279,14 @@
   $$('button.video').forEach(function (b) {
     b.onclick = function () {
       var id = b.getAttribute('data-id'), k = b.getAttribute('data-kind')
+      if (k === 'mp4') {
+        var v = document.createElement('video'), im = b.querySelector('img')
+        v.className = 'video'; v.src = id; v.controls = true; v.playsInline = true
+        if (im) v.poster = im.src
+        b.replaceWith(v)
+        var p = v.play(); if (p && p.catch) p.catch(function () {})
+        return
+      }
       var src = k === 'youtube' ? 'https://www.youtube-nocookie.com/embed/' + id + '?autoplay=1&rel=0' : k === 'drive' ? 'https://drive.google.com/file/d/' + id + '/preview' : 'https://player.vimeo.com/video/' + id + '?autoplay=1'
       b.innerHTML = '<iframe src="' + src + '" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen title="video"></iframe>'
       b.onclick = null

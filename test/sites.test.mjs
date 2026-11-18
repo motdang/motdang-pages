@@ -57,6 +57,12 @@ test('video addresses: YouTube and Vimeo only', () => {
   assert.deepEqual(videoUrl('https://www.youtube.com/watch?v=dQw4w9WgXcQ&t=3'), { kind: 'youtube', id: 'dQw4w9WgXcQ' })
   assert.deepEqual(videoUrl('vimeo.com/76979871'), { kind: 'vimeo', id: '76979871' })
   assert.equal(videoUrl('https://evil.example/watch?v=dQw4w9WgXcQ'), null)
+  const mp4 = 'https://nanobotco.github.io/phrao-safe-swim/video/lice-cartoon.mp4'
+  assert.deepEqual(videoUrl(mp4), { kind: 'mp4', id: mp4 })
+  assert.deepEqual(videoUrl({ kind: 'mp4', id: mp4 }), { kind: 'mp4', id: mp4 })
+  assert.equal(videoUrl('https://evil.example/a.mp4'), null)
+  assert.equal(videoUrl('https://nanobotco.github.io/a.mp4.html'), null)
+  assert.equal(videoUrl({ kind: 'mp4', id: 'https://evil.example/a.mp4' }), null)
 })
 
 test('dingbats: known names only, six at most, and the page loads only their families', () => {
