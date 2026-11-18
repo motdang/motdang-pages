@@ -77,6 +77,14 @@ test('a Drive video plays on the page and on a project page; a project card is i
   assert.ok(!/class="video"/.test(free))
 })
 
+test('an .mp4 on nanobotco.github.io plays on a project page', () => {
+  const mp4 = 'https://nanobotco.github.io/phrao-safe-swim/video/lice-cartoon.mp4'
+  const n = normalize({ works: [{ id: 'lice', t: 'Lice', video: mp4, card: Q, photos: [P] }] })
+  assert.deepEqual(n.works[0].video, { kind: 'mp4', id: mp4 })
+  const html = render({ ...base, d: { ...d, works: n.works } }, { work: 'lice' })
+  assert.match(html, /data-kind="mp4" data-id="https:\/\/nanobotco\.github\.io\/phrao-safe-swim\/video\/lice-cartoon\.mp4"/)
+})
+
 test('a Gold page with somewhere to give shows the give button first; a free page does not', () => {
   const html = render({ ...base, d: { ...d, give: 'https://www.cmirotary.org/donate', contact: { phone: '0812345678' } } })
   // the row of buttons under the name went (2026-10-26); giving sits in the dock beside the main button
